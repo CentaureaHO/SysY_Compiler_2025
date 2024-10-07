@@ -1072,7 +1072,7 @@ case 35:
 YY_RULE_SETUP
 #line 74 "parser/lexer.l"
 {
-    yylval.float_val = atof(yytext);
+    yylval.float_val = convertToFloatDec(yytext);
     return FLOAT_CONST;
 }
 	YY_BREAK
@@ -1080,7 +1080,7 @@ case 36:
 YY_RULE_SETUP
 #line 79 "parser/lexer.l"
 {
-    yylval.float_val = atof(yytext);
+    yylval.float_val = convertToFloatHex(yytext);
     return FLOAT_CONST;
 }
 	YY_BREAK
@@ -1088,7 +1088,7 @@ case 37:
 YY_RULE_SETUP
 #line 84 "parser/lexer.l"
 {
-    yylval.int_val = atoi(yytext);
+    yylval.int_val = convertToInt(yytext, '\0');
     return INT_CONST;
 }
 	YY_BREAK
@@ -1096,7 +1096,7 @@ case 38:
 YY_RULE_SETUP
 #line 89 "parser/lexer.l"
 {
-    yylval.int_val = atoi(yytext);
+    yylval.int_val = convertToInt(yytext, '\0');
     return INT_CONST;
 }
 	YY_BREAK
@@ -1104,7 +1104,7 @@ case 39:
 YY_RULE_SETUP
 #line 94 "parser/lexer.l"
 {
-    yylval.int_val = atoi(yytext);
+    yylval.int_val = convertToInt(yytext, '\0');
     return INT_CONST;
 }
 	YY_BREAK

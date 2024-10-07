@@ -72,27 +72,27 @@ void yyerror(char* s, ...);
 }
 
 [+-]?[0-9]*\.[0-9]*([eE][+-]?[0-9]+)? {
-    yylval.float_val = atof(yytext);
+    yylval.float_val = convertToFloatDec(yytext);
     return FLOAT_CONST;
 }
 
 [+-]?0[xX][0-9a-fA-F]*\.[0-9a-fA-F]*([pP][+-]?[0-9a-fA-F]+)? {
-    yylval.float_val = atof(yytext);
+    yylval.float_val = convertToFloatHex(yytext);
     return FLOAT_CONST;
 }
 
 [+-]?0[0-7]* {
-    yylval.int_val = atoi(yytext);
+    yylval.int_val = convertToInt(yytext, '\0');
     return INT_CONST;
 }
 
 [+-]?[1-9][0-9]* {
-    yylval.int_val = atoi(yytext);
+    yylval.int_val = convertToInt(yytext, '\0');
     return INT_CONST;
 }
 
 [+-]?0[xX][0-9]* {
-    yylval.int_val = atoi(yytext);
+    yylval.int_val = convertToInt(yytext, '\0');
     return INT_CONST;
 }
 
