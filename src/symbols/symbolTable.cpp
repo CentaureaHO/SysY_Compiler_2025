@@ -114,7 +114,10 @@ SymbolTable::~SymbolTable()
     }
 }
 
-string SymbolTable::getConstantName(const Type* type) { return type->typeStr() + "_Const_" + to_string(count++); }
+string SymbolTable::getConstantName(const Type* type)
+{
+    return "__anon_" + type->typeStr() + "_Const_" + to_string(count++) + "__";
+}
 
 string SymbolTable::getFuncname(const string& name, const vector<Type*>& paramTypes)
 {

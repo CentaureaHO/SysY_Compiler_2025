@@ -1,3 +1,5 @@
 build/
 .vscode/
 testcase/build/
+test.in
+test.out

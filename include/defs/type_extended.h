@@ -90,4 +90,12 @@ class VoidTypeT : public VoidType
     std::string typeStr() const override { return "void"; }
 };
 
+class PlaceHolder : public Type
+{
+  public:
+    PlaceHolder() : Type(0) {}
+
+    std::string typeStr() const override { return "PlaceHolder"; }
+};
+
 #endif

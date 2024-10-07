@@ -25,6 +25,10 @@ OBJECTS := $(patsubst $(SRC_DIR)/%, $(BUILD_DIR)/%, $(OBJECTS:.c=.o))
 TEST_SRC_DIR := testcase/source
 TEST_BUILD_DIR := testcase/build
 
+LEXER_SRC := parser/lexer.l
+LEXER_C := src/parser/lexer.c
+LEXER_H := include/parser/lexer.h
+
 .PHONY: all
 all: obj
 
@@ -41,7 +45,7 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR) $(TEST_BUILD_DIR)
+	rm -rf $(BUILD_DIR) $(TEST_BUILD_DIR) $(LEXER_C) $(LEXER_H)
 
 .PHONY: testSymbolTable
 testSymbolTable: $(BUILD_DIR)/symbols/symbolTable.o $(BUILD_DIR)/defs/type.o $(BUILD_DIR)/defs/type_base.o
@@ -51,3 +55,9 @@ testSymbolTable: $(BUILD_DIR)/symbols/symbolTable.o $(BUILD_DIR)/defs/type.o $(B
 		$(CXX) $(CXXFLAGS) $$test_src $(BUILD_DIR)/symbols/symbolTable.o $(BUILD_DIR)/defs/type.o $(BUILD_DIR)/defs/type_base.o -o $(TEST_BUILD_DIR)/1_symbolTable/$$test_name; \
 		echo "Compiled test: $$test_name"; \
 	done
+
+.PHONY: lexer
+lexer: $(LEXER_C) $(LEXER_H)
+
+$(LEXER_C) $(LEXER_H): $(LEXER_SRC)
+	flex --nounput --outfile $(LEXER_C) --header-file=$(LEXER_H) $(LEXER_SRC)
