@@ -20,16 +20,11 @@ float Value::getFloat() const { return num.floatVal; }
 int   Value::getChar() const { return num.intVal; }
 int   Value::getBool() const { return num.intVal; }
 
-SymbolTableEntry::SymbolTableEntry(int syType, Type* varType, int row, int col)
-    : syType(syType), row(row), col(col), varType(varType)
+SymbolTableEntry::SymbolTableEntry(int syType, Type* varType)
+    : syType(syType), varType(varType)
 {}
 
 SymbolTableEntry::~SymbolTableEntry() {}
-
-int  SymbolTableEntry::getRow() const { return row; }
-int  SymbolTableEntry::getCol() const { return col; }
-void SymbolTableEntry::setRow(int r) { row = r; }
-void SymbolTableEntry::setCol(int c) { col = c; }
 
 Type* SymbolTableEntry::getType() const { return varType; }
 void  SymbolTableEntry::setType(Type* type) { varType = type; }

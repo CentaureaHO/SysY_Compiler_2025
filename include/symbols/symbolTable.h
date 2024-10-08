@@ -104,7 +104,6 @@ class SymbolTableEntry
 {
   private:
     int syType;  ///< 符号的类型
-    int row, col; ///< 符号在源代码中的位置（行、列）
 
   protected:
     Type* varType; ///< 符号的类型（Type 类）
@@ -121,20 +120,13 @@ class SymbolTableEntry
      * 
      * @param syType 符号类型
      * @param varType 符号的类型
-     * @param row 符号的行号
-     * @param col 符号的列号
      */
-    SymbolTableEntry(int syType, Type* varType, int row = -1, int col = -1);
+    SymbolTableEntry(int syType, Type* varType);
 
     /**
      * @brief 虚析构函数
      */
     virtual ~SymbolTableEntry();
-
-    int  getRow() const;
-    int  getCol() const;
-    void setRow(int r);
-    void setCol(int c);
 
     Type* getType() const;
     void  setType(Type* type);

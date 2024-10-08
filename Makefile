@@ -6,13 +6,11 @@ CXX_STANDARD = -std=c++17
 
 DBGFLAGS = -g
 
-WERROR_FLAGS := -Wall -Wextra -Wpedantic
+WERROR_FLAGS := -Wall -Wextra -Wpedantic -Werror
 
-ifneq ($(MAKECMDGOALS),testSymbolTable)
-    WERROR_FLAGS += -Werror
-endif
+WARNINGS_IGNORE := -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-value
 
-CXXFLAGS = $(CXX_STANDARD) $(INCLUDES) $(WERROR_FLAGS) $(DBGFLAGS)
+CXXFLAGS = $(CXX_STANDARD) $(INCLUDES) $(WERROR_FLAGS) $(DBGFLAGS) $(WARNINGS_IGNORE)
 
 SRC_DIR := src
 BUILD_DIR := build
@@ -56,8 +54,16 @@ testSymbolTable: $(BUILD_DIR)/symbols/symbolTable.o $(BUILD_DIR)/defs/type.o $(B
 		echo "Compiled test: $$test_name"; \
 	done
 
+.PHONY: testLexicalAnalysis
+testLexicalAnalysis: $(BUILD_DIR)/parser/lexer.o $(BUILD_DIR)/parser/token.o $(BUILD_DIR)/common/str_convert.o $(BUILD_DIR)/parser/token_parser.o
+	@mkdir -p $(TEST_BUILD_DIR)/2_lexicalAnalyzer
+	$(CXX) $(CXXFLAGS) $(TEST_SRC_DIR)/2_lexicalAnalyzer/lexAnalyzer.cpp \
+		$(BUILD_DIR)/parser/lexer.o $(BUILD_DIR)/parser/token.o $(BUILD_DIR)/common/str_convert.o $(BUILD_DIR)/parser/token_parser.o \
+		-o $(TEST_BUILD_DIR)/2_lexicalAnalyzer/lexAnalyzer
+	@echo "Compiled test: lexAnalyzer"
+
 .PHONY: lexer
 lexer: $(LEXER_C) $(LEXER_H)
 
 $(LEXER_C) $(LEXER_H): $(LEXER_SRC)
-	flex --nounput --outfile $(LEXER_C) --header-file=$(LEXER_H) $(LEXER_SRC)
+	flex --noyywrap --nounput --outfile $(LEXER_C) --header-file=$(LEXER_H) $(LEXER_SRC)
