@@ -55,7 +55,9 @@ typedef union
     X(LBRACKET, 37) /* [ */   \
     X(RBRACKET, 38) /* ] */   \
     X(LBRACE, 39)   /* { */   \
-    X(RBRACE, 40)   /* } */
+    X(RBRACE, 40)   /* } */   \
+                              \
+    X(SLASH_COMMENT, 41)
 
 enum TokenType
 {

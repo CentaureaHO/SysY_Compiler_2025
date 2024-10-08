@@ -5,19 +5,23 @@
 #include <string.h>
 #include <parser/token.h>
 
+#define yyFlexLexerNoWrap
+
 YYSTYPE yylval;
 
 int curRow     = 1;
 int curHeadCol = 0, curTailCol = 0;
+int commentLines = 0;
 
 extern int convertToInt(const char* str, const char end);
 
 extern float convertToFloatDec(const char* str);
 extern float convertToFloatHex(const char* str);
 
-#define NEW_ROW                     \
-        ++curRow;                   \
-        curTailCol = 0;
+#define NEW_ROW                                 \
+        curRow = curRow + 1 + commentLines;     \
+        commentLines = 0;                       \
+        curTailCol = 0;                         
 
 #define YY_USER_ACTION          \
     curHeadCol = curTailCol;    \
@@ -66,6 +70,23 @@ void yyerror(char* s, ...);
 "<="                { return LE; }
 "=="                { return EQ; }
 
+"//".* {
+    yylval.str_val = strdup(yytext);
+    return SLASH_COMMENT;
+}
+
+"/*"([^*]|\*[^/])*"*/" {
+    for (int i = 0; yytext[i] != '\0'; ++i) 
+    {
+        if (yytext[i] == '\n') {
+            ++commentLines;
+            yytext[i] = ' ';
+        }
+    }
+    yylval.str_val = strdup(yytext);
+    return SLASH_COMMENT;
+}
+
 \"[^\"]*\" {
     yylval.str_val = strdup(yytext);
     return STR_CONST;
@@ -81,17 +102,17 @@ void yyerror(char* s, ...);
     return FLOAT_CONST;
 }
 
+[+-]?0[xX][0-9a-fA-F]* {
+    yylval.int_val = convertToInt(yytext, '\0');
+    return INT_CONST;
+}
+
 [+-]?0[0-7]* {
     yylval.int_val = convertToInt(yytext, '\0');
     return INT_CONST;
 }
 
 [+-]?[1-9][0-9]* {
-    yylval.int_val = convertToInt(yytext, '\0');
-    return INT_CONST;
-}
-
-[+-]?0[xX][0-9]* {
     yylval.int_val = convertToInt(yytext, '\0');
     return INT_CONST;
 }
