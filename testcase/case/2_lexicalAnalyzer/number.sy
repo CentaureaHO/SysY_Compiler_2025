@@ -1,0 +1,16 @@
+int a = 3;
+int na = -10;
+int hexa = 0xFF;
+int octa = 077;
+int max=-2147483648;
+
+
+float b = 1.0;
+float nb = -1.0;
+float tmp = .9e3;
+float tmp2 = 9.e-2;
+float tmp3 = 9.3e0;
+
+float hexb = 0x1.0p-1;
+float hextmp = -0xA.p+04;
+float hextmp2 = 0x.0Ap2;

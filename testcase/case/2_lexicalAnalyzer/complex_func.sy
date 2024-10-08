@@ -1,0 +1,62 @@
+int globalVar = 10; // 全局变量声明和初始化
+
+int factorial(int n) { // 递归函数声明与实现
+    if (n <= 1) {
+        return 1;
+    } else {
+        return n * factorial(n - 1); // 递归调用
+    }
+    return 0;
+}
+
+void testArray(int arr[], int len) { // 数组作为函数参数
+    int i;
+    for (i = 0; i < len; i = i + 1) {
+        arr[i] = arr[i] * 2; // 数组访问与修改
+    }
+}
+
+int main() {
+    const int constVar = 20; // 常量声明
+    int x = 5;
+    int y;
+    int arr[5]; // 数组声明
+    
+    // 数组初始化
+    arr[0] = 1;
+    arr[1] = 2;
+    arr[2] = 3;
+    arr[3] = 4;
+    arr[4] = 5;
+    
+    // 简单的四则运算
+    y = x * 2 + 3 - 1 / x; 
+
+    // 检查除法表达式
+    if (x != 0) {
+        y = y / x; // 除法操作
+    } else {
+        y = 0; // 避免除以零
+    }
+    
+    // 函数调用测试
+    int factResult = factorial(x);
+
+    // 条件语句测试
+    if (y > 10) {
+        y = y - 5;
+    } else {
+        y = y + 5;
+    }
+
+    // 循环测试
+    int i;
+    for (i = 0; i < 5; i = i + 1) {
+        arr[i] = arr[i] + 1;
+    }
+
+    // 数组函数调用
+    testArray(arr, 5);
+
+    return y; // 返回结果
+}

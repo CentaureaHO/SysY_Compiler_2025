@@ -1,0 +1,6 @@
+// */                                   // comment, not syntax error
+f = g/**//h;                            // equivalent to f = g / h;
+/*//*/ l();                             // equivalent to l();
+m = n//**/o
++ p;                                    // equivalent to m = n + p;
+/* comment */ a = b + c * d / e         // equivalent to a = b + c * d / e
