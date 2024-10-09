@@ -3,6 +3,10 @@
 #include <ctype.h>
 #include <math.h>
 
+#ifndef NULL
+#define NULL 0
+#endif
+
 int convertToInt(const char* str, const char end)
 {
     int         base       = 10;
