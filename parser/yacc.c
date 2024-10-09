@@ -540,7 +540,7 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int8 yyrline[] =
 {
-       0,    32,    32
+       0,    28,    28
 };
 #endif
 
@@ -1295,7 +1295,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 35 "parser/yacc.y"
+#line 31 "parser/yacc.y"
 
 
 void yyerror(const char* s)

@@ -7,10 +7,6 @@ void yyerror(const char* s);
 int yylex();
 %}
 
-%code requires {
-#include <parser/yacc.h>
-}
-
 %union {
     int int_val;
     float float_val;

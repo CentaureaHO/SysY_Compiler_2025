@@ -44,12 +44,6 @@
 #if YYDEBUG
 extern int yydebug;
 #endif
-/* "%code requires" blocks.  */
-#line 10 "parser/yacc.y"
-
-#include <parser/yacc.h>
-
-#line 53 "parser/yacc.h"
 
 /* Token kinds.  */
 #ifndef YYTOKENTYPE
@@ -110,13 +104,13 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 14 "parser/yacc.y"
+#line 10 "parser/yacc.y"
 
     int int_val;
     float float_val;
     char* str_val;
 
-#line 120 "parser/yacc.h"
+#line 114 "parser/yacc.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
