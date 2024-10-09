@@ -71,6 +71,7 @@ testLexicalAnalysis: $(OBJ_DIR)/parser/yacc.o $(OBJ_DIR)/parser/lexer.o $(OBJ_DI
 lexer: $(LEXER_C) $(LEXER_H)
 
 $(LEXER_C) $(LEXER_H): $(LEXER_SRC)
+	@mkdir -p include/parse
 	bison -d --defines=$(BISON_H) -o $(BISON_C) $(BISON_SRC)
 	flex --outfile=$(LEXER_C) --header-file=$(LEXER_H) $(LEXER_SRC)
 	python3 parser/genfunc.py $(BISON_H) $(TOKEN_H)
