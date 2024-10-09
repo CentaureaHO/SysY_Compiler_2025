@@ -37,16 +37,17 @@
     X(BITAND, 287) \
     X(DOT, 288) \
     X(SLASH_COMMENT, 289) \
-    X(PLUS, 290) \
-    X(MINUS, 291) \
-    X(STAR, 292) \
-    X(SLASH, 293) \
-    X(GT, 294) \
-    X(GE, 295) \
-    X(LT, 296) \
-    X(LE, 297) \
-    X(EQ, 298) \
-    X(ASSIGN, 299) \
+    X(ERR_TOKEN, 290) \
+    X(PLUS, 291) \
+    X(MINUS, 292) \
+    X(STAR, 293) \
+    X(SLASH, 294) \
+    X(GT, 295) \
+    X(GE, 296) \
+    X(LT, 297) \
+    X(LE, 298) \
+    X(EQ, 299) \
+    X(ASSIGN, 300) \
     X(END, -1)
 
 const char* getName(int token);

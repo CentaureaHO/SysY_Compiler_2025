@@ -139,18 +139,19 @@ enum yysymbol_kind_t
   YYSYMBOL_BITAND = 32,                    /* BITAND  */
   YYSYMBOL_DOT = 33,                       /* DOT  */
   YYSYMBOL_SLASH_COMMENT = 34,             /* SLASH_COMMENT  */
-  YYSYMBOL_PLUS = 35,                      /* PLUS  */
-  YYSYMBOL_MINUS = 36,                     /* MINUS  */
-  YYSYMBOL_STAR = 37,                      /* STAR  */
-  YYSYMBOL_SLASH = 38,                     /* SLASH  */
-  YYSYMBOL_GT = 39,                        /* GT  */
-  YYSYMBOL_GE = 40,                        /* GE  */
-  YYSYMBOL_LT = 41,                        /* LT  */
-  YYSYMBOL_LE = 42,                        /* LE  */
-  YYSYMBOL_EQ = 43,                        /* EQ  */
-  YYSYMBOL_ASSIGN = 44,                    /* ASSIGN  */
-  YYSYMBOL_YYACCEPT = 45,                  /* $accept  */
-  YYSYMBOL_program = 46                    /* program  */
+  YYSYMBOL_ERR_TOKEN = 35,                 /* ERR_TOKEN  */
+  YYSYMBOL_PLUS = 36,                      /* PLUS  */
+  YYSYMBOL_MINUS = 37,                     /* MINUS  */
+  YYSYMBOL_STAR = 38,                      /* STAR  */
+  YYSYMBOL_SLASH = 39,                     /* SLASH  */
+  YYSYMBOL_GT = 40,                        /* GT  */
+  YYSYMBOL_GE = 41,                        /* GE  */
+  YYSYMBOL_LT = 42,                        /* LT  */
+  YYSYMBOL_LE = 43,                        /* LE  */
+  YYSYMBOL_EQ = 44,                        /* EQ  */
+  YYSYMBOL_ASSIGN = 45,                    /* ASSIGN  */
+  YYSYMBOL_YYACCEPT = 46,                  /* $accept  */
+  YYSYMBOL_program = 47                    /* program  */
 };
 typedef enum yysymbol_kind_t yysymbol_kind_t;
 
@@ -481,7 +482,7 @@ union yyalloc
 #define YYLAST   0
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  45
+#define YYNTOKENS  46
 /* YYNNTS -- Number of nonterminals.  */
 #define YYNNTS  2
 /* YYNRULES -- Number of rules.  */
@@ -490,7 +491,7 @@ union yyalloc
 #define YYNSTATES  3
 
 /* YYMAXUTOK -- Last valid token kind.  */
-#define YYMAXUTOK   299
+#define YYMAXUTOK   300
 
 
 /* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
@@ -533,14 +534,15 @@ static const yytype_int8 yytranslate[] =
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
       25,    26,    27,    28,    29,    30,    31,    32,    33,    34,
-      35,    36,    37,    38,    39,    40,    41,    42,    43,    44
+      35,    36,    37,    38,    39,    40,    41,    42,    43,    44,
+      45
 };
 
 #if YYDEBUG
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int8 yyrline[] =
 {
-       0,    28,    28
+       0,    29,    29
 };
 #endif
 
@@ -561,8 +563,8 @@ static const char *const yytname[] =
   "ELSE", "FOR", "WHILE", "CONTINUE", "BREAK", "SWITCH", "CASE", "GOTO",
   "DO", "RETURN", "CONST", "SEMICOLON", "COMMA", "LPAREN", "RPAREN",
   "LBRACKET", "RBRACKET", "LBRACE", "RBRACE", "NOT", "BITOR", "BITAND",
-  "DOT", "SLASH_COMMENT", "PLUS", "MINUS", "STAR", "SLASH", "GT", "GE",
-  "LT", "LE", "EQ", "ASSIGN", "$accept", "program", YY_NULLPTR
+  "DOT", "SLASH_COMMENT", "ERR_TOKEN", "PLUS", "MINUS", "STAR", "SLASH",
+  "GT", "GE", "LT", "LE", "EQ", "ASSIGN", "$accept", "program", YY_NULLPTR
 };
 
 static const char *
@@ -626,13 +628,13 @@ static const yytype_int8 yycheck[] =
    state STATE-NUM.  */
 static const yytype_int8 yystos[] =
 {
-       0,    46,     0
+       0,    47,     0
 };
 
 /* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr1[] =
 {
-       0,    45,    46
+       0,    46,    47
 };
 
 /* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
@@ -1102,7 +1104,7 @@ yyreduce:
   switch (yyn)
     {
 
-#line 1106 "parser/yacc.c"
+#line 1108 "parser/yacc.c"
 
       default: break;
     }
@@ -1295,7 +1297,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 31 "parser/yacc.y"
+#line 32 "parser/yacc.y"
 
 
 void yyerror(const char* s)

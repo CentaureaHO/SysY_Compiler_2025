@@ -71,6 +71,16 @@ extern int commentLines;
     return SLASH_COMMENT;
 }
 
+"/*" {
+    yylval.str_val = strdup(yytext);
+    return ERR_TOKEN;
+}
+
+"*/" {
+    yylval.str_val = strdup(yytext);
+    return ERR_TOKEN;
+}
+
 \"[^\"]*\"          { yylval.str_val = strdup(yytext); return STR_CONST; }
 
 [+-]?[0-9]*\.[0-9]*([eE][+-]?[0-9]+)? {

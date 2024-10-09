@@ -23,7 +23,7 @@ int TokenParser::parse(istream& input)
 
         if (token == INT_CONST) { ss << yylval.int_val; }
         else if (token == FLOAT_CONST) { ss << yylval.float_val; }
-        else if (token == STR_CONST || token == IDENT) { ss << yylval.str_val; }
+        else if (token == STR_CONST || token == IDENT || token == ERR_TOKEN) { ss << yylval.str_val; }
         else { ss << ""; }
 
         tokens.push_back(make_tuple(token, yytext, ss.str(), curRow, curHeadCol));

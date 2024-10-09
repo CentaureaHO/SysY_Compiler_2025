@@ -86,16 +86,17 @@ extern int yydebug;
     BITAND = 287,                  /* BITAND  */
     DOT = 288,                     /* DOT  */
     SLASH_COMMENT = 289,           /* SLASH_COMMENT  */
-    PLUS = 290,                    /* PLUS  */
-    MINUS = 291,                   /* MINUS  */
-    STAR = 292,                    /* STAR  */
-    SLASH = 293,                   /* SLASH  */
-    GT = 294,                      /* GT  */
-    GE = 295,                      /* GE  */
-    LT = 296,                      /* LT  */
-    LE = 297,                      /* LE  */
-    EQ = 298,                      /* EQ  */
-    ASSIGN = 299                   /* ASSIGN  */
+    ERR_TOKEN = 290,               /* ERR_TOKEN  */
+    PLUS = 291,                    /* PLUS  */
+    MINUS = 292,                   /* MINUS  */
+    STAR = 293,                    /* STAR  */
+    SLASH = 294,                   /* SLASH  */
+    GT = 295,                      /* GT  */
+    GE = 296,                      /* GE  */
+    LT = 297,                      /* LT  */
+    LE = 298,                      /* LE  */
+    EQ = 299,                      /* EQ  */
+    ASSIGN = 300                   /* ASSIGN  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -110,7 +111,7 @@ union YYSTYPE
     float float_val;
     char* str_val;
 
-#line 114 "parser/yacc.h"
+#line 115 "parser/yacc.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

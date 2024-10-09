@@ -4,5 +4,5 @@ testcase/build/
 test.in
 test.out
 *.token
-.obj
-.bin
+obj/
+bin/

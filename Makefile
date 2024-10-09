@@ -57,7 +57,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 
 .PHONY: clean
 clean:
-	rm -rf $(OBJ_DIR) $(TEST_BUILD_DIR) $(LEXER_C) $(LEXER_H) $(BISON_C) $(BISON_H) $(TOKEN_H) $(BIN_DIR)
+	rm -rf $(OBJ_DIR) $(TEST_BUILD_DIR) $(LEXER_C) $(LEXER_H) $(BISON_C) $(BISON_H) $(BIN_DIR)
 
 .PHONY: testLexicalAnalysis
 testLexicalAnalysis: $(OBJ_DIR)/parser/yacc.o $(OBJ_DIR)/parser/lexer.o $(OBJ_DIR)/common/str_convert.o $(OBJ_DIR)/parse/token.o
