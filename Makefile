@@ -45,21 +45,12 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 clean:
 	rm -rf $(BUILD_DIR) $(TEST_BUILD_DIR) $(LEXER_C) $(LEXER_H)
 
-.PHONY: testSymbolTable
-testSymbolTable: $(BUILD_DIR)/symbols/symbolTable.o $(BUILD_DIR)/defs/type.o $(BUILD_DIR)/defs/type_base.o
-	@mkdir -p $(TEST_BUILD_DIR)/1_symbolTable
-	@for test_src in $(shell find $(TEST_SRC_DIR)/1_symbolTable -name '*.cpp'); do \
-		test_name=$$(basename $$test_src .cpp); \
-		$(CXX) $(CXXFLAGS) $$test_src $(BUILD_DIR)/symbols/symbolTable.o $(BUILD_DIR)/defs/type.o $(BUILD_DIR)/defs/type_base.o -o $(TEST_BUILD_DIR)/1_symbolTable/$$test_name; \
-		echo "Compiled test: $$test_name"; \
-	done
-
 .PHONY: testLexicalAnalysis
 testLexicalAnalysis: $(BUILD_DIR)/parser/lexer.o $(BUILD_DIR)/parser/token.o $(BUILD_DIR)/common/str_convert.o $(BUILD_DIR)/parser/token_parser.o
-	@mkdir -p $(TEST_BUILD_DIR)/2_lexicalAnalyzer
-	$(CXX) $(CXXFLAGS) $(TEST_SRC_DIR)/2_lexicalAnalyzer/lexAnalyzer.cpp \
+	@mkdir -p $(TEST_BUILD_DIR)/1_lexicalAnalyzer
+	$(CXX) $(CXXFLAGS) $(TEST_SRC_DIR)/1_lexicalAnalyzer/lexAnalyzer.cpp \
 		$(BUILD_DIR)/parser/lexer.o $(BUILD_DIR)/parser/token.o $(BUILD_DIR)/common/str_convert.o $(BUILD_DIR)/parser/token_parser.o \
-		-o $(TEST_BUILD_DIR)/2_lexicalAnalyzer/lexAnalyzer
+		-o $(TEST_BUILD_DIR)/1_lexicalAnalyzer/lexAnalyzer
 	@echo "Compiled test: lexAnalyzer"
 
 .PHONY: lexer

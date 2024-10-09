@@ -3,3 +3,4 @@ build/
 testcase/build/
 test.in
 test.out
+*.token
