@@ -1,9 +1,10 @@
 %{
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 
-void yyerror(const char* s);
+void yyerror(const char* format, ...);
 int yylex();
 %}
 
@@ -31,7 +32,13 @@ program:
 
 %%
 
-void yyerror(const char* s)
+void yyerror(const char* format, ...)
 {
-    fprintf(stderr, "Error: %s\n", s);
+    va_list args;
+    va_start(args, format);
+
+    fprintf(stderr, "Error: ");
+    vfprintf(stderr, format, args);
+
+    va_end(args);
 }

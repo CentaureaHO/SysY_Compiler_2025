@@ -70,13 +70,14 @@
 #line 1 "parser/yacc.y"
 
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 
-void yyerror(const char* s);
+void yyerror(const char* format, ...);
 int yylex();
 
-#line 80 "parser/yacc.c"
+#line 81 "parser/yacc.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -542,7 +543,7 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int8 yyrline[] =
 {
-       0,    29,    29
+       0,    30,    30
 };
 #endif
 
@@ -1104,7 +1105,7 @@ yyreduce:
   switch (yyn)
     {
 
-#line 1108 "parser/yacc.c"
+#line 1109 "parser/yacc.c"
 
       default: break;
     }
@@ -1297,10 +1298,16 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 32 "parser/yacc.y"
+#line 33 "parser/yacc.y"
 
 
-void yyerror(const char* s)
+void yyerror(const char* format, ...)
 {
-    fprintf(stderr, "Error: %s\n", s);
+    va_list args;
+    va_start(args, format);
+
+    fprintf(stderr, "Error: ");
+    vfprintf(stderr, format, args);
+
+    va_end(args);
 }

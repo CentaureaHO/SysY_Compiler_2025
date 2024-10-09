@@ -70,12 +70,6 @@ int main(int argc, char* argv[])
                    << setw(INT_PW) << get<3>(token)                                           // Line
                    << setw(INT_PW) << get<4>(token)                                           // Column
                    << endl;
-        if (get<0>(token) == ERR_TOKEN)
-        {
-            cerr << "Error token: " << get<1>(token) << " at line " << get<3>(token) << ", column " << get<4>(token)
-                 << endl;
-            exit(1);
-        }
     }
 
     if (file.is_open()) file.close();

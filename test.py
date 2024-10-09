@@ -12,6 +12,7 @@ def handle_lexer():
     for file in syfiles:
         print(f'Running {file}...')
         subprocess.run([bin_path, f'{syfiles_path}/{file}'])
+        print()
 
 def main():
     if len(sys.argv) < 2:

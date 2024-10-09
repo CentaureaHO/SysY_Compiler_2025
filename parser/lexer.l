@@ -18,6 +18,8 @@ extern int commentLines;
     curHeadCol = curTailCol;    \
     curTailCol += yyleng;
 
+extern void yyerror(const char* format, ...);
+
 %}
 
 %%
@@ -72,11 +74,13 @@ extern int commentLines;
 }
 
 "/*" {
+    yyerror("Unclosed left comment %s at (%d, %d)\n", yytext, curRow, curHeadCol);
     yylval.str_val = strdup(yytext);
     return ERR_TOKEN;
 }
 
 "*/" {
+    yyerror("Unclosed right comment %s at (%d, %d)\n", yytext, curRow, curHeadCol);
     yylval.str_val = strdup(yytext);
     return ERR_TOKEN;
 }
