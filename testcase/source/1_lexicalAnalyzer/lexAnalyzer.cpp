@@ -1,5 +1,5 @@
 #include <bits/stdc++.h>
-#include <parser/token_parser.h>
+#include <parse/token.h>
 using namespace std;
 
 #define STR_PW 30

@@ -2,21 +2,12 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <parser/token.h>
+#include <common/str_convert.h>
+#include "yacc.h"
 
-#define yyFlexLexerNoWrap
-
-YYSTYPE yylval;
-
-int curRow     = 1;
-int curHeadCol = 0, curTailCol = 0;
-int commentLines = 0;
-
-extern int convertToInt(const char* str, const char end);
-
-extern float convertToFloatDec(const char* str);
-extern float convertToFloatHex(const char* str);
+extern int curRow;
+extern int curHeadCol, curTailCol;
+extern int commentLines;
 
 #define NEW_ROW                                 \
         curRow = curRow + 1 + commentLines;     \
@@ -27,14 +18,12 @@ extern float convertToFloatHex(const char* str);
     curHeadCol = curTailCol;    \
     curTailCol += yyleng;
 
-void yyerror(char* s, ...);
-
 %}
 
 %%
 
 \n                  { NEW_ROW }
-[ \t\f\r\v]+        { /* empty */ }
+[ \t\f\r\v]+        { /* mpty */ }
 
 "int"               { return INT; }
 "float"             { return FLOAT; }
@@ -70,27 +59,19 @@ void yyerror(char* s, ...);
 "<="                { return LE; }
 "=="                { return EQ; }
 
-"//".* {
-    yylval.str_val = strdup(yytext);
-    return SLASH_COMMENT;
-}
+"//".*              { return SLASH_COMMENT; }
 
 "/*"([^*]|\*[^/])*"*/" {
-    for (int i = 0; yytext[i] != '\0'; ++i) 
-    {
+    for (int i = 0; yytext[i] != '\0'; ++i) {
         if (yytext[i] == '\n') {
             ++commentLines;
             yytext[i] = ' ';
         }
     }
-    yylval.str_val = strdup(yytext);
     return SLASH_COMMENT;
 }
 
-\"[^\"]*\" {
-    yylval.str_val = strdup(yytext);
-    return STR_CONST;
-}
+\"[^\"]*\"          { yylval.str_val = strdup(yytext); return STR_CONST; }
 
 [+-]?[0-9]*\.[0-9]*([eE][+-]?[0-9]+)? {
     yylval.float_val = convertToFloatDec(yytext);

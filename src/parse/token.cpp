@@ -1,8 +1,11 @@
-#include <parser/token_parser.h>
+#include <parse/token.h>
+#include <lexer.h>
+#include <yacc.h>
 using namespace std;
 
-extern int     curRow, curHeadCol, curTailCol;
-extern YYSTYPE yylval;
+int curRow     = 1;
+int curHeadCol = 0, curTailCol = 0;
+int commentLines = 0;
 
 int TokenParser::parse(istream& input)
 {
@@ -28,4 +31,16 @@ int TokenParser::parse(istream& input)
 
     fclose(inputFile);
     return token_count;
+}
+
+const char* getName(int token)
+{
+    switch (token)
+    {
+#define X(a, b) \
+    case b: return #a;
+        TOKEN_LIST
+#undef X
+        default: return "Unknown token";
+    }
 }
