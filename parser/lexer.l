@@ -11,7 +11,10 @@
 
     static location loc;
 
-    #define YY_USER_ACTION  loc.columns (yyleng);
+    #define YY_USER_ACTION      \
+        loc.step();             \
+        loc.columns(yyleng);
+
     #define yywrap() 1
     #define RETT(x, y) \
         return Parser::make_##x(y);
@@ -33,7 +36,7 @@
                     loc.step();
                 }
 
-[ \t\f\r\v]+    { loc.step(); }
+[ \t\f\r\v]+    { /* empty */ }
 
 "int"               { RETT(INT, loc) }
 "float"             { RETT(FLOAT, loc) }
