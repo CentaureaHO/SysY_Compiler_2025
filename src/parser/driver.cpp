@@ -28,7 +28,7 @@ int Driver::lexical_parse()
         Token result;
         result.token_name = token.name();
         result.line       = token.location.begin.line;
-        result.column     = token.location.begin.column;
+        result.column     = token.location.begin.column - 1;
         result.lexeme     = _scanner.YYText();
 
         switch (token.kind())

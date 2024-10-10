@@ -19,9 +19,13 @@
     #define RETT(x, y) \
         return Parser::make_##x(y);
 
+    #define TAB_WIDTH 4
+
     extern int convertToInt(const char* str, const char end);
     extern float convertToFloatDec(const char* str);
     extern float convertToFloatHex(const char* str);
+
+    int handleTab();
 %}
 
 %option c++
@@ -36,7 +40,10 @@
                     loc.step();
                 }
 
-[ \t\f\r\v]+    { /* empty */ }
+[ \f\r\v]+    { /* empty */ }
+[\t]    {
+    loc.columns(handleTab());
+}
 
 "int"               { RETT(INT, loc) }
 "float"             { RETT(FLOAT, loc) }
@@ -139,3 +146,9 @@
 <<EOF>>         { RETT(END, loc); }
 
 %%
+
+int handleTab()
+{
+    int& c = loc.begin.column;
+    return TAB_WIDTH - ((c - 1) % TAB_WIDTH) - 1;
+}
