@@ -1,11 +1,16 @@
-#include <bits/stdc++.h>
-#include <parser/token_parser.h>
-using namespace std;
+#include <parser/driver.h>
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+#include <memory>
 
 #define STR_PW 30
 #define INT_PW 8
 #define MIN_GAP 5
 #define STR_REAL_WIDTH (STR_PW - MIN_GAP)
+
+using namespace Yacc;
+using namespace std;
 
 string truncateString(const string& str, size_t width)
 {
@@ -16,8 +21,9 @@ string truncateString(const string& str, size_t width)
 string getOutputFileName(const string& inputFile)
 {
     string outputFile = inputFile;
-    size_t pos        = outputFile.find(".in");
-    if (pos != string::npos) { outputFile = outputFile.substr(0, pos) + ".out"; }
+    size_t pos        = outputFile.find(".sy");
+    if (pos != string::npos) { outputFile = outputFile.substr(0, pos); }
+    outputFile += ".token";
     return outputFile;
 }
 
@@ -54,19 +60,55 @@ int main(int argc, char* argv[])
         outStream = &outFile;
     }
 
-    TokenParser parser(*inStream);
+    // 创建 Driver 实例并进行词法解析
+    Driver driver;
+    driver.lexical_parse();
+
+    // 获取解析的 tokens
+    auto tokens = driver.getTokens();
 
     *outStream << left;
-    *outStream << setw(STR_PW) << "Token" << setw(STR_PW) << "Lexeme" << setw(STR_PW) << "Property"
-               << setw(INT_PW) << "Line" << setw(INT_PW) << "Column" << endl;
+    *outStream << setw(STR_PW) << "Token" << setw(STR_PW) << "Lexeme" << setw(STR_PW) << "Property" << setw(INT_PW) << "Line"
+               << setw(INT_PW) << "Column" << endl;
 
-    for (auto& token : parser.tokens)
+    for (auto& token : tokens)
     {
-        *outStream << setw(STR_PW) << truncateString(getName(get<0>(token)), STR_REAL_WIDTH)  // Token
-                   << setw(STR_PW) << truncateString(get<1>(token), STR_REAL_WIDTH)           // Lexeme
-                   << setw(STR_PW) << truncateString(get<2>(token), STR_REAL_WIDTH)           // Property
-                   << setw(INT_PW) << get<3>(token)                                           // Line
-                   << setw(INT_PW) << get<4>(token)                                           // Column
+        *outStream << setw(STR_PW) << truncateString(token.token_name, STR_REAL_WIDTH)   // Token
+                   << setw(STR_PW) << truncateString(token.lexeme, STR_REAL_WIDTH);      // Lexeme
+
+        // 输出 Property，仅适用于特定的 Token 类型
+        if (token.token_name == "INT_CONST" || token.token_name == "STR_CONST" || token.token_name == "FLOAT_CONST" ||
+            token.token_name == "IDENT" || token.token_name == "SLASH_COMMENT" || token.token_name == "ERR_TOKEN")
+        {
+            std::visit(
+                [&](auto&& arg) {
+                    using T = std::decay_t<decltype(arg)>;
+                    if constexpr (std::is_same_v<T, int>)
+                    {
+                        *outStream << setw(STR_PW) << arg;
+                    }
+                    else if constexpr (std::is_same_v<T, float>)
+                    {
+                        *outStream << setw(STR_PW) << arg;
+                    }
+                    else if constexpr (std::is_same_v<T, std::shared_ptr<std::string>>)
+                    {
+                        *outStream << setw(STR_PW) << truncateString(*arg, STR_REAL_WIDTH);
+                    }
+                    else
+                    {
+                        *outStream << setw(STR_PW) << "N/A";
+                    }
+                },
+                token.value);
+        }
+        else
+        {
+            *outStream << setw(STR_PW) << "NULL";
+        }
+
+        *outStream << setw(INT_PW) << token.line
+                   << setw(INT_PW) << token.column
                    << endl;
     }
 

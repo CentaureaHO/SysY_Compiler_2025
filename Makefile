@@ -1,6 +1,11 @@
+INCLUDE_DIR := include
+SRC_DIR := src
+OBJ_DIR := obj
+BIN_DIR := bin
+
 CXX ?= g++
 
-INCLUDES = -I./include -I./parser
+INCLUDES = -I./$(INCLUDE_DIR)
 
 CXX_STANDARD = -std=c++17
 
@@ -12,10 +17,6 @@ WARNINGS_IGNORE := -Wno-unused-parameter -Wno-unused-variable -Wno-unused-functi
 
 CXXFLAGS = $(CXX_STANDARD) $(INCLUDES) $(WERROR_FLAGS) $(DBGFLAGS) $(WARNINGS_IGNORE)
 
-SRC_DIR := src
-OBJ_DIR := obj
-BIN_DIR := bin
-
 SOURCES := $(shell find $(SRC_DIR) -name '*.cpp' -o -name '*.c')
 
 OBJECTS := $(patsubst $(SRC_DIR)/%, $(OBJ_DIR)/%, $(SOURCES:.cpp=.o))
@@ -25,16 +26,18 @@ TEST_SRC_DIR := testcase/source
 TEST_BUILD_DIR := testcase/build
 
 LEXER_SRC := parser/lexer.l
-LEXER_C := parser/lexer.c
-LEXER_H := parser/lexer.h
+LEXER_C_T := parser/lexer.cpp
+LEXER_C := $(SRC_DIR)/parser/lexer.cpp
 
 BISON_SRC := parser/yacc.y
-BISON_C := parser/yacc.c
-BISON_H := parser/yacc.h
+BISON_C_T := parser/yacc.cpp
+BISON_C := $(SRC_DIR)/parser/yacc.cpp
+BISON_H_T := parser/yacc.hpp
+BISON_H := $(INCLUDE_DIR)/parser/yacc.hpp
 
-TOKEN_H := include/parse/token.h
+LOC_H_T := parser/location.hh
+LOC_H := $(INCLUDE_DIR)/parser/location.hh
 
-PARSER_OBJECTS := $(OBJ_DIR)/parser/yacc.o $(OBJ_DIR)/parser/lexer.o
 OBJECTS += $(PARSER_OBJECTS)
 
 .PHONY: all
@@ -42,10 +45,6 @@ all: obj
 
 .PHONY: obj
 obj: $(OBJECTS)
-
-$(OBJ_DIR)/parser/%.o: parser/%.c
-	@mkdir -p $(OBJ_DIR)/parser
-	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(dir $@)
@@ -60,18 +59,24 @@ clean:
 	rm -rf $(OBJ_DIR) $(TEST_BUILD_DIR) $(BIN_DIR)
 
 .PHONY: testLexicalAnalysis
-testLexicalAnalysis: $(OBJ_DIR)/parser/yacc.o $(OBJ_DIR)/parser/lexer.o $(OBJ_DIR)/common/str_convert.o $(OBJ_DIR)/parse/token.o
+testLexicalAnalysis: $(OBJ_DIR)/parser/yacc.o $(OBJ_DIR)/parser/lexer.o $(OBJ_DIR)/parser/driver.o $(OBJ_DIR)/common/str_convert.o
 	@mkdir -p $(TEST_BUILD_DIR)/1_lexicalAnalyzer
 	$(CXX) $(CXXFLAGS) $(TEST_SRC_DIR)/1_lexicalAnalyzer/lexAnalyzer.cpp \
-		$(OBJ_DIR)/parser/yacc.o $(OBJ_DIR)/parser/lexer.o $(OBJ_DIR)/common/str_convert.o $(OBJ_DIR)/parse/token.o \
+		$(OBJ_DIR)/parser/yacc.o $(OBJ_DIR)/parser/lexer.o $(OBJ_DIR)/parser/driver.o $(OBJ_DIR)/common/str_convert.o \
 		-o $(TEST_BUILD_DIR)/1_lexicalAnalyzer/lexAnalyzer
 	@echo "Compiled test: lexAnalyzer"
 
 .PHONY: lexer
-lexer: $(LEXER_C) $(LEXER_H)
+lexer: $(LEXER_C) $(BISON_C) $(BISON_H) $(LOC_H)
 
-$(LEXER_C) $(LEXER_H): $(LEXER_SRC)
-	@mkdir -p include/parse
-	bison -d --defines=$(BISON_H) -o $(BISON_C) $(BISON_SRC)
-	flex --outfile=$(LEXER_C) --header-file=$(LEXER_H) $(LEXER_SRC)
-	python3 parser/genfunc.py $(BISON_H) $(TOKEN_H)
+$(LEXER_C): $(LEXER_SRC)
+	flex --c++ --outfile=$(LEXER_C_T) $(LEXER_SRC)
+	sed -i 's|#include "yacc.hpp"|#include <parser/yacc.hpp>|' $(LEXER_C_T)
+	mv $(LEXER_C_T) $(LEXER_C)
+
+$(BISON_C) $(BISON_H) $(LOC_H): $(BISON_SRC)
+	bison -d --language=c++ --defines=$(BISON_H_T) -o $(BISON_C_T) $(BISON_SRC)
+	sed -i 's|#include "yacc.hpp"|#include <parser/yacc.hpp>|' $(BISON_C_T)
+	mv $(BISON_C_T) $(BISON_C)
+	mv $(BISON_H_T) $(BISON_H)
+	mv $(LOC_H_T) $(LOC_H)

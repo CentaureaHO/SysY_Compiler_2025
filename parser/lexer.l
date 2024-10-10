@@ -1,127 +1,138 @@
-%option noyywrap
 %{
-#include <stdio.h>
-#include <stdlib.h>
-#include <common/str_convert.h>
-#include "yacc.h"
+    #include <string>
+    #include <memory>
 
-extern int curRow;
-extern int curHeadCol, curTailCol;
-extern int commentLines;
+    #include <parser/yacc.hpp>
+    #include <parser/scanner.h>
+    #include <parser/location.hh>
+    #include <parser/driver.h>
 
-#define NEW_ROW                                 \
-        curRow = curRow + 1 + commentLines;     \
-        commentLines = 0;                       \
-        curTailCol = 0;                         
+    using namespace Yacc;
 
-#define YY_USER_ACTION          \
-    curHeadCol = curTailCol;    \
-    curTailCol += yyleng;
+    static location loc;
 
-extern void yyerror(const char* format, ...);
+    #define YY_USER_ACTION  loc.columns (yyleng);
+    #define yywrap() 1
+    #define RETT(x, y) \
+        return Parser::make_##x(y);
 
+    extern int convertToInt(const char* str, const char end);
+    extern float convertToFloatDec(const char* str);
+    extern float convertToFloatHex(const char* str);
 %}
+
+%option c++
+%option noyywrap debug
+%option yyclass="Scanner"
+%option prefix="Yacc_"
 
 %%
 
-\n                  { NEW_ROW }
-[ \t\f\r\v]+        { /* mpty */ }
+\n              {
+                    loc.lines(yyleng);
+                    loc.step();
+                }
 
-"int"               { return INT; }
-"float"             { return FLOAT; }
-"void"              { return VOID; }
-"if"                { return IF; }
-"else"              { return ELSE; }
-"for"               { return FOR; }
-"while"             { return WHILE; }
-"continue"          { return CONTINUE; }
-"break"             { return BREAK; }
-"switch"            { return SWITCH; }
-"case"              { return CASE; }
-"goto"              { return GOTO; }
-"do"                { return DO; }
-"return"            { return RETURN; }
+[ \t\f\r\v]+    { loc.step(); }
 
-"const"             { return CONST; }
+"int"               { RETT(INT, loc) }
+"float"             { RETT(FLOAT, loc) }
+"void"              { RETT(VOID, loc) }
+"if"                { RETT(IF, loc) }
+"else"              { RETT(ELSE, loc) }
+"for"               { RETT(FOR, loc) }
+"while"             { RETT(WHILE, loc) }
+"continue"          { RETT(CONTINUE, loc) }
+"break"             { RETT(BREAK, loc) }
+"switch"            { RETT(SWITCH, loc) }
+"case"              { RETT(CASE, loc) }
+"goto"              { RETT(GOTO, loc) }
+"do"                { RETT(DO, loc) }
+"return"            { RETT(RETURN, loc) }
 
-";"                 { return SEMICOLON; }
-","                 { return COMMA; }
-"="                 { return ASSIGN; }
-"!"                 { return NOT; }
-"|"                 { return BITOR; }
-"&"                 { return BITAND; }
-">"                 { return GT; }
-"<"                 { return LT; }
-"+"                 { return PLUS; }
-"-"                 { return MINUS; }
-"*"                 { return STAR; }
-"/"                 { return SLASH; }
-"."                 { return DOT; }
-">="                { return GE; }
-"<="                { return LE; }
-"=="                { return EQ; }
+"const"             { RETT(CONST, loc) }
 
-"//".*              { return SLASH_COMMENT; }
+";"                 { RETT(SEMICOLON, loc) }
+","                 { RETT(COMMA, loc) }
+"="                 { RETT(ASSIGN, loc) }
+"!"                 { RETT(NOT, loc) }
+"|"                 { RETT(BITOR, loc) }
+"&"                 { RETT(BITAND, loc) }
+">"                 { RETT(GT, loc) }
+"<"                 { RETT(LT, loc) }
+"+"                 { RETT(PLUS, loc) }
+"-"                 { RETT(MINUS, loc) }
+"*"                 { RETT(STAR, loc) }
+"/"                 { RETT(SLASH, loc) }
+"."                 { RETT(DOT, loc) }
+">="                { RETT(GE, loc) }
+"<="                { RETT(LE, loc) }
+"=="                { RETT(EQ, loc) }
+
+"//".*              { 
+    auto str = std::make_shared<std::string>(yytext);
+    return Parser::make_SLASH_COMMENT(str, loc);
+}
 
 "/*"([^*]|\*[^/])*"*/" {
     for (int i = 0; yytext[i] != '\0'; ++i) {
         if (yytext[i] == '\n') {
-            ++commentLines;
             yytext[i] = ' ';
         }
     }
-    return SLASH_COMMENT;
+    auto str = std::make_shared<std::string>(yytext);
+    return Parser::make_SLASH_COMMENT(str, loc);
 }
 
 "/*" {
-    yyerror("Unclosed left comment %s at (%d, %d)\n", yytext, curRow, curHeadCol);
-    yylval.str_val = strdup(yytext);
-    return ERR_TOKEN;
+    _driver.reportError(loc, yytext);
+    auto str = std::make_shared<std::string>(yytext);
+    return Parser::make_ERR_TOKEN(str, loc);
 }
 
 "*/" {
-    yyerror("Unclosed right comment %s at (%d, %d)\n", yytext, curRow, curHeadCol);
-    yylval.str_val = strdup(yytext);
-    return ERR_TOKEN;
+    _driver.reportError(loc, yytext);
+    auto str = std::make_shared<std::string>(yytext);
+    return Parser::make_ERR_TOKEN(str, loc);
 }
 
-\"[^\"]*\"          { yylval.str_val = strdup(yytext); return STR_CONST; }
+\"[^\"]*\"          { 
+    auto str = std::make_shared<std::string>(yytext);
+    return Parser::make_STR_CONST(str, loc); 
+}
 
 [+-]?[0-9]*\.[0-9]*([eE][+-]?[0-9]+)? {
-    yylval.float_val = convertToFloatDec(yytext);
-    return FLOAT_CONST;
+    return Parser::make_FLOAT_CONST(convertToFloatDec(yytext), loc);
 }
 
 [+-]?0[xX][0-9a-fA-F]*\.[0-9a-fA-F]*([pP][+-]?[0-9a-fA-F]+)? {
-    yylval.float_val = convertToFloatHex(yytext);
-    return FLOAT_CONST;
+    return Parser::make_FLOAT_CONST(convertToFloatHex(yytext), loc);
 }
 
 [+-]?0[xX][0-9a-fA-F]* {
-    yylval.int_val = convertToInt(yytext, '\0');
-    return INT_CONST;
+    return Parser::make_INT_CONST(convertToInt(yytext, '\0'), loc);
 }
 
 [+-]?0[0-7]* {
-    yylval.int_val = convertToInt(yytext, '\0');
-    return INT_CONST;
+    return Parser::make_INT_CONST(convertToInt(yytext, '\0'), loc);
 }
 
 [+-]?[1-9][0-9]* {
-    yylval.int_val = convertToInt(yytext, '\0');
-    return INT_CONST;
+    return Parser::make_INT_CONST(convertToInt(yytext, '\0'), loc);
 }
 
-"("                 { return LPAREN; }
-")"                 { return RPAREN; }
-"["                 { return LBRACKET; }
-"]"                 { return RBRACKET; }
-"{"                 { return LBRACE; }
-"}"                 { return RBRACE; }
+"("                 { RETT(LPAREN, loc) }
+")"                 { RETT(RPAREN, loc) }
+"["                 { RETT(LBRACKET, loc) }
+"]"                 { RETT(RBRACKET, loc) }
+"{"                 { RETT(LBRACE, loc) }
+"}"                 { RETT(RBRACE, loc) }
 
 [A-Za-z_]+[A-Za-z0-9_]* {
-    yylval.str_val = strdup(yytext);
-    return IDENT;
+    auto str = std::make_shared<std::string>(yytext);
+    return Parser::make_IDENT(str, loc); 
 }
+
+<<EOF>>         { RETT(END, loc); }
 
 %%
