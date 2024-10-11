@@ -112,7 +112,7 @@
     return Parser::make_STR_CONST(str, loc); 
 }
 
-[+-]?[0-9]*\.[0-9]*([eE][+-]?[0-9]+)? {
+[0-9]*\.[0-9]*([eE][0-9]+)? {
     try {
         return Parser::make_FLOAT_CONST(convertToFloatDec(yytext), loc);
     } catch (const std::exception& e) {
@@ -122,7 +122,7 @@
     }
 }
 
-[+-]?0[xX][0-9a-fA-F]*\.[0-9a-fA-F]*([pP][+-]?[0-9a-fA-F]+)? {
+0[xX][0-9a-fA-F]*\.[0-9a-fA-F]*([pP][0-9a-fA-F]+)? {
     try {
         return Parser::make_FLOAT_CONST(convertToFloatHex(yytext), loc);
     } catch (const std::exception& e) {
@@ -132,7 +132,7 @@
     }
 }
 
-[+-]?0[xX][0-9a-fA-F]* {
+0[xX][0-9a-fA-F]* {
     try {
         bool isLL = false;
         long long result = convertToInt(yytext, '\0', isLL);
@@ -145,7 +145,7 @@
     }
 }
 
-[+-]?0[0-7]* {
+0[0-7]* {
     try {
         bool isLL = false;
         long long result = convertToInt(yytext, '\0', isLL);
@@ -158,7 +158,7 @@
     }
 }
 
-[+-]?[1-9][0-9]* {
+[1-9][0-9]* {
     try {
         bool isLL = false;
         long long result = convertToInt(yytext, '\0', isLL);
