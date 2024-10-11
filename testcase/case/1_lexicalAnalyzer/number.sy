@@ -9,7 +9,7 @@ int overflow=2147483648;
 float b = 1.0;
 float nb = -1.0;
 float tmp = .9e3;
-float tmp2 = 9.e-2;
+float tmp2 = 9.e2;
 float tmp3 = 9.3e0;
 
 float hexb = 0x1.0p-1;
