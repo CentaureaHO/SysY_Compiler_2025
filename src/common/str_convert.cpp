@@ -1,22 +1,21 @@
-#include <common/str_convert.h>
-#include <stdio.h>
-#include <ctype.h>
-#include <math.h>
+#include <iostream>
+#include <limits>
+#include <cmath>
+#include <cstdlib>
+#include <cstring>
+using namespace std;
 
-#ifndef NULL
-#define NULL 0
-#endif
-
-int convertToInt(const char* str, const char end)
+long long convertToInt(const char* str, const char end, bool& isLongLong)
 {
     int         base       = 10;
-    int         result     = 0;
+    long long   result     = 0;
     int         isNegative = 0;
     const char* ptr        = str;
     static int  zeroOffset = '0';
     static int  aOffset    = 'a' - 10;
     static int  AOffset    = 'A' - 10;
     int*        offset     = NULL;
+    isLongLong = false;  // 初始化为false，表示默认是int类型
 
     if (*ptr == '-')
     {
@@ -56,11 +55,24 @@ int convertToInt(const char* str, const char end)
         ++ptr;
     }
 
-    return isNegative ? -result : result;
+    if (isNegative) result = -result;
+
+    // 如果结果超出了int范围，但在long long范围内，返回long long类型
+    if (result > numeric_limits<int>::max() || result < numeric_limits<int>::min())
+    {
+        isLongLong = true; // 标记返回的值超出int范围
+        if (result > numeric_limits<long long>::max() || result < numeric_limits<long long>::min())
+        {
+            throw std::out_of_range(str + string(" overflow or underflow for long long"));
+        }
+    }
+
+    return result;
 }
 
 float convertToFloatDec(const char* str)
 {
+    const char* head = str;
     if (str == NULL) { return 0.0f; }
 
     int sign = 1;
@@ -71,18 +83,18 @@ float convertToFloatDec(const char* str)
     }
     else if (*str == '+') { str++; }
 
-    float integerPart = 0.0;
+    double integerPart = 0.0;
     while (isdigit(*str))
     {
         integerPart = integerPart * 10 + (*str - '0');
         str++;
     }
 
-    float fractionPart = 0.0;
+    double fractionPart = 0.0;
     if (*str == '.')
     {
         str++;
-        float divisor = 10.0;
+        double divisor = 10.0;
         while (isdigit(*str))
         {
             fractionPart += (*str - '0') / divisor;
@@ -91,7 +103,7 @@ float convertToFloatDec(const char* str)
         }
     }
 
-    float value = integerPart + fractionPart;
+    double value = integerPart + fractionPart;
 
     if (*str == 'e' || *str == 'E')
     {
@@ -114,11 +126,20 @@ float convertToFloatDec(const char* str)
         value *= pow(10, expSign * exponent);
     }
 
-    return sign * value;
+    value = sign * value;
+
+    if (value > numeric_limits<float>::max() || value < -numeric_limits<float>::max())
+    {
+        throw out_of_range(
+            head + ((value > numeric_limits<float>::max()) ? string(" overflow") : string(" underflow")));
+    }
+
+    return static_cast<float>(value);
 }
 
 float convertToFloatHex(const char* str)
 {
+    const char* head = str;
     if (str == NULL) { return 0.0f; }
 
     int sign = 1;
@@ -142,7 +163,7 @@ float convertToFloatHex(const char* str)
         str++;
     }
 
-    float fractionPart = 0.0;
+    double fractionPart = 0.0;
     if (*str == '.')
     {
         str++;
@@ -158,10 +179,10 @@ float convertToFloatHex(const char* str)
             denominator *= 16;
             str++;
         }
-        fractionPart = (float)numerator / (float)denominator;
+        fractionPart = (double)numerator / (double)denominator;
     }
 
-    float value = (float)integerPart + fractionPart;
+    double value = (double)integerPart + fractionPart;
 
     if (*str == 'p' || *str == 'P')
     {
@@ -184,5 +205,13 @@ float convertToFloatHex(const char* str)
         value *= pow(2, expSign * exponent);
     }
 
-    return sign * value;
+    value = sign * value;
+
+    if (value > numeric_limits<float>::max() || value < -numeric_limits<float>::max())
+    {
+        throw out_of_range(
+            head + ((value > numeric_limits<float>::max()) ? string(" overflow") : string(" underflow")));
+    }
+
+    return static_cast<float>(value);
 }

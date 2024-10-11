@@ -55,6 +55,7 @@
 %define api.token.prefix {TOKEN_}
 
 %token <int> INT_CONST
+%token <long long> LL_CONST
 %token <float> FLOAT_CONST
 %token <std::shared_ptr<std::string>> IDENT STR_CONST ERR_TOKEN SLASH_COMMENT
 %token INT FLOAT VOID IF ELSE FOR WHILE CONTINUE BREAK SWITCH CASE GOTO DO RETURN CONST

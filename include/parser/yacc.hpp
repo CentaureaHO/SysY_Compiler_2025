@@ -422,11 +422,14 @@ namespace  Yacc  {
       // INT_CONST
       char dummy2[sizeof (int)];
 
+      // LL_CONST
+      char dummy3[sizeof (long long)];
+
       // IDENT
       // STR_CONST
       // ERR_TOKEN
       // SLASH_COMMENT
-      char dummy3[sizeof (std::shared_ptr<std::string>)];
+      char dummy4[sizeof (std::shared_ptr<std::string>)];
     };
 
     /// The size of the largest semantic type.
@@ -480,49 +483,50 @@ namespace  Yacc  {
     TOKEN_YYerror = 256,           // error
     TOKEN_YYUNDEF = 257,           // "invalid token"
     TOKEN_INT_CONST = 258,         // INT_CONST
-    TOKEN_FLOAT_CONST = 259,       // FLOAT_CONST
-    TOKEN_IDENT = 260,             // IDENT
-    TOKEN_STR_CONST = 261,         // STR_CONST
-    TOKEN_ERR_TOKEN = 262,         // ERR_TOKEN
-    TOKEN_SLASH_COMMENT = 263,     // SLASH_COMMENT
-    TOKEN_INT = 264,               // INT
-    TOKEN_FLOAT = 265,             // FLOAT
-    TOKEN_VOID = 266,              // VOID
-    TOKEN_IF = 267,                // IF
-    TOKEN_ELSE = 268,              // ELSE
-    TOKEN_FOR = 269,               // FOR
-    TOKEN_WHILE = 270,             // WHILE
-    TOKEN_CONTINUE = 271,          // CONTINUE
-    TOKEN_BREAK = 272,             // BREAK
-    TOKEN_SWITCH = 273,            // SWITCH
-    TOKEN_CASE = 274,              // CASE
-    TOKEN_GOTO = 275,              // GOTO
-    TOKEN_DO = 276,                // DO
-    TOKEN_RETURN = 277,            // RETURN
-    TOKEN_CONST = 278,             // CONST
-    TOKEN_SEMICOLON = 279,         // SEMICOLON
-    TOKEN_COMMA = 280,             // COMMA
-    TOKEN_LPAREN = 281,            // LPAREN
-    TOKEN_RPAREN = 282,            // RPAREN
-    TOKEN_LBRACKET = 283,          // LBRACKET
-    TOKEN_RBRACKET = 284,          // RBRACKET
-    TOKEN_LBRACE = 285,            // LBRACE
-    TOKEN_RBRACE = 286,            // RBRACE
-    TOKEN_NOT = 287,               // NOT
-    TOKEN_BITOR = 288,             // BITOR
-    TOKEN_BITAND = 289,            // BITAND
-    TOKEN_DOT = 290,               // DOT
-    TOKEN_END = 291,               // END
-    TOKEN_PLUS = 292,              // PLUS
-    TOKEN_MINUS = 293,             // MINUS
-    TOKEN_STAR = 294,              // STAR
-    TOKEN_SLASH = 295,             // SLASH
-    TOKEN_GT = 296,                // GT
-    TOKEN_GE = 297,                // GE
-    TOKEN_LT = 298,                // LT
-    TOKEN_LE = 299,                // LE
-    TOKEN_EQ = 300,                // EQ
-    TOKEN_ASSIGN = 301             // ASSIGN
+    TOKEN_LL_CONST = 259,          // LL_CONST
+    TOKEN_FLOAT_CONST = 260,       // FLOAT_CONST
+    TOKEN_IDENT = 261,             // IDENT
+    TOKEN_STR_CONST = 262,         // STR_CONST
+    TOKEN_ERR_TOKEN = 263,         // ERR_TOKEN
+    TOKEN_SLASH_COMMENT = 264,     // SLASH_COMMENT
+    TOKEN_INT = 265,               // INT
+    TOKEN_FLOAT = 266,             // FLOAT
+    TOKEN_VOID = 267,              // VOID
+    TOKEN_IF = 268,                // IF
+    TOKEN_ELSE = 269,              // ELSE
+    TOKEN_FOR = 270,               // FOR
+    TOKEN_WHILE = 271,             // WHILE
+    TOKEN_CONTINUE = 272,          // CONTINUE
+    TOKEN_BREAK = 273,             // BREAK
+    TOKEN_SWITCH = 274,            // SWITCH
+    TOKEN_CASE = 275,              // CASE
+    TOKEN_GOTO = 276,              // GOTO
+    TOKEN_DO = 277,                // DO
+    TOKEN_RETURN = 278,            // RETURN
+    TOKEN_CONST = 279,             // CONST
+    TOKEN_SEMICOLON = 280,         // SEMICOLON
+    TOKEN_COMMA = 281,             // COMMA
+    TOKEN_LPAREN = 282,            // LPAREN
+    TOKEN_RPAREN = 283,            // RPAREN
+    TOKEN_LBRACKET = 284,          // LBRACKET
+    TOKEN_RBRACKET = 285,          // RBRACKET
+    TOKEN_LBRACE = 286,            // LBRACE
+    TOKEN_RBRACE = 287,            // RBRACE
+    TOKEN_NOT = 288,               // NOT
+    TOKEN_BITOR = 289,             // BITOR
+    TOKEN_BITAND = 290,            // BITAND
+    TOKEN_DOT = 291,               // DOT
+    TOKEN_END = 292,               // END
+    TOKEN_PLUS = 293,              // PLUS
+    TOKEN_MINUS = 294,             // MINUS
+    TOKEN_STAR = 295,              // STAR
+    TOKEN_SLASH = 296,             // SLASH
+    TOKEN_GT = 297,                // GT
+    TOKEN_GE = 298,                // GE
+    TOKEN_LT = 299,                // LT
+    TOKEN_LE = 300,                // LE
+    TOKEN_EQ = 301,                // EQ
+    TOKEN_ASSIGN = 302             // ASSIGN
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -539,57 +543,58 @@ namespace  Yacc  {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 47, ///< Number of tokens.
+        YYNTOKENS = 48, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
         S_YYUNDEF = 2,                           // "invalid token"
         S_INT_CONST = 3,                         // INT_CONST
-        S_FLOAT_CONST = 4,                       // FLOAT_CONST
-        S_IDENT = 5,                             // IDENT
-        S_STR_CONST = 6,                         // STR_CONST
-        S_ERR_TOKEN = 7,                         // ERR_TOKEN
-        S_SLASH_COMMENT = 8,                     // SLASH_COMMENT
-        S_INT = 9,                               // INT
-        S_FLOAT = 10,                            // FLOAT
-        S_VOID = 11,                             // VOID
-        S_IF = 12,                               // IF
-        S_ELSE = 13,                             // ELSE
-        S_FOR = 14,                              // FOR
-        S_WHILE = 15,                            // WHILE
-        S_CONTINUE = 16,                         // CONTINUE
-        S_BREAK = 17,                            // BREAK
-        S_SWITCH = 18,                           // SWITCH
-        S_CASE = 19,                             // CASE
-        S_GOTO = 20,                             // GOTO
-        S_DO = 21,                               // DO
-        S_RETURN = 22,                           // RETURN
-        S_CONST = 23,                            // CONST
-        S_SEMICOLON = 24,                        // SEMICOLON
-        S_COMMA = 25,                            // COMMA
-        S_LPAREN = 26,                           // LPAREN
-        S_RPAREN = 27,                           // RPAREN
-        S_LBRACKET = 28,                         // LBRACKET
-        S_RBRACKET = 29,                         // RBRACKET
-        S_LBRACE = 30,                           // LBRACE
-        S_RBRACE = 31,                           // RBRACE
-        S_NOT = 32,                              // NOT
-        S_BITOR = 33,                            // BITOR
-        S_BITAND = 34,                           // BITAND
-        S_DOT = 35,                              // DOT
-        S_END = 36,                              // END
-        S_PLUS = 37,                             // PLUS
-        S_MINUS = 38,                            // MINUS
-        S_STAR = 39,                             // STAR
-        S_SLASH = 40,                            // SLASH
-        S_GT = 41,                               // GT
-        S_GE = 42,                               // GE
-        S_LT = 43,                               // LT
-        S_LE = 44,                               // LE
-        S_EQ = 45,                               // EQ
-        S_ASSIGN = 46,                           // ASSIGN
-        S_YYACCEPT = 47,                         // $accept
-        S_program = 48                           // program
+        S_LL_CONST = 4,                          // LL_CONST
+        S_FLOAT_CONST = 5,                       // FLOAT_CONST
+        S_IDENT = 6,                             // IDENT
+        S_STR_CONST = 7,                         // STR_CONST
+        S_ERR_TOKEN = 8,                         // ERR_TOKEN
+        S_SLASH_COMMENT = 9,                     // SLASH_COMMENT
+        S_INT = 10,                              // INT
+        S_FLOAT = 11,                            // FLOAT
+        S_VOID = 12,                             // VOID
+        S_IF = 13,                               // IF
+        S_ELSE = 14,                             // ELSE
+        S_FOR = 15,                              // FOR
+        S_WHILE = 16,                            // WHILE
+        S_CONTINUE = 17,                         // CONTINUE
+        S_BREAK = 18,                            // BREAK
+        S_SWITCH = 19,                           // SWITCH
+        S_CASE = 20,                             // CASE
+        S_GOTO = 21,                             // GOTO
+        S_DO = 22,                               // DO
+        S_RETURN = 23,                           // RETURN
+        S_CONST = 24,                            // CONST
+        S_SEMICOLON = 25,                        // SEMICOLON
+        S_COMMA = 26,                            // COMMA
+        S_LPAREN = 27,                           // LPAREN
+        S_RPAREN = 28,                           // RPAREN
+        S_LBRACKET = 29,                         // LBRACKET
+        S_RBRACKET = 30,                         // RBRACKET
+        S_LBRACE = 31,                           // LBRACE
+        S_RBRACE = 32,                           // RBRACE
+        S_NOT = 33,                              // NOT
+        S_BITOR = 34,                            // BITOR
+        S_BITAND = 35,                           // BITAND
+        S_DOT = 36,                              // DOT
+        S_END = 37,                              // END
+        S_PLUS = 38,                             // PLUS
+        S_MINUS = 39,                            // MINUS
+        S_STAR = 40,                             // STAR
+        S_SLASH = 41,                            // SLASH
+        S_GT = 42,                               // GT
+        S_GE = 43,                               // GE
+        S_LT = 44,                               // LT
+        S_LE = 45,                               // LE
+        S_EQ = 46,                               // EQ
+        S_ASSIGN = 47,                           // ASSIGN
+        S_YYACCEPT = 48,                         // $accept
+        S_program = 49                           // program
       };
     };
 
@@ -632,6 +637,10 @@ namespace  Yacc  {
 
       case symbol_kind::S_INT_CONST: // INT_CONST
         value.move< int > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_LL_CONST: // LL_CONST
+        value.move< long long > (std::move (that.value));
         break;
 
       case symbol_kind::S_IDENT: // IDENT
@@ -693,6 +702,20 @@ namespace  Yacc  {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, long long&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const long long& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::shared_ptr<std::string>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
@@ -736,6 +759,10 @@ switch (yykind)
 
       case symbol_kind::S_INT_CONST: // INT_CONST
         value.template destroy< int > ();
+        break;
+
+      case symbol_kind::S_LL_CONST: // LL_CONST
+        value.template destroy< long long > ();
         break;
 
       case symbol_kind::S_IDENT: // IDENT
@@ -872,6 +899,18 @@ switch (yykind)
 #endif
       }
 #if 201103L <= YY_CPLUSPLUS
+      symbol_type (int tok, long long v, location_type l)
+        : super_type (token_kind_type (tok), std::move (v), std::move (l))
+#else
+      symbol_type (int tok, const long long& v, const location_type& l)
+        : super_type (token_kind_type (tok), v, l)
+#endif
+      {
+#if !defined _MSC_VER || defined __clang__
+        YY_ASSERT (tok == token::TOKEN_LL_CONST);
+#endif
+      }
+#if 201103L <= YY_CPLUSPLUS
       symbol_type (int tok, std::shared_ptr<std::string> v, location_type l)
         : super_type (token_kind_type (tok), std::move (v), std::move (l))
 #else
@@ -989,6 +1028,21 @@ switch (yykind)
       make_INT_CONST (const int& v, const location_type& l)
       {
         return symbol_type (token::TOKEN_INT_CONST, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_LL_CONST (long long v, location_type l)
+      {
+        return symbol_type (token::TOKEN_LL_CONST, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_LL_CONST (const long long& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_LL_CONST, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -2018,10 +2072,10 @@ switch (yykind)
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
       25,    26,    27,    28,    29,    30,    31,    32,    33,    34,
       35,    36,    37,    38,    39,    40,    41,    42,    43,    44,
-      45,    46
+      45,    46,    47
     };
     // Last valid token kind.
-    const int code_max = 301;
+    const int code_max = 302;
 
     if (t <= 0)
       return symbol_kind::S_YYEOF;
@@ -2046,6 +2100,10 @@ switch (yykind)
 
       case symbol_kind::S_INT_CONST: // INT_CONST
         value.copy< int > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_LL_CONST: // LL_CONST
+        value.copy< long long > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_IDENT: // IDENT
@@ -2092,6 +2150,10 @@ switch (yykind)
 
       case symbol_kind::S_INT_CONST: // INT_CONST
         value.move< int > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_LL_CONST: // LL_CONST
+        value.move< long long > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_IDENT: // IDENT
@@ -2168,7 +2230,7 @@ switch (yykind)
 
 #line 4 "parser/yacc.y"
 } //  Yacc 
-#line 2172 "parser/yacc.hpp"
+#line 2234 "parser/yacc.hpp"
 
 
 

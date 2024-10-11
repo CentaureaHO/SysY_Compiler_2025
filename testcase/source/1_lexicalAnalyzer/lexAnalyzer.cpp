@@ -75,13 +75,15 @@ int main(int argc, char* argv[])
         *outStream << setw(STR_PW) << truncateString(token.token_name, STR_REAL_WIDTH) << setw(STR_PW)
                    << truncateString(token.lexeme, STR_REAL_WIDTH);
 
-        if (token.token_name == "INT_CONST" || token.token_name == "STR_CONST" || token.token_name == "FLOAT_CONST" ||
-            token.token_name == "IDENT" || token.token_name == "SLASH_COMMENT" || token.token_name == "ERR_TOKEN")
+        if (token.token_name == "INT_CONST" || token.token_name == "LL_CONST" || token.token_name == "STR_CONST" ||
+            token.token_name == "FLOAT_CONST" || token.token_name == "IDENT" || token.token_name == "SLASH_COMMENT" ||
+            token.token_name == "ERR_TOKEN")
         {
             std::visit(
                 [&](auto&& arg) {
                     using T = std::decay_t<decltype(arg)>;
                     if constexpr (std::is_same_v<T, int>) { *outStream << setw(STR_PW) << arg; }
+                    else if constexpr (std::is_same_v<T, long long>) { *outStream << setw(STR_PW) << arg; }
                     else if constexpr (std::is_same_v<T, float>) { *outStream << setw(STR_PW) << arg; }
                     else if constexpr (std::is_same_v<T, std::shared_ptr<std::string>>)
                     {
@@ -91,7 +93,7 @@ int main(int argc, char* argv[])
                 },
                 token.value);
         }
-        else { *outStream << setw(STR_PW) << "NULL"; }
+        else { *outStream << setw(STR_PW) << " "; }
 
         *outStream << setw(INT_PW) << token.line << setw(INT_PW) << token.column << endl;
     }

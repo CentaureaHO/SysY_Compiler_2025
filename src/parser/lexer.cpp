@@ -641,12 +641,12 @@ static const flex_int16_t yy_chk[504] =
 
 static const flex_int16_t yy_rule_linenum[52] =
     {   0,
-       38,   43,   44,   48,   49,   50,   51,   52,   53,   54,
-       55,   56,   57,   58,   59,   60,   61,   63,   65,   66,
-       67,   68,   69,   70,   71,   72,   73,   74,   75,   76,
-       77,   78,   79,   80,   82,   87,   97,  103,  109,  114,
-      118,  122,  126,  130,  134,  135,  136,  137,  138,  139,
-      141
+       39,   44,   45,   49,   50,   51,   52,   53,   54,   55,
+       56,   57,   58,   59,   60,   61,   62,   64,   66,   67,
+       68,   69,   70,   71,   72,   73,   74,   75,   76,   77,
+       78,   79,   80,   81,   83,   88,   98,  104,  110,  115,
+      125,  135,  148,  161,  174,  175,  176,  177,  178,  179,
+      181
     } ;
 
 /* The intent behind this definition is that it'll catch
@@ -658,6 +658,7 @@ static const flex_int16_t yy_rule_linenum[52] =
 #define YY_RESTORE_YY_MORE_OFFSET
 #line 1 "parser/lexer.l"
 #line 2 "parser/lexer.l"
+    #include <stdexcept>
     #include <string>
     #include <memory>
 
@@ -680,13 +681,13 @@ static const flex_int16_t yy_rule_linenum[52] =
 
     #define TAB_WIDTH 4
 
-    extern int convertToInt(const char* str, const char end);
+    extern long long convertToInt(const char* str, const char end, bool& isLongLong);
     extern float convertToFloatDec(const char* str);
     extern float convertToFloatHex(const char* str);
 
     int handleTab();
-#line 689 "parser/lexer.cpp"
 #line 690 "parser/lexer.cpp"
+#line 691 "parser/lexer.cpp"
 
 #define INITIAL 0
 
@@ -878,10 +879,10 @@ YY_DECL
 
 	{
 /* %% [7.0] user's declarations go here */
-#line 36 "parser/lexer.l"
+#line 37 "parser/lexer.l"
 
 
-#line 885 "parser/lexer.cpp"
+#line 886 "parser/lexer.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -963,7 +964,7 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 /* rule 1 can match eol */
 YY_RULE_SETUP
-#line 38 "parser/lexer.l"
+#line 39 "parser/lexer.l"
 {
                     loc.lines(yyleng);
                     loc.step();
@@ -971,174 +972,174 @@ YY_RULE_SETUP
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 43 "parser/lexer.l"
+#line 44 "parser/lexer.l"
 { /* empty */ }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 44 "parser/lexer.l"
+#line 45 "parser/lexer.l"
 {
     loc.columns(handleTab());
 }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 48 "parser/lexer.l"
+#line 49 "parser/lexer.l"
 { RETT(INT, loc) }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 49 "parser/lexer.l"
+#line 50 "parser/lexer.l"
 { RETT(FLOAT, loc) }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 50 "parser/lexer.l"
+#line 51 "parser/lexer.l"
 { RETT(VOID, loc) }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 51 "parser/lexer.l"
+#line 52 "parser/lexer.l"
 { RETT(IF, loc) }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 52 "parser/lexer.l"
+#line 53 "parser/lexer.l"
 { RETT(ELSE, loc) }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 53 "parser/lexer.l"
+#line 54 "parser/lexer.l"
 { RETT(FOR, loc) }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 54 "parser/lexer.l"
+#line 55 "parser/lexer.l"
 { RETT(WHILE, loc) }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 55 "parser/lexer.l"
+#line 56 "parser/lexer.l"
 { RETT(CONTINUE, loc) }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 56 "parser/lexer.l"
+#line 57 "parser/lexer.l"
 { RETT(BREAK, loc) }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 57 "parser/lexer.l"
+#line 58 "parser/lexer.l"
 { RETT(SWITCH, loc) }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 58 "parser/lexer.l"
+#line 59 "parser/lexer.l"
 { RETT(CASE, loc) }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 59 "parser/lexer.l"
+#line 60 "parser/lexer.l"
 { RETT(GOTO, loc) }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 60 "parser/lexer.l"
+#line 61 "parser/lexer.l"
 { RETT(DO, loc) }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 61 "parser/lexer.l"
+#line 62 "parser/lexer.l"
 { RETT(RETURN, loc) }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 63 "parser/lexer.l"
+#line 64 "parser/lexer.l"
 { RETT(CONST, loc) }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 65 "parser/lexer.l"
+#line 66 "parser/lexer.l"
 { RETT(SEMICOLON, loc) }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 66 "parser/lexer.l"
+#line 67 "parser/lexer.l"
 { RETT(COMMA, loc) }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 67 "parser/lexer.l"
+#line 68 "parser/lexer.l"
 { RETT(ASSIGN, loc) }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 68 "parser/lexer.l"
+#line 69 "parser/lexer.l"
 { RETT(NOT, loc) }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 69 "parser/lexer.l"
+#line 70 "parser/lexer.l"
 { RETT(BITOR, loc) }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 70 "parser/lexer.l"
+#line 71 "parser/lexer.l"
 { RETT(BITAND, loc) }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 71 "parser/lexer.l"
+#line 72 "parser/lexer.l"
 { RETT(GT, loc) }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 72 "parser/lexer.l"
+#line 73 "parser/lexer.l"
 { RETT(LT, loc) }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 73 "parser/lexer.l"
+#line 74 "parser/lexer.l"
 { RETT(PLUS, loc) }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 74 "parser/lexer.l"
+#line 75 "parser/lexer.l"
 { RETT(MINUS, loc) }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 75 "parser/lexer.l"
+#line 76 "parser/lexer.l"
 { RETT(STAR, loc) }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 76 "parser/lexer.l"
+#line 77 "parser/lexer.l"
 { RETT(SLASH, loc) }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 77 "parser/lexer.l"
+#line 78 "parser/lexer.l"
 { RETT(DOT, loc) }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 78 "parser/lexer.l"
+#line 79 "parser/lexer.l"
 { RETT(GE, loc) }
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 79 "parser/lexer.l"
+#line 80 "parser/lexer.l"
 { RETT(LE, loc) }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 80 "parser/lexer.l"
+#line 81 "parser/lexer.l"
 { RETT(EQ, loc) }
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 82 "parser/lexer.l"
+#line 83 "parser/lexer.l"
 { 
     auto str = std::make_shared<std::string>(yytext);
     return Parser::make_SLASH_COMMENT(str, loc);
@@ -1147,7 +1148,7 @@ YY_RULE_SETUP
 case 36:
 /* rule 36 can match eol */
 YY_RULE_SETUP
-#line 87 "parser/lexer.l"
+#line 88 "parser/lexer.l"
 {
     for (int i = 0; yytext[i] != '\0'; ++i) {
         if (yytext[i] == '\n') {
@@ -1160,7 +1161,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 97 "parser/lexer.l"
+#line 98 "parser/lexer.l"
 {
     _driver.reportError(loc, yytext);
     auto str = std::make_shared<std::string>(yytext);
@@ -1169,7 +1170,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 103 "parser/lexer.l"
+#line 104 "parser/lexer.l"
 {
     _driver.reportError(loc, yytext);
     auto str = std::make_shared<std::string>(yytext);
@@ -1179,7 +1180,7 @@ YY_RULE_SETUP
 case 39:
 /* rule 39 can match eol */
 YY_RULE_SETUP
-#line 109 "parser/lexer.l"
+#line 110 "parser/lexer.l"
 { 
     auto str = std::make_shared<std::string>(yytext);
     return Parser::make_STR_CONST(str, loc); 
@@ -1187,87 +1188,126 @@ YY_RULE_SETUP
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 114 "parser/lexer.l"
+#line 115 "parser/lexer.l"
 {
-    return Parser::make_FLOAT_CONST(convertToFloatDec(yytext), loc);
+    try {
+        return Parser::make_FLOAT_CONST(convertToFloatDec(yytext), loc);
+    } catch (const std::exception& e) {
+        _driver.reportError(loc, std::string("Error parsing float: ") + e.what());
+        auto str = std::make_shared<std::string>(yytext);
+        return Parser::make_ERR_TOKEN(str, loc);
+    }
 }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 118 "parser/lexer.l"
+#line 125 "parser/lexer.l"
 {
-    return Parser::make_FLOAT_CONST(convertToFloatHex(yytext), loc);
+    try {
+        return Parser::make_FLOAT_CONST(convertToFloatHex(yytext), loc);
+    } catch (const std::exception& e) {
+        _driver.reportError(loc, std::string("Error parsing hexadecimal float: ") + e.what());
+        auto str = std::make_shared<std::string>(yytext);
+        return Parser::make_ERR_TOKEN(str, loc);
+    }
 }
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 122 "parser/lexer.l"
+#line 135 "parser/lexer.l"
 {
-    return Parser::make_INT_CONST(convertToInt(yytext, '\0'), loc);
+    try {
+        bool isLL = false;
+        long long result = convertToInt(yytext, '\0', isLL);
+        if (isLL) return Parser::make_LL_CONST(result, loc);
+        return Parser::make_INT_CONST(static_cast<int>(result), loc);
+    } catch (const std::exception& e) {
+        _driver.reportError(loc, std::string("Error parsing hexadecimal int: ") + e.what());
+        auto str = std::make_shared<std::string>(yytext);
+        return Parser::make_ERR_TOKEN(str, loc);
+    }
 }
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 126 "parser/lexer.l"
+#line 148 "parser/lexer.l"
 {
-    return Parser::make_INT_CONST(convertToInt(yytext, '\0'), loc);
+    try {
+        bool isLL = false;
+        long long result = convertToInt(yytext, '\0', isLL);
+        if (isLL) return Parser::make_LL_CONST(result, loc);
+        return Parser::make_INT_CONST(static_cast<int>(result), loc);
+    } catch (const std::exception& e) {
+        _driver.reportError(loc, std::string("Error parsing hexadecimal int: ") + e.what());
+        auto str = std::make_shared<std::string>(yytext);
+        return Parser::make_ERR_TOKEN(str, loc);
+    }
 }
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 130 "parser/lexer.l"
+#line 161 "parser/lexer.l"
 {
-    return Parser::make_INT_CONST(convertToInt(yytext, '\0'), loc);
+    try {
+        bool isLL = false;
+        long long result = convertToInt(yytext, '\0', isLL);
+        if (isLL) return Parser::make_LL_CONST(result, loc);
+        return Parser::make_INT_CONST(static_cast<int>(result), loc);
+    } catch (const std::exception& e) {
+        _driver.reportError(loc, std::string("Error parsing hexadecimal int: ") + e.what());
+        auto str = std::make_shared<std::string>(yytext);
+        return Parser::make_ERR_TOKEN(str, loc);
+    }
 }
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 134 "parser/lexer.l"
+#line 174 "parser/lexer.l"
 { RETT(LPAREN, loc) }
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 135 "parser/lexer.l"
+#line 175 "parser/lexer.l"
 { RETT(RPAREN, loc) }
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 136 "parser/lexer.l"
+#line 176 "parser/lexer.l"
 { RETT(LBRACKET, loc) }
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 137 "parser/lexer.l"
+#line 177 "parser/lexer.l"
 { RETT(RBRACKET, loc) }
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 138 "parser/lexer.l"
+#line 178 "parser/lexer.l"
 { RETT(LBRACE, loc) }
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 139 "parser/lexer.l"
+#line 179 "parser/lexer.l"
 { RETT(RBRACE, loc) }
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 141 "parser/lexer.l"
+#line 181 "parser/lexer.l"
 {
     auto str = std::make_shared<std::string>(yytext);
     return Parser::make_IDENT(str, loc); 
 }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 146 "parser/lexer.l"
+#line 186 "parser/lexer.l"
 { RETT(END, loc); }
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 148 "parser/lexer.l"
+#line 188 "parser/lexer.l"
 ECHO;
 	YY_BREAK
-#line 1271 "parser/lexer.cpp"
+#line 1311 "parser/lexer.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2383,7 +2423,7 @@ void yyfree (void * ptr )
 
 /* %ok-for-header */
 
-#line 148 "parser/lexer.l"
+#line 188 "parser/lexer.l"
 
 
 int handleTab()

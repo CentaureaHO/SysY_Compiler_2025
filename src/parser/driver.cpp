@@ -7,12 +7,14 @@ using namespace std;
 using type = Parser::symbol_type;
 using kind = Parser::symbol_kind;
 
-Driver::Driver(std::istream* is, std::ostream* os) : _scanner(*this), _parser(_scanner, *this), inStream(is), outStream(os) {}
+Driver::Driver(std::istream* is, std::ostream* os)
+    : _scanner(*this), _parser(_scanner, *this), inStream(is), outStream(os)
+{}
 Driver::~Driver() {}
 
 void Driver::setStreams(std::istream* is, std::ostream* os)
 {
-    inStream = is;
+    inStream  = is;
     outStream = os;
 }
 
@@ -34,6 +36,7 @@ int Driver::lexical_parse()
         switch (token.kind())
         {
             case kind::S_INT_CONST: result.value = token.value.as<int>(); break;
+            case kind::S_LL_CONST: result.value = token.value.as<long long>(); break;
             case kind::S_FLOAT_CONST: result.value = token.value.as<float>(); break;
             case kind::S_IDENT:
             case kind::S_SLASH_COMMENT:

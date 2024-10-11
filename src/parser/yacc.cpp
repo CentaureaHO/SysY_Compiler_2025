@@ -235,6 +235,10 @@ namespace  Yacc  {
         value.YY_MOVE_OR_COPY< int > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_LL_CONST: // LL_CONST
+        value.YY_MOVE_OR_COPY< long long > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_IDENT: // IDENT
       case symbol_kind::S_STR_CONST: // STR_CONST
       case symbol_kind::S_ERR_TOKEN: // ERR_TOKEN
@@ -263,6 +267,10 @@ namespace  Yacc  {
 
       case symbol_kind::S_INT_CONST: // INT_CONST
         value.move< int > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_LL_CONST: // LL_CONST
+        value.move< long long > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_IDENT: // IDENT
@@ -295,6 +303,10 @@ namespace  Yacc  {
         value.copy< int > (that.value);
         break;
 
+      case symbol_kind::S_LL_CONST: // LL_CONST
+        value.copy< long long > (that.value);
+        break;
+
       case symbol_kind::S_IDENT: // IDENT
       case symbol_kind::S_STR_CONST: // STR_CONST
       case symbol_kind::S_ERR_TOKEN: // ERR_TOKEN
@@ -322,6 +334,10 @@ namespace  Yacc  {
 
       case symbol_kind::S_INT_CONST: // INT_CONST
         value.move< int > (that.value);
+        break;
+
+      case symbol_kind::S_LL_CONST: // LL_CONST
+        value.move< long long > (that.value);
         break;
 
       case symbol_kind::S_IDENT: // IDENT
@@ -598,6 +614,10 @@ namespace  Yacc  {
         yylhs.value.emplace< int > ();
         break;
 
+      case symbol_kind::S_LL_CONST: // LL_CONST
+        yylhs.value.emplace< long long > ();
+        break;
+
       case symbol_kind::S_IDENT: // IDENT
       case symbol_kind::S_STR_CONST: // STR_CONST
       case symbol_kind::S_ERR_TOKEN: // ERR_TOKEN
@@ -626,7 +646,7 @@ namespace  Yacc  {
           switch (yyn)
             {
 
-#line 630 "parser/yacc.cpp"
+#line 650 "parser/yacc.cpp"
 
             default:
               break;
@@ -1021,13 +1041,13 @@ namespace  Yacc  {
   const signed char
    Parser ::yystos_[] =
   {
-       0,    48,     0
+       0,    49,     0
   };
 
   const signed char
    Parser ::yyr1_[] =
   {
-       0,    47,    48
+       0,    48,    49
   };
 
   const signed char
@@ -1044,12 +1064,13 @@ namespace  Yacc  {
   const  Parser ::yytname_[] =
   {
   "\"end of file\"", "error", "\"invalid token\"", "INT_CONST",
-  "FLOAT_CONST", "IDENT", "STR_CONST", "ERR_TOKEN", "SLASH_COMMENT", "INT",
-  "FLOAT", "VOID", "IF", "ELSE", "FOR", "WHILE", "CONTINUE", "BREAK",
-  "SWITCH", "CASE", "GOTO", "DO", "RETURN", "CONST", "SEMICOLON", "COMMA",
-  "LPAREN", "RPAREN", "LBRACKET", "RBRACKET", "LBRACE", "RBRACE", "NOT",
-  "BITOR", "BITAND", "DOT", "END", "PLUS", "MINUS", "STAR", "SLASH", "GT",
-  "GE", "LT", "LE", "EQ", "ASSIGN", "$accept", "program", YY_NULLPTR
+  "LL_CONST", "FLOAT_CONST", "IDENT", "STR_CONST", "ERR_TOKEN",
+  "SLASH_COMMENT", "INT", "FLOAT", "VOID", "IF", "ELSE", "FOR", "WHILE",
+  "CONTINUE", "BREAK", "SWITCH", "CASE", "GOTO", "DO", "RETURN", "CONST",
+  "SEMICOLON", "COMMA", "LPAREN", "RPAREN", "LBRACKET", "RBRACKET",
+  "LBRACE", "RBRACE", "NOT", "BITOR", "BITAND", "DOT", "END", "PLUS",
+  "MINUS", "STAR", "SLASH", "GT", "GE", "LT", "LE", "EQ", "ASSIGN",
+  "$accept", "program", YY_NULLPTR
   };
 #endif
 
@@ -1058,7 +1079,7 @@ namespace  Yacc  {
   const signed char
    Parser ::yyrline_[] =
   {
-       0,    70,    70
+       0,    71,    71
   };
 
   void
@@ -1091,9 +1112,9 @@ namespace  Yacc  {
 
 #line 4 "parser/yacc.y"
 } //  Yacc 
-#line 1095 "parser/yacc.cpp"
+#line 1116 "parser/yacc.cpp"
 
-#line 73 "parser/yacc.y"
+#line 74 "parser/yacc.y"
 
 
 void Yacc::Parser::error(const Yacc::location& location, const std::string& message)

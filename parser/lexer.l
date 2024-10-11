@@ -1,4 +1,5 @@
 %{
+    #include <stdexcept>
     #include <string>
     #include <memory>
 
@@ -21,7 +22,7 @@
 
     #define TAB_WIDTH 4
 
-    extern int convertToInt(const char* str, const char end);
+    extern long long convertToInt(const char* str, const char end, bool& isLongLong);
     extern float convertToFloatDec(const char* str);
     extern float convertToFloatHex(const char* str);
 
@@ -112,23 +113,62 @@
 }
 
 [+-]?[0-9]*\.[0-9]*([eE][+-]?[0-9]+)? {
-    return Parser::make_FLOAT_CONST(convertToFloatDec(yytext), loc);
+    try {
+        return Parser::make_FLOAT_CONST(convertToFloatDec(yytext), loc);
+    } catch (const std::exception& e) {
+        _driver.reportError(loc, std::string("Error parsing float: ") + e.what());
+        auto str = std::make_shared<std::string>(yytext);
+        return Parser::make_ERR_TOKEN(str, loc);
+    }
 }
 
 [+-]?0[xX][0-9a-fA-F]*\.[0-9a-fA-F]*([pP][+-]?[0-9a-fA-F]+)? {
-    return Parser::make_FLOAT_CONST(convertToFloatHex(yytext), loc);
+    try {
+        return Parser::make_FLOAT_CONST(convertToFloatHex(yytext), loc);
+    } catch (const std::exception& e) {
+        _driver.reportError(loc, std::string("Error parsing hexadecimal float: ") + e.what());
+        auto str = std::make_shared<std::string>(yytext);
+        return Parser::make_ERR_TOKEN(str, loc);
+    }
 }
 
 [+-]?0[xX][0-9a-fA-F]* {
-    return Parser::make_INT_CONST(convertToInt(yytext, '\0'), loc);
+    try {
+        bool isLL = false;
+        long long result = convertToInt(yytext, '\0', isLL);
+        if (isLL) return Parser::make_LL_CONST(result, loc);
+        return Parser::make_INT_CONST(static_cast<int>(result), loc);
+    } catch (const std::exception& e) {
+        _driver.reportError(loc, std::string("Error parsing hexadecimal int: ") + e.what());
+        auto str = std::make_shared<std::string>(yytext);
+        return Parser::make_ERR_TOKEN(str, loc);
+    }
 }
 
 [+-]?0[0-7]* {
-    return Parser::make_INT_CONST(convertToInt(yytext, '\0'), loc);
+    try {
+        bool isLL = false;
+        long long result = convertToInt(yytext, '\0', isLL);
+        if (isLL) return Parser::make_LL_CONST(result, loc);
+        return Parser::make_INT_CONST(static_cast<int>(result), loc);
+    } catch (const std::exception& e) {
+        _driver.reportError(loc, std::string("Error parsing hexadecimal int: ") + e.what());
+        auto str = std::make_shared<std::string>(yytext);
+        return Parser::make_ERR_TOKEN(str, loc);
+    }
 }
 
 [+-]?[1-9][0-9]* {
-    return Parser::make_INT_CONST(convertToInt(yytext, '\0'), loc);
+    try {
+        bool isLL = false;
+        long long result = convertToInt(yytext, '\0', isLL);
+        if (isLL) return Parser::make_LL_CONST(result, loc);
+        return Parser::make_INT_CONST(static_cast<int>(result), loc);
+    } catch (const std::exception& e) {
+        _driver.reportError(loc, std::string("Error parsing hexadecimal int: ") + e.what());
+        auto str = std::make_shared<std::string>(yytext);
+        return Parser::make_ERR_TOKEN(str, loc);
+    }
 }
 
 "("                 { RETT(LPAREN, loc) }
