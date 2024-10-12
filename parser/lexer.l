@@ -126,7 +126,27 @@
     }
 }
 
+[0-9]*[eE][+-]?[0-9]+ {
+    try {
+        return Parser::make_FLOAT_CONST(convertToFloatDec(yytext), loc);
+    } catch (const std::exception& e) {
+        _driver.reportError(loc, std::string("Error parsing float: ") + e.what());
+        auto str = std::make_shared<std::string>(yytext);
+        return Parser::make_ERR_TOKEN(str, loc);
+    }
+}
+
 0[xX][0-9a-fA-F]*\.[0-9a-fA-F]*([pP][+-]?[0-9a-fA-F]+)? {
+    try {
+        return Parser::make_FLOAT_CONST(convertToFloatHex(yytext), loc);
+    } catch (const std::exception& e) {
+        _driver.reportError(loc, std::string("Error parsing hexadecimal float: ") + e.what());
+        auto str = std::make_shared<std::string>(yytext);
+        return Parser::make_ERR_TOKEN(str, loc);
+    }
+}
+
+0[xX][0-9a-fA-F][pP][+-]?[0-9a-fA-F]+ {
     try {
         return Parser::make_FLOAT_CONST(convertToFloatHex(yytext), loc);
     } catch (const std::exception& e) {
