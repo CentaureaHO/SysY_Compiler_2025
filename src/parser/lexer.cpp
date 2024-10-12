@@ -652,8 +652,8 @@ static const flex_int16_t yy_rule_linenum[58] =
        56,   57,   58,   59,   60,   61,   62,   64,   66,   67,
        68,   69,   70,   71,   72,   73,   74,   75,   76,   77,
        78,   79,   80,   81,   82,   83,   84,   85,   87,   92,
-      102,  108,  114,  119,  129,  139,  149,  159,  172,  185,
-      198,  199,  200,  201,  202,  203,  205
+      105,  111,  117,  122,  132,  142,  152,  162,  175,  188,
+      201,  202,  203,  204,  205,  206,  208
     } ;
 
 /* The intent behind this definition is that it'll catch
@@ -1177,18 +1177,21 @@ case 40:
 YY_RULE_SETUP
 #line 92 "parser/lexer.l"
 {
+    int cnt = 0;
     for (int i = 0; yytext[i] != '\0'; ++i) {
         if (yytext[i] == '\n') {
+            ++cnt;
             yytext[i] = ' ';
         }
     }
+    for (int i = 0; i < cnt; ++i) loc.lines();
     auto str = std::make_shared<std::string>(yytext);
     return Parser::make_SLASH_COMMENT(str, loc);
 }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 102 "parser/lexer.l"
+#line 105 "parser/lexer.l"
 {
     _driver.reportError(loc, yytext);
     auto str = std::make_shared<std::string>(yytext);
@@ -1197,7 +1200,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 108 "parser/lexer.l"
+#line 111 "parser/lexer.l"
 {
     _driver.reportError(loc, yytext);
     auto str = std::make_shared<std::string>(yytext);
@@ -1207,7 +1210,7 @@ YY_RULE_SETUP
 case 43:
 /* rule 43 can match eol */
 YY_RULE_SETUP
-#line 114 "parser/lexer.l"
+#line 117 "parser/lexer.l"
 { 
     auto str = std::make_shared<std::string>(yytext);
     return Parser::make_STR_CONST(str, loc); 
@@ -1215,7 +1218,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 119 "parser/lexer.l"
+#line 122 "parser/lexer.l"
 {
     try {
         return Parser::make_FLOAT_CONST(convertToFloatDec(yytext), loc);
@@ -1228,7 +1231,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 129 "parser/lexer.l"
+#line 132 "parser/lexer.l"
 {
     try {
         return Parser::make_FLOAT_CONST(convertToFloatDec(yytext), loc);
@@ -1241,7 +1244,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 139 "parser/lexer.l"
+#line 142 "parser/lexer.l"
 {
     try {
         return Parser::make_FLOAT_CONST(convertToFloatHex(yytext), loc);
@@ -1254,7 +1257,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 149 "parser/lexer.l"
+#line 152 "parser/lexer.l"
 {
     try {
         return Parser::make_FLOAT_CONST(convertToFloatHex(yytext), loc);
@@ -1267,7 +1270,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 159 "parser/lexer.l"
+#line 162 "parser/lexer.l"
 {
     try {
         bool isLL = false;
@@ -1283,7 +1286,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 172 "parser/lexer.l"
+#line 175 "parser/lexer.l"
 {
     try {
         bool isLL = false;
@@ -1299,7 +1302,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 185 "parser/lexer.l"
+#line 188 "parser/lexer.l"
 {
     try {
         bool isLL = false;
@@ -1315,52 +1318,52 @@ YY_RULE_SETUP
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 198 "parser/lexer.l"
+#line 201 "parser/lexer.l"
 { RETT(LPAREN, loc) }
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 199 "parser/lexer.l"
+#line 202 "parser/lexer.l"
 { RETT(RPAREN, loc) }
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 200 "parser/lexer.l"
+#line 203 "parser/lexer.l"
 { RETT(LBRACKET, loc) }
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
-#line 201 "parser/lexer.l"
+#line 204 "parser/lexer.l"
 { RETT(RBRACKET, loc) }
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 202 "parser/lexer.l"
+#line 205 "parser/lexer.l"
 { RETT(LBRACE, loc) }
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 203 "parser/lexer.l"
+#line 206 "parser/lexer.l"
 { RETT(RBRACE, loc) }
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
-#line 205 "parser/lexer.l"
+#line 208 "parser/lexer.l"
 {
     auto str = std::make_shared<std::string>(yytext);
     return Parser::make_IDENT(str, loc); 
 }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 210 "parser/lexer.l"
+#line 213 "parser/lexer.l"
 { RETT(END, loc); }
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 212 "parser/lexer.l"
+#line 215 "parser/lexer.l"
 ECHO;
 	YY_BREAK
-#line 1364 "parser/lexer.cpp"
+#line 1367 "parser/lexer.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2476,7 +2479,7 @@ void yyfree (void * ptr )
 
 /* %ok-for-header */
 
-#line 212 "parser/lexer.l"
+#line 215 "parser/lexer.l"
 
 
 int handleTab()

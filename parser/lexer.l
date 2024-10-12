@@ -90,11 +90,14 @@
 }
 
 "/*"([^*]|\*[^/])*"*/" {
+    int cnt = 0;
     for (int i = 0; yytext[i] != '\0'; ++i) {
         if (yytext[i] == '\n') {
+            ++cnt;
             yytext[i] = ' ';
         }
     }
+    for (int i = 0; i < cnt; ++i) loc.lines();
     auto str = std::make_shared<std::string>(yytext);
     return Parser::make_SLASH_COMMENT(str, loc);
 }
