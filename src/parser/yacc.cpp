@@ -1041,13 +1041,13 @@ namespace  Yacc  {
   const signed char
    Parser ::yystos_[] =
   {
-       0,    49,     0
+       0,    53,     0
   };
 
   const signed char
    Parser ::yyr1_[] =
   {
-       0,    48,    49
+       0,    52,    53
   };
 
   const signed char
@@ -1069,8 +1069,8 @@ namespace  Yacc  {
   "CONTINUE", "BREAK", "SWITCH", "CASE", "GOTO", "DO", "RETURN", "CONST",
   "SEMICOLON", "COMMA", "LPAREN", "RPAREN", "LBRACKET", "RBRACKET",
   "LBRACE", "RBRACE", "NOT", "BITOR", "BITAND", "DOT", "END", "PLUS",
-  "MINUS", "STAR", "SLASH", "GT", "GE", "LT", "LE", "EQ", "ASSIGN",
-  "$accept", "program", YY_NULLPTR
+  "MINUS", "STAR", "SLASH", "GT", "GE", "LT", "LE", "EQ", "ASSIGN", "MOD",
+  "NEQ", "AND", "OR", "$accept", "program", YY_NULLPTR
   };
 #endif
 
@@ -1079,7 +1079,7 @@ namespace  Yacc  {
   const signed char
    Parser ::yyrline_[] =
   {
-       0,    71,    71
+       0,    72,    72
   };
 
   void
@@ -1114,7 +1114,7 @@ namespace  Yacc  {
 } //  Yacc 
 #line 1116 "parser/yacc.cpp"
 
-#line 74 "parser/yacc.y"
+#line 75 "parser/yacc.y"
 
 
 void Yacc::Parser::error(const Yacc::location& location, const std::string& message)

@@ -526,7 +526,11 @@ namespace  Yacc  {
     TOKEN_LT = 299,                // LT
     TOKEN_LE = 300,                // LE
     TOKEN_EQ = 301,                // EQ
-    TOKEN_ASSIGN = 302             // ASSIGN
+    TOKEN_ASSIGN = 302,            // ASSIGN
+    TOKEN_MOD = 303,               // MOD
+    TOKEN_NEQ = 304,               // NEQ
+    TOKEN_AND = 305,               // AND
+    TOKEN_OR = 306                 // OR
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -543,7 +547,7 @@ namespace  Yacc  {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 48, ///< Number of tokens.
+        YYNTOKENS = 52, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -593,8 +597,12 @@ namespace  Yacc  {
         S_LE = 45,                               // LE
         S_EQ = 46,                               // EQ
         S_ASSIGN = 47,                           // ASSIGN
-        S_YYACCEPT = 48,                         // $accept
-        S_program = 49                           // program
+        S_MOD = 48,                              // MOD
+        S_NEQ = 49,                              // NEQ
+        S_AND = 50,                              // AND
+        S_OR = 51,                               // OR
+        S_YYACCEPT = 52,                         // $accept
+        S_program = 53                           // program
       };
     };
 
@@ -871,7 +879,7 @@ switch (yykind)
 #if !defined _MSC_VER || defined __clang__
         YY_ASSERT (tok == token::TOKEN_YYEOF
                    || (token::TOKEN_YYerror <= tok && tok <= token::TOKEN_YYUNDEF)
-                   || (token::TOKEN_INT <= tok && tok <= token::TOKEN_ASSIGN));
+                   || (token::TOKEN_INT <= tok && tok <= token::TOKEN_OR));
 #endif
       }
 #if 201103L <= YY_CPLUSPLUS
@@ -1690,6 +1698,66 @@ switch (yykind)
         return symbol_type (token::TOKEN_ASSIGN, l);
       }
 #endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_MOD (location_type l)
+      {
+        return symbol_type (token::TOKEN_MOD, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_MOD (const location_type& l)
+      {
+        return symbol_type (token::TOKEN_MOD, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_NEQ (location_type l)
+      {
+        return symbol_type (token::TOKEN_NEQ, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_NEQ (const location_type& l)
+      {
+        return symbol_type (token::TOKEN_NEQ, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_AND (location_type l)
+      {
+        return symbol_type (token::TOKEN_AND, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_AND (const location_type& l)
+      {
+        return symbol_type (token::TOKEN_AND, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_OR (location_type l)
+      {
+        return symbol_type (token::TOKEN_OR, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_OR (const location_type& l)
+      {
+        return symbol_type (token::TOKEN_OR, l);
+      }
+#endif
 
 
     class context
@@ -2072,10 +2140,10 @@ switch (yykind)
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
       25,    26,    27,    28,    29,    30,    31,    32,    33,    34,
       35,    36,    37,    38,    39,    40,    41,    42,    43,    44,
-      45,    46,    47
+      45,    46,    47,    48,    49,    50,    51
     };
     // Last valid token kind.
-    const int code_max = 302;
+    const int code_max = 306;
 
     if (t <= 0)
       return symbol_kind::S_YYEOF;
@@ -2230,7 +2298,7 @@ switch (yykind)
 
 #line 4 "parser/yacc.y"
 } //  Yacc 
-#line 2234 "parser/yacc.hpp"
+#line 2302 "parser/yacc.hpp"
 
 
 

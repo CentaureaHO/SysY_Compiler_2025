@@ -38,8 +38,6 @@ BISON_H := $(INCLUDE_DIR)/parser/yacc.hpp
 LOC_H_T := parser/location.hh
 LOC_H := $(INCLUDE_DIR)/parser/location.hh
 
-OBJECTS += $(PARSER_OBJECTS)
-
 .PHONY: all
 all: obj
 

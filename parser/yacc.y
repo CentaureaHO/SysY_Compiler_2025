@@ -64,7 +64,8 @@
 
 %token PLUS MINUS
 %token STAR SLASH
-%token GT GE LT LE EQ ASSIGN
+%token GT GE LT LE EQ ASSIGN MOD
+%token NEQ AND OR
 
 %%
 

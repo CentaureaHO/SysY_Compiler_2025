@@ -75,10 +75,14 @@
 "-"                 { RETT(MINUS, loc) }
 "*"                 { RETT(STAR, loc) }
 "/"                 { RETT(SLASH, loc) }
+"%"                 { RETT(MOD, loc) }
 "."                 { RETT(DOT, loc) }
 ">="                { RETT(GE, loc) }
 "<="                { RETT(LE, loc) }
 "=="                { RETT(EQ, loc) }
+"!="                { RETT(NEQ, loc) }
+"&&"                { RETT(AND, loc) }
+"||"                { RETT(OR, loc) }
 
 "//".*              { 
     auto str = std::make_shared<std::string>(yytext);
