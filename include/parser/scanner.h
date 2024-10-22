@@ -1,5 +1,5 @@
-#ifndef __SCANNER_H__
-#define __SCANNER_H__
+#ifndef __PARSER_SCANNER_H__
+#define __PARSER_SCANNER_H__
 
 #ifndef yyFlexLexerOnce
 #undef yyFlexLexer
