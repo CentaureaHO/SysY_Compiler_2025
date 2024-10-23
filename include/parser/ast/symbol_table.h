@@ -1,3 +1,0 @@
-#ifndef __PARSER_AST_SYMBOL_TABLE_H__
-#define __PARSER_AST_SYMBOL_TABLE_H__
-#endif

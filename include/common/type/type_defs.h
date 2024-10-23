@@ -1,5 +1,5 @@
-#ifndef __PARSER_TYPE_DEFS_H__
-#define __PARSER_TYPE_DEFS_H__
+#ifndef __COMMON_TYPE_TYPEDEFS_H__
+#define __COMMON_TYPE_TYPEDEFS_H__
 
 #include <memory>
 #include <string>
@@ -185,6 +185,8 @@ class VarAttribute
 
   public:
     VarAttribute(Type* type = voidType, bool isConstVar = false);
+
+    Type* getType() const;
 };
 
 class NodeAttribute

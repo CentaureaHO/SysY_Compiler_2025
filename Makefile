@@ -38,6 +38,8 @@ BISON_H := $(INCLUDE_DIR)/parser/yacc.hpp
 LOC_H_T := parser/location.hh
 LOC_H := $(INCLUDE_DIR)/parser/location.hh
 
+VAL_OPTS := --leak-check=full --track-origins=yes -s
+
 .PHONY: all
 all: obj
 
@@ -51,6 +53,17 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+.PHONY: test
+test: $(BIN_DIR)/test
+
+$(BIN_DIR)/test: $(OBJECTS) test.cpp
+	@mkdir -p $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) test.cpp $(OBJECTS) -o $(BIN_DIR)/test
+
+.PHONY: valgrind
+valgrind: $(BIN_DIR)/test
+	valgrind $(VAL_OPTS) $(BIN_DIR)/test 2> valg_err
 
 .PHONY: clean
 clean:

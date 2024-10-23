@@ -1,4 +1,4 @@
-#include <parser/type_defs.h>
+#include <common/type/type_defs.h>
 using namespace std;
 
 namespace
@@ -181,6 +181,8 @@ string LiteralValue::getLiteralInfo()
 VarAttribute::VarAttribute(Type* type, bool isConst)
     : type(type), isConstVar(isConst), dims(vector<int>{}), initInts(vector<int>{}), initFloats(vector<float>{})
 {}
+
+Type* VarAttribute::getType() const { return type; }
 
 /* Definition of VarAttribute: tail */
 /* Definition of NodeAttribute: head */

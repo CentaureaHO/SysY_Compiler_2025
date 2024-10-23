@@ -54,18 +54,10 @@
 %define parse.error verbose
 %define api.token.prefix {TOKEN_}
 
-%union
-{
-    int ival;
-    long long llval;
-    float fval;
-    std::shared_ptr<std::string> sval;
-}
-
-%token <ival> INT_CONST
-%token <llval> LL_CONST
-%token <fval> FLOAT_CONST
-%token <sval> IDENT STR_CONST ERR_TOKEN SLASH_COMMENT
+%token <int> INT_CONST
+%token <long long> LL_CONST
+%token <float> FLOAT_CONST
+%token <std::shared_ptr<std::string>> IDENT STR_CONST ERR_TOKEN SLASH_COMMENT
 %token INT FLOAT VOID IF ELSE FOR WHILE CONTINUE BREAK SWITCH CASE GOTO DO RETURN CONST
 %token SEMICOLON COMMA LPAREN RPAREN LBRACKET RBRACKET LBRACE RBRACE NOT BITOR BITAND DOT 
 %token END
