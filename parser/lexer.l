@@ -114,6 +114,11 @@
     return Parser::make_ERR_TOKEN(str, loc);
 }
 
+[A-Za-z_]+[A-Za-z0-9_]* {
+    auto str = std::make_shared<std::string>(yytext);
+    return Parser::make_IDENT(str, loc); 
+}
+
 \"[^\"]*\"          { 
     auto str = std::make_shared<std::string>(yytext);
     return Parser::make_STR_CONST(str, loc); 
@@ -204,11 +209,6 @@
 "]"                 { RETT(RBRACKET, loc) }
 "{"                 { RETT(LBRACE, loc) }
 "}"                 { RETT(RBRACE, loc) }
-
-[A-Za-z_]+[A-Za-z0-9_]* {
-    auto str = std::make_shared<std::string>(yytext);
-    return Parser::make_IDENT(str, loc); 
-}
 
 <<EOF>>         { RETT(END, loc); }
 

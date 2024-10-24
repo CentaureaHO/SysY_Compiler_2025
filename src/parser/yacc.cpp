@@ -35,7 +35,7 @@
 // private implementation details that can be changed or removed.
 
 // "%code top" blocks.
-#line 24 "parser/yacc.y"
+#line 29 "parser/yacc.y"
 
 /*
  * @ref https://github.com/ronnie88597/yacc_bison_practice/tree/master/ch3/3.05
@@ -227,6 +227,14 @@ namespace  Yacc  {
   {
     switch (that.kind ())
     {
+      case symbol_kind::S_PROGRAM: // PROGRAM
+        value.YY_MOVE_OR_COPY< ASTree* > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_TYPE: // TYPE
+        value.YY_MOVE_OR_COPY< Type* > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_FLOAT_CONST: // FLOAT_CONST
         value.YY_MOVE_OR_COPY< float > (YY_MOVE (that.value));
         break;
@@ -239,10 +247,10 @@ namespace  Yacc  {
         value.YY_MOVE_OR_COPY< long long > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_IDENT: // IDENT
       case symbol_kind::S_STR_CONST: // STR_CONST
       case symbol_kind::S_ERR_TOKEN: // ERR_TOKEN
       case symbol_kind::S_SLASH_COMMENT: // SLASH_COMMENT
+      case symbol_kind::S_IDENT: // IDENT
         value.YY_MOVE_OR_COPY< std::shared_ptr<std::string> > (YY_MOVE (that.value));
         break;
 
@@ -261,6 +269,14 @@ namespace  Yacc  {
   {
     switch (that.kind ())
     {
+      case symbol_kind::S_PROGRAM: // PROGRAM
+        value.move< ASTree* > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_TYPE: // TYPE
+        value.move< Type* > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_FLOAT_CONST: // FLOAT_CONST
         value.move< float > (YY_MOVE (that.value));
         break;
@@ -273,10 +289,10 @@ namespace  Yacc  {
         value.move< long long > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_IDENT: // IDENT
       case symbol_kind::S_STR_CONST: // STR_CONST
       case symbol_kind::S_ERR_TOKEN: // ERR_TOKEN
       case symbol_kind::S_SLASH_COMMENT: // SLASH_COMMENT
+      case symbol_kind::S_IDENT: // IDENT
         value.move< std::shared_ptr<std::string> > (YY_MOVE (that.value));
         break;
 
@@ -295,6 +311,14 @@ namespace  Yacc  {
     state = that.state;
     switch (that.kind ())
     {
+      case symbol_kind::S_PROGRAM: // PROGRAM
+        value.copy< ASTree* > (that.value);
+        break;
+
+      case symbol_kind::S_TYPE: // TYPE
+        value.copy< Type* > (that.value);
+        break;
+
       case symbol_kind::S_FLOAT_CONST: // FLOAT_CONST
         value.copy< float > (that.value);
         break;
@@ -307,10 +331,10 @@ namespace  Yacc  {
         value.copy< long long > (that.value);
         break;
 
-      case symbol_kind::S_IDENT: // IDENT
       case symbol_kind::S_STR_CONST: // STR_CONST
       case symbol_kind::S_ERR_TOKEN: // ERR_TOKEN
       case symbol_kind::S_SLASH_COMMENT: // SLASH_COMMENT
+      case symbol_kind::S_IDENT: // IDENT
         value.copy< std::shared_ptr<std::string> > (that.value);
         break;
 
@@ -328,6 +352,14 @@ namespace  Yacc  {
     state = that.state;
     switch (that.kind ())
     {
+      case symbol_kind::S_PROGRAM: // PROGRAM
+        value.move< ASTree* > (that.value);
+        break;
+
+      case symbol_kind::S_TYPE: // TYPE
+        value.move< Type* > (that.value);
+        break;
+
       case symbol_kind::S_FLOAT_CONST: // FLOAT_CONST
         value.move< float > (that.value);
         break;
@@ -340,10 +372,10 @@ namespace  Yacc  {
         value.move< long long > (that.value);
         break;
 
-      case symbol_kind::S_IDENT: // IDENT
       case symbol_kind::S_STR_CONST: // STR_CONST
       case symbol_kind::S_ERR_TOKEN: // ERR_TOKEN
       case symbol_kind::S_SLASH_COMMENT: // SLASH_COMMENT
+      case symbol_kind::S_IDENT: // IDENT
         value.move< std::shared_ptr<std::string> > (that.value);
         break;
 
@@ -606,6 +638,14 @@ namespace  Yacc  {
          when using variants.  */
       switch (yyr1_[yyn])
     {
+      case symbol_kind::S_PROGRAM: // PROGRAM
+        yylhs.value.emplace< ASTree* > ();
+        break;
+
+      case symbol_kind::S_TYPE: // TYPE
+        yylhs.value.emplace< Type* > ();
+        break;
+
       case symbol_kind::S_FLOAT_CONST: // FLOAT_CONST
         yylhs.value.emplace< float > ();
         break;
@@ -618,10 +658,10 @@ namespace  Yacc  {
         yylhs.value.emplace< long long > ();
         break;
 
-      case symbol_kind::S_IDENT: // IDENT
       case symbol_kind::S_STR_CONST: // STR_CONST
       case symbol_kind::S_ERR_TOKEN: // ERR_TOKEN
       case symbol_kind::S_SLASH_COMMENT: // SLASH_COMMENT
+      case symbol_kind::S_IDENT: // IDENT
         yylhs.value.emplace< std::shared_ptr<std::string> > ();
         break;
 
@@ -645,8 +685,43 @@ namespace  Yacc  {
         {
           switch (yyn)
             {
+  case 2: // PROGRAM: TYPE
+#line 87 "parser/yacc.y"
+         {
+        std::cout << "program: TYPE " << yystack_[0].value.as < Type* > ()->getTypeName() << std::endl;
+        yylhs.value.as < ASTree* > () = new ASTree();
+        driver.setAST(yylhs.value.as < ASTree* > ());
+        YYACCEPT;
+    }
+#line 697 "parser/yacc.cpp"
+    break;
 
-#line 650 "parser/yacc.cpp"
+  case 3: // TYPE: INT
+#line 96 "parser/yacc.y"
+        {
+        yylhs.value.as < Type* > () = intType;
+    }
+#line 705 "parser/yacc.cpp"
+    break;
+
+  case 4: // TYPE: FLOAT
+#line 99 "parser/yacc.y"
+            {
+        yylhs.value.as < Type* > () = floatType;
+    }
+#line 713 "parser/yacc.cpp"
+    break;
+
+  case 5: // TYPE: VOID
+#line 102 "parser/yacc.y"
+           {
+        yylhs.value.as < Type* > () = voidType;
+    }
+#line 721 "parser/yacc.cpp"
+    break;
+
+
+#line 725 "parser/yacc.cpp"
 
             default:
               break;
@@ -998,62 +1073,62 @@ namespace  Yacc  {
   }
 
 
-  const signed char  Parser ::yypact_ninf_ = -1;
+  const signed char  Parser ::yypact_ninf_ = -11;
 
   const signed char  Parser ::yytable_ninf_ = -1;
 
   const signed char
    Parser ::yypact_[] =
   {
-      -1,     0,    -1
+     -10,   -11,   -11,   -11,     3,   -11,   -11
   };
 
   const signed char
    Parser ::yydefact_[] =
   {
-       2,     0,     1
+       0,     3,     4,     5,     0,     2,     1
   };
 
   const signed char
    Parser ::yypgoto_[] =
   {
-      -1,    -1
+     -11,   -11,   -11
   };
 
   const signed char
    Parser ::yydefgoto_[] =
   {
-       0,     1
+       0,     4,     5
   };
 
   const signed char
    Parser ::yytable_[] =
   {
-       2
+       1,     2,     3,     6
   };
 
   const signed char
    Parser ::yycheck_[] =
   {
-       0
+      10,    11,    12,     0
   };
 
   const signed char
    Parser ::yystos_[] =
   {
-       0,    53,     0
+       0,    10,    11,    12,    53,    54,     0
   };
 
   const signed char
    Parser ::yyr1_[] =
   {
-       0,    52,    53
+       0,    52,    53,    54,    54,    54
   };
 
   const signed char
    Parser ::yyr2_[] =
   {
-       0,     2,     0
+       0,     2,     1,     1,     1,     1
   };
 
 
@@ -1064,13 +1139,13 @@ namespace  Yacc  {
   const  Parser ::yytname_[] =
   {
   "\"end of file\"", "error", "\"invalid token\"", "INT_CONST",
-  "LL_CONST", "FLOAT_CONST", "IDENT", "STR_CONST", "ERR_TOKEN",
-  "SLASH_COMMENT", "INT", "FLOAT", "VOID", "IF", "ELSE", "FOR", "WHILE",
+  "LL_CONST", "FLOAT_CONST", "STR_CONST", "ERR_TOKEN", "SLASH_COMMENT",
+  "IDENT", "INT", "FLOAT", "VOID", "IF", "ELSE", "FOR", "WHILE",
   "CONTINUE", "BREAK", "SWITCH", "CASE", "GOTO", "DO", "RETURN", "CONST",
   "SEMICOLON", "COMMA", "LPAREN", "RPAREN", "LBRACKET", "RBRACKET",
   "LBRACE", "RBRACE", "NOT", "BITOR", "BITAND", "DOT", "END", "PLUS",
   "MINUS", "STAR", "SLASH", "GT", "GE", "LT", "LE", "EQ", "ASSIGN", "MOD",
-  "NEQ", "AND", "OR", "$accept", "program", YY_NULLPTR
+  "NEQ", "AND", "OR", "$accept", "PROGRAM", "TYPE", YY_NULLPTR
   };
 #endif
 
@@ -1079,7 +1154,7 @@ namespace  Yacc  {
   const signed char
    Parser ::yyrline_[] =
   {
-       0,    72,    72
+       0,    87,    87,    96,    99,   102
   };
 
   void
@@ -1112,9 +1187,9 @@ namespace  Yacc  {
 
 #line 4 "parser/yacc.y"
 } //  Yacc 
-#line 1116 "parser/yacc.cpp"
+#line 1191 "parser/yacc.cpp"
 
-#line 75 "parser/yacc.y"
+#line 106 "parser/yacc.y"
 
 
 void Yacc::Parser::error(const Yacc::location& location, const std::string& message)

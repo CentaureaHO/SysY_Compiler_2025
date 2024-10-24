@@ -63,17 +63,17 @@ $(BIN_DIR)/test: $(OBJECTS) test.cpp
 
 .PHONY: valgrind
 valgrind: $(BIN_DIR)/test
-	valgrind $(VAL_OPTS) $(BIN_DIR)/test 2> valg_err
+	valgrind $(VAL_OPTS) $(BIN_DIR)/test 2> valgriand_report
 
 .PHONY: clean
 clean:
 	rm -rf $(OBJ_DIR) $(TEST_BUILD_DIR) $(BIN_DIR)
 
 .PHONY: testLexicalAnalysis
-testLexicalAnalysis: $(OBJ_DIR)/parser/yacc.o $(OBJ_DIR)/parser/lexer.o $(OBJ_DIR)/parser/driver.o $(OBJ_DIR)/common/str_convert.o
+testLexicalAnalysis: $(OBJECTS)
 	@mkdir -p $(TEST_BUILD_DIR)/1_lexicalAnalyzer
 	$(CXX) $(CXXFLAGS) $(TEST_SRC_DIR)/1_lexicalAnalyzer/lexAnalyzer.cpp \
-		$(OBJ_DIR)/parser/yacc.o $(OBJ_DIR)/parser/lexer.o $(OBJ_DIR)/parser/driver.o $(OBJ_DIR)/common/str_convert.o \
+		$(OBJECTS) \
 		-o $(TEST_BUILD_DIR)/1_lexicalAnalyzer/lexAnalyzer
 	@echo "Compiled test: lexAnalyzer"
 

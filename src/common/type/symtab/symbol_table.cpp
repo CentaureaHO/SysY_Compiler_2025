@@ -1,4 +1,4 @@
-#include <common/type/ast/symbol_table.h>
+#include <common/type/symtab/symbol_table.h>
 using namespace std;
 using namespace Symbol;
 
@@ -41,11 +41,7 @@ bool   EntryEqual::operator()(Entry* lhs, Entry* rhs) const { return lhs->getNam
 /* Definition of Symbol::Table: head */
 
 Table::Scope::Scope(Scope* parent) : parent(parent), scopeLevel(parent ? parent->scopeLevel + 1 : -1) {}
-Table::Scope::~Scope()
-{
-    for (auto& [entry, attr] : symbolMap) delete attr;
-    symbolMap.clear();
-}
+Table::Scope::~Scope() { symbolMap.clear(); }
 
 Table::Table() : currentScope(new Scope(nullptr)) {}
 Table::~Table()
@@ -61,29 +57,12 @@ Table::~Table()
 
 void Table::setAsGlobal() { currentScope->scopeLevel = 0; }
 
-int Table::addSymbol(Entry* entry, VarAttribute* attr)
-{
-    if (paramEntrys.find(entry) != paramEntrys.end())
-    {
-        delete attr;
-        return 2;
-    }
-    if (currentScope->symbolMap.find(entry) != currentScope->symbolMap.end())
-    {
-        delete attr;
-        return 1;
-    }
-    currentScope->symbolMap[entry] = attr;
-    if (currentScope->scopeLevel == 1) paramEntrys.insert(entry);
-    return 0;
-}
-
 VarAttribute* Table::getSymbol(Entry* entry)
 {
     Scope* scope = currentScope;
     while (scope)
     {
-        if (scope->symbolMap.find(entry) != scope->symbolMap.end()) return scope->symbolMap[entry];
+        if (scope->symbolMap.find(entry) != scope->symbolMap.end()) return &scope->symbolMap[entry];
         scope = scope->parent;
     }
     return nullptr;

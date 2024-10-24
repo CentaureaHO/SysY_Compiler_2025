@@ -51,8 +51,9 @@ int Driver::lexical_parse()
     return 0;
 }
 
-int Driver::parse()
+ASTree* Driver::parse()
 {
     _scanner.switch_streams(*inStream, *outStream);
-    return _parser.parse();
+    _parser.parse();
+    return ast;
 }

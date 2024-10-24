@@ -49,6 +49,11 @@
 
     #include <memory>
     #include <string>
+    #include <common/type/type_defs.h>
+    #include <common/type/node/basic_node.h>
+    #include <common/type/node/statement.h>
+    #include <common/type/node/expression.h>
+    #include <common/type/symtab/symbol_table.h>
 
     namespace Yacc
     {
@@ -56,7 +61,7 @@
         class Scanner;
     }
 
-#line 60 "parser/yacc.hpp"
+#line 65 "parser/yacc.hpp"
 
 # include <cassert>
 # include <cstdlib> // std::abort
@@ -197,7 +202,7 @@
 
 #line 4 "parser/yacc.y"
 namespace  Yacc  {
-#line 201 "parser/yacc.hpp"
+#line 206 "parser/yacc.hpp"
 
 
 
@@ -416,20 +421,26 @@ namespace  Yacc  {
     /// An auxiliary type to compute the largest semantic type.
     union union_type
     {
+      // PROGRAM
+      char dummy1[sizeof (ASTree*)];
+
+      // TYPE
+      char dummy2[sizeof (Type*)];
+
       // FLOAT_CONST
-      char dummy1[sizeof (float)];
+      char dummy3[sizeof (float)];
 
       // INT_CONST
-      char dummy2[sizeof (int)];
+      char dummy4[sizeof (int)];
 
       // LL_CONST
-      char dummy3[sizeof (long long)];
+      char dummy5[sizeof (long long)];
 
-      // IDENT
       // STR_CONST
       // ERR_TOKEN
       // SLASH_COMMENT
-      char dummy4[sizeof (std::shared_ptr<std::string>)];
+      // IDENT
+      char dummy6[sizeof (std::shared_ptr<std::string>)];
     };
 
     /// The size of the largest semantic type.
@@ -485,10 +496,10 @@ namespace  Yacc  {
     TOKEN_INT_CONST = 258,         // INT_CONST
     TOKEN_LL_CONST = 259,          // LL_CONST
     TOKEN_FLOAT_CONST = 260,       // FLOAT_CONST
-    TOKEN_IDENT = 261,             // IDENT
-    TOKEN_STR_CONST = 262,         // STR_CONST
-    TOKEN_ERR_TOKEN = 263,         // ERR_TOKEN
-    TOKEN_SLASH_COMMENT = 264,     // SLASH_COMMENT
+    TOKEN_STR_CONST = 261,         // STR_CONST
+    TOKEN_ERR_TOKEN = 262,         // ERR_TOKEN
+    TOKEN_SLASH_COMMENT = 263,     // SLASH_COMMENT
+    TOKEN_IDENT = 264,             // IDENT
     TOKEN_INT = 265,               // INT
     TOKEN_FLOAT = 266,             // FLOAT
     TOKEN_VOID = 267,              // VOID
@@ -555,10 +566,10 @@ namespace  Yacc  {
         S_INT_CONST = 3,                         // INT_CONST
         S_LL_CONST = 4,                          // LL_CONST
         S_FLOAT_CONST = 5,                       // FLOAT_CONST
-        S_IDENT = 6,                             // IDENT
-        S_STR_CONST = 7,                         // STR_CONST
-        S_ERR_TOKEN = 8,                         // ERR_TOKEN
-        S_SLASH_COMMENT = 9,                     // SLASH_COMMENT
+        S_STR_CONST = 6,                         // STR_CONST
+        S_ERR_TOKEN = 7,                         // ERR_TOKEN
+        S_SLASH_COMMENT = 8,                     // SLASH_COMMENT
+        S_IDENT = 9,                             // IDENT
         S_INT = 10,                              // INT
         S_FLOAT = 11,                            // FLOAT
         S_VOID = 12,                             // VOID
@@ -602,7 +613,8 @@ namespace  Yacc  {
         S_AND = 50,                              // AND
         S_OR = 51,                               // OR
         S_YYACCEPT = 52,                         // $accept
-        S_program = 53                           // program
+        S_PROGRAM = 53,                          // PROGRAM
+        S_TYPE = 54                              // TYPE
       };
     };
 
@@ -639,6 +651,14 @@ namespace  Yacc  {
       {
         switch (this->kind ())
     {
+      case symbol_kind::S_PROGRAM: // PROGRAM
+        value.move< ASTree* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_TYPE: // TYPE
+        value.move< Type* > (std::move (that.value));
+        break;
+
       case symbol_kind::S_FLOAT_CONST: // FLOAT_CONST
         value.move< float > (std::move (that.value));
         break;
@@ -651,10 +671,10 @@ namespace  Yacc  {
         value.move< long long > (std::move (that.value));
         break;
 
-      case symbol_kind::S_IDENT: // IDENT
       case symbol_kind::S_STR_CONST: // STR_CONST
       case symbol_kind::S_ERR_TOKEN: // ERR_TOKEN
       case symbol_kind::S_SLASH_COMMENT: // SLASH_COMMENT
+      case symbol_kind::S_IDENT: // IDENT
         value.move< std::shared_ptr<std::string> > (std::move (that.value));
         break;
 
@@ -677,6 +697,34 @@ namespace  Yacc  {
 #else
       basic_symbol (typename Base::kind_type t, const location_type& l)
         : Base (t)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, ASTree*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const ASTree*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, Type*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const Type*& v, const location_type& l)
+        : Base (t)
+        , value (v)
         , location (l)
       {}
 #endif
@@ -761,6 +809,14 @@ namespace  Yacc  {
         // Value type destructor.
 switch (yykind)
     {
+      case symbol_kind::S_PROGRAM: // PROGRAM
+        value.template destroy< ASTree* > ();
+        break;
+
+      case symbol_kind::S_TYPE: // TYPE
+        value.template destroy< Type* > ();
+        break;
+
       case symbol_kind::S_FLOAT_CONST: // FLOAT_CONST
         value.template destroy< float > ();
         break;
@@ -773,10 +829,10 @@ switch (yykind)
         value.template destroy< long long > ();
         break;
 
-      case symbol_kind::S_IDENT: // IDENT
       case symbol_kind::S_STR_CONST: // STR_CONST
       case symbol_kind::S_ERR_TOKEN: // ERR_TOKEN
       case symbol_kind::S_SLASH_COMMENT: // SLASH_COMMENT
+      case symbol_kind::S_IDENT: // IDENT
         value.template destroy< std::shared_ptr<std::string> > ();
         break;
 
@@ -927,7 +983,7 @@ switch (yykind)
 #endif
       {
 #if !defined _MSC_VER || defined __clang__
-        YY_ASSERT ((token::TOKEN_IDENT <= tok && tok <= token::TOKEN_SLASH_COMMENT));
+        YY_ASSERT ((token::TOKEN_STR_CONST <= tok && tok <= token::TOKEN_IDENT));
 #endif
       }
     };
@@ -1071,21 +1127,6 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_IDENT (std::shared_ptr<std::string> v, location_type l)
-      {
-        return symbol_type (token::TOKEN_IDENT, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_IDENT (const std::shared_ptr<std::string>& v, const location_type& l)
-      {
-        return symbol_type (token::TOKEN_IDENT, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
       make_STR_CONST (std::shared_ptr<std::string> v, location_type l)
       {
         return symbol_type (token::TOKEN_STR_CONST, std::move (v), std::move (l));
@@ -1126,6 +1167,21 @@ switch (yykind)
       make_SLASH_COMMENT (const std::shared_ptr<std::string>& v, const location_type& l)
       {
         return symbol_type (token::TOKEN_SLASH_COMMENT, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_IDENT (std::shared_ptr<std::string> v, location_type l)
+      {
+        return symbol_type (token::TOKEN_IDENT, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_IDENT (const std::shared_ptr<std::string>& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_IDENT, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -2088,9 +2144,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 0,     ///< Last index in yytable_.
-      yynnts_ = 2,  ///< Number of nonterminal symbols.
-      yyfinal_ = 2 ///< Termination state number.
+      yylast_ = 3,     ///< Last index in yytable_.
+      yynnts_ = 3,  ///< Number of nonterminal symbols.
+      yyfinal_ = 6 ///< Termination state number.
     };
 
 
@@ -2162,6 +2218,14 @@ switch (yykind)
   {
     switch (this->kind ())
     {
+      case symbol_kind::S_PROGRAM: // PROGRAM
+        value.copy< ASTree* > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_TYPE: // TYPE
+        value.copy< Type* > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_FLOAT_CONST: // FLOAT_CONST
         value.copy< float > (YY_MOVE (that.value));
         break;
@@ -2174,10 +2238,10 @@ switch (yykind)
         value.copy< long long > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_IDENT: // IDENT
       case symbol_kind::S_STR_CONST: // STR_CONST
       case symbol_kind::S_ERR_TOKEN: // ERR_TOKEN
       case symbol_kind::S_SLASH_COMMENT: // SLASH_COMMENT
+      case symbol_kind::S_IDENT: // IDENT
         value.copy< std::shared_ptr<std::string> > (YY_MOVE (that.value));
         break;
 
@@ -2212,6 +2276,14 @@ switch (yykind)
     super_type::move (s);
     switch (this->kind ())
     {
+      case symbol_kind::S_PROGRAM: // PROGRAM
+        value.move< ASTree* > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_TYPE: // TYPE
+        value.move< Type* > (YY_MOVE (s.value));
+        break;
+
       case symbol_kind::S_FLOAT_CONST: // FLOAT_CONST
         value.move< float > (YY_MOVE (s.value));
         break;
@@ -2224,10 +2296,10 @@ switch (yykind)
         value.move< long long > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_IDENT: // IDENT
       case symbol_kind::S_STR_CONST: // STR_CONST
       case symbol_kind::S_ERR_TOKEN: // ERR_TOKEN
       case symbol_kind::S_SLASH_COMMENT: // SLASH_COMMENT
+      case symbol_kind::S_IDENT: // IDENT
         value.move< std::shared_ptr<std::string> > (YY_MOVE (s.value));
         break;
 
@@ -2298,7 +2370,7 @@ switch (yykind)
 
 #line 4 "parser/yacc.y"
 } //  Yacc 
-#line 2302 "parser/yacc.hpp"
+#line 2374 "parser/yacc.hpp"
 
 
 

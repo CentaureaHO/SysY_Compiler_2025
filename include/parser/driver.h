@@ -8,6 +8,7 @@
 
 #include <parser/scanner.h>
 #include <parser/yacc.hpp>
+#include <common/type/node/basic_node.h>
 
 namespace Yacc
 {
@@ -31,17 +32,21 @@ namespace Yacc
         std::istream* inStream;
         std::ostream* outStream;
 
+        ASTree* ast;
+
       public:
         Driver(std::istream* is = &std::cin, std::ostream* os = &std::cout);
 
         int lexical_parse();
-        int parse();
+        ASTree* parse();
 
         std::vector<Token> getTokens() const { return tokens; }
 
         void reportError(const location& loc, const std::string& message) { _parser.error(loc, message); }
 
         void setStreams(std::istream* is, std::ostream* os);
+
+        void setAST(ASTree* tree) { ast = tree; }
 
         virtual ~Driver();
     };

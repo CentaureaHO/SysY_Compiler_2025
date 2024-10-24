@@ -12,6 +12,11 @@
 {
     #include <memory>
     #include <string>
+    #include <common/type/type_defs.h>
+    #include <common/type/node/basic_node.h>
+    #include <common/type/node/statement.h>
+    #include <common/type/node/expression.h>
+    #include <common/type/symtab/symbol_table.h>
 
     namespace Yacc
     {
@@ -57,8 +62,12 @@
 %token <int> INT_CONST
 %token <long long> LL_CONST
 %token <float> FLOAT_CONST
-%token <std::shared_ptr<std::string>> IDENT STR_CONST ERR_TOKEN SLASH_COMMENT
-%token INT FLOAT VOID IF ELSE FOR WHILE CONTINUE BREAK SWITCH CASE GOTO DO RETURN CONST
+%token <std::shared_ptr<std::string>> STR_CONST ERR_TOKEN SLASH_COMMENT
+
+%token <std::shared_ptr<std::string>> IDENT 
+
+%token INT FLOAT VOID 
+%token IF ELSE FOR WHILE CONTINUE BREAK SWITCH CASE GOTO DO RETURN CONST
 %token SEMICOLON COMMA LPAREN RPAREN LBRACKET RBRACKET LBRACE RBRACE NOT BITOR BITAND DOT 
 %token END
 
@@ -67,10 +76,32 @@
 %token GT GE LT LE EQ ASSIGN MOD
 %token NEQ AND OR
 
+%nterm <Type*> TYPE
+
+%nterm <ASTree*> PROGRAM
+%start PROGRAM
+
 %%
 
-program:
-    /* todo */
+PROGRAM:
+    TYPE {
+        std::cout << "program: TYPE " << $1->getTypeName() << std::endl;
+        $$ = new ASTree();
+        driver.setAST($$);
+        YYACCEPT;
+    }
+    ;
+
+TYPE:
+    INT {
+        $$ = intType;
+    }
+    | FLOAT {
+        $$ = floatType;
+    }
+    | VOID {
+        $$ = voidType;
+    }
 
 %%
 

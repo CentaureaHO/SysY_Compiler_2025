@@ -55,8 +55,8 @@ namespace Symbol
       private:
         struct Scope
         {
-            std::unordered_map<Entry*, VarAttribute*, EntryHasher, EntryEqual> symbolMap;
-            Scope*                                                             parent;
+            std::unordered_map<Entry*, VarAttribute, EntryHasher, EntryEqual> symbolMap;
+            Scope*                                                            parent;
             /*
              * -1: unknown
              *  0: global
@@ -83,12 +83,15 @@ namespace Symbol
          * 1: exist in current scope
          * 2: exist in param list
          */
-        int           addSymbol(Entry* entry, VarAttribute* attribute);
+        template <typename T>
+        int           addSymbol(Entry* entry, T&& attribute);
         VarAttribute* getSymbol(Entry* entry);
 
         bool enterScope();
         bool exitScope();
     };
 }  // namespace Symbol
+
+#include <common/type/symtab/symbol_table.hpp>
 
 #endif

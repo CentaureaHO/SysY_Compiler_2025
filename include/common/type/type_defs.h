@@ -56,6 +56,8 @@ enum class OpCode
 
 class Type
 {
+    friend class TypeSystem;
+
   public:
     virtual TypeKind    getKind() const     = 0;
     virtual std::string getTypeName() const = 0;
@@ -73,50 +75,54 @@ class Type
 
 class BasicType : public Type
 {
+    friend class TypeSystem;
+
   private:
+    BasicType(TypeKind kind = TypeKind::Void);
     TypeKind kind;
 
   public:
-    BasicType(TypeKind kind = TypeKind::Void);
-
     TypeKind    getKind() const override;
     std::string getTypeName() const override;
 };
 
 class PointerType : public Type
 {
+    friend class TypeSystem;
+
   private:
+    PointerType(Type* baseType = nullptr);
     Type* baseType;
 
   public:
-    PointerType(Type* baseType = nullptr);
-
     TypeKind    getKind() const override;
     std::string getTypeName() const override;
 };
 
 class ArrayType : public Type
 {
+    friend class TypeSystem;
+
   private:
+    ArrayType(Type* baseType = nullptr, size_t size = 0);
     Type*  baseType;
     size_t size;
 
   public:
-    ArrayType(Type* baseType = nullptr, size_t size = 0);
-
     TypeKind    getKind() const override;
     std::string getTypeName() const override;
 };
 
 class FunctionType : public Type
 {
+    friend class TypeSystem;
+
   private:
+    FunctionType(Type* returnType = nullptr, std::vector<Type*> paramTypes = {});
     Type*              returnType;
     std::vector<Type*> paramTypes;
 
   public:
-    FunctionType(Type* returnType = nullptr, std::vector<Type*> paramTypes = {});
-
     TypeKind    getKind() const override;
     std::string getTypeName() const override;
 };
