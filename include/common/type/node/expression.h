@@ -9,7 +9,19 @@
  * @brief 抽象语法树中所有表达式节点基类
  */
 class ExprNode : public Node
-{};
+{
+  protected:
+    bool isConst;
+
+  public:
+    ExprNode(int line_num = -1, bool isConst = true);
+    virtual ~ExprNode();
+
+    void printAST(std::ostream* oss, int pad) override;
+
+    void setConst();
+    void setNonConst();
+};
 
 class LeftValueExpr : public ExprNode
 {
@@ -46,15 +58,6 @@ class ConstExpr : public ExprNode
 
     void printAST(std::ostream* oss, int pad) override;
 };
-
-/**
- * @brief 标识符表达式节点
- *
- * 用于表示抽象语法树中的标识符（变量、函数等）。
-
-class IdentExpr : public ExprNode
-{};
- */
 
 /**
  * @brief 一元运算符表达式节点

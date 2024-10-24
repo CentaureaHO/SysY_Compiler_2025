@@ -1,6 +1,17 @@
 #include <common/type/node/expression.h>
 using namespace std;
 
+/* Definition of ExprNode: head */
+
+ExprNode::ExprNode(int line_num, bool isConst) : Node(line_num), isConst(isConst) {}
+ExprNode::~ExprNode() {}
+
+void ExprNode::printAST(ostream* oss, int pad) { *oss << string(pad, ' ') << "ExprNode\n"; }
+
+void ExprNode::setConst() { isConst = true; }
+void ExprNode::setNonConst() { isConst = false; }
+
+/* Definition of ExprNode: tail */
 /* Definition of LeftValueExpr: head */
 
 LeftValueExpr::LeftValueExpr(Symbol::Entry* entry, vector<ExprNode*>* dims, int scope)

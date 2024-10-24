@@ -95,7 +95,11 @@
 
 %nterm <ExprNode*> EXPR
 
+%nterm <ExprNode*> ASSIGN_EXPR      /* 由于C语言中=语句也有返回值，因此定义ASSIGN为EXPR而非STMT */
 %nterm <ExprNode*> LEFT_VAL_EXPR
+
+%nterm <StmtNode*> EXPR_STMT
+%nterm <StmtNode*> STMT
 
 %nterm <ASTree*> PROGRAM
 %start PROGRAM
@@ -103,23 +107,39 @@
 %%
 
 PROGRAM:
-    TYPE {
-        std::cout << "program: TYPE " << $1->getTypeName() << std::endl;
-        $$ = new ASTree();
-        driver.setAST($$);
-        YYACCEPT;
-    }
-    | EXPR {
-        std::cout << "program: EXPR " << std::endl;
+    STMT {
+        std::cout << "program: STMT " << std::endl;
         $1->printAST(&std::cout, 0);
         $$ = new ASTree();
         driver.setAST($$);
+    }
+    | PROGRAM END {
         YYACCEPT;
+    }
+    ;
+
+STMT:
+    EXPR_STMT {
+        $$ = $1;
+    }
+    ;
+
+EXPR_STMT:
+    EXPR SEMICOLON {
+        $$ = new ExprStmt($1);
+    }
+
+ASSIGN_EXPR:
+    LEFT_VAL_EXPR ASSIGN EXPR {
+        $$ = new BinaryExpr(OpCode::Assign, $1, $3);
     }
     ;
 
 EXPR:
     LOGICAL_OR_EXPR {
+        $$ = $1;
+    }
+    | ASSIGN_EXPR {
         $$ = $1;
     }
     ;

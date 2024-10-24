@@ -38,7 +38,8 @@
     X(BitOr, |, 13)                \
     X(BitAnd, &, 14)               \
     X(And, &&, 15)                 \
-    X(Or, ||, 16)
+    X(Or, ||, 16)                  \
+    X(Assign, =, 17)
 
 enum class TypeKind
 {

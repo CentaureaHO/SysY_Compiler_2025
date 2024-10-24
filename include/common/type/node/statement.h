@@ -14,20 +14,22 @@
 class StmtNode : public Node
 {
   public:
-    StmtNode(int line_num = -1) : Node(line_num) {}
-    virtual ~StmtNode() {}
+    StmtNode(int line_num = -1);
+    virtual ~StmtNode();
 
-    void printAST(std::ostream* oss, int pad) override { *oss << std::string(pad, ' ') << "StmtNode" << std::endl; }
+    void printAST(std::ostream* oss, int pad) override;
 };
 
-class FuncDeclStmt : public StmtNode
+class ExprStmt : public StmtNode
 {
   private:
-    Symbol::Entry*      funcEntry;
-    Type*               retType;
-    std::vector<Type*>* paramTypes;
+    ExprNode* expr;
 
   public:
+    ExprStmt(ExprNode* expr = nullptr);
+    ~ExprStmt();
+
+    void printAST(std::ostream* oss, int pad) override;
 };
 
 #endif
