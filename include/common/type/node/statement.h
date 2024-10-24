@@ -48,4 +48,16 @@ class VarDeclStmt : public StmtNode
     void printAST(std::ostream* oss, int pad) override;
 };
 
+class BlockStmt : public StmtNode
+{
+  private:
+    std::vector<StmtNode*>* stmts;
+
+  public:
+    BlockStmt(std::vector<StmtNode*>* stmts = nullptr);
+    ~BlockStmt();
+
+    void printAST(std::ostream* oss, int pad) override;
+};
+
 #endif

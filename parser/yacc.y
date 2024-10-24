@@ -108,7 +108,10 @@
 
 %nterm <StmtNode*> EXPR_STMT
 %nterm <StmtNode*> VAR_DECL_STMT
+%nterm <StmtNode*> BLOCK_STMT
 %nterm <StmtNode*> STMT
+
+%nterm <std::vector<StmtNode*>*> STMT_LIST
 
 %nterm <ASTree*> PROGRAM
 %start PROGRAM
@@ -116,15 +119,25 @@
 %%
 
 PROGRAM:
-    STMT {
-        std::cout << "program: STMT " << std::endl;
-        $1->printAST(&std::cout, 0);
-        $$ = new ASTree();
+    STMT_LIST {
+        std::cout << "program: STMT_LIST " << std::endl;
+        $$ = new ASTree($1);
         driver.setAST($$);
         // delete $1;
     }
     | PROGRAM END {
         YYACCEPT;
+    }
+    ;
+
+STMT_LIST:
+    STMT {
+        $$ = new std::vector<StmtNode*>();
+        $$->push_back($1);
+    }
+    | STMT_LIST STMT {
+        $$ = $1;
+        $$->push_back($2);
     }
     ;
 
@@ -134,7 +147,16 @@ STMT:
     }
     | VAR_DECL_STMT {
         $$ = $1;
-    }       
+    }
+    | BLOCK_STMT {
+        $$ = $1;
+    }
+    ;
+
+BLOCK_STMT:
+    LBRACE STMT_LIST RBRACE {
+        $$ = new BlockStmt($2);
+    }
     ;
 
 EXPR_STMT:
@@ -157,6 +179,7 @@ DEF:
     | LEFT_VAL_EXPR ASSIGN INITIALIZER {
         $$ = new DefNode($1, $3);
     }
+    ; 
 
 DEF_LIST:
     DEF {

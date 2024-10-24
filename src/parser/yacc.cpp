@@ -260,6 +260,7 @@ namespace  Yacc  {
         break;
 
       case symbol_kind::S_STMT: // STMT
+      case symbol_kind::S_BLOCK_STMT: // BLOCK_STMT
       case symbol_kind::S_EXPR_STMT: // EXPR_STMT
       case symbol_kind::S_VAR_DECL_STMT: // VAR_DECL_STMT
         value.YY_MOVE_OR_COPY< StmtNode* > (YY_MOVE (that.value));
@@ -298,6 +299,10 @@ namespace  Yacc  {
 
       case symbol_kind::S_INITIALIZER_LIST: // INITIALIZER_LIST
         value.YY_MOVE_OR_COPY< std::vector<InitNode*>* > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_STMT_LIST: // STMT_LIST
+        value.YY_MOVE_OR_COPY< std::vector<StmtNode*>* > (YY_MOVE (that.value));
         break;
 
       default:
@@ -348,6 +353,7 @@ namespace  Yacc  {
         break;
 
       case symbol_kind::S_STMT: // STMT
+      case symbol_kind::S_BLOCK_STMT: // BLOCK_STMT
       case symbol_kind::S_EXPR_STMT: // EXPR_STMT
       case symbol_kind::S_VAR_DECL_STMT: // VAR_DECL_STMT
         value.move< StmtNode* > (YY_MOVE (that.value));
@@ -386,6 +392,10 @@ namespace  Yacc  {
 
       case symbol_kind::S_INITIALIZER_LIST: // INITIALIZER_LIST
         value.move< std::vector<InitNode*>* > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_STMT_LIST: // STMT_LIST
+        value.move< std::vector<StmtNode*>* > (YY_MOVE (that.value));
         break;
 
       default:
@@ -436,6 +446,7 @@ namespace  Yacc  {
         break;
 
       case symbol_kind::S_STMT: // STMT
+      case symbol_kind::S_BLOCK_STMT: // BLOCK_STMT
       case symbol_kind::S_EXPR_STMT: // EXPR_STMT
       case symbol_kind::S_VAR_DECL_STMT: // VAR_DECL_STMT
         value.copy< StmtNode* > (that.value);
@@ -474,6 +485,10 @@ namespace  Yacc  {
 
       case symbol_kind::S_INITIALIZER_LIST: // INITIALIZER_LIST
         value.copy< std::vector<InitNode*>* > (that.value);
+        break;
+
+      case symbol_kind::S_STMT_LIST: // STMT_LIST
+        value.copy< std::vector<StmtNode*>* > (that.value);
         break;
 
       default:
@@ -523,6 +538,7 @@ namespace  Yacc  {
         break;
 
       case symbol_kind::S_STMT: // STMT
+      case symbol_kind::S_BLOCK_STMT: // BLOCK_STMT
       case symbol_kind::S_EXPR_STMT: // EXPR_STMT
       case symbol_kind::S_VAR_DECL_STMT: // VAR_DECL_STMT
         value.move< StmtNode* > (that.value);
@@ -561,6 +577,10 @@ namespace  Yacc  {
 
       case symbol_kind::S_INITIALIZER_LIST: // INITIALIZER_LIST
         value.move< std::vector<InitNode*>* > (that.value);
+        break;
+
+      case symbol_kind::S_STMT_LIST: // STMT_LIST
+        value.move< std::vector<StmtNode*>* > (that.value);
         break;
 
       default:
@@ -855,6 +875,7 @@ namespace  Yacc  {
         break;
 
       case symbol_kind::S_STMT: // STMT
+      case symbol_kind::S_BLOCK_STMT: // BLOCK_STMT
       case symbol_kind::S_EXPR_STMT: // EXPR_STMT
       case symbol_kind::S_VAR_DECL_STMT: // VAR_DECL_STMT
         yylhs.value.emplace< StmtNode* > ();
@@ -895,6 +916,10 @@ namespace  Yacc  {
         yylhs.value.emplace< std::vector<InitNode*>* > ();
         break;
 
+      case symbol_kind::S_STMT_LIST: // STMT_LIST
+        yylhs.value.emplace< std::vector<StmtNode*>* > ();
+        break;
+
       default:
         break;
     }
@@ -915,476 +940,509 @@ namespace  Yacc  {
         {
           switch (yyn)
             {
-  case 2: // PROGRAM: STMT
-#line 119 "parser/yacc.y"
-         {
-        std::cout << "program: STMT " << std::endl;
-        yystack_[0].value.as < StmtNode* > ()->printAST(&std::cout, 0);
-        yylhs.value.as < ASTree* > () = new ASTree();
+  case 2: // PROGRAM: STMT_LIST
+#line 122 "parser/yacc.y"
+              {
+        std::cout << "program: STMT_LIST " << std::endl;
+        yylhs.value.as < ASTree* > () = new ASTree(yystack_[0].value.as < std::vector<StmtNode*>* > ());
         driver.setAST(yylhs.value.as < ASTree* > ());
         // delete $1;
-    }
-#line 928 "parser/yacc.cpp"
-    break;
-
-  case 3: // PROGRAM: PROGRAM END
-#line 126 "parser/yacc.y"
-                  {
-        YYACCEPT;
-    }
-#line 936 "parser/yacc.cpp"
-    break;
-
-  case 4: // STMT: EXPR_STMT
-#line 132 "parser/yacc.y"
-              {
-        yylhs.value.as < StmtNode* > () = yystack_[0].value.as < StmtNode* > ();
-    }
-#line 944 "parser/yacc.cpp"
-    break;
-
-  case 5: // STMT: VAR_DECL_STMT
-#line 135 "parser/yacc.y"
-                    {
-        yylhs.value.as < StmtNode* > () = yystack_[0].value.as < StmtNode* > ();
     }
 #line 952 "parser/yacc.cpp"
     break;
 
-  case 6: // EXPR_STMT: EXPR SEMICOLON
-#line 141 "parser/yacc.y"
-                   {
-        yylhs.value.as < StmtNode* > () = new ExprStmt(yystack_[1].value.as < ExprNode* > ());
+  case 3: // PROGRAM: PROGRAM END
+#line 128 "parser/yacc.y"
+                  {
+        YYACCEPT;
     }
 #line 960 "parser/yacc.cpp"
     break;
 
-  case 7: // VAR_DECL_STMT: TYPE DEF_LIST SEMICOLON
-#line 146 "parser/yacc.y"
-                            {
-        yylhs.value.as < StmtNode* > () = new VarDeclStmt(yystack_[2].value.as < Type* > (), yystack_[1].value.as < std::vector<DefNode*>* > ());
+  case 4: // STMT_LIST: STMT
+#line 134 "parser/yacc.y"
+         {
+        yylhs.value.as < std::vector<StmtNode*>* > () = new std::vector<StmtNode*>();
+        yylhs.value.as < std::vector<StmtNode*>* > ()->push_back(yystack_[0].value.as < StmtNode* > ());
     }
-#line 968 "parser/yacc.cpp"
+#line 969 "parser/yacc.cpp"
     break;
 
-  case 8: // VAR_DECL_STMT: CONST TYPE DEF_LIST SEMICOLON
-#line 149 "parser/yacc.y"
-                                    {
-        yylhs.value.as < StmtNode* > () = new VarDeclStmt(yystack_[2].value.as < Type* > (), yystack_[1].value.as < std::vector<DefNode*>* > (), true);
+  case 5: // STMT_LIST: STMT_LIST STMT
+#line 138 "parser/yacc.y"
+                     {
+        yylhs.value.as < std::vector<StmtNode*>* > () = yystack_[1].value.as < std::vector<StmtNode*>* > ();
+        yylhs.value.as < std::vector<StmtNode*>* > ()->push_back(yystack_[0].value.as < StmtNode* > ());
     }
-#line 976 "parser/yacc.cpp"
+#line 978 "parser/yacc.cpp"
     break;
 
-  case 9: // DEF: LEFT_VAL_EXPR
-#line 154 "parser/yacc.y"
-                  {
-        yylhs.value.as < DefNode* > () = new DefNode(yystack_[0].value.as < ExprNode* > (), nullptr);
+  case 6: // STMT: EXPR_STMT
+#line 145 "parser/yacc.y"
+              {
+        yylhs.value.as < StmtNode* > () = yystack_[0].value.as < StmtNode* > ();
     }
-#line 984 "parser/yacc.cpp"
+#line 986 "parser/yacc.cpp"
     break;
 
-  case 10: // DEF: LEFT_VAL_EXPR ASSIGN INITIALIZER
+  case 7: // STMT: VAR_DECL_STMT
+#line 148 "parser/yacc.y"
+                    {
+        yylhs.value.as < StmtNode* > () = yystack_[0].value.as < StmtNode* > ();
+    }
+#line 994 "parser/yacc.cpp"
+    break;
+
+  case 8: // STMT: BLOCK_STMT
+#line 151 "parser/yacc.y"
+                 {
+        yylhs.value.as < StmtNode* > () = yystack_[0].value.as < StmtNode* > ();
+    }
+#line 1002 "parser/yacc.cpp"
+    break;
+
+  case 9: // BLOCK_STMT: LBRACE STMT_LIST RBRACE
 #line 157 "parser/yacc.y"
-                                       {
-        yylhs.value.as < DefNode* > () = new DefNode(yystack_[2].value.as < ExprNode* > (), yystack_[0].value.as < InitNode* > ());
-    }
-#line 992 "parser/yacc.cpp"
-    break;
-
-  case 11: // DEF_LIST: DEF
-#line 162 "parser/yacc.y"
-        {
-        yylhs.value.as < std::vector<DefNode*>* > () = new std::vector<DefNode*>();
-        yylhs.value.as < std::vector<DefNode*>* > ()->push_back(yystack_[0].value.as < DefNode* > ());
-    }
-#line 1001 "parser/yacc.cpp"
-    break;
-
-  case 12: // DEF_LIST: DEF_LIST COMMA DEF
-#line 166 "parser/yacc.y"
-                         {
-        yylhs.value.as < std::vector<DefNode*>* > () = yystack_[2].value.as < std::vector<DefNode*>* > ();
-        yylhs.value.as < std::vector<DefNode*>* > ()->push_back(yystack_[0].value.as < DefNode* > ());
+                            {
+        yylhs.value.as < StmtNode* > () = new BlockStmt(yystack_[1].value.as < std::vector<StmtNode*>* > ());
     }
 #line 1010 "parser/yacc.cpp"
     break;
 
-  case 13: // INITIALIZER: EXPR
-#line 173 "parser/yacc.y"
-         {
-        yylhs.value.as < InitNode* > () = new InitSingle(yystack_[0].value.as < ExprNode* > ());
+  case 10: // EXPR_STMT: EXPR SEMICOLON
+#line 163 "parser/yacc.y"
+                   {
+        yylhs.value.as < StmtNode* > () = new ExprStmt(yystack_[1].value.as < ExprNode* > ());
     }
 #line 1018 "parser/yacc.cpp"
     break;
 
-  case 14: // INITIALIZER: LBRACE INITIALIZER_LIST RBRACE
-#line 176 "parser/yacc.y"
-                                     {
-        yylhs.value.as < InitNode* > () = new InitMulti(yystack_[1].value.as < std::vector<InitNode*>* > ());
+  case 11: // VAR_DECL_STMT: TYPE DEF_LIST SEMICOLON
+#line 168 "parser/yacc.y"
+                            {
+        yylhs.value.as < StmtNode* > () = new VarDeclStmt(yystack_[2].value.as < Type* > (), yystack_[1].value.as < std::vector<DefNode*>* > ());
     }
 #line 1026 "parser/yacc.cpp"
     break;
 
-  case 15: // INITIALIZER_LIST: INITIALIZER
-#line 182 "parser/yacc.y"
-                { 
-        yylhs.value.as < std::vector<InitNode*>* > () = new std::vector<InitNode*>();
-        yylhs.value.as < std::vector<InitNode*>* > ()->push_back(yystack_[0].value.as < InitNode* > ());
+  case 12: // VAR_DECL_STMT: CONST TYPE DEF_LIST SEMICOLON
+#line 171 "parser/yacc.y"
+                                    {
+        yylhs.value.as < StmtNode* > () = new VarDeclStmt(yystack_[2].value.as < Type* > (), yystack_[1].value.as < std::vector<DefNode*>* > (), true);
     }
-#line 1035 "parser/yacc.cpp"
+#line 1034 "parser/yacc.cpp"
     break;
 
-  case 16: // INITIALIZER_LIST: INITIALIZER_LIST COMMA INITIALIZER
-#line 186 "parser/yacc.y"
-                                         {
-        yylhs.value.as < std::vector<InitNode*>* > () = yystack_[2].value.as < std::vector<InitNode*>* > ();
-        yylhs.value.as < std::vector<InitNode*>* > ()->push_back(yystack_[0].value.as < InitNode* > ());
-    }
-#line 1044 "parser/yacc.cpp"
-    break;
-
-  case 17: // ASSIGN_EXPR: LEFT_VAL_EXPR ASSIGN EXPR
-#line 193 "parser/yacc.y"
-                              {
-        yylhs.value.as < ExprNode* > () = new BinaryExpr(OpCode::Assign, yystack_[2].value.as < ExprNode* > (), yystack_[0].value.as < ExprNode* > ());
-    }
-#line 1052 "parser/yacc.cpp"
-    break;
-
-  case 18: // EXPR: LOGICAL_OR_EXPR
-#line 199 "parser/yacc.y"
-                    {
-        yylhs.value.as < ExprNode* > () = yystack_[0].value.as < ExprNode* > ();
-    }
-#line 1060 "parser/yacc.cpp"
-    break;
-
-  case 19: // EXPR: ASSIGN_EXPR
-#line 202 "parser/yacc.y"
+  case 13: // DEF: LEFT_VAL_EXPR
+#line 176 "parser/yacc.y"
                   {
-        yylhs.value.as < ExprNode* > () = yystack_[0].value.as < ExprNode* > ();
+        yylhs.value.as < DefNode* > () = new DefNode(yystack_[0].value.as < ExprNode* > (), nullptr);
+    }
+#line 1042 "parser/yacc.cpp"
+    break;
+
+  case 14: // DEF: LEFT_VAL_EXPR ASSIGN INITIALIZER
+#line 179 "parser/yacc.y"
+                                       {
+        yylhs.value.as < DefNode* > () = new DefNode(yystack_[2].value.as < ExprNode* > (), yystack_[0].value.as < InitNode* > ());
+    }
+#line 1050 "parser/yacc.cpp"
+    break;
+
+  case 15: // DEF_LIST: DEF
+#line 185 "parser/yacc.y"
+        {
+        yylhs.value.as < std::vector<DefNode*>* > () = new std::vector<DefNode*>();
+        yylhs.value.as < std::vector<DefNode*>* > ()->push_back(yystack_[0].value.as < DefNode* > ());
+    }
+#line 1059 "parser/yacc.cpp"
+    break;
+
+  case 16: // DEF_LIST: DEF_LIST COMMA DEF
+#line 189 "parser/yacc.y"
+                         {
+        yylhs.value.as < std::vector<DefNode*>* > () = yystack_[2].value.as < std::vector<DefNode*>* > ();
+        yylhs.value.as < std::vector<DefNode*>* > ()->push_back(yystack_[0].value.as < DefNode* > ());
     }
 #line 1068 "parser/yacc.cpp"
     break;
 
-  case 20: // LOGICAL_OR_EXPR: LOGICAL_AND_EXPR
-#line 208 "parser/yacc.y"
-                     {
-        yylhs.value.as < ExprNode* > () = yystack_[0].value.as < ExprNode* > ();
+  case 17: // INITIALIZER: EXPR
+#line 196 "parser/yacc.y"
+         {
+        yylhs.value.as < InitNode* > () = new InitSingle(yystack_[0].value.as < ExprNode* > ());
     }
 #line 1076 "parser/yacc.cpp"
     break;
 
-  case 21: // LOGICAL_OR_EXPR: LOGICAL_OR_EXPR OR LOGICAL_AND_EXPR
-#line 211 "parser/yacc.y"
-                                          {
-        yylhs.value.as < ExprNode* > () = new BinaryExpr(OpCode::Or, yystack_[2].value.as < ExprNode* > (), yystack_[0].value.as < ExprNode* > ());
+  case 18: // INITIALIZER: LBRACE INITIALIZER_LIST RBRACE
+#line 199 "parser/yacc.y"
+                                     {
+        yylhs.value.as < InitNode* > () = new InitMulti(yystack_[1].value.as < std::vector<InitNode*>* > ());
     }
 #line 1084 "parser/yacc.cpp"
     break;
 
-  case 22: // LOGICAL_AND_EXPR: EQUALITY_EXPR
-#line 217 "parser/yacc.y"
+  case 19: // INITIALIZER_LIST: INITIALIZER
+#line 205 "parser/yacc.y"
+                { 
+        yylhs.value.as < std::vector<InitNode*>* > () = new std::vector<InitNode*>();
+        yylhs.value.as < std::vector<InitNode*>* > ()->push_back(yystack_[0].value.as < InitNode* > ());
+    }
+#line 1093 "parser/yacc.cpp"
+    break;
+
+  case 20: // INITIALIZER_LIST: INITIALIZER_LIST COMMA INITIALIZER
+#line 209 "parser/yacc.y"
+                                         {
+        yylhs.value.as < std::vector<InitNode*>* > () = yystack_[2].value.as < std::vector<InitNode*>* > ();
+        yylhs.value.as < std::vector<InitNode*>* > ()->push_back(yystack_[0].value.as < InitNode* > ());
+    }
+#line 1102 "parser/yacc.cpp"
+    break;
+
+  case 21: // ASSIGN_EXPR: LEFT_VAL_EXPR ASSIGN EXPR
+#line 216 "parser/yacc.y"
+                              {
+        yylhs.value.as < ExprNode* > () = new BinaryExpr(OpCode::Assign, yystack_[2].value.as < ExprNode* > (), yystack_[0].value.as < ExprNode* > ());
+    }
+#line 1110 "parser/yacc.cpp"
+    break;
+
+  case 22: // EXPR: LOGICAL_OR_EXPR
+#line 222 "parser/yacc.y"
+                    {
+        yylhs.value.as < ExprNode* > () = yystack_[0].value.as < ExprNode* > ();
+    }
+#line 1118 "parser/yacc.cpp"
+    break;
+
+  case 23: // EXPR: ASSIGN_EXPR
+#line 225 "parser/yacc.y"
                   {
         yylhs.value.as < ExprNode* > () = yystack_[0].value.as < ExprNode* > ();
     }
-#line 1092 "parser/yacc.cpp"
+#line 1126 "parser/yacc.cpp"
     break;
 
-  case 23: // LOGICAL_AND_EXPR: LOGICAL_AND_EXPR AND EQUALITY_EXPR
-#line 220 "parser/yacc.y"
+  case 24: // LOGICAL_OR_EXPR: LOGICAL_AND_EXPR
+#line 231 "parser/yacc.y"
+                     {
+        yylhs.value.as < ExprNode* > () = yystack_[0].value.as < ExprNode* > ();
+    }
+#line 1134 "parser/yacc.cpp"
+    break;
+
+  case 25: // LOGICAL_OR_EXPR: LOGICAL_OR_EXPR OR LOGICAL_AND_EXPR
+#line 234 "parser/yacc.y"
+                                          {
+        yylhs.value.as < ExprNode* > () = new BinaryExpr(OpCode::Or, yystack_[2].value.as < ExprNode* > (), yystack_[0].value.as < ExprNode* > ());
+    }
+#line 1142 "parser/yacc.cpp"
+    break;
+
+  case 26: // LOGICAL_AND_EXPR: EQUALITY_EXPR
+#line 240 "parser/yacc.y"
+                  {
+        yylhs.value.as < ExprNode* > () = yystack_[0].value.as < ExprNode* > ();
+    }
+#line 1150 "parser/yacc.cpp"
+    break;
+
+  case 27: // LOGICAL_AND_EXPR: LOGICAL_AND_EXPR AND EQUALITY_EXPR
+#line 243 "parser/yacc.y"
                                          {
         yylhs.value.as < ExprNode* > () = new BinaryExpr(OpCode::And, yystack_[2].value.as < ExprNode* > (), yystack_[0].value.as < ExprNode* > ());
     }
-#line 1100 "parser/yacc.cpp"
+#line 1158 "parser/yacc.cpp"
     break;
 
-  case 24: // EQUALITY_EXPR: RELATIONAL_EXPR
-#line 226 "parser/yacc.y"
+  case 28: // EQUALITY_EXPR: RELATIONAL_EXPR
+#line 249 "parser/yacc.y"
                     {
         yylhs.value.as < ExprNode* > () = yystack_[0].value.as < ExprNode* > ();
     }
-#line 1108 "parser/yacc.cpp"
+#line 1166 "parser/yacc.cpp"
     break;
 
-  case 25: // EQUALITY_EXPR: EQUALITY_EXPR EQ RELATIONAL_EXPR
-#line 229 "parser/yacc.y"
+  case 29: // EQUALITY_EXPR: EQUALITY_EXPR EQ RELATIONAL_EXPR
+#line 252 "parser/yacc.y"
                                        {
         yylhs.value.as < ExprNode* > () = new BinaryExpr(OpCode::Eq, yystack_[2].value.as < ExprNode* > (), yystack_[0].value.as < ExprNode* > ());
     }
-#line 1116 "parser/yacc.cpp"
+#line 1174 "parser/yacc.cpp"
     break;
 
-  case 26: // EQUALITY_EXPR: EQUALITY_EXPR NEQ RELATIONAL_EXPR
-#line 232 "parser/yacc.y"
+  case 30: // EQUALITY_EXPR: EQUALITY_EXPR NEQ RELATIONAL_EXPR
+#line 255 "parser/yacc.y"
                                         {
         yylhs.value.as < ExprNode* > () = new BinaryExpr(OpCode::Neq, yystack_[2].value.as < ExprNode* > (), yystack_[0].value.as < ExprNode* > ());
     }
-#line 1124 "parser/yacc.cpp"
+#line 1182 "parser/yacc.cpp"
     break;
 
-  case 27: // RELATIONAL_EXPR: ADDSUB_EXPR
-#line 238 "parser/yacc.y"
+  case 31: // RELATIONAL_EXPR: ADDSUB_EXPR
+#line 261 "parser/yacc.y"
                 {
         yylhs.value.as < ExprNode* > () = yystack_[0].value.as < ExprNode* > ();
     }
-#line 1132 "parser/yacc.cpp"
+#line 1190 "parser/yacc.cpp"
     break;
 
-  case 28: // RELATIONAL_EXPR: RELATIONAL_EXPR GT ADDSUB_EXPR
-#line 241 "parser/yacc.y"
+  case 32: // RELATIONAL_EXPR: RELATIONAL_EXPR GT ADDSUB_EXPR
+#line 264 "parser/yacc.y"
                                      {
         yylhs.value.as < ExprNode* > () = new BinaryExpr(OpCode::Gt, yystack_[2].value.as < ExprNode* > (), yystack_[0].value.as < ExprNode* > ());
     }
-#line 1140 "parser/yacc.cpp"
+#line 1198 "parser/yacc.cpp"
     break;
 
-  case 29: // RELATIONAL_EXPR: RELATIONAL_EXPR GE ADDSUB_EXPR
-#line 244 "parser/yacc.y"
+  case 33: // RELATIONAL_EXPR: RELATIONAL_EXPR GE ADDSUB_EXPR
+#line 267 "parser/yacc.y"
                                      {
         yylhs.value.as < ExprNode* > () = new BinaryExpr(OpCode::Ge, yystack_[2].value.as < ExprNode* > (), yystack_[0].value.as < ExprNode* > ());
     }
-#line 1148 "parser/yacc.cpp"
+#line 1206 "parser/yacc.cpp"
     break;
 
-  case 30: // RELATIONAL_EXPR: RELATIONAL_EXPR LT ADDSUB_EXPR
-#line 247 "parser/yacc.y"
+  case 34: // RELATIONAL_EXPR: RELATIONAL_EXPR LT ADDSUB_EXPR
+#line 270 "parser/yacc.y"
                                      {
         yylhs.value.as < ExprNode* > () = new BinaryExpr(OpCode::Lt, yystack_[2].value.as < ExprNode* > (), yystack_[0].value.as < ExprNode* > ());
     }
-#line 1156 "parser/yacc.cpp"
+#line 1214 "parser/yacc.cpp"
     break;
 
-  case 31: // RELATIONAL_EXPR: RELATIONAL_EXPR LE ADDSUB_EXPR
-#line 250 "parser/yacc.y"
+  case 35: // RELATIONAL_EXPR: RELATIONAL_EXPR LE ADDSUB_EXPR
+#line 273 "parser/yacc.y"
                                      {
         yylhs.value.as < ExprNode* > () = new BinaryExpr(OpCode::Le, yystack_[2].value.as < ExprNode* > (), yystack_[0].value.as < ExprNode* > ());
     }
-#line 1164 "parser/yacc.cpp"
+#line 1222 "parser/yacc.cpp"
     break;
 
-  case 32: // ADDSUB_EXPR: MULDIV_EXPR
-#line 256 "parser/yacc.y"
+  case 36: // ADDSUB_EXPR: MULDIV_EXPR
+#line 279 "parser/yacc.y"
                 {
         yylhs.value.as < ExprNode* > () = yystack_[0].value.as < ExprNode* > ();
     }
-#line 1172 "parser/yacc.cpp"
+#line 1230 "parser/yacc.cpp"
     break;
 
-  case 33: // ADDSUB_EXPR: ADDSUB_EXPR PLUS MULDIV_EXPR
-#line 259 "parser/yacc.y"
+  case 37: // ADDSUB_EXPR: ADDSUB_EXPR PLUS MULDIV_EXPR
+#line 282 "parser/yacc.y"
                                    {
         yylhs.value.as < ExprNode* > () = new BinaryExpr(OpCode::Add, yystack_[2].value.as < ExprNode* > (), yystack_[0].value.as < ExprNode* > ());
     }
-#line 1180 "parser/yacc.cpp"
+#line 1238 "parser/yacc.cpp"
     break;
 
-  case 34: // ADDSUB_EXPR: ADDSUB_EXPR MINUS MULDIV_EXPR
-#line 262 "parser/yacc.y"
+  case 38: // ADDSUB_EXPR: ADDSUB_EXPR MINUS MULDIV_EXPR
+#line 285 "parser/yacc.y"
                                     {
         yylhs.value.as < ExprNode* > () = new BinaryExpr(OpCode::Sub, yystack_[2].value.as < ExprNode* > (), yystack_[0].value.as < ExprNode* > ());
     }
-#line 1188 "parser/yacc.cpp"
+#line 1246 "parser/yacc.cpp"
     break;
 
-  case 35: // MULDIV_EXPR: UNARY_EXPR
-#line 268 "parser/yacc.y"
+  case 39: // MULDIV_EXPR: UNARY_EXPR
+#line 291 "parser/yacc.y"
                {
         yylhs.value.as < ExprNode* > () = yystack_[0].value.as < ExprNode* > ();
     }
-#line 1196 "parser/yacc.cpp"
+#line 1254 "parser/yacc.cpp"
     break;
 
-  case 36: // MULDIV_EXPR: MULDIV_EXPR STAR UNARY_EXPR
-#line 271 "parser/yacc.y"
+  case 40: // MULDIV_EXPR: MULDIV_EXPR STAR UNARY_EXPR
+#line 294 "parser/yacc.y"
                                   {
         yylhs.value.as < ExprNode* > () = new BinaryExpr(OpCode::Mul, yystack_[2].value.as < ExprNode* > (), yystack_[0].value.as < ExprNode* > ());
     }
-#line 1204 "parser/yacc.cpp"
+#line 1262 "parser/yacc.cpp"
     break;
 
-  case 37: // MULDIV_EXPR: MULDIV_EXPR SLASH UNARY_EXPR
-#line 274 "parser/yacc.y"
+  case 41: // MULDIV_EXPR: MULDIV_EXPR SLASH UNARY_EXPR
+#line 297 "parser/yacc.y"
                                    {
         yylhs.value.as < ExprNode* > () = new BinaryExpr(OpCode::Div, yystack_[2].value.as < ExprNode* > (), yystack_[0].value.as < ExprNode* > ());
     }
-#line 1212 "parser/yacc.cpp"
+#line 1270 "parser/yacc.cpp"
     break;
 
-  case 38: // MULDIV_EXPR: MULDIV_EXPR MOD UNARY_EXPR
-#line 277 "parser/yacc.y"
+  case 42: // MULDIV_EXPR: MULDIV_EXPR MOD UNARY_EXPR
+#line 300 "parser/yacc.y"
                                  {
         yylhs.value.as < ExprNode* > () = new BinaryExpr(OpCode::Mod, yystack_[2].value.as < ExprNode* > (), yystack_[0].value.as < ExprNode* > ());
     }
-#line 1220 "parser/yacc.cpp"
+#line 1278 "parser/yacc.cpp"
     break;
 
-  case 39: // UNARY_EXPR: BASIC_EXPR
-#line 283 "parser/yacc.y"
+  case 43: // UNARY_EXPR: BASIC_EXPR
+#line 306 "parser/yacc.y"
                {
         yylhs.value.as < ExprNode* > () = yystack_[0].value.as < ExprNode* > ();
-    }
-#line 1228 "parser/yacc.cpp"
-    break;
-
-  case 40: // UNARY_EXPR: UNARY_OP BASIC_EXPR
-#line 286 "parser/yacc.y"
-                          {
-        yylhs.value.as < ExprNode* > () = new UnaryExpr(yystack_[1].value.as < OpCode > (), yystack_[0].value.as < ExprNode* > ());
-    }
-#line 1236 "parser/yacc.cpp"
-    break;
-
-  case 41: // BASIC_EXPR: CONST_EXPR
-#line 292 "parser/yacc.y"
-               {
-        yylhs.value.as < ExprNode* > () = yystack_[0].value.as < ExprNode* > ();
-    }
-#line 1244 "parser/yacc.cpp"
-    break;
-
-  case 42: // BASIC_EXPR: LEFT_VAL_EXPR
-#line 295 "parser/yacc.y"
-                    {
-        yylhs.value.as < ExprNode* > () = yystack_[0].value.as < ExprNode* > ();
-    }
-#line 1252 "parser/yacc.cpp"
-    break;
-
-  case 43: // BASIC_EXPR: LPAREN EXPR RPAREN
-#line 298 "parser/yacc.y"
-                         {
-        yylhs.value.as < ExprNode* > () = yystack_[1].value.as < ExprNode* > ();
-    }
-#line 1260 "parser/yacc.cpp"
-    break;
-
-  case 44: // ARRAY_DIMESION_EXPR: LBRACKET EXPR RBRACKET
-#line 304 "parser/yacc.y"
-                           {
-        yylhs.value.as < ExprNode* > () = yystack_[1].value.as < ExprNode* > ();
-    }
-#line 1268 "parser/yacc.cpp"
-    break;
-
-  case 45: // ARRAY_DIMESION_EXPR_LIST: ARRAY_DIMESION_EXPR
-#line 310 "parser/yacc.y"
-                        {
-        yylhs.value.as < std::vector<ExprNode*>* > () = new std::vector<ExprNode*>();
-        yylhs.value.as < std::vector<ExprNode*>* > ()->push_back(yystack_[0].value.as < ExprNode* > ());
-    }
-#line 1277 "parser/yacc.cpp"
-    break;
-
-  case 46: // ARRAY_DIMESION_EXPR_LIST: ARRAY_DIMESION_EXPR_LIST ARRAY_DIMESION_EXPR
-#line 314 "parser/yacc.y"
-                                                   {
-        yylhs.value.as < std::vector<ExprNode*>* > () = yystack_[1].value.as < std::vector<ExprNode*>* > ();
-        yylhs.value.as < std::vector<ExprNode*>* > ()->push_back(yystack_[0].value.as < ExprNode* > ());
     }
 #line 1286 "parser/yacc.cpp"
     break;
 
-  case 47: // LEFT_VAL_EXPR: IDENT
-#line 321 "parser/yacc.y"
-          {
-        Symbol::Entry* entry = Symbol::Entry::getEntry(*yystack_[0].value.as < std::shared_ptr<std::string> > ());
-        yylhs.value.as < ExprNode* > () = new LeftValueExpr(entry, nullptr, -1);
+  case 44: // UNARY_EXPR: UNARY_OP BASIC_EXPR
+#line 309 "parser/yacc.y"
+                          {
+        yylhs.value.as < ExprNode* > () = new UnaryExpr(yystack_[1].value.as < OpCode > (), yystack_[0].value.as < ExprNode* > ());
     }
-#line 1295 "parser/yacc.cpp"
+#line 1294 "parser/yacc.cpp"
     break;
 
-  case 48: // LEFT_VAL_EXPR: IDENT ARRAY_DIMESION_EXPR_LIST
-#line 325 "parser/yacc.y"
-                                     {
-        Symbol::Entry* entry = Symbol::Entry::getEntry(*yystack_[1].value.as < std::shared_ptr<std::string> > ());
-        yylhs.value.as < ExprNode* > () = new LeftValueExpr(entry, yystack_[0].value.as < std::vector<ExprNode*>* > (), -1);
-    }
-#line 1304 "parser/yacc.cpp"
-    break;
-
-  case 49: // CONST_EXPR: INT_CONST
-#line 332 "parser/yacc.y"
-              {
-        yylhs.value.as < ExprNode* > () = new ConstExpr(yystack_[0].value.as < int > ());
-    }
-#line 1312 "parser/yacc.cpp"
-    break;
-
-  case 50: // CONST_EXPR: LL_CONST
-#line 335 "parser/yacc.y"
+  case 45: // BASIC_EXPR: CONST_EXPR
+#line 315 "parser/yacc.y"
                {
-        yylhs.value.as < ExprNode* > () = new ConstExpr(yystack_[0].value.as < long long > ());
+        yylhs.value.as < ExprNode* > () = yystack_[0].value.as < ExprNode* > ();
     }
-#line 1320 "parser/yacc.cpp"
+#line 1302 "parser/yacc.cpp"
     break;
 
-  case 51: // CONST_EXPR: FLOAT_CONST
-#line 338 "parser/yacc.y"
-                  {
-        yylhs.value.as < ExprNode* > () = new ConstExpr(yystack_[0].value.as < float > ());
+  case 46: // BASIC_EXPR: LEFT_VAL_EXPR
+#line 318 "parser/yacc.y"
+                    {
+        yylhs.value.as < ExprNode* > () = yystack_[0].value.as < ExprNode* > ();
     }
-#line 1328 "parser/yacc.cpp"
+#line 1310 "parser/yacc.cpp"
     break;
 
-  case 52: // CONST_EXPR: STR_CONST
-#line 341 "parser/yacc.y"
-                {
-        yylhs.value.as < ExprNode* > () = new ConstExpr(yystack_[0].value.as < std::shared_ptr<std::string> > ());
+  case 47: // BASIC_EXPR: LPAREN EXPR RPAREN
+#line 321 "parser/yacc.y"
+                         {
+        yylhs.value.as < ExprNode* > () = yystack_[1].value.as < ExprNode* > ();
     }
-#line 1336 "parser/yacc.cpp"
+#line 1318 "parser/yacc.cpp"
     break;
 
-  case 53: // TYPE: INT
-#line 347 "parser/yacc.y"
-        {
-        yylhs.value.as < Type* > () = intType;
+  case 48: // ARRAY_DIMESION_EXPR: LBRACKET EXPR RBRACKET
+#line 327 "parser/yacc.y"
+                           {
+        yylhs.value.as < ExprNode* > () = yystack_[1].value.as < ExprNode* > ();
+    }
+#line 1326 "parser/yacc.cpp"
+    break;
+
+  case 49: // ARRAY_DIMESION_EXPR_LIST: ARRAY_DIMESION_EXPR
+#line 333 "parser/yacc.y"
+                        {
+        yylhs.value.as < std::vector<ExprNode*>* > () = new std::vector<ExprNode*>();
+        yylhs.value.as < std::vector<ExprNode*>* > ()->push_back(yystack_[0].value.as < ExprNode* > ());
+    }
+#line 1335 "parser/yacc.cpp"
+    break;
+
+  case 50: // ARRAY_DIMESION_EXPR_LIST: ARRAY_DIMESION_EXPR_LIST ARRAY_DIMESION_EXPR
+#line 337 "parser/yacc.y"
+                                                   {
+        yylhs.value.as < std::vector<ExprNode*>* > () = yystack_[1].value.as < std::vector<ExprNode*>* > ();
+        yylhs.value.as < std::vector<ExprNode*>* > ()->push_back(yystack_[0].value.as < ExprNode* > ());
     }
 #line 1344 "parser/yacc.cpp"
     break;
 
-  case 54: // TYPE: FLOAT
-#line 350 "parser/yacc.y"
+  case 51: // LEFT_VAL_EXPR: IDENT
+#line 344 "parser/yacc.y"
+          {
+        Symbol::Entry* entry = Symbol::Entry::getEntry(*yystack_[0].value.as < std::shared_ptr<std::string> > ());
+        yylhs.value.as < ExprNode* > () = new LeftValueExpr(entry, nullptr, -1);
+    }
+#line 1353 "parser/yacc.cpp"
+    break;
+
+  case 52: // LEFT_VAL_EXPR: IDENT ARRAY_DIMESION_EXPR_LIST
+#line 348 "parser/yacc.y"
+                                     {
+        Symbol::Entry* entry = Symbol::Entry::getEntry(*yystack_[1].value.as < std::shared_ptr<std::string> > ());
+        yylhs.value.as < ExprNode* > () = new LeftValueExpr(entry, yystack_[0].value.as < std::vector<ExprNode*>* > (), -1);
+    }
+#line 1362 "parser/yacc.cpp"
+    break;
+
+  case 53: // CONST_EXPR: INT_CONST
+#line 355 "parser/yacc.y"
+              {
+        yylhs.value.as < ExprNode* > () = new ConstExpr(yystack_[0].value.as < int > ());
+    }
+#line 1370 "parser/yacc.cpp"
+    break;
+
+  case 54: // CONST_EXPR: LL_CONST
+#line 358 "parser/yacc.y"
+               {
+        yylhs.value.as < ExprNode* > () = new ConstExpr(yystack_[0].value.as < long long > ());
+    }
+#line 1378 "parser/yacc.cpp"
+    break;
+
+  case 55: // CONST_EXPR: FLOAT_CONST
+#line 361 "parser/yacc.y"
+                  {
+        yylhs.value.as < ExprNode* > () = new ConstExpr(yystack_[0].value.as < float > ());
+    }
+#line 1386 "parser/yacc.cpp"
+    break;
+
+  case 56: // CONST_EXPR: STR_CONST
+#line 364 "parser/yacc.y"
+                {
+        yylhs.value.as < ExprNode* > () = new ConstExpr(yystack_[0].value.as < std::shared_ptr<std::string> > ());
+    }
+#line 1394 "parser/yacc.cpp"
+    break;
+
+  case 57: // TYPE: INT
+#line 370 "parser/yacc.y"
+        {
+        yylhs.value.as < Type* > () = intType;
+    }
+#line 1402 "parser/yacc.cpp"
+    break;
+
+  case 58: // TYPE: FLOAT
+#line 373 "parser/yacc.y"
             {
         yylhs.value.as < Type* > () = floatType;
     }
-#line 1352 "parser/yacc.cpp"
+#line 1410 "parser/yacc.cpp"
     break;
 
-  case 55: // TYPE: VOID
-#line 353 "parser/yacc.y"
+  case 59: // TYPE: VOID
+#line 376 "parser/yacc.y"
            {
         yylhs.value.as < Type* > () = voidType;
     }
-#line 1360 "parser/yacc.cpp"
+#line 1418 "parser/yacc.cpp"
     break;
 
-  case 56: // UNARY_OP: PLUS
-#line 359 "parser/yacc.y"
+  case 60: // UNARY_OP: PLUS
+#line 382 "parser/yacc.y"
          {
         yylhs.value.as < OpCode > () = OpCode::Add;
     }
-#line 1368 "parser/yacc.cpp"
+#line 1426 "parser/yacc.cpp"
     break;
 
-  case 57: // UNARY_OP: MINUS
-#line 362 "parser/yacc.y"
+  case 61: // UNARY_OP: MINUS
+#line 385 "parser/yacc.y"
             {
         yylhs.value.as < OpCode > () = OpCode::Sub;
     }
-#line 1376 "parser/yacc.cpp"
+#line 1434 "parser/yacc.cpp"
     break;
 
-  case 58: // UNARY_OP: NOT
-#line 365 "parser/yacc.y"
+  case 62: // UNARY_OP: NOT
+#line 388 "parser/yacc.y"
           {
         yylhs.value.as < OpCode > () = OpCode::Not;
     }
-#line 1384 "parser/yacc.cpp"
+#line 1442 "parser/yacc.cpp"
     break;
 
 
-#line 1388 "parser/yacc.cpp"
+#line 1446 "parser/yacc.cpp"
 
             default:
               break;
@@ -1736,123 +1794,133 @@ namespace  Yacc  {
   }
 
 
-  const signed char  Parser ::yypact_ninf_ = -53;
+  const signed char  Parser ::yypact_ninf_ = -64;
 
   const signed char  Parser ::yytable_ninf_ = -1;
 
   const signed char
    Parser ::yypact_[] =
   {
-      10,   -53,   -53,   -53,   -53,    11,   -53,   -53,   -53,    -4,
-      60,   -53,   -53,   -53,     2,   -53,   -53,   -53,   -53,    17,
-      -1,     3,   -10,    26,   -21,   -38,   -53,   -53,    32,   -53,
-      73,    20,    60,   -53,    11,    73,    57,   -53,   -53,   -53,
-      60,    60,    60,    60,    60,    60,    60,    60,    60,    60,
-      60,    60,    60,    60,   -53,    25,    40,   -53,   -53,    64,
-     -53,    35,   -53,     3,   -10,    26,    26,   -21,   -21,   -21,
-     -21,   -38,   -38,   -53,   -53,   -53,   -53,   -53,    73,    53,
-     -53,   -53,   -53,    53,   -53,   -53,   -53,   -23,    53,   -53,
-     -53
+      95,   -64,   -64,   -64,   -64,   -26,   -64,   -64,   -64,    33,
+     105,    95,   -64,   -64,   -64,     4,    95,   -64,   -64,   -64,
+     -64,   -64,   -20,   -40,   -24,   -19,    16,    -2,   -28,   -64,
+     -64,   -10,   -64,    38,     3,   105,   -64,   -26,    38,     6,
+      64,   -64,   -64,   -64,   -64,   105,   105,   105,   105,   105,
+     105,   105,   105,   105,   105,   105,   105,   105,   105,   -64,
+      26,     8,   -64,   -64,    19,   -64,    30,   -64,   -64,   -24,
+     -19,    16,    16,    -2,    -2,    -2,    -2,   -28,   -28,   -64,
+     -64,   -64,   -64,   -64,    38,    15,   -64,   -64,   -64,    15,
+     -64,   -64,   -64,    -9,    15,   -64,   -64
   };
 
   const signed char
    Parser ::yydefact_[] =
   {
-       0,    49,    50,    51,    52,    47,    53,    54,    55,     0,
-       0,    58,    56,    57,     0,     2,     4,     5,    19,     0,
-      18,    20,    22,    24,    27,    32,    35,    39,    42,    41,
-       0,     0,     0,    45,    48,     0,     0,     1,     3,     6,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,    11,     0,     9,    40,    42,     0,
-      46,     0,    43,    21,    23,    25,    26,    28,    29,    30,
-      31,    33,    34,    36,    37,    38,    17,     7,     0,     0,
-      44,     8,    12,     0,    10,    13,    15,     0,     0,    14,
-      16
+       0,    53,    54,    55,    56,    51,    57,    58,    59,     0,
+       0,     0,    62,    60,    61,     0,     2,     4,     8,     6,
+       7,    23,     0,    22,    24,    26,    28,    31,    36,    39,
+      43,    46,    45,     0,     0,     0,    49,    52,     0,     0,
+       0,     1,     3,     5,    10,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,    15,
+       0,    13,    44,    46,     0,    50,     0,    47,     9,    25,
+      27,    29,    30,    32,    33,    34,    35,    37,    38,    40,
+      41,    42,    21,    11,     0,     0,    48,    12,    16,     0,
+      14,    17,    19,     0,     0,    18,    20
   };
 
   const signed char
    Parser ::yypgoto_[] =
   {
-     -53,   -53,   -53,   -53,   -53,    12,    61,   -52,   -53,   -53,
-       1,   -53,    55,    56,   -15,    30,    19,    -6,    69,    67,
-     -53,     0,   -53,    93,   -53
+     -64,   -64,    48,   -15,   -64,   -64,   -64,    -4,    44,   -63,
+     -64,   -64,    -8,   -64,    42,    37,    24,    66,    25,     9,
+      56,    55,   -64,     0,   -64,    84,   -64
   };
 
   const signed char
    Parser ::yydefgoto_[] =
   {
-       0,    14,    15,    16,    17,    54,    55,    84,    87,    18,
-      85,    20,    21,    22,    23,    24,    25,    26,    27,    33,
-      34,    58,    29,    30,    31
+       0,    15,    16,    17,    18,    19,    20,    59,    60,    90,
+      93,    21,    22,    23,    24,    25,    26,    27,    28,    29,
+      30,    36,    37,    63,    32,    33,    34
   };
 
   const signed char
    Parser ::yytable_[] =
   {
-      28,    19,    37,    88,    50,    51,     6,     7,     8,    89,
-      28,    36,    52,     1,     2,     3,     4,    48,    49,     5,
-       6,     7,     8,     1,     2,     3,     4,    65,    66,     5,
-      56,    86,    28,    59,     9,    56,    90,    10,    42,    38,
-      32,    43,    39,    11,    73,    74,    75,    10,    12,    13,
-      77,    78,    40,    28,    76,    41,     1,     2,     3,     4,
-      81,    78,     5,     1,     2,     3,     4,    71,    72,     5,
-      44,    45,    46,    47,    67,    68,    69,    70,    56,    28,
-      10,    53,     5,    28,    83,    62,    11,    10,    28,    79,
-      82,    12,    13,    11,    80,    63,    61,    64,    12,    13,
-      57,    60,    35
+      31,    43,    39,    35,    41,    44,     1,     2,     3,     4,
+      31,    31,     5,    45,    55,    56,    31,    94,     1,     2,
+       3,     4,    57,    95,     5,    43,    92,    64,    46,    47,
+      10,    96,    48,    61,    67,    31,    53,    54,    61,    58,
+      31,    42,    10,     6,     7,     8,    89,     5,    12,    86,
+      82,    83,    84,    13,    14,    87,    84,    85,    31,    40,
+      49,    50,    51,    52,    79,    80,    81,     1,     2,     3,
+       4,    71,    72,     5,     6,     7,     8,    91,    77,    78,
+      88,    91,    66,    70,    61,    31,    91,    69,     9,    31,
+      62,    10,    65,    38,    31,    11,    68,    12,     1,     2,
+       3,     4,    13,    14,     5,     6,     7,     8,     1,     2,
+       3,     4,     0,     0,     5,    73,    74,    75,    76,     9,
+       0,     0,    10,     0,     0,     0,    11,     0,    12,     0,
+       0,     0,    10,    13,    14,     0,     0,     0,    12,     0,
+       0,     0,     0,    13,    14
   };
 
   const signed char
    Parser ::yycheck_[] =
   {
-       0,     0,     0,    26,    42,    43,    10,    11,    12,    32,
-      10,    10,    50,     3,     4,     5,     6,    38,    39,     9,
-      10,    11,    12,     3,     4,     5,     6,    42,    43,     9,
-      30,    83,    32,    32,    24,    35,    88,    27,    48,    37,
-      29,    51,    25,    33,    50,    51,    52,    27,    38,    39,
-      25,    26,    53,    53,    53,    52,     3,     4,     5,     6,
-      25,    26,     9,     3,     4,     5,     6,    48,    49,     9,
-      44,    45,    46,    47,    44,    45,    46,    47,    78,    79,
-      27,    49,     9,    83,    31,    28,    33,    27,    88,    49,
-      78,    38,    39,    33,    30,    40,    35,    41,    38,    39,
-      31,    34,     9
+       0,    16,    10,    29,     0,    25,     3,     4,     5,     6,
+      10,    11,     9,    53,    42,    43,    16,    26,     3,     4,
+       5,     6,    50,    32,     9,    40,    89,    35,    52,    48,
+      27,    94,    51,    33,    28,    35,    38,    39,    38,    49,
+      40,    37,    27,    10,    11,    12,    31,     9,    33,    30,
+      58,    25,    26,    38,    39,    25,    26,    49,    58,    11,
+      44,    45,    46,    47,    55,    56,    57,     3,     4,     5,
+       6,    47,    48,     9,    10,    11,    12,    85,    53,    54,
+      84,    89,    38,    46,    84,    85,    94,    45,    24,    89,
+      34,    27,    37,     9,    94,    31,    32,    33,     3,     4,
+       5,     6,    38,    39,     9,    10,    11,    12,     3,     4,
+       5,     6,    -1,    -1,     9,    49,    50,    51,    52,    24,
+      -1,    -1,    27,    -1,    -1,    -1,    31,    -1,    33,    -1,
+      -1,    -1,    27,    38,    39,    -1,    -1,    -1,    33,    -1,
+      -1,    -1,    -1,    38,    39
   };
 
   const signed char
    Parser ::yystos_[] =
   {
        0,     3,     4,     5,     6,     9,    10,    11,    12,    24,
-      27,    33,    38,    39,    55,    56,    57,    58,    63,    64,
-      65,    66,    67,    68,    69,    70,    71,    72,    75,    76,
-      77,    78,    29,    73,    74,    77,    64,     0,    37,    25,
-      53,    52,    48,    51,    44,    45,    46,    47,    38,    39,
-      42,    43,    50,    49,    59,    60,    75,    72,    75,    64,
-      73,    60,    28,    66,    67,    68,    68,    69,    69,    69,
-      69,    70,    70,    71,    71,    71,    64,    25,    26,    49,
-      30,    25,    59,    31,    61,    64,    61,    62,    26,    32,
-      61
+      27,    31,    33,    38,    39,    55,    56,    57,    58,    59,
+      60,    65,    66,    67,    68,    69,    70,    71,    72,    73,
+      74,    77,    78,    79,    80,    29,    75,    76,    79,    66,
+      56,     0,    37,    57,    25,    53,    52,    48,    51,    44,
+      45,    46,    47,    38,    39,    42,    43,    50,    49,    61,
+      62,    77,    74,    77,    66,    75,    62,    28,    32,    68,
+      69,    70,    70,    71,    71,    71,    71,    72,    72,    73,
+      73,    73,    66,    25,    26,    49,    30,    25,    61,    31,
+      63,    66,    63,    64,    26,    32,    63
   };
 
   const signed char
    Parser ::yyr1_[] =
   {
-       0,    54,    55,    55,    56,    56,    57,    58,    58,    59,
-      59,    60,    60,    61,    61,    62,    62,    63,    64,    64,
-      65,    65,    66,    66,    67,    67,    67,    68,    68,    68,
-      68,    68,    69,    69,    69,    70,    70,    70,    70,    71,
-      71,    72,    72,    72,    73,    74,    74,    75,    75,    76,
-      76,    76,    76,    77,    77,    77,    78,    78,    78
+       0,    54,    55,    55,    56,    56,    57,    57,    57,    58,
+      59,    60,    60,    61,    61,    62,    62,    63,    63,    64,
+      64,    65,    66,    66,    67,    67,    68,    68,    69,    69,
+      69,    70,    70,    70,    70,    70,    71,    71,    71,    72,
+      72,    72,    72,    73,    73,    74,    74,    74,    75,    76,
+      76,    77,    77,    78,    78,    78,    78,    79,    79,    79,
+      80,    80,    80
   };
 
   const signed char
    Parser ::yyr2_[] =
   {
-       0,     2,     1,     2,     1,     1,     2,     3,     4,     1,
-       3,     1,     3,     1,     3,     1,     3,     3,     1,     1,
-       1,     3,     1,     3,     1,     3,     3,     1,     3,     3,
-       3,     3,     1,     3,     3,     1,     3,     3,     3,     1,
-       2,     1,     1,     3,     3,     1,     2,     1,     2,     1,
-       1,     1,     1,     1,     1,     1,     1,     1,     1
+       0,     2,     1,     2,     1,     2,     1,     1,     1,     3,
+       2,     3,     4,     1,     3,     1,     3,     1,     3,     1,
+       3,     3,     1,     1,     1,     3,     1,     3,     1,     3,
+       3,     1,     3,     3,     3,     3,     1,     3,     3,     1,
+       3,     3,     3,     1,     2,     1,     1,     3,     3,     1,
+       2,     1,     2,     1,     1,     1,     1,     1,     1,     1,
+       1,     1,     1
   };
 
 
@@ -1869,13 +1937,13 @@ namespace  Yacc  {
   "SEMICOLON", "COMMA", "LPAREN", "RPAREN", "LBRACKET", "RBRACKET",
   "LBRACE", "RBRACE", "NOT", "BITOR", "BITAND", "DOT", "END", "PLUS",
   "MINUS", "UPLUS", "UMINUS", "STAR", "SLASH", "GT", "GE", "LT", "LE",
-  "EQ", "ASSIGN", "MOD", "NEQ", "AND", "OR", "$accept", "PROGRAM", "STMT",
-  "EXPR_STMT", "VAR_DECL_STMT", "DEF", "DEF_LIST", "INITIALIZER",
-  "INITIALIZER_LIST", "ASSIGN_EXPR", "EXPR", "LOGICAL_OR_EXPR",
-  "LOGICAL_AND_EXPR", "EQUALITY_EXPR", "RELATIONAL_EXPR", "ADDSUB_EXPR",
-  "MULDIV_EXPR", "UNARY_EXPR", "BASIC_EXPR", "ARRAY_DIMESION_EXPR",
-  "ARRAY_DIMESION_EXPR_LIST", "LEFT_VAL_EXPR", "CONST_EXPR", "TYPE",
-  "UNARY_OP", YY_NULLPTR
+  "EQ", "ASSIGN", "MOD", "NEQ", "AND", "OR", "$accept", "PROGRAM",
+  "STMT_LIST", "STMT", "BLOCK_STMT", "EXPR_STMT", "VAR_DECL_STMT", "DEF",
+  "DEF_LIST", "INITIALIZER", "INITIALIZER_LIST", "ASSIGN_EXPR", "EXPR",
+  "LOGICAL_OR_EXPR", "LOGICAL_AND_EXPR", "EQUALITY_EXPR",
+  "RELATIONAL_EXPR", "ADDSUB_EXPR", "MULDIV_EXPR", "UNARY_EXPR",
+  "BASIC_EXPR", "ARRAY_DIMESION_EXPR", "ARRAY_DIMESION_EXPR_LIST",
+  "LEFT_VAL_EXPR", "CONST_EXPR", "TYPE", "UNARY_OP", YY_NULLPTR
   };
 #endif
 
@@ -1884,12 +1952,13 @@ namespace  Yacc  {
   const short
    Parser ::yyrline_[] =
   {
-       0,   119,   119,   126,   132,   135,   141,   146,   149,   154,
-     157,   162,   166,   173,   176,   182,   186,   193,   199,   202,
-     208,   211,   217,   220,   226,   229,   232,   238,   241,   244,
-     247,   250,   256,   259,   262,   268,   271,   274,   277,   283,
-     286,   292,   295,   298,   304,   310,   314,   321,   325,   332,
-     335,   338,   341,   347,   350,   353,   359,   362,   365
+       0,   122,   122,   128,   134,   138,   145,   148,   151,   157,
+     163,   168,   171,   176,   179,   185,   189,   196,   199,   205,
+     209,   216,   222,   225,   231,   234,   240,   243,   249,   252,
+     255,   261,   264,   267,   270,   273,   279,   282,   285,   291,
+     294,   297,   300,   306,   309,   315,   318,   321,   327,   333,
+     337,   344,   348,   355,   358,   361,   364,   370,   373,   376,
+     382,   385,   388
   };
 
   void
@@ -1922,9 +1991,9 @@ namespace  Yacc  {
 
 #line 4 "parser/yacc.y"
 } //  Yacc 
-#line 1926 "parser/yacc.cpp"
+#line 1995 "parser/yacc.cpp"
 
-#line 370 "parser/yacc.y"
+#line 393 "parser/yacc.y"
 
 
 void Yacc::Parser::error(const Yacc::location& location, const std::string& message)

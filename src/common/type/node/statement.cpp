@@ -43,3 +43,21 @@ void VarDeclStmt::printAST(ostream* oss, int pad)
 }
 
 /* Definition of VarDeclareStmt: tail */
+/* Definition of BlockStmt: head */
+
+BlockStmt::BlockStmt(vector<StmtNode*>* stmts) : stmts(stmts) {}
+BlockStmt::~BlockStmt()
+{
+    if (!stmts) return;
+    for (auto stmt : *stmts) delete stmt;
+    delete stmts;
+}
+
+void BlockStmt::printAST(ostream* oss, int pad)
+{
+    *oss << string(pad, ' ') << "BlockStmt\n";
+    if (!stmts) return;
+    for (auto stmt : *stmts) stmt->printAST(oss, pad + 4);
+}
+
+/* Definition of BlockStmt: tail */
