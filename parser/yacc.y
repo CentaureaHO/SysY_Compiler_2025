@@ -12,6 +12,7 @@
 {
     #include <memory>
     #include <string>
+    #include <sstream>
     #include <common/type/type_defs.h>
     #include <common/type/node/basic_node.h>
     #include <common/type/node/statement.h>
@@ -111,12 +112,24 @@
 %nterm <StmtNode*> EXPR_STMT
 %nterm <StmtNode*> VAR_DECL_STMT
 %nterm <StmtNode*> BLOCK_STMT
+%nterm <StmtNode*> FUNC_DECL_STMT
+%nterm <StmtNode*> RETURN_STMT
+%nterm <StmtNode*> WHILE_STMT
+%nterm <StmtNode*> IF_STMT
+
+%nterm <StmtNode*> FOR_INIT_STMT
+%nterm <StmtNode*> FOR_INCR_STMT
+%nterm <StmtNode*> FOR_STMT
+
 %nterm <StmtNode*> STMT
 
 %nterm <std::vector<StmtNode*>*> STMT_LIST
 
 %nterm <ASTree*> PROGRAM
 %start PROGRAM
+
+%precedence THEN
+%precedence ELSE
 
 %%
 
@@ -151,11 +164,29 @@ STMT:
     | BLOCK_STMT {
         $$ = $1;
     }
+    | FUNC_DECL_STMT {
+        $$ = $1;
+    }
+    | RETURN_STMT {
+        $$ = $1;
+    }
+    | WHILE_STMT {
+        $$ = $1;
+    }
+    | IF_STMT {
+        $$ = $1;
+    }
+    | FOR_STMT {
+        $$ = $1;
+    }
     ;
 
 BLOCK_STMT:
     LBRACE STMT_LIST RBRACE {
         $$ = new BlockStmt($2);
+    }
+    | LBRACE RBRACE {
+        $$ = new BlockStmt(nullptr);
     }
     ;
 
@@ -163,6 +194,7 @@ EXPR_STMT:
     EXPR SEMICOLON {
         $$ = new ExprStmt($1);
     }
+    ;
 
 VAR_DECL_STMT:
     TYPE DEF_LIST SEMICOLON {
@@ -170,6 +202,99 @@ VAR_DECL_STMT:
     }
     | CONST TYPE DEF_LIST SEMICOLON {
         $$ = new VarDeclStmt($2, $3, true);
+    }
+    ;
+
+FUNC_DECL_STMT:
+    TYPE IDENT LPAREN FUNC_PARAM_DEF_LIST RPAREN BLOCK_STMT {
+        Symbol::Entry* entry = Symbol::Entry::getEntry(*$2);
+        $$ = new FuncDeclStmt(entry, $1, $4, $6);
+    }
+
+RETURN_STMT:
+    RETURN SEMICOLON {
+        $$ = new ReturnStmt(nullptr);
+    }
+    | RETURN EXPR SEMICOLON {
+        $$ = new ReturnStmt($2);
+    }
+    ;
+
+WHILE_STMT:
+    WHILE LPAREN EXPR RPAREN STMT {
+        $$ = new WhileStmt($3, $5);
+    }
+    ;
+
+IF_STMT:
+    IF LPAREN EXPR RPAREN STMT %prec THEN {
+        $$ = new IfStmt($3, $5, nullptr);
+    }
+    | IF LPAREN EXPR RPAREN STMT ELSE STMT {
+        $$ = new IfStmt($3, $5, $7);
+    }
+    ;
+
+FOR_INIT_STMT:
+    EXPR_STMT {
+        $$ = $1;
+    }
+    | VAR_DECL_STMT {
+        $$ = $1;
+    }
+    | SEMICOLON {
+        $$ = nullptr;
+    }
+
+FOR_INCR_STMT:
+    /* empty */ {
+        $$ = nullptr;
+    }
+    | EXPR {
+        $$ = new ExprStmt($1);
+    }
+    ;
+
+FOR_STMT:
+    FOR LPAREN FOR_INIT_STMT EXPR SEMICOLON FOR_INCR_STMT RPAREN STMT {
+        $$ = new ForStmt($3, $4, $6, $8);
+    }
+    ;
+
+FUNC_PARAM_DEF:
+    TYPE IDENT {
+        Symbol::Entry* entry = Symbol::Entry::getEntry(*$2);
+        $$ = new FuncParamDefNode($1, entry, nullptr);
+    }
+    | TYPE IDENT LBRACKET RBRACKET {
+        std::vector<ExprNode*>* dim = new std::vector<ExprNode*>();
+        dim->emplace_back(new ConstExpr(-1));
+        Symbol::Entry* entry = Symbol::Entry::getEntry(*$2);
+        $$ = new FuncParamDefNode($1, entry, dim);
+    }
+    | TYPE IDENT LBRACKET RBRACKET ARRAY_DIMESION_EXPR_LIST {
+        std::vector<ExprNode*>* dim = $5;
+        dim->insert(dim->begin(), new ConstExpr(-1));
+        Symbol::Entry* entry = Symbol::Entry::getEntry(*$2);
+        $$ = new FuncParamDefNode($1, entry, dim);
+    }
+    | TYPE IDENT ARRAY_DIMESION_EXPR_LIST {
+        Symbol::Entry* entry = Symbol::Entry::getEntry(*$2);
+        $$ = new FuncParamDefNode($1, entry, $3);
+    }
+    ;
+
+FUNC_PARAM_DEF_LIST:
+    /* empty */ {
+        $$ = new std::vector<FuncParamDefNode*>();
+    }
+    | FUNC_PARAM_DEF {
+        $$ = new std::vector<FuncParamDefNode*>();
+        $$->push_back($1);
+    }
+    | FUNC_PARAM_DEF_LIST COMMA FUNC_PARAM_DEF {
+        $$ = $1;
+        $$->push_back($3);
     }
 
 DEF:
@@ -184,6 +309,12 @@ DEF:
         dim->emplace_back(new ConstExpr(static_cast<InitMulti*>($5)->getSize()));
         Symbol::Entry* entry = Symbol::Entry::getEntry(*$1);
         $$ = new DefNode(new LeftValueExpr(entry, dim, -1), $5);
+    }
+    | IDENT LBRACKET RBRACKET ARRAY_DIMESION_EXPR_LIST ASSIGN INITIALIZER {
+        std::vector<ExprNode*>* dim = $4;
+        dim->insert(dim->begin(), new ConstExpr(static_cast<InitMulti*>($6)->getSize()));
+        Symbol::Entry* entry = Symbol::Entry::getEntry(*$1);
+        $$ = new DefNode(new LeftValueExpr(entry, dim, -1), $6);
     }
     ; 
 

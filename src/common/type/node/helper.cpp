@@ -91,17 +91,11 @@ FuncParamDefNode::~FuncParamDefNode()
 void FuncParamDefNode::printAST(ostream* oss, int pad)
 {
     *oss << string(pad, ' ') << "FuncParamDef ";
-    if (baseType) *oss << baseType->getTypeName();
-    if (entry) *oss << entry->getName();
+    if (baseType) *oss << baseType->getTypeName() << ' ';
+    if (entry) *oss << entry->getName() << '\n';
     if (dims)
     {
         size_t i = 0;
-        for (auto dim : *dims)
-        {
-            *oss << "[Dim " << i << "]";
-            ++i;
-        }
-        *oss << '\n';
         i = 0;
         for (auto dim : *dims)
         {
@@ -110,8 +104,6 @@ void FuncParamDefNode::printAST(ostream* oss, int pad)
             ++i;
         }
     }
-    else
-        *oss << '\n';
 }
 
 /* Definition of FuncParamDefNode: tail */

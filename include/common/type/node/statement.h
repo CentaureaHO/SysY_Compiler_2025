@@ -6,6 +6,7 @@
 #include <common/type/node/basic_node.h>
 
 class DefNode;
+class FuncParamDefNode;
 
 /**
  * @brief 抽象语法树中所有语句节点的基类
@@ -56,6 +57,77 @@ class BlockStmt : public StmtNode
   public:
     BlockStmt(std::vector<StmtNode*>* stmts = nullptr);
     ~BlockStmt();
+
+    void printAST(std::ostream* oss, int pad) override;
+};
+
+class FuncDeclStmt : public StmtNode
+{
+  private:
+    Symbol::Entry*                  entry;
+    Type*                           returnType;
+    std::vector<FuncParamDefNode*>* params;
+    StmtNode*                       body;
+
+  public:
+    FuncDeclStmt(Symbol::Entry* entry = nullptr, Type* returnType = voidType,
+        std::vector<FuncParamDefNode*>* params = nullptr, StmtNode* body = nullptr);
+    ~FuncDeclStmt();
+
+    void printAST(std::ostream* oss, int pad) override;
+};
+
+class ReturnStmt : public StmtNode
+{
+  private:
+    ExprNode* expr;
+
+  public:
+    ReturnStmt(ExprNode* expr = nullptr);
+    ~ReturnStmt();
+
+    void printAST(std::ostream* oss, int pad) override;
+};
+
+class WhileStmt : public StmtNode
+{
+  private:
+    ExprNode* condition;
+    StmtNode* body;
+
+  public:
+    WhileStmt(ExprNode* condition = nullptr, StmtNode* body = nullptr);
+    ~WhileStmt();
+
+    void printAST(std::ostream* oss, int pad) override;
+};
+
+class IfStmt : public StmtNode
+{
+  private:
+    ExprNode* condition;
+    StmtNode* thenBody;
+    StmtNode* elseBody;
+
+  public:
+    IfStmt(ExprNode* condition = nullptr, StmtNode* thenBody = nullptr, StmtNode* elseBody = nullptr);
+    ~IfStmt();
+
+    void printAST(std::ostream* oss, int pad) override;
+};
+
+class ForStmt : public StmtNode
+{
+  private:
+    StmtNode* init;
+    ExprNode* condition;
+    StmtNode* update;
+    StmtNode* body;
+
+  public:
+    ForStmt(
+        StmtNode* init = nullptr, ExprNode* condition = nullptr, StmtNode* update = nullptr, StmtNode* body = nullptr);
+    ~ForStmt();
 
     void printAST(std::ostream* oss, int pad) override;
 };

@@ -67,6 +67,7 @@ class FuncParamDefNode : public HelperNode
   private:
     Type*          baseType;
     Symbol::Entry* entry;
+    // 首元素为-1时表示[]
     std::vector<ExprNode*>* dims;
 
   public:
