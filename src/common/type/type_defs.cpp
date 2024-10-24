@@ -16,6 +16,8 @@ namespace
     };
 }  // namespace
 
+const string& getOpStr(OpCode op) { return opStr[static_cast<size_t>(op)]; }
+
 /* Definition of Type: head */
 
 bool Type::isInt() const { return getKind() == TypeKind::Int; }

@@ -21,24 +21,24 @@
     X(Char, char, 10)          \
     X(Str, std::string, 11)
 
-#define OPERATOR_TYPES              \
-    X(PlaceHolder, PlaceHolder, -1) \
-    X(Add, +, 0)                    \
-    X(Sub, -, 1)                    \
-    X(Mul, *, 2)                    \
-    X(Div, /, 3)                    \
-    X(Gt, >, 4)                     \
-    X(Ge, >=, 5)                    \
-    X(Lt, <, 6)                     \
-    X(Le, <=, 7)                    \
-    X(Eq, ==, 8)                    \
-    X(Mod, %, 9)                    \
-    X(Neq, !=, 10)                  \
-    X(Not, !, 11)                   \
-    X(BitOr, |, 12)                 \
-    X(BitAnd, &, 13)                \
-    X(And, &&, 14)                  \
-    X(Or, ||, 15)
+#define OPERATOR_TYPES             \
+    X(PlaceHolder, PlaceHolder, 0) \
+    X(Add, +, 1)                   \
+    X(Sub, -, 2)                   \
+    X(Mul, *, 3)                   \
+    X(Div, /, 4)                   \
+    X(Gt, >, 5)                    \
+    X(Ge, >=, 6)                   \
+    X(Lt, <, 7)                    \
+    X(Le, <=, 8)                   \
+    X(Eq, ==, 9)                   \
+    X(Mod, %, 10)                  \
+    X(Neq, !=, 11)                 \
+    X(Not, !, 12)                  \
+    X(BitOr, |, 13)                \
+    X(BitAnd, &, 14)               \
+    X(And, &&, 15)                 \
+    X(Or, ||, 16)
 
 enum class TypeKind
 {
@@ -53,6 +53,8 @@ enum class OpCode
     OPERATOR_TYPES
 #undef X
 };
+
+const std::string& getOpStr(OpCode op);
 
 class Type
 {

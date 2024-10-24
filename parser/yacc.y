@@ -71,12 +71,31 @@
 %token SEMICOLON COMMA LPAREN RPAREN LBRACKET RBRACKET LBRACE RBRACE NOT BITOR BITAND DOT 
 %token END
 
-%token PLUS MINUS
+%left PLUS MINUS
+%right UPLUS UMINUS
 %token STAR SLASH
 %token GT GE LT LE EQ ASSIGN MOD
 %token NEQ AND OR
 
+%nterm <OpCode> UNARY_OP
+
 %nterm <Type*> TYPE
+
+%nterm <ExprNode*> CONST_EXPR
+%nterm <ExprNode*> BASIC_EXPR
+
+%nterm <ExprNode*> UNARY_EXPR
+
+%nterm <ExprNode*> MULDIV_EXPR
+%nterm <ExprNode*> ADDSUB_EXPR
+%nterm <ExprNode*> RELATIONAL_EXPR
+%nterm <ExprNode*> EQUALITY_EXPR
+%nterm <ExprNode*> LOGICAL_AND_EXPR
+%nterm <ExprNode*> LOGICAL_OR_EXPR
+
+%nterm <ExprNode*> EXPR
+
+%nterm <ExprNode*> LEFT_VAL_EXPR
 
 %nterm <ASTree*> PROGRAM
 %start PROGRAM
@@ -90,6 +109,141 @@ PROGRAM:
         driver.setAST($$);
         YYACCEPT;
     }
+    | EXPR {
+        std::cout << "program: EXPR " << std::endl;
+        $1->printAST(&std::cout, 0);
+        $$ = new ASTree();
+        driver.setAST($$);
+        YYACCEPT;
+    }
+    ;
+
+EXPR:
+    LOGICAL_OR_EXPR {
+        $$ = $1;
+    }
+    ;
+
+LOGICAL_OR_EXPR:
+    LOGICAL_AND_EXPR {
+        $$ = $1;
+    }
+    | LOGICAL_OR_EXPR OR LOGICAL_AND_EXPR {
+        $$ = new BinaryExpr(OpCode::Or, $1, $3);
+    }
+    ;
+
+LOGICAL_AND_EXPR:
+    EQUALITY_EXPR {
+        $$ = $1;
+    }
+    | LOGICAL_AND_EXPR AND EQUALITY_EXPR {
+        $$ = new BinaryExpr(OpCode::And, $1, $3);
+    }
+    ;
+
+EQUALITY_EXPR:
+    RELATIONAL_EXPR {
+        $$ = $1;
+    }
+    | EQUALITY_EXPR EQ RELATIONAL_EXPR {
+        $$ = new BinaryExpr(OpCode::Eq, $1, $3);
+    }
+    | EQUALITY_EXPR NEQ RELATIONAL_EXPR {
+        $$ = new BinaryExpr(OpCode::Neq, $1, $3);
+    }
+    ;
+
+RELATIONAL_EXPR:
+    ADDSUB_EXPR {
+        $$ = $1;
+    }
+    | RELATIONAL_EXPR GT ADDSUB_EXPR {
+        $$ = new BinaryExpr(OpCode::Gt, $1, $3);
+    }
+    | RELATIONAL_EXPR GE ADDSUB_EXPR {
+        $$ = new BinaryExpr(OpCode::Ge, $1, $3);
+    }
+    | RELATIONAL_EXPR LT ADDSUB_EXPR {
+        $$ = new BinaryExpr(OpCode::Lt, $1, $3);
+    }
+    | RELATIONAL_EXPR LE ADDSUB_EXPR {
+        $$ = new BinaryExpr(OpCode::Le, $1, $3);
+    }
+    ;
+
+ADDSUB_EXPR:
+    MULDIV_EXPR {
+        $$ = $1;
+    }
+    | ADDSUB_EXPR PLUS MULDIV_EXPR {
+        $$ = new BinaryExpr(OpCode::Add, $1, $3);
+    }
+    | ADDSUB_EXPR MINUS MULDIV_EXPR {
+        $$ = new BinaryExpr(OpCode::Sub, $1, $3);
+    }
+    ;
+
+MULDIV_EXPR:
+    UNARY_EXPR {
+        $$ = $1;
+    }
+    | MULDIV_EXPR STAR UNARY_EXPR {
+        $$ = new BinaryExpr(OpCode::Mul, $1, $3);
+    }
+    | MULDIV_EXPR SLASH UNARY_EXPR {
+        $$ = new BinaryExpr(OpCode::Div, $1, $3);
+    }
+    | MULDIV_EXPR MOD UNARY_EXPR {
+        $$ = new BinaryExpr(OpCode::Mod, $1, $3);
+    }
+    ;
+
+UNARY_EXPR:
+    BASIC_EXPR {
+        $$ = $1;
+    }
+    | UNARY_OP BASIC_EXPR {
+        $$ = new UnaryExpr($1, $2);
+    }
+    ;
+
+BASIC_EXPR:
+    CONST_EXPR {
+        $$ = $1;
+    }
+    | LEFT_VAL_EXPR {
+        $$ = $1;
+    }
+    | LPAREN EXPR RPAREN {
+        $$ = $2;
+    }
+    ;
+
+LEFT_VAL_EXPR:
+    IDENT {
+        Symbol::Entry* entry = Symbol::Entry::getEntry(*$1);
+        $$ = new LeftValueExpr(entry, nullptr, -1);
+    }
+    | IDENT LBRACKET RBRACKET {
+        Symbol::Entry* entry = Symbol::Entry::getEntry(*$1);
+        $$ = new LeftValueExpr(entry, nullptr, -1);
+    }
+    ;
+
+CONST_EXPR:
+    INT_CONST {
+        $$ = new ConstExpr($1);
+    }
+    | LL_CONST {
+        $$ = new ConstExpr($1);
+    }
+    | FLOAT_CONST {
+        $$ = new ConstExpr($1);
+    }
+    | STR_CONST {
+        $$ = new ConstExpr($1);
+    }
     ;
 
 TYPE:
@@ -102,6 +256,19 @@ TYPE:
     | VOID {
         $$ = voidType;
     }
+    ;
+
+UNARY_OP:
+    PLUS {
+        $$ = OpCode::Add;
+    }
+    | MINUS {
+        $$ = OpCode::Sub;
+    }
+    | NOT {
+        $$ = OpCode::Not;
+    }
+    ;
 
 %%
 

@@ -20,4 +20,14 @@ class StmtNode : public Node
     void printAST(std::ostream* oss, int pad) override { *oss << std::string(pad, ' ') << "StmtNode" << std::endl; }
 };
 
+class FuncDeclStmt : public StmtNode
+{
+  private:
+    Symbol::Entry*      funcEntry;
+    Type*               retType;
+    std::vector<Type*>* paramTypes;
+
+  public:
+};
+
 #endif

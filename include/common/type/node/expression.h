@@ -1,6 +1,8 @@
 #ifndef __COMMON_TYPE_NODE_EXPRESSION_H__
 #define __COMMON_TYPE_NODE_EXPRESSION_H__
 
+#include <vector>
+#include <common/type/symtab/symbol_table.h>
 #include <common/type/node/basic_node.h>
 
 /**
@@ -9,21 +11,50 @@
 class ExprNode : public Node
 {};
 
+class LeftValueExpr : public ExprNode
+{
+  private:
+    Symbol::Entry*          entry;
+    std::vector<ExprNode*>* dims;
+    int                     scope;
+
+  public:
+    LeftValueExpr(Symbol::Entry* entry = nullptr, std::vector<ExprNode*>* dims = nullptr, int scope = -1);
+    ~LeftValueExpr();
+
+    void printAST(std::ostream* oss, int pad) override;
+};
+
 /**
  * @brief 常量表达式节点
  *
  * 用于表示抽象语法树中的常量表达式，例如整数常量或浮点常量或字符串常量。
  */
 class ConstExpr : public ExprNode
-{};
+{
+  private:
+    std::variant<int, long long, float, std::shared_ptr<std::string>> value;
+    int                                                               type;
+
+  public:
+    ConstExpr();
+    ConstExpr(int val);
+    ConstExpr(long long val);
+    ConstExpr(float val);
+    ConstExpr(std::shared_ptr<std::string> val);
+    ~ConstExpr();
+
+    void printAST(std::ostream* oss, int pad) override;
+};
 
 /**
  * @brief 标识符表达式节点
  *
  * 用于表示抽象语法树中的标识符（变量、函数等）。
- */
+
 class IdentExpr : public ExprNode
 {};
+ */
 
 /**
  * @brief 一元运算符表达式节点
@@ -32,7 +63,17 @@ class IdentExpr : public ExprNode
  * 该类表示的表达式只有一个操作数。
  */
 class UnaryExpr : public ExprNode
-{};
+{
+  private:
+    OpCode    op;
+    ExprNode* val;
+
+  public:
+    UnaryExpr(OpCode op = OpCode::PlaceHolder, ExprNode* val = nullptr);
+    ~UnaryExpr();
+
+    void printAST(std::ostream* oss, int pad) override;
+};
 
 /**
  * @brief 二元运算符表达式节点
@@ -41,6 +82,17 @@ class UnaryExpr : public ExprNode
  * 该类表示的表达式有两个操作数。
  */
 class BinaryExpr : public ExprNode
-{};
+{
+  private:
+    OpCode    op;
+    ExprNode* lhs;
+    ExprNode* rhs;
+
+  public:
+    BinaryExpr(OpCode op = OpCode::PlaceHolder, ExprNode* lhs = nullptr, ExprNode* rhs = nullptr);
+    ~BinaryExpr();
+
+    void printAST(std::ostream* oss, int pad) override;
+};
 
 #endif

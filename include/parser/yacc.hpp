@@ -424,23 +424,39 @@ namespace  Yacc  {
       // PROGRAM
       char dummy1[sizeof (ASTree*)];
 
+      // EXPR
+      // LOGICAL_OR_EXPR
+      // LOGICAL_AND_EXPR
+      // EQUALITY_EXPR
+      // RELATIONAL_EXPR
+      // ADDSUB_EXPR
+      // MULDIV_EXPR
+      // UNARY_EXPR
+      // BASIC_EXPR
+      // LEFT_VAL_EXPR
+      // CONST_EXPR
+      char dummy2[sizeof (ExprNode*)];
+
+      // UNARY_OP
+      char dummy3[sizeof (OpCode)];
+
       // TYPE
-      char dummy2[sizeof (Type*)];
+      char dummy4[sizeof (Type*)];
 
       // FLOAT_CONST
-      char dummy3[sizeof (float)];
+      char dummy5[sizeof (float)];
 
       // INT_CONST
-      char dummy4[sizeof (int)];
+      char dummy6[sizeof (int)];
 
       // LL_CONST
-      char dummy5[sizeof (long long)];
+      char dummy7[sizeof (long long)];
 
       // STR_CONST
       // ERR_TOKEN
       // SLASH_COMMENT
       // IDENT
-      char dummy6[sizeof (std::shared_ptr<std::string>)];
+      char dummy8[sizeof (std::shared_ptr<std::string>)];
     };
 
     /// The size of the largest semantic type.
@@ -530,18 +546,20 @@ namespace  Yacc  {
     TOKEN_END = 292,               // END
     TOKEN_PLUS = 293,              // PLUS
     TOKEN_MINUS = 294,             // MINUS
-    TOKEN_STAR = 295,              // STAR
-    TOKEN_SLASH = 296,             // SLASH
-    TOKEN_GT = 297,                // GT
-    TOKEN_GE = 298,                // GE
-    TOKEN_LT = 299,                // LT
-    TOKEN_LE = 300,                // LE
-    TOKEN_EQ = 301,                // EQ
-    TOKEN_ASSIGN = 302,            // ASSIGN
-    TOKEN_MOD = 303,               // MOD
-    TOKEN_NEQ = 304,               // NEQ
-    TOKEN_AND = 305,               // AND
-    TOKEN_OR = 306                 // OR
+    TOKEN_UPLUS = 295,             // UPLUS
+    TOKEN_UMINUS = 296,            // UMINUS
+    TOKEN_STAR = 297,              // STAR
+    TOKEN_SLASH = 298,             // SLASH
+    TOKEN_GT = 299,                // GT
+    TOKEN_GE = 300,                // GE
+    TOKEN_LT = 301,                // LT
+    TOKEN_LE = 302,                // LE
+    TOKEN_EQ = 303,                // EQ
+    TOKEN_ASSIGN = 304,            // ASSIGN
+    TOKEN_MOD = 305,               // MOD
+    TOKEN_NEQ = 306,               // NEQ
+    TOKEN_AND = 307,               // AND
+    TOKEN_OR = 308                 // OR
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -558,7 +576,7 @@ namespace  Yacc  {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 52, ///< Number of tokens.
+        YYNTOKENS = 54, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -600,21 +618,35 @@ namespace  Yacc  {
         S_END = 37,                              // END
         S_PLUS = 38,                             // PLUS
         S_MINUS = 39,                            // MINUS
-        S_STAR = 40,                             // STAR
-        S_SLASH = 41,                            // SLASH
-        S_GT = 42,                               // GT
-        S_GE = 43,                               // GE
-        S_LT = 44,                               // LT
-        S_LE = 45,                               // LE
-        S_EQ = 46,                               // EQ
-        S_ASSIGN = 47,                           // ASSIGN
-        S_MOD = 48,                              // MOD
-        S_NEQ = 49,                              // NEQ
-        S_AND = 50,                              // AND
-        S_OR = 51,                               // OR
-        S_YYACCEPT = 52,                         // $accept
-        S_PROGRAM = 53,                          // PROGRAM
-        S_TYPE = 54                              // TYPE
+        S_UPLUS = 40,                            // UPLUS
+        S_UMINUS = 41,                           // UMINUS
+        S_STAR = 42,                             // STAR
+        S_SLASH = 43,                            // SLASH
+        S_GT = 44,                               // GT
+        S_GE = 45,                               // GE
+        S_LT = 46,                               // LT
+        S_LE = 47,                               // LE
+        S_EQ = 48,                               // EQ
+        S_ASSIGN = 49,                           // ASSIGN
+        S_MOD = 50,                              // MOD
+        S_NEQ = 51,                              // NEQ
+        S_AND = 52,                              // AND
+        S_OR = 53,                               // OR
+        S_YYACCEPT = 54,                         // $accept
+        S_PROGRAM = 55,                          // PROGRAM
+        S_EXPR = 56,                             // EXPR
+        S_LOGICAL_OR_EXPR = 57,                  // LOGICAL_OR_EXPR
+        S_LOGICAL_AND_EXPR = 58,                 // LOGICAL_AND_EXPR
+        S_EQUALITY_EXPR = 59,                    // EQUALITY_EXPR
+        S_RELATIONAL_EXPR = 60,                  // RELATIONAL_EXPR
+        S_ADDSUB_EXPR = 61,                      // ADDSUB_EXPR
+        S_MULDIV_EXPR = 62,                      // MULDIV_EXPR
+        S_UNARY_EXPR = 63,                       // UNARY_EXPR
+        S_BASIC_EXPR = 64,                       // BASIC_EXPR
+        S_LEFT_VAL_EXPR = 65,                    // LEFT_VAL_EXPR
+        S_CONST_EXPR = 66,                       // CONST_EXPR
+        S_TYPE = 67,                             // TYPE
+        S_UNARY_OP = 68                          // UNARY_OP
       };
     };
 
@@ -653,6 +685,24 @@ namespace  Yacc  {
     {
       case symbol_kind::S_PROGRAM: // PROGRAM
         value.move< ASTree* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_EXPR: // EXPR
+      case symbol_kind::S_LOGICAL_OR_EXPR: // LOGICAL_OR_EXPR
+      case symbol_kind::S_LOGICAL_AND_EXPR: // LOGICAL_AND_EXPR
+      case symbol_kind::S_EQUALITY_EXPR: // EQUALITY_EXPR
+      case symbol_kind::S_RELATIONAL_EXPR: // RELATIONAL_EXPR
+      case symbol_kind::S_ADDSUB_EXPR: // ADDSUB_EXPR
+      case symbol_kind::S_MULDIV_EXPR: // MULDIV_EXPR
+      case symbol_kind::S_UNARY_EXPR: // UNARY_EXPR
+      case symbol_kind::S_BASIC_EXPR: // BASIC_EXPR
+      case symbol_kind::S_LEFT_VAL_EXPR: // LEFT_VAL_EXPR
+      case symbol_kind::S_CONST_EXPR: // CONST_EXPR
+        value.move< ExprNode* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_UNARY_OP: // UNARY_OP
+        value.move< OpCode > (std::move (that.value));
         break;
 
       case symbol_kind::S_TYPE: // TYPE
@@ -709,6 +759,34 @@ namespace  Yacc  {
       {}
 #else
       basic_symbol (typename Base::kind_type t, const ASTree*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, ExprNode*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const ExprNode*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, OpCode&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const OpCode& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -811,6 +889,24 @@ switch (yykind)
     {
       case symbol_kind::S_PROGRAM: // PROGRAM
         value.template destroy< ASTree* > ();
+        break;
+
+      case symbol_kind::S_EXPR: // EXPR
+      case symbol_kind::S_LOGICAL_OR_EXPR: // LOGICAL_OR_EXPR
+      case symbol_kind::S_LOGICAL_AND_EXPR: // LOGICAL_AND_EXPR
+      case symbol_kind::S_EQUALITY_EXPR: // EQUALITY_EXPR
+      case symbol_kind::S_RELATIONAL_EXPR: // RELATIONAL_EXPR
+      case symbol_kind::S_ADDSUB_EXPR: // ADDSUB_EXPR
+      case symbol_kind::S_MULDIV_EXPR: // MULDIV_EXPR
+      case symbol_kind::S_UNARY_EXPR: // UNARY_EXPR
+      case symbol_kind::S_BASIC_EXPR: // BASIC_EXPR
+      case symbol_kind::S_LEFT_VAL_EXPR: // LEFT_VAL_EXPR
+      case symbol_kind::S_CONST_EXPR: // CONST_EXPR
+        value.template destroy< ExprNode* > ();
+        break;
+
+      case symbol_kind::S_UNARY_OP: // UNARY_OP
+        value.template destroy< OpCode > ();
         break;
 
       case symbol_kind::S_TYPE: // TYPE
@@ -1637,6 +1733,36 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_UPLUS (location_type l)
+      {
+        return symbol_type (token::TOKEN_UPLUS, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_UPLUS (const location_type& l)
+      {
+        return symbol_type (token::TOKEN_UPLUS, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_UMINUS (location_type l)
+      {
+        return symbol_type (token::TOKEN_UMINUS, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_UMINUS (const location_type& l)
+      {
+        return symbol_type (token::TOKEN_UMINUS, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_STAR (location_type l)
       {
         return symbol_type (token::TOKEN_STAR, std::move (l));
@@ -1917,7 +2043,7 @@ switch (yykind)
 
 #if YYDEBUG
     // YYRLINE[YYN] -- Source line where rule number YYN was defined.
-    static const signed char yyrline_[];
+    static const short yyrline_[];
     /// Report on the debug stream that the rule \a r is going to be reduced.
     virtual void yy_reduce_print_ (int r) const;
     /// Print the state stack on the debug stream.
@@ -2144,9 +2270,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 3,     ///< Last index in yytable_.
-      yynnts_ = 3,  ///< Number of nonterminal symbols.
-      yyfinal_ = 6 ///< Termination state number.
+      yylast_ = 58,     ///< Last index in yytable_.
+      yynnts_ = 15,  ///< Number of nonterminal symbols.
+      yyfinal_ = 29 ///< Termination state number.
     };
 
 
@@ -2196,10 +2322,10 @@ switch (yykind)
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
       25,    26,    27,    28,    29,    30,    31,    32,    33,    34,
       35,    36,    37,    38,    39,    40,    41,    42,    43,    44,
-      45,    46,    47,    48,    49,    50,    51
+      45,    46,    47,    48,    49,    50,    51,    52,    53
     };
     // Last valid token kind.
-    const int code_max = 306;
+    const int code_max = 308;
 
     if (t <= 0)
       return symbol_kind::S_YYEOF;
@@ -2220,6 +2346,24 @@ switch (yykind)
     {
       case symbol_kind::S_PROGRAM: // PROGRAM
         value.copy< ASTree* > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_EXPR: // EXPR
+      case symbol_kind::S_LOGICAL_OR_EXPR: // LOGICAL_OR_EXPR
+      case symbol_kind::S_LOGICAL_AND_EXPR: // LOGICAL_AND_EXPR
+      case symbol_kind::S_EQUALITY_EXPR: // EQUALITY_EXPR
+      case symbol_kind::S_RELATIONAL_EXPR: // RELATIONAL_EXPR
+      case symbol_kind::S_ADDSUB_EXPR: // ADDSUB_EXPR
+      case symbol_kind::S_MULDIV_EXPR: // MULDIV_EXPR
+      case symbol_kind::S_UNARY_EXPR: // UNARY_EXPR
+      case symbol_kind::S_BASIC_EXPR: // BASIC_EXPR
+      case symbol_kind::S_LEFT_VAL_EXPR: // LEFT_VAL_EXPR
+      case symbol_kind::S_CONST_EXPR: // CONST_EXPR
+        value.copy< ExprNode* > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_UNARY_OP: // UNARY_OP
+        value.copy< OpCode > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_TYPE: // TYPE
@@ -2278,6 +2422,24 @@ switch (yykind)
     {
       case symbol_kind::S_PROGRAM: // PROGRAM
         value.move< ASTree* > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_EXPR: // EXPR
+      case symbol_kind::S_LOGICAL_OR_EXPR: // LOGICAL_OR_EXPR
+      case symbol_kind::S_LOGICAL_AND_EXPR: // LOGICAL_AND_EXPR
+      case symbol_kind::S_EQUALITY_EXPR: // EQUALITY_EXPR
+      case symbol_kind::S_RELATIONAL_EXPR: // RELATIONAL_EXPR
+      case symbol_kind::S_ADDSUB_EXPR: // ADDSUB_EXPR
+      case symbol_kind::S_MULDIV_EXPR: // MULDIV_EXPR
+      case symbol_kind::S_UNARY_EXPR: // UNARY_EXPR
+      case symbol_kind::S_BASIC_EXPR: // BASIC_EXPR
+      case symbol_kind::S_LEFT_VAL_EXPR: // LEFT_VAL_EXPR
+      case symbol_kind::S_CONST_EXPR: // CONST_EXPR
+        value.move< ExprNode* > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_UNARY_OP: // UNARY_OP
+        value.move< OpCode > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_TYPE: // TYPE
@@ -2370,7 +2532,7 @@ switch (yykind)
 
 #line 4 "parser/yacc.y"
 } //  Yacc 
-#line 2374 "parser/yacc.hpp"
+#line 2536 "parser/yacc.hpp"
 
 
 

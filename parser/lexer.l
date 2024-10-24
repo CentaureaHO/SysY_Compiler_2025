@@ -120,9 +120,12 @@
 }
 
 \"[^\"]*\"          { 
-    auto str = std::make_shared<std::string>(yytext);
-    return Parser::make_STR_CONST(str, loc); 
+    std::string str(yytext);
+    if (!str.empty()) str = str.substr(1, str.size() - 2);
+    auto shared_str = std::make_shared<std::string>(str);
+    return Parser::make_STR_CONST(shared_str, loc); 
 }
+
 
 [0-9]*\.[0-9]*([eE][+-]?[0-9]+)? {
     try {
