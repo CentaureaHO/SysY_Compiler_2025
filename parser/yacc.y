@@ -17,6 +17,7 @@
     #include <common/type/node/statement.h>
     #include <common/type/node/expression.h>
     #include <common/type/symtab/symbol_table.h>
+    #include <common/type/node/helper.h>
 
     namespace Yacc
     {
@@ -81,6 +82,11 @@
 
 %nterm <Type*> TYPE
 
+%nterm <InitNode*> INITIALIZER
+%nterm <std::vector<InitNode*>*> INITIALIZER_LIST
+%nterm <DefNode*> DEF
+%nterm <std::vector<DefNode*>*> DEF_LIST
+
 %nterm <ExprNode*> CONST_EXPR
 %nterm <ExprNode*> BASIC_EXPR
 
@@ -92,13 +98,16 @@
 %nterm <ExprNode*> EQUALITY_EXPR
 %nterm <ExprNode*> LOGICAL_AND_EXPR
 %nterm <ExprNode*> LOGICAL_OR_EXPR
-
+%nterm <ExprNode*> ASSIGN_EXPR      /* 由于C语言中=语句也有返回值，因此定义ASSIGN为EXPR而非STMT */
 %nterm <ExprNode*> EXPR
 
-%nterm <ExprNode*> ASSIGN_EXPR      /* 由于C语言中=语句也有返回值，因此定义ASSIGN为EXPR而非STMT */
+%nterm <ExprNode*> ARRAY_DIMESION_EXPR
+%nterm <std::vector<ExprNode*>*> ARRAY_DIMESION_EXPR_LIST
+
 %nterm <ExprNode*> LEFT_VAL_EXPR
 
 %nterm <StmtNode*> EXPR_STMT
+%nterm <StmtNode*> VAR_DECL_STMT
 %nterm <StmtNode*> STMT
 
 %nterm <ASTree*> PROGRAM
@@ -107,7 +116,7 @@
 %%
 
 PROGRAM:
-    EXPR {
+    STMT {
         std::cout << "program: STMT " << std::endl;
         $1->printAST(&std::cout, 0);
         $$ = new ASTree();
@@ -123,12 +132,62 @@ STMT:
     EXPR_STMT {
         $$ = $1;
     }
+    | VAR_DECL_STMT {
+        $$ = $1;
+    }       
     ;
 
 EXPR_STMT:
     EXPR SEMICOLON {
         $$ = new ExprStmt($1);
     }
+
+VAR_DECL_STMT:
+    TYPE DEF_LIST SEMICOLON {
+        $$ = new VarDeclStmt($1, $2);
+    }
+    | CONST TYPE DEF_LIST SEMICOLON {
+        $$ = new VarDeclStmt($2, $3, true);
+    }
+
+DEF:
+    LEFT_VAL_EXPR {
+        $$ = new DefNode($1, nullptr);
+    }
+    | LEFT_VAL_EXPR ASSIGN INITIALIZER {
+        $$ = new DefNode($1, $3);
+    }
+
+DEF_LIST:
+    DEF {
+        $$ = new std::vector<DefNode*>();
+        $$->push_back($1);
+    }
+    | DEF_LIST COMMA DEF {
+        $$ = $1;
+        $$->push_back($3);
+    }
+    ;
+
+INITIALIZER:
+    EXPR {
+        $$ = new InitSingle($1);
+    }
+    | LBRACE INITIALIZER_LIST RBRACE {
+        $$ = new InitMulti($2);
+    }
+    ;
+
+INITIALIZER_LIST:
+    INITIALIZER { 
+        $$ = new std::vector<InitNode*>();
+        $$->push_back($1);
+    }
+    | INITIALIZER_LIST COMMA INITIALIZER {
+        $$ = $1;
+        $$->push_back($3);
+    }
+    ;
 
 ASSIGN_EXPR:
     LEFT_VAL_EXPR ASSIGN EXPR {
@@ -241,14 +300,31 @@ BASIC_EXPR:
     }
     ;
 
+ARRAY_DIMESION_EXPR:
+    LBRACKET EXPR RBRACKET {
+        $$ = $2;
+    }
+    ;
+
+ARRAY_DIMESION_EXPR_LIST:
+    ARRAY_DIMESION_EXPR {
+        $$ = new std::vector<ExprNode*>();
+        $$->push_back($1);
+    }
+    | ARRAY_DIMESION_EXPR_LIST ARRAY_DIMESION_EXPR {
+        $$ = $1;
+        $$->push_back($2);
+    }
+    ;
+
 LEFT_VAL_EXPR:
     IDENT {
         Symbol::Entry* entry = Symbol::Entry::getEntry(*$1);
         $$ = new LeftValueExpr(entry, nullptr, -1);
     }
-    | IDENT LBRACKET RBRACKET {
+    | IDENT ARRAY_DIMESION_EXPR_LIST {
         Symbol::Entry* entry = Symbol::Entry::getEntry(*$1);
-        $$ = new LeftValueExpr(entry, nullptr, -1);
+        $$ = new LeftValueExpr(entry, $2, -1);
     }
     ;
 

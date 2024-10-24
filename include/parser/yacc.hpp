@@ -54,6 +54,7 @@
     #include <common/type/node/statement.h>
     #include <common/type/node/expression.h>
     #include <common/type/symtab/symbol_table.h>
+    #include <common/type/node/helper.h>
 
     namespace Yacc
     {
@@ -61,7 +62,7 @@
         class Scanner;
     }
 
-#line 65 "parser/yacc.hpp"
+#line 66 "parser/yacc.hpp"
 
 # include <cassert>
 # include <cstdlib> // std::abort
@@ -202,7 +203,7 @@
 
 #line 4 "parser/yacc.y"
 namespace  Yacc  {
-#line 206 "parser/yacc.hpp"
+#line 207 "parser/yacc.hpp"
 
 
 
@@ -424,6 +425,9 @@ namespace  Yacc  {
       // PROGRAM
       char dummy1[sizeof (ASTree*)];
 
+      // DEF
+      char dummy2[sizeof (DefNode*)];
+
       // ASSIGN_EXPR
       // EXPR
       // LOGICAL_OR_EXPR
@@ -434,27 +438,48 @@ namespace  Yacc  {
       // MULDIV_EXPR
       // UNARY_EXPR
       // BASIC_EXPR
+      // ARRAY_DIMESION_EXPR
       // LEFT_VAL_EXPR
       // CONST_EXPR
-      char dummy2[sizeof (ExprNode*)];
+      char dummy3[sizeof (ExprNode*)];
+
+      // INITIALIZER
+      char dummy4[sizeof (InitNode*)];
 
       // UNARY_OP
-      char dummy3[sizeof (OpCode)];
+      char dummy5[sizeof (OpCode)];
+
+      // STMT
+      // EXPR_STMT
+      // VAR_DECL_STMT
+      char dummy6[sizeof (StmtNode*)];
+
+      // TYPE
+      char dummy7[sizeof (Type*)];
 
       // FLOAT_CONST
-      char dummy4[sizeof (float)];
+      char dummy8[sizeof (float)];
 
       // INT_CONST
-      char dummy5[sizeof (int)];
+      char dummy9[sizeof (int)];
 
       // LL_CONST
-      char dummy6[sizeof (long long)];
+      char dummy10[sizeof (long long)];
 
       // STR_CONST
       // ERR_TOKEN
       // SLASH_COMMENT
       // IDENT
-      char dummy7[sizeof (std::shared_ptr<std::string>)];
+      char dummy11[sizeof (std::shared_ptr<std::string>)];
+
+      // DEF_LIST
+      char dummy12[sizeof (std::vector<DefNode*>*)];
+
+      // ARRAY_DIMESION_EXPR_LIST
+      char dummy13[sizeof (std::vector<ExprNode*>*)];
+
+      // INITIALIZER_LIST
+      char dummy14[sizeof (std::vector<InitNode*>*)];
     };
 
     /// The size of the largest semantic type.
@@ -632,19 +657,29 @@ namespace  Yacc  {
         S_OR = 53,                               // OR
         S_YYACCEPT = 54,                         // $accept
         S_PROGRAM = 55,                          // PROGRAM
-        S_ASSIGN_EXPR = 56,                      // ASSIGN_EXPR
-        S_EXPR = 57,                             // EXPR
-        S_LOGICAL_OR_EXPR = 58,                  // LOGICAL_OR_EXPR
-        S_LOGICAL_AND_EXPR = 59,                 // LOGICAL_AND_EXPR
-        S_EQUALITY_EXPR = 60,                    // EQUALITY_EXPR
-        S_RELATIONAL_EXPR = 61,                  // RELATIONAL_EXPR
-        S_ADDSUB_EXPR = 62,                      // ADDSUB_EXPR
-        S_MULDIV_EXPR = 63,                      // MULDIV_EXPR
-        S_UNARY_EXPR = 64,                       // UNARY_EXPR
-        S_BASIC_EXPR = 65,                       // BASIC_EXPR
-        S_LEFT_VAL_EXPR = 66,                    // LEFT_VAL_EXPR
-        S_CONST_EXPR = 67,                       // CONST_EXPR
-        S_UNARY_OP = 68                          // UNARY_OP
+        S_STMT = 56,                             // STMT
+        S_EXPR_STMT = 57,                        // EXPR_STMT
+        S_VAR_DECL_STMT = 58,                    // VAR_DECL_STMT
+        S_DEF = 59,                              // DEF
+        S_DEF_LIST = 60,                         // DEF_LIST
+        S_INITIALIZER = 61,                      // INITIALIZER
+        S_INITIALIZER_LIST = 62,                 // INITIALIZER_LIST
+        S_ASSIGN_EXPR = 63,                      // ASSIGN_EXPR
+        S_EXPR = 64,                             // EXPR
+        S_LOGICAL_OR_EXPR = 65,                  // LOGICAL_OR_EXPR
+        S_LOGICAL_AND_EXPR = 66,                 // LOGICAL_AND_EXPR
+        S_EQUALITY_EXPR = 67,                    // EQUALITY_EXPR
+        S_RELATIONAL_EXPR = 68,                  // RELATIONAL_EXPR
+        S_ADDSUB_EXPR = 69,                      // ADDSUB_EXPR
+        S_MULDIV_EXPR = 70,                      // MULDIV_EXPR
+        S_UNARY_EXPR = 71,                       // UNARY_EXPR
+        S_BASIC_EXPR = 72,                       // BASIC_EXPR
+        S_ARRAY_DIMESION_EXPR = 73,              // ARRAY_DIMESION_EXPR
+        S_ARRAY_DIMESION_EXPR_LIST = 74,         // ARRAY_DIMESION_EXPR_LIST
+        S_LEFT_VAL_EXPR = 75,                    // LEFT_VAL_EXPR
+        S_CONST_EXPR = 76,                       // CONST_EXPR
+        S_TYPE = 77,                             // TYPE
+        S_UNARY_OP = 78                          // UNARY_OP
       };
     };
 
@@ -685,6 +720,10 @@ namespace  Yacc  {
         value.move< ASTree* > (std::move (that.value));
         break;
 
+      case symbol_kind::S_DEF: // DEF
+        value.move< DefNode* > (std::move (that.value));
+        break;
+
       case symbol_kind::S_ASSIGN_EXPR: // ASSIGN_EXPR
       case symbol_kind::S_EXPR: // EXPR
       case symbol_kind::S_LOGICAL_OR_EXPR: // LOGICAL_OR_EXPR
@@ -695,13 +734,28 @@ namespace  Yacc  {
       case symbol_kind::S_MULDIV_EXPR: // MULDIV_EXPR
       case symbol_kind::S_UNARY_EXPR: // UNARY_EXPR
       case symbol_kind::S_BASIC_EXPR: // BASIC_EXPR
+      case symbol_kind::S_ARRAY_DIMESION_EXPR: // ARRAY_DIMESION_EXPR
       case symbol_kind::S_LEFT_VAL_EXPR: // LEFT_VAL_EXPR
       case symbol_kind::S_CONST_EXPR: // CONST_EXPR
         value.move< ExprNode* > (std::move (that.value));
         break;
 
+      case symbol_kind::S_INITIALIZER: // INITIALIZER
+        value.move< InitNode* > (std::move (that.value));
+        break;
+
       case symbol_kind::S_UNARY_OP: // UNARY_OP
         value.move< OpCode > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_STMT: // STMT
+      case symbol_kind::S_EXPR_STMT: // EXPR_STMT
+      case symbol_kind::S_VAR_DECL_STMT: // VAR_DECL_STMT
+        value.move< StmtNode* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_TYPE: // TYPE
+        value.move< Type* > (std::move (that.value));
         break;
 
       case symbol_kind::S_FLOAT_CONST: // FLOAT_CONST
@@ -721,6 +775,18 @@ namespace  Yacc  {
       case symbol_kind::S_SLASH_COMMENT: // SLASH_COMMENT
       case symbol_kind::S_IDENT: // IDENT
         value.move< std::shared_ptr<std::string> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_DEF_LIST: // DEF_LIST
+        value.move< std::vector<DefNode*>* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_ARRAY_DIMESION_EXPR_LIST: // ARRAY_DIMESION_EXPR_LIST
+        value.move< std::vector<ExprNode*>* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_INITIALIZER_LIST: // INITIALIZER_LIST
+        value.move< std::vector<InitNode*>* > (std::move (that.value));
         break;
 
       default:
@@ -761,6 +827,20 @@ namespace  Yacc  {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, DefNode*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const DefNode*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, ExprNode*&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
@@ -775,6 +855,20 @@ namespace  Yacc  {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, InitNode*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const InitNode*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, OpCode&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
@@ -782,6 +876,34 @@ namespace  Yacc  {
       {}
 #else
       basic_symbol (typename Base::kind_type t, const OpCode& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, StmtNode*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const StmtNode*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, Type*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const Type*& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -844,6 +966,48 @@ namespace  Yacc  {
       {}
 #endif
 
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<DefNode*>*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<DefNode*>*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<ExprNode*>*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<ExprNode*>*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<InitNode*>*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<InitNode*>*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
       /// Destroy the symbol.
       ~basic_symbol ()
       {
@@ -872,6 +1036,10 @@ switch (yykind)
         value.template destroy< ASTree* > ();
         break;
 
+      case symbol_kind::S_DEF: // DEF
+        value.template destroy< DefNode* > ();
+        break;
+
       case symbol_kind::S_ASSIGN_EXPR: // ASSIGN_EXPR
       case symbol_kind::S_EXPR: // EXPR
       case symbol_kind::S_LOGICAL_OR_EXPR: // LOGICAL_OR_EXPR
@@ -882,13 +1050,28 @@ switch (yykind)
       case symbol_kind::S_MULDIV_EXPR: // MULDIV_EXPR
       case symbol_kind::S_UNARY_EXPR: // UNARY_EXPR
       case symbol_kind::S_BASIC_EXPR: // BASIC_EXPR
+      case symbol_kind::S_ARRAY_DIMESION_EXPR: // ARRAY_DIMESION_EXPR
       case symbol_kind::S_LEFT_VAL_EXPR: // LEFT_VAL_EXPR
       case symbol_kind::S_CONST_EXPR: // CONST_EXPR
         value.template destroy< ExprNode* > ();
         break;
 
+      case symbol_kind::S_INITIALIZER: // INITIALIZER
+        value.template destroy< InitNode* > ();
+        break;
+
       case symbol_kind::S_UNARY_OP: // UNARY_OP
         value.template destroy< OpCode > ();
+        break;
+
+      case symbol_kind::S_STMT: // STMT
+      case symbol_kind::S_EXPR_STMT: // EXPR_STMT
+      case symbol_kind::S_VAR_DECL_STMT: // VAR_DECL_STMT
+        value.template destroy< StmtNode* > ();
+        break;
+
+      case symbol_kind::S_TYPE: // TYPE
+        value.template destroy< Type* > ();
         break;
 
       case symbol_kind::S_FLOAT_CONST: // FLOAT_CONST
@@ -908,6 +1091,18 @@ switch (yykind)
       case symbol_kind::S_SLASH_COMMENT: // SLASH_COMMENT
       case symbol_kind::S_IDENT: // IDENT
         value.template destroy< std::shared_ptr<std::string> > ();
+        break;
+
+      case symbol_kind::S_DEF_LIST: // DEF_LIST
+        value.template destroy< std::vector<DefNode*>* > ();
+        break;
+
+      case symbol_kind::S_ARRAY_DIMESION_EXPR_LIST: // ARRAY_DIMESION_EXPR_LIST
+        value.template destroy< std::vector<ExprNode*>* > ();
+        break;
+
+      case symbol_kind::S_INITIALIZER_LIST: // INITIALIZER_LIST
+        value.template destroy< std::vector<InitNode*>* > ();
         break;
 
       default:
@@ -2248,9 +2443,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 52,     ///< Last index in yytable_.
-      yynnts_ = 15,  ///< Number of nonterminal symbols.
-      yyfinal_ = 26 ///< Termination state number.
+      yylast_ = 102,     ///< Last index in yytable_.
+      yynnts_ = 25,  ///< Number of nonterminal symbols.
+      yyfinal_ = 37 ///< Termination state number.
     };
 
 
@@ -2326,6 +2521,10 @@ switch (yykind)
         value.copy< ASTree* > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_DEF: // DEF
+        value.copy< DefNode* > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_ASSIGN_EXPR: // ASSIGN_EXPR
       case symbol_kind::S_EXPR: // EXPR
       case symbol_kind::S_LOGICAL_OR_EXPR: // LOGICAL_OR_EXPR
@@ -2336,13 +2535,28 @@ switch (yykind)
       case symbol_kind::S_MULDIV_EXPR: // MULDIV_EXPR
       case symbol_kind::S_UNARY_EXPR: // UNARY_EXPR
       case symbol_kind::S_BASIC_EXPR: // BASIC_EXPR
+      case symbol_kind::S_ARRAY_DIMESION_EXPR: // ARRAY_DIMESION_EXPR
       case symbol_kind::S_LEFT_VAL_EXPR: // LEFT_VAL_EXPR
       case symbol_kind::S_CONST_EXPR: // CONST_EXPR
         value.copy< ExprNode* > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_INITIALIZER: // INITIALIZER
+        value.copy< InitNode* > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_UNARY_OP: // UNARY_OP
         value.copy< OpCode > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_STMT: // STMT
+      case symbol_kind::S_EXPR_STMT: // EXPR_STMT
+      case symbol_kind::S_VAR_DECL_STMT: // VAR_DECL_STMT
+        value.copy< StmtNode* > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_TYPE: // TYPE
+        value.copy< Type* > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_FLOAT_CONST: // FLOAT_CONST
@@ -2362,6 +2576,18 @@ switch (yykind)
       case symbol_kind::S_SLASH_COMMENT: // SLASH_COMMENT
       case symbol_kind::S_IDENT: // IDENT
         value.copy< std::shared_ptr<std::string> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_DEF_LIST: // DEF_LIST
+        value.copy< std::vector<DefNode*>* > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_ARRAY_DIMESION_EXPR_LIST: // ARRAY_DIMESION_EXPR_LIST
+        value.copy< std::vector<ExprNode*>* > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_INITIALIZER_LIST: // INITIALIZER_LIST
+        value.copy< std::vector<InitNode*>* > (YY_MOVE (that.value));
         break;
 
       default:
@@ -2399,6 +2625,10 @@ switch (yykind)
         value.move< ASTree* > (YY_MOVE (s.value));
         break;
 
+      case symbol_kind::S_DEF: // DEF
+        value.move< DefNode* > (YY_MOVE (s.value));
+        break;
+
       case symbol_kind::S_ASSIGN_EXPR: // ASSIGN_EXPR
       case symbol_kind::S_EXPR: // EXPR
       case symbol_kind::S_LOGICAL_OR_EXPR: // LOGICAL_OR_EXPR
@@ -2409,13 +2639,28 @@ switch (yykind)
       case symbol_kind::S_MULDIV_EXPR: // MULDIV_EXPR
       case symbol_kind::S_UNARY_EXPR: // UNARY_EXPR
       case symbol_kind::S_BASIC_EXPR: // BASIC_EXPR
+      case symbol_kind::S_ARRAY_DIMESION_EXPR: // ARRAY_DIMESION_EXPR
       case symbol_kind::S_LEFT_VAL_EXPR: // LEFT_VAL_EXPR
       case symbol_kind::S_CONST_EXPR: // CONST_EXPR
         value.move< ExprNode* > (YY_MOVE (s.value));
         break;
 
+      case symbol_kind::S_INITIALIZER: // INITIALIZER
+        value.move< InitNode* > (YY_MOVE (s.value));
+        break;
+
       case symbol_kind::S_UNARY_OP: // UNARY_OP
         value.move< OpCode > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_STMT: // STMT
+      case symbol_kind::S_EXPR_STMT: // EXPR_STMT
+      case symbol_kind::S_VAR_DECL_STMT: // VAR_DECL_STMT
+        value.move< StmtNode* > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_TYPE: // TYPE
+        value.move< Type* > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_FLOAT_CONST: // FLOAT_CONST
@@ -2435,6 +2680,18 @@ switch (yykind)
       case symbol_kind::S_SLASH_COMMENT: // SLASH_COMMENT
       case symbol_kind::S_IDENT: // IDENT
         value.move< std::shared_ptr<std::string> > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_DEF_LIST: // DEF_LIST
+        value.move< std::vector<DefNode*>* > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_ARRAY_DIMESION_EXPR_LIST: // ARRAY_DIMESION_EXPR_LIST
+        value.move< std::vector<ExprNode*>* > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_INITIALIZER_LIST: // INITIALIZER_LIST
+        value.move< std::vector<InitNode*>* > (YY_MOVE (s.value));
         break;
 
       default:
@@ -2504,7 +2761,7 @@ switch (yykind)
 
 #line 4 "parser/yacc.y"
 } //  Yacc 
-#line 2508 "parser/yacc.hpp"
+#line 2765 "parser/yacc.hpp"
 
 
 

@@ -17,5 +17,5 @@ void ASTree::printAST(ostream* oss, int pad)
 {
     *oss << "ASTree" << endl;
     if (!stmts) { return; }
-    for (auto stmt : *stmts) { stmt->printAST(oss, pad + 2); }
+    for (auto stmt : *stmts) { stmt->printAST(oss, pad + 4); }
 }

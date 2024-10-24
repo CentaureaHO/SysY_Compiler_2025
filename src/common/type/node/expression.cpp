@@ -32,11 +32,22 @@ void LeftValueExpr::printAST(std::ostream* oss, int pad)
     if (entry) *oss << entry->getName();
     if (dims)
     {
-        *oss << " [";
-        for (auto dim : *dims) { dim->printAST(oss, 0); }
-        *oss << "]";
+        size_t i = 0;
+        for (auto dim : *dims)
+        {
+            *oss << "[Dim " << i << "]";
+            ++i;
+        }
+        *oss << '\n';
+        i = 0;
+        for (auto dim : *dims) 
+        { 
+            *oss << string(pad + 2, ' ') << "Dim " << i << ": ";
+            dim->printAST(oss, pad + 4); 
+            ++i;
+        }
     }
-    *oss << '\n';
+    else *oss << '\n';
 }
 
 /* Definition of LeftValueExpr: tail */
@@ -76,7 +87,7 @@ UnaryExpr::~UnaryExpr()
 void UnaryExpr::printAST(std::ostream* oss, int pad)
 {
     *oss << string(pad, ' ') << "UnaryExpr " << getOpStr(op) << '\n';
-    val->printAST(oss, pad + 2);
+    val->printAST(oss, pad + 4);
 }
 
 /* Definition of UnaryExpr: tail */
@@ -92,8 +103,10 @@ BinaryExpr::~BinaryExpr()
 void BinaryExpr::printAST(std::ostream* oss, int pad)
 {
     *oss << string(pad, ' ') << "BinaryExpr " << getOpStr(op) << '\n';
-    lhs->printAST(oss, pad + 2);
-    rhs->printAST(oss, pad + 2);
+    // *oss << string(pad + 2, ' ') << "LHS:\n";
+    lhs->printAST(oss, pad + 4);
+    // *oss << string(pad + 2, ' ') << "RHS:\n";
+    rhs->printAST(oss, pad + 4);
 }
 
 /* Definition of BinaryExpr: tail */

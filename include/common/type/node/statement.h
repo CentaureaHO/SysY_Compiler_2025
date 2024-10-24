@@ -5,6 +5,8 @@
 #include <common/type/symtab/symbol_table.h>
 #include <common/type/node/basic_node.h>
 
+class DefNode;
+
 /**
  * @brief 抽象语法树中所有语句节点的基类
  *
@@ -28,6 +30,20 @@ class ExprStmt : public StmtNode
   public:
     ExprStmt(ExprNode* expr = nullptr);
     ~ExprStmt();
+
+    void printAST(std::ostream* oss, int pad) override;
+};
+
+class VarDeclStmt : public StmtNode
+{
+  private:
+    Type*                  baseType;
+    std::vector<DefNode*>* defs;
+    bool                   isConst;
+
+  public:
+    VarDeclStmt(Type* bt = voidType, std::vector<DefNode*>* defs = nullptr, bool isConst = false);
+    ~VarDeclStmt();
 
     void printAST(std::ostream* oss, int pad) override;
 };

@@ -1,14 +1,34 @@
-==826119== Memcheck, a memory error detector
-==826119== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
-==826119== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
-==826119== Command: bin/test
-==826119== 
-msg: syntax error, unexpected SEMICOLON, expecting end of file or END, error happened at: 1.6
-==826119== 
-==826119== HEAP SUMMARY:
-==826119==     in use at exit: 0 bytes in 0 blocks
-==826119==   total heap usage: 42 allocs, 42 frees, 109,591 bytes allocated
-==826119== 
-==826119== All heap blocks were freed -- no leaks are possible
-==826119== 
-==826119== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==841981== Memcheck, a memory error detector
+==841981== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==841981== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
+==841981== Command: bin/test
+==841981== 
+==841981== 
+==841981== Process terminating with default action of signal 2 (SIGINT)
+==841981==    at 0x4CC67E2: read (read.c:26)
+==841981==    by 0x4C3EC35: _IO_file_underflow@@GLIBC_2.2.5 (fileops.c:516)
+==841981==    by 0x4C3FD95: _IO_default_uflow (genops.c:362)
+==841981==    by 0x49918A0: __gnu_cxx::stdio_sync_filebuf<char, std::char_traits<char> >::uflow() (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.30)
+==841981==    by 0x49A00CD: std::istream::get(char&) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.30)
+==841981==    by 0x123E52: Yacc_FlexLexer::LexerInput(char*, int) (lexer.cpp:1603)
+==841981==    by 0x124259: Yacc_FlexLexer::yy_get_next_buffer() (lexer.cpp:1733)
+==841981==    by 0x1228F7: Yacc::Scanner::nextToken() (lexer.cpp:1443)
+==841981==    by 0x12847E: yylex(Yacc::Scanner&, Yacc::Driver&) (yacc.y:48)
+==841981==    by 0x128DE0: Yacc::Parser::parse() (yacc.cpp:647)
+==841981==    by 0x12F668: Yacc::Driver::parse() (driver.cpp:60)
+==841981==    by 0x10DDBF: main (test.cpp:16)
+==841981== 
+==841981== HEAP SUMMARY:
+==841981==     in use at exit: 107,530 bytes in 23 blocks
+==841981==   total heap usage: 23 allocs, 0 frees, 107,530 bytes allocated
+==841981== 
+==841981== LEAK SUMMARY:
+==841981==    definitely lost: 0 bytes in 0 blocks
+==841981==    indirectly lost: 0 bytes in 0 blocks
+==841981==      possibly lost: 0 bytes in 0 blocks
+==841981==    still reachable: 107,530 bytes in 23 blocks
+==841981==         suppressed: 0 bytes in 0 blocks
+==841981== Reachable blocks (those to which a pointer was found) are not shown.
+==841981== To see them, rerun with: --leak-check=full --show-leak-kinds=all
+==841981== 
+==841981== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
