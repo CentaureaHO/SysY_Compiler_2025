@@ -1,24 +1,14 @@
-==802971== Memcheck, a memory error detector
-==802971== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
-==802971== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
-==802971== Command: bin/test
-==802971== 
-==802971== 
-==802971== HEAP SUMMARY:
-==802971==     in use at exit: 296 bytes in 4 blocks
-==802971==   total heap usage: 37 allocs, 33 frees, 109,234 bytes allocated
-==802971== 
-==802971== 296 (56 direct, 240 indirect) bytes in 1 blocks are definitely lost in loss record 4 of 4
-==802971==    at 0x4849013: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==802971==    by 0x129004: Yacc::Parser::parse() (yacc.y:129)
-==802971==    by 0x12EA28: Yacc::Driver::parse() (driver.cpp:57)
-==802971==    by 0x10DDBF: main (test.cpp:16)
-==802971== 
-==802971== LEAK SUMMARY:
-==802971==    definitely lost: 56 bytes in 1 blocks
-==802971==    indirectly lost: 240 bytes in 3 blocks
-==802971==      possibly lost: 0 bytes in 0 blocks
-==802971==    still reachable: 0 bytes in 0 blocks
-==802971==         suppressed: 0 bytes in 0 blocks
-==802971== 
-==802971== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 0 from 0)
+==826119== Memcheck, a memory error detector
+==826119== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==826119== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
+==826119== Command: bin/test
+==826119== 
+msg: syntax error, unexpected SEMICOLON, expecting end of file or END, error happened at: 1.6
+==826119== 
+==826119== HEAP SUMMARY:
+==826119==     in use at exit: 0 bytes in 0 blocks
+==826119==   total heap usage: 42 allocs, 42 frees, 109,591 bytes allocated
+==826119== 
+==826119== All heap blocks were freed -- no leaks are possible
+==826119== 
+==826119== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)

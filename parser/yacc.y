@@ -107,11 +107,12 @@
 %%
 
 PROGRAM:
-    STMT {
+    EXPR {
         std::cout << "program: STMT " << std::endl;
         $1->printAST(&std::cout, 0);
         $$ = new ASTree();
         driver.setAST($$);
+        // delete $1;
     }
     | PROGRAM END {
         YYACCEPT;

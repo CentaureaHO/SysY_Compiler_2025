@@ -441,24 +441,20 @@ namespace  Yacc  {
       // UNARY_OP
       char dummy3[sizeof (OpCode)];
 
-      // STMT
-      // EXPR_STMT
-      char dummy4[sizeof (StmtNode*)];
-
       // FLOAT_CONST
-      char dummy5[sizeof (float)];
+      char dummy4[sizeof (float)];
 
       // INT_CONST
-      char dummy6[sizeof (int)];
+      char dummy5[sizeof (int)];
 
       // LL_CONST
-      char dummy7[sizeof (long long)];
+      char dummy6[sizeof (long long)];
 
       // STR_CONST
       // ERR_TOKEN
       // SLASH_COMMENT
       // IDENT
-      char dummy8[sizeof (std::shared_ptr<std::string>)];
+      char dummy7[sizeof (std::shared_ptr<std::string>)];
     };
 
     /// The size of the largest semantic type.
@@ -636,21 +632,19 @@ namespace  Yacc  {
         S_OR = 53,                               // OR
         S_YYACCEPT = 54,                         // $accept
         S_PROGRAM = 55,                          // PROGRAM
-        S_STMT = 56,                             // STMT
-        S_EXPR_STMT = 57,                        // EXPR_STMT
-        S_ASSIGN_EXPR = 58,                      // ASSIGN_EXPR
-        S_EXPR = 59,                             // EXPR
-        S_LOGICAL_OR_EXPR = 60,                  // LOGICAL_OR_EXPR
-        S_LOGICAL_AND_EXPR = 61,                 // LOGICAL_AND_EXPR
-        S_EQUALITY_EXPR = 62,                    // EQUALITY_EXPR
-        S_RELATIONAL_EXPR = 63,                  // RELATIONAL_EXPR
-        S_ADDSUB_EXPR = 64,                      // ADDSUB_EXPR
-        S_MULDIV_EXPR = 65,                      // MULDIV_EXPR
-        S_UNARY_EXPR = 66,                       // UNARY_EXPR
-        S_BASIC_EXPR = 67,                       // BASIC_EXPR
-        S_LEFT_VAL_EXPR = 68,                    // LEFT_VAL_EXPR
-        S_CONST_EXPR = 69,                       // CONST_EXPR
-        S_UNARY_OP = 70                          // UNARY_OP
+        S_ASSIGN_EXPR = 56,                      // ASSIGN_EXPR
+        S_EXPR = 57,                             // EXPR
+        S_LOGICAL_OR_EXPR = 58,                  // LOGICAL_OR_EXPR
+        S_LOGICAL_AND_EXPR = 59,                 // LOGICAL_AND_EXPR
+        S_EQUALITY_EXPR = 60,                    // EQUALITY_EXPR
+        S_RELATIONAL_EXPR = 61,                  // RELATIONAL_EXPR
+        S_ADDSUB_EXPR = 62,                      // ADDSUB_EXPR
+        S_MULDIV_EXPR = 63,                      // MULDIV_EXPR
+        S_UNARY_EXPR = 64,                       // UNARY_EXPR
+        S_BASIC_EXPR = 65,                       // BASIC_EXPR
+        S_LEFT_VAL_EXPR = 66,                    // LEFT_VAL_EXPR
+        S_CONST_EXPR = 67,                       // CONST_EXPR
+        S_UNARY_OP = 68                          // UNARY_OP
       };
     };
 
@@ -708,11 +702,6 @@ namespace  Yacc  {
 
       case symbol_kind::S_UNARY_OP: // UNARY_OP
         value.move< OpCode > (std::move (that.value));
-        break;
-
-      case symbol_kind::S_STMT: // STMT
-      case symbol_kind::S_EXPR_STMT: // EXPR_STMT
-        value.move< StmtNode* > (std::move (that.value));
         break;
 
       case symbol_kind::S_FLOAT_CONST: // FLOAT_CONST
@@ -793,20 +782,6 @@ namespace  Yacc  {
       {}
 #else
       basic_symbol (typename Base::kind_type t, const OpCode& v, const location_type& l)
-        : Base (t)
-        , value (v)
-        , location (l)
-      {}
-#endif
-
-#if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, StmtNode*&& v, location_type&& l)
-        : Base (t)
-        , value (std::move (v))
-        , location (std::move (l))
-      {}
-#else
-      basic_symbol (typename Base::kind_type t, const StmtNode*& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -914,11 +889,6 @@ switch (yykind)
 
       case symbol_kind::S_UNARY_OP: // UNARY_OP
         value.template destroy< OpCode > ();
-        break;
-
-      case symbol_kind::S_STMT: // STMT
-      case symbol_kind::S_EXPR_STMT: // EXPR_STMT
-        value.template destroy< StmtNode* > ();
         break;
 
       case symbol_kind::S_FLOAT_CONST: // FLOAT_CONST
@@ -2278,9 +2248,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 53,     ///< Last index in yytable_.
-      yynnts_ = 17,  ///< Number of nonterminal symbols.
-      yyfinal_ = 28 ///< Termination state number.
+      yylast_ = 52,     ///< Last index in yytable_.
+      yynnts_ = 15,  ///< Number of nonterminal symbols.
+      yyfinal_ = 26 ///< Termination state number.
     };
 
 
@@ -2375,11 +2345,6 @@ switch (yykind)
         value.copy< OpCode > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_STMT: // STMT
-      case symbol_kind::S_EXPR_STMT: // EXPR_STMT
-        value.copy< StmtNode* > (YY_MOVE (that.value));
-        break;
-
       case symbol_kind::S_FLOAT_CONST: // FLOAT_CONST
         value.copy< float > (YY_MOVE (that.value));
         break;
@@ -2451,11 +2416,6 @@ switch (yykind)
 
       case symbol_kind::S_UNARY_OP: // UNARY_OP
         value.move< OpCode > (YY_MOVE (s.value));
-        break;
-
-      case symbol_kind::S_STMT: // STMT
-      case symbol_kind::S_EXPR_STMT: // EXPR_STMT
-        value.move< StmtNode* > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_FLOAT_CONST: // FLOAT_CONST
@@ -2544,7 +2504,7 @@ switch (yykind)
 
 #line 4 "parser/yacc.y"
 } //  Yacc 
-#line 2548 "parser/yacc.hpp"
+#line 2508 "parser/yacc.hpp"
 
 
 

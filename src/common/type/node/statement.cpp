@@ -16,7 +16,10 @@ void StmtNode::printAST(ostream* oss, int pad)
 /* Definition of ExprStmt: head */
 
 ExprStmt::ExprStmt(ExprNode* expr) : expr(expr) {}
-ExprStmt::~ExprStmt() {}
+ExprStmt::~ExprStmt() 
+{
+    delete expr;
+}
 
 void ExprStmt::printAST(ostream* oss, int pad)
 {

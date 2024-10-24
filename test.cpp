@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
 
     Driver driver(inStream, outStream);
     ASTree* ast = driver.parse();
-    if (ast) { ast->printAST(outStream); delete ast; }
+    if (ast) { ast->printAST(outStream); }
 
     Type* intTypePtr = TypeSystem::getPointerType(llType);
     cout << intTypePtr->getTypeName() << endl;

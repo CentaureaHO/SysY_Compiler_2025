@@ -10,7 +10,10 @@ using kind = Parser::symbol_kind;
 Driver::Driver(std::istream* is, std::ostream* os)
     : _scanner(*this), _parser(_scanner, *this), inStream(is), outStream(os)
 {}
-Driver::~Driver() {}
+Driver::~Driver() 
+{
+    if (ast) { delete ast; }
+}
 
 void Driver::setStreams(std::istream* is, std::ostream* os)
 {

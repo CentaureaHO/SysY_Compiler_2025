@@ -17,7 +17,14 @@ void ExprNode::setNonConst() { isConst = false; }
 LeftValueExpr::LeftValueExpr(Symbol::Entry* entry, vector<ExprNode*>* dims, int scope)
     : entry(entry), dims(dims), scope(scope)
 {}
-LeftValueExpr::~LeftValueExpr() {}
+LeftValueExpr::~LeftValueExpr()
+{
+    if (dims)
+    {
+        for (auto dim : *dims) { delete dim; }
+        delete dims;
+    }
+}
 
 void LeftValueExpr::printAST(std::ostream* oss, int pad)
 {
@@ -61,7 +68,10 @@ void ConstExpr::printAST(std::ostream* oss, int pad)
 /* Definition of UnaryExpr: head */
 
 UnaryExpr::UnaryExpr(OpCode op, ExprNode* expr) : op(op), val(expr) {}
-UnaryExpr::~UnaryExpr() {}
+UnaryExpr::~UnaryExpr()
+{
+    if (val) delete val;
+}
 
 void UnaryExpr::printAST(std::ostream* oss, int pad)
 {
@@ -73,7 +83,11 @@ void UnaryExpr::printAST(std::ostream* oss, int pad)
 /* Definition of BinaryExpr: head */
 
 BinaryExpr::BinaryExpr(OpCode op, ExprNode* lhs, ExprNode* rhs) : op(op), lhs(lhs), rhs(rhs) {}
-BinaryExpr::~BinaryExpr() {}
+BinaryExpr::~BinaryExpr()
+{
+    if (lhs) delete lhs;
+    if (rhs) delete rhs;
+}
 
 void BinaryExpr::printAST(std::ostream* oss, int pad)
 {
