@@ -45,17 +45,33 @@ class InitMulti : public InitNode
     ~InitMulti();
 
     void printAST(std::ostream* oss, int pad);
+
+    int getSize();
 };
 
 class DefNode : public HelperNode
 {
   private:
-    ExprNode*   lval;
-    InitNode*   rval;
+    ExprNode* lval;
+    InitNode* rval;
 
   public:
     DefNode(ExprNode* lval, InitNode* rval);
     ~DefNode();
+
+    void printAST(std::ostream* oss, int pad);
+};
+
+class FuncParamDefNode : public HelperNode
+{
+  private:
+    Type*          baseType;
+    Symbol::Entry* entry;
+    std::vector<ExprNode*>* dims;
+
+  public:
+    FuncParamDefNode(Type* type, Symbol::Entry* entry, std::vector<ExprNode*>* dims = nullptr);
+    ~FuncParamDefNode();
 
     void printAST(std::ostream* oss, int pad);
 };

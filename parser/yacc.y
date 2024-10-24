@@ -86,6 +86,8 @@
 %nterm <std::vector<InitNode*>*> INITIALIZER_LIST
 %nterm <DefNode*> DEF
 %nterm <std::vector<DefNode*>*> DEF_LIST
+%nterm <FuncParamDefNode*> FUNC_PARAM_DEF
+%nterm <std::vector<FuncParamDefNode*>*> FUNC_PARAM_DEF_LIST
 
 %nterm <ExprNode*> CONST_EXPR
 %nterm <ExprNode*> BASIC_EXPR
@@ -120,10 +122,8 @@
 
 PROGRAM:
     STMT_LIST {
-        std::cout << "program: STMT_LIST " << std::endl;
         $$ = new ASTree($1);
         driver.setAST($$);
-        // delete $1;
     }
     | PROGRAM END {
         YYACCEPT;
@@ -179,6 +179,12 @@ DEF:
     | LEFT_VAL_EXPR ASSIGN INITIALIZER {
         $$ = new DefNode($1, $3);
     }
+    | IDENT LBRACKET RBRACKET ASSIGN INITIALIZER {
+        std::vector<ExprNode*>* dim = new std::vector<ExprNode*>();
+        dim->emplace_back(new ConstExpr(static_cast<InitMulti*>($5)->getSize()));
+        Symbol::Entry* entry = Symbol::Entry::getEntry(*$1);
+        $$ = new DefNode(new LeftValueExpr(entry, dim, -1), $5);
+    }
     ; 
 
 DEF_LIST:
@@ -198,6 +204,9 @@ INITIALIZER:
     }
     | LBRACE INITIALIZER_LIST RBRACE {
         $$ = new InitMulti($2);
+    }
+    | LBRACE RBRACE {
+        $$ = new InitMulti(nullptr);
     }
     ;
 

@@ -1,0 +1,13 @@
+==1080699== Memcheck, a memory error detector
+==1080699== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==1080699== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
+==1080699== Command: bin/test
+==1080699== 
+==1080699== 
+==1080699== HEAP SUMMARY:
+==1080699==     in use at exit: 0 bytes in 0 blocks
+==1080699==   total heap usage: 40 allocs, 40 frees, 109,218 bytes allocated
+==1080699== 
+==1080699== All heap blocks were freed -- no leaks are possible
+==1080699== 
+==1080699== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)

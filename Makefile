@@ -63,7 +63,7 @@ $(BIN_DIR)/test: $(OBJECTS) test.cpp
 
 .PHONY: valgrind
 valgrind: $(BIN_DIR)/test
-	valgrind $(VAL_OPTS) $(BIN_DIR)/test 2> valgriand_report
+	valgrind $(VAL_OPTS) $(BIN_DIR)/test 2> valgrind_report
 
 .PHONY: clean
 clean:

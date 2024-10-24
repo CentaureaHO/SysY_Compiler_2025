@@ -10,6 +10,7 @@ ASTree::ASTree(vector<StmtNode*>* stmts, int line_num) : Node(line_num), stmts(s
 ASTree::~ASTree()
 {
     if (!stmts) { return; }
+    for (auto stmt : *stmts) { delete stmt; }
     delete stmts;
 }
 

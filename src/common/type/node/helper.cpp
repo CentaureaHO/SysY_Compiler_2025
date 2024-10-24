@@ -50,6 +50,12 @@ void InitMulti::printAST(ostream* oss, int pad)
     for (auto expr : *exprs) expr->printAST(oss, pad + 4);
 }
 
+int InitMulti::getSize()
+{
+    if (!exprs) return 0;
+    return static_cast<int>(exprs->size());
+}
+
 /* Definition of InitMulti: tail */
 /* Definition of DefNode: head */
 
@@ -68,3 +74,44 @@ void DefNode::printAST(ostream* oss, int pad)
 }
 
 /* Definition of DefNode: tail */
+/* Definition of FuncParamDefNode: head */
+
+FuncParamDefNode::FuncParamDefNode(Type* type, Symbol::Entry* entry, vector<ExprNode*>* dims)
+    : HelperNode(), baseType(type), entry(entry), dims(dims)
+{}
+FuncParamDefNode::~FuncParamDefNode()
+{
+    if (dims)
+    {
+        for (auto dim : *dims) delete dim;
+        delete dims;
+    }
+}
+
+void FuncParamDefNode::printAST(ostream* oss, int pad)
+{
+    *oss << string(pad, ' ') << "FuncParamDef ";
+    if (baseType) *oss << baseType->getTypeName();
+    if (entry) *oss << entry->getName();
+    if (dims)
+    {
+        size_t i = 0;
+        for (auto dim : *dims)
+        {
+            *oss << "[Dim " << i << "]";
+            ++i;
+        }
+        *oss << '\n';
+        i = 0;
+        for (auto dim : *dims)
+        {
+            *oss << string(pad + 2, ' ') << "Dim " << i << ": ";
+            dim->printAST(oss, pad + 4);
+            ++i;
+        }
+    }
+    else
+        *oss << '\n';
+}
+
+/* Definition of FuncParamDefNode: tail */
