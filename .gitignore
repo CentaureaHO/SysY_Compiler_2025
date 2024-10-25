@@ -7,3 +7,5 @@ test.out
 obj/
 bin/
 main
+test.err
+valgrind_report
