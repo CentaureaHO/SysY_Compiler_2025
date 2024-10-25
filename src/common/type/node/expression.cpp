@@ -1,12 +1,28 @@
 #include <common/type/node/expression.h>
+#include <iostream>
+#include <memory>
+#include <string>
 using namespace std;
+
+/* ANSI color codes */
+const std::string RESET   = "\033[0m";
+const std::string BLACK   = "\033[30m";      /* Black */
+const std::string RED     = "\033[31m";      /* Red */
+const std::string GREEN   = "\033[32m";      /* Green */
+const std::string YELLOW  = "\033[33m";      /* Yellow */
+const std::string BLUE    = "\033[34m";      /* Blue */
+const std::string MAGENTA = "\033[35m";      /* Magenta */
+const std::string CYAN    = "\033[36m";      /* Cyan */
+const std::string WHITE   = "\033[37m";      /* White */
 
 /* Definition of ExprNode: head */
 
 ExprNode::ExprNode(int line_num, bool isConst) : Node(line_num), isConst(isConst) {}
 ExprNode::~ExprNode() {}
 
-void ExprNode::printAST(ostream* oss, int pad) { *oss << string(pad, ' ') << "ExprNode\n"; }
+void ExprNode::printAST(ostream* oss, int pad) {
+    *oss << string(pad, ' ') << MAGENTA << "ExprNode" << RESET << '\n';
+}
 
 void ExprNode::setConst() { isConst = true; }
 void ExprNode::setNonConst() { isConst = false; }
@@ -15,8 +31,7 @@ void ExprNode::setNonConst() { isConst = false; }
 /* Definition of LeftValueExpr: head */
 
 LeftValueExpr::LeftValueExpr(Symbol::Entry* entry, vector<ExprNode*>* dims, int scope)
-    : entry(entry), dims(dims), scope(scope)
-{}
+    : entry(entry), dims(dims), scope(scope) {}
 LeftValueExpr::~LeftValueExpr()
 {
     if (dims)
@@ -28,7 +43,7 @@ LeftValueExpr::~LeftValueExpr()
 
 void LeftValueExpr::printAST(std::ostream* oss, int pad)
 {
-    *oss << string(pad, ' ') << "LeftValueExpr ";
+    *oss << string(pad, ' ') << CYAN << "LeftValueExpr " << RESET;
     if (entry) *oss << entry->getName();
     if (dims)
     {
@@ -62,7 +77,7 @@ ConstExpr::~ConstExpr() {}
 
 void ConstExpr::printAST(std::ostream* oss, int pad)
 {
-    *oss << string(pad, ' ') << "Const ";
+    *oss << string(pad, ' ') << YELLOW << "Const " << RESET;
     switch (type)
     {
         case 0: *oss << "undefined"; break;
@@ -86,7 +101,7 @@ UnaryExpr::~UnaryExpr()
 
 void UnaryExpr::printAST(std::ostream* oss, int pad)
 {
-    *oss << string(pad, ' ') << "UnaryExpr " << getOpStr(op) << '\n';
+    *oss << string(pad, ' ') << GREEN << "UnaryExpr " << getOpStr(op) << RESET << '\n';
     val->printAST(oss, pad + 4);
 }
 
@@ -102,10 +117,8 @@ BinaryExpr::~BinaryExpr()
 
 void BinaryExpr::printAST(std::ostream* oss, int pad)
 {
-    *oss << string(pad, ' ') << "BinaryExpr " << getOpStr(op) << '\n';
-    // *oss << string(pad + 2, ' ') << "LHS:\n";
+    *oss << string(pad, ' ') << BLUE << "BinaryExpr " << getOpStr(op) << RESET << '\n';
     lhs->printAST(oss, pad + 4);
-    // *oss << string(pad + 2, ' ') << "RHS:\n";
     rhs->printAST(oss, pad + 4);
 }
 
