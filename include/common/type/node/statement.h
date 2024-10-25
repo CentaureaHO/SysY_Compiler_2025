@@ -8,19 +8,13 @@
 class DefNode;
 class FuncParamDefNode;
 
-/**
- * @brief 抽象语法树中所有语句节点的基类
- *
- * 这是所有具体语句节点（如条件语句、循环语句、赋值语句等）的基类。
- * 它继承自 `Node` 类，表示程序中的语句单元。
- */
 class StmtNode : public Node
 {
   public:
     StmtNode(int line_num = -1);
     virtual ~StmtNode();
 
-    void printAST(std::ostream* oss, int pad) override;
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
 };
 
 class ExprStmt : public StmtNode
@@ -32,7 +26,7 @@ class ExprStmt : public StmtNode
     ExprStmt(ExprNode* expr = nullptr);
     ~ExprStmt();
 
-    void printAST(std::ostream* oss, int pad) override;
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) ;
 };
 
 class VarDeclStmt : public StmtNode
@@ -46,7 +40,7 @@ class VarDeclStmt : public StmtNode
     VarDeclStmt(Type* bt = voidType, std::vector<DefNode*>* defs = nullptr, bool isConst = false);
     ~VarDeclStmt();
 
-    void printAST(std::ostream* oss, int pad) override;
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
 };
 
 class BlockStmt : public StmtNode
@@ -58,7 +52,7 @@ class BlockStmt : public StmtNode
     BlockStmt(std::vector<StmtNode*>* stmts = nullptr);
     ~BlockStmt();
 
-    void printAST(std::ostream* oss, int pad) override;
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) ;
 };
 
 class FuncDeclStmt : public StmtNode
@@ -74,7 +68,7 @@ class FuncDeclStmt : public StmtNode
         std::vector<FuncParamDefNode*>* params = nullptr, StmtNode* body = nullptr);
     ~FuncDeclStmt();
 
-    void printAST(std::ostream* oss, int pad) override;
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) ;
 };
 
 class ReturnStmt : public StmtNode
@@ -86,7 +80,7 @@ class ReturnStmt : public StmtNode
     ReturnStmt(ExprNode* expr = nullptr);
     ~ReturnStmt();
 
-    void printAST(std::ostream* oss, int pad) override;
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) ;
 };
 
 class WhileStmt : public StmtNode
@@ -99,7 +93,7 @@ class WhileStmt : public StmtNode
     WhileStmt(ExprNode* condition = nullptr, StmtNode* body = nullptr);
     ~WhileStmt();
 
-    void printAST(std::ostream* oss, int pad) override;
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) ;
 };
 
 class IfStmt : public StmtNode
@@ -113,7 +107,7 @@ class IfStmt : public StmtNode
     IfStmt(ExprNode* condition = nullptr, StmtNode* thenBody = nullptr, StmtNode* elseBody = nullptr);
     ~IfStmt();
 
-    void printAST(std::ostream* oss, int pad) override;
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) ;
 };
 
 class ForStmt : public StmtNode
@@ -129,7 +123,7 @@ class ForStmt : public StmtNode
         StmtNode* init = nullptr, ExprNode* condition = nullptr, StmtNode* update = nullptr, StmtNode* body = nullptr);
     ~ForStmt();
 
-    void printAST(std::ostream* oss, int pad) override;
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) ;
 };
 
 #endif

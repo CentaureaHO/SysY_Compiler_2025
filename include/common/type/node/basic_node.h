@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <common/type/type_defs.h>
+#include <vector>
 
 class StmtNode;
 class ExprNode;
@@ -17,7 +18,7 @@ class Node
     Node(int line_num = -1);
     virtual ~Node();
 
-    virtual void printAST(std::ostream* oss, int pad) = 0;
+    virtual void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) = 0;
 };
 
 class ASTree : public Node
@@ -29,7 +30,7 @@ class ASTree : public Node
     ASTree(std::vector<StmtNode*>* stmts = nullptr, int line_num = -1);
     virtual ~ASTree();
 
-    void printAST(std::ostream* oss, int pad = 0) override;
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
 };
 
 #endif

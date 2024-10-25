@@ -11,7 +11,7 @@ class HelperNode : public Node
     HelperNode(int line_num = -1);
     virtual ~HelperNode();
 
-    void printAST(std::ostream* oss, int pad);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
 };
 
 class InitNode : public HelperNode
@@ -20,7 +20,7 @@ class InitNode : public HelperNode
     InitNode(int line_num = -1);
     virtual ~InitNode();
 
-    void printAST(std::ostream* oss, int pad);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
 };
 
 class InitSingle : public InitNode
@@ -32,7 +32,7 @@ class InitSingle : public InitNode
     InitSingle(ExprNode* expr);
     ~InitSingle();
 
-    void printAST(std::ostream* oss, int pad);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
 };
 
 class InitMulti : public InitNode
@@ -44,7 +44,7 @@ class InitMulti : public InitNode
     InitMulti(std::vector<InitNode*>* es);
     ~InitMulti();
 
-    void printAST(std::ostream* oss, int pad);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
 
     int getSize();
 };
@@ -59,7 +59,7 @@ class DefNode : public HelperNode
     DefNode(ExprNode* lval, InitNode* rval);
     ~DefNode();
 
-    void printAST(std::ostream* oss, int pad);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
 };
 
 class FuncParamDefNode : public HelperNode
@@ -67,14 +67,13 @@ class FuncParamDefNode : public HelperNode
   private:
     Type*          baseType;
     Symbol::Entry* entry;
-    // 首元素为-1时表示[]
     std::vector<ExprNode*>* dims;
 
   public:
     FuncParamDefNode(Type* type, Symbol::Entry* entry, std::vector<ExprNode*>* dims = nullptr);
     ~FuncParamDefNode();
 
-    void printAST(std::ostream* oss, int pad);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
 };
 
 #endif
