@@ -274,23 +274,23 @@ FOR_STMT:
     ;
 
 FUNC_PARAM_DEF:
-    TYPE IDENT {
+    TYPE IDENT {//int a;
         Symbol::Entry* entry = Symbol::Entry::getEntry(*$2);
         $$ = new FuncParamDefNode($1, entry, nullptr);
     }
-    | TYPE IDENT LBRACKET RBRACKET {
+    | TYPE IDENT LBRACKET RBRACKET {//int a[];
         std::vector<ExprNode*>* dim = new std::vector<ExprNode*>();
         dim->emplace_back(new ConstExpr(-1));
         Symbol::Entry* entry = Symbol::Entry::getEntry(*$2);
         $$ = new FuncParamDefNode($1, entry, dim);
     }
-    | TYPE IDENT LBRACKET RBRACKET ARRAY_DIMESION_EXPR_LIST {
+    | TYPE IDENT LBRACKET RBRACKET ARRAY_DIMESION_EXPR_LIST {//int a[][10];
         std::vector<ExprNode*>* dim = $5;
         dim->insert(dim->begin(), new ConstExpr(-1));
         Symbol::Entry* entry = Symbol::Entry::getEntry(*$2);
         $$ = new FuncParamDefNode($1, entry, dim);
     }
-    | TYPE IDENT ARRAY_DIMESION_EXPR_LIST {
+    | TYPE IDENT ARRAY_DIMESION_EXPR_LIST { //int a[10][10]
         Symbol::Entry* entry = Symbol::Entry::getEntry(*$2);
         $$ = new FuncParamDefNode($1, entry, $3);
     }

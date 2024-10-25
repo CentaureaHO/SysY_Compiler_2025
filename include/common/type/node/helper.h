@@ -14,7 +14,7 @@ class HelperNode : public Node
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
 };
 
-class InitNode : public HelperNode
+class InitNode : public HelperNode//初始化类型的节点
 {
   public:
     InitNode(int line_num = -1);
@@ -23,7 +23,7 @@ class InitNode : public HelperNode
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
 };
 
-class InitSingle : public InitNode
+class InitSingle : public InitNode//单一表达式的初始化节点
 {
   private:
     ExprNode* expr;

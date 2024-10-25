@@ -51,7 +51,7 @@ VarDeclStmt::~VarDeclStmt()
 
 void VarDeclStmt::printAST(ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast) << MAGENTA << "VarDecl BaseType: " << RESET 
+    *oss << getFirstPrefix(prefix, isLast) << MAGENTA << "VarDecl BaseType: " << RESET <<YELLOW
          << (isConst ? "const " : "") << YELLOW << baseType->getTypeName() << RESET << '\n';
     if (!defs) return;
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
@@ -96,7 +96,7 @@ FuncDeclStmt::~FuncDeclStmt()
 void FuncDeclStmt::printAST(ostream* oss, const string& prefix, bool isLast)
 {
     *oss << getFirstPrefix(prefix, isLast) << YELLOW << "FuncDecl @Name: " << RESET << BLUE << entry->getName() 
-         << RESET << " -> @RetType: " << MAGENTA << returnType->getTypeName() << RESET << '\n';
+         << RESET << MAGENTA<<" -> @RetType: "  << returnType->getTypeName() << RESET << '\n';
 
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
 
