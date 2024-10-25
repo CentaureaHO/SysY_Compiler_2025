@@ -36,8 +36,7 @@ void ExprStmt::printAST(ostream* oss, const string& prefix, bool isLast)
 {
     *oss << getFirstPrefix(prefix, isLast) << GREEN << "ExprStmt\n" << RESET;
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
-    for (size_t i = 0; i < exprs->size(); ++i) 
-        (*exprs)[i]->printAST(oss, newPrefix + "|   ", i == exprs->size() - 1);
+    for (size_t i = 0; i < exprs->size(); ++i) (*exprs)[i]->printAST(oss, newPrefix + "|   ", i == exprs->size() - 1);
 }
 
 /* Definition of VarDeclStmt: head */
@@ -51,12 +50,11 @@ VarDeclStmt::~VarDeclStmt()
 
 void VarDeclStmt::printAST(ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast) << MAGENTA << "VarDecl BaseType: " << RESET <<YELLOW
+    *oss << getFirstPrefix(prefix, isLast) << MAGENTA << "VarDecl BaseType: " << RESET << YELLOW
          << (isConst ? "const " : "") << YELLOW << baseType->getTypeName() << RESET << '\n';
     if (!defs) return;
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
-    for (size_t i = 0; i < defs->size(); ++i) 
-        (*defs)[i]->printAST(oss, newPrefix + "|   ", i == defs->size() - 1);
+    for (size_t i = 0; i < defs->size(); ++i) (*defs)[i]->printAST(oss, newPrefix + "|   ", i == defs->size() - 1);
 }
 
 /* Definition of BlockStmt: head */
@@ -74,8 +72,7 @@ void BlockStmt::printAST(ostream* oss, const string& prefix, bool isLast)
     if (!stmts) return;
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
     newPrefix += "|   ";
-    for (size_t i = 0; i < stmts->size(); ++i) 
-        (*stmts)[i]->printAST(oss, newPrefix, i == stmts->size() - 1);
+    for (size_t i = 0; i < stmts->size(); ++i) (*stmts)[i]->printAST(oss, newPrefix, i == stmts->size() - 1);
 }
 
 /* Definition of FuncDeclStmt: head */
@@ -95,8 +92,8 @@ FuncDeclStmt::~FuncDeclStmt()
 
 void FuncDeclStmt::printAST(ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast) << YELLOW << "FuncDecl @Name: " << RESET << BLUE << entry->getName() 
-         << RESET << MAGENTA<<" -> @RetType: "  << returnType->getTypeName() << RESET << '\n';
+    *oss << getFirstPrefix(prefix, isLast) << YELLOW << "FuncDecl @Name: " << RESET << BLUE << entry->getName() << RESET
+         << MAGENTA << " -> @RetType: " << returnType->getTypeName() << RESET << '\n';
 
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
 
@@ -107,8 +104,7 @@ void FuncDeclStmt::printAST(ostream* oss, const string& prefix, bool isLast)
     else
     {
         string newnewPrefix = newPrefix + "|   |   ";
-        for (size_t i = 0; i < params->size(); ++i) 
-            (*params)[i]->printAST(oss, newnewPrefix, i == params->size() - 1);
+        for (size_t i = 0; i < params->size(); ++i) (*params)[i]->printAST(oss, newnewPrefix, i == params->size() - 1);
     }
 
     *oss << newPrefix << "`-- " << CYAN << "Body:\n" << RESET;

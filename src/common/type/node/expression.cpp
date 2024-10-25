@@ -43,8 +43,6 @@ void LeftValueExpr::printAST(ostream* oss, const string& prefix, bool isLast)
 {
     *oss << getFirstPrefix(prefix, isLast) << CYAN << "LeftValueExpr " << RESET << entry->getName();
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
-    size_t pos       = newPrefix.rfind('|');
-    if (pos + 4 < newPrefix.size()) newPrefix.erase(pos + 4);
     if (dims)
     {
         for (size_t i = 0; i < dims->size(); ++i) *oss << YELLOW << "[Dim" << i << "]" << RESET;
@@ -124,7 +122,8 @@ void FuncCallExpr::printAST(std::ostream* oss, const string& prefix, bool isLast
     {
         for (size_t i = 0; i < args->size(); ++i)
         {
-            (*args)[i]->printAST(oss, newPrefix + "|   " + MAGENTA + "Arg" + to_string(i) + " = " + RESET, i == args->size() - 1);
+            (*args)[i]->printAST(
+                oss, newPrefix + "|   " + MAGENTA + "Arg" + to_string(i) + " = " + RESET, i == args->size() - 1);
         }
     }
     else

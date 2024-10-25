@@ -59,8 +59,7 @@ void InitMulti::printAST(ostream* oss, const string& prefix, bool isLast)
     *oss << getFirstPrefix(prefix, isLast) << GREEN << "InitMulti\n" << RESET;
     if (!exprs) return;
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
-    for (size_t i = 0; i < exprs->size(); ++i) 
-        (*exprs)[i]->printAST(oss, newPrefix + "|   ", i == exprs->size() - 1);
+    for (size_t i = 0; i < exprs->size(); ++i) (*exprs)[i]->printAST(oss, newPrefix + "|   ", i == exprs->size() - 1);
 }
 
 int InitMulti::getSize() { return exprs ? static_cast<int>(exprs->size()) : 0; }
@@ -78,9 +77,9 @@ void DefNode::printAST(ostream* oss, const string& prefix, bool isLast)
     *oss << getFirstPrefix(prefix, isLast) << BLUE << "DefNode\n" << RESET;
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
     lval->printAST(oss, newPrefix + "|   " + YELLOW + "Var: " + RESET, rval != nullptr);
-    if (rval) 
+    if (rval)
         rval->printAST(oss, newPrefix + "|   " + CYAN + "Init: " + RESET, true);
-    else 
+    else
         *oss << newPrefix << "`-- " << RED << "Init: no initializer" << RESET << '\n';
 }
 
@@ -99,17 +98,17 @@ FuncParamDefNode::~FuncParamDefNode()
 
 void FuncParamDefNode::printAST(ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast) << YELLOW << baseType->getTypeName() << ' ' 
-         << BLUE << entry->getName() << RESET;
+    *oss << getFirstPrefix(prefix, isLast) << YELLOW << baseType->getTypeName() << ' ' << BLUE << entry->getName()
+         << RESET;
     if (dims)
     {
-        for (size_t i = 0; i < dims->size(); ++i) 
-            *oss << CYAN << "[Dim" << i << "]" << RESET;
+        for (size_t i = 0; i < dims->size(); ++i) *oss << CYAN << "[Dim" << i << "]" << RESET;
         *oss << '\n';
 
         for (size_t i = 0; i < dims->size(); ++i)
         {
-            (*dims)[i]->printAST(oss, prefix + "|   " + GREEN + "Dim" + to_string(i) + " = " + RESET, i == dims->size() - 1);
+            (*dims)[i]->printAST(
+                oss, prefix + "|   " + GREEN + "Dim" + to_string(i) + " = " + RESET, i == dims->size() - 1);
         }
     }
     else
