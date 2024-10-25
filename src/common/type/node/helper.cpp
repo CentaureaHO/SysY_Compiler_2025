@@ -40,7 +40,7 @@ InitSingle::~InitSingle() { delete expr; }
 
 void InitSingle::printAST(ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast) << "InitSingle\n";
+    *oss << getFirstPrefix(prefix, isLast) << GREEN << "InitSingle\n" << RESET;
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
     if (expr) expr->printAST(oss, newPrefix + "|   ", true);
 }
@@ -56,10 +56,11 @@ InitMulti::~InitMulti()
 
 void InitMulti::printAST(ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast) << "InitMulti\n";
+    *oss << getFirstPrefix(prefix, isLast) << GREEN << "InitMulti\n" << RESET;
     if (!exprs) return;
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
-    for (size_t i = 0; i < exprs->size(); ++i) (*exprs)[i]->printAST(oss, newPrefix + "|   ", i == exprs->size() - 1);
+    for (size_t i = 0; i < exprs->size(); ++i) 
+        (*exprs)[i]->printAST(oss, newPrefix + "|   ", i == exprs->size() - 1);
 }
 
 int InitMulti::getSize() { return exprs ? static_cast<int>(exprs->size()) : 0; }
@@ -74,10 +75,13 @@ DefNode::~DefNode()
 
 void DefNode::printAST(ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast) << "DefNode\n";
+    *oss << getFirstPrefix(prefix, isLast) << BLUE << "DefNode\n" << RESET;
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
-    lval->printAST(oss, newPrefix + "|   Var: ", false);
-    rval->printAST(oss, newPrefix + "|   Init: ", true);
+    lval->printAST(oss, newPrefix + "|   " + YELLOW + "Var: " + RESET, rval != nullptr);
+    if (rval) 
+        rval->printAST(oss, newPrefix + "|   " + CYAN + "Init: " + RESET, true);
+    else 
+        *oss << newPrefix << "`-- " << RED << "Init: no initializer" << RESET << '\n';
 }
 
 /* Definition of FuncParamDefNode */
@@ -95,16 +99,17 @@ FuncParamDefNode::~FuncParamDefNode()
 
 void FuncParamDefNode::printAST(ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast);
-    *oss << baseType->getTypeName() << ' ' << entry->getName();
+    *oss << getFirstPrefix(prefix, isLast) << YELLOW << baseType->getTypeName() << ' ' 
+         << BLUE << entry->getName() << RESET;
     if (dims)
     {
-        for (size_t i = 0; i < dims->size(); ++i) *oss << "[Dim" << i << "]";
+        for (size_t i = 0; i < dims->size(); ++i) 
+            *oss << CYAN << "[Dim" << i << "]" << RESET;
         *oss << '\n';
 
         for (size_t i = 0; i < dims->size(); ++i)
         {
-            (*dims)[i]->printAST(oss, prefix + "|   Dim" + to_string(i) + " = ", i == dims->size() - 1);
+            (*dims)[i]->printAST(oss, prefix + "|   " + GREEN + "Dim" + to_string(i) + " = " + RESET, i == dims->size() - 1);
         }
     }
     else

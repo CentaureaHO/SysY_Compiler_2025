@@ -41,13 +41,13 @@ LeftValueExpr::~LeftValueExpr()
 
 void LeftValueExpr::printAST(ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast) << "LeftValueExpr " << entry->getName();
+    *oss << getFirstPrefix(prefix, isLast) << CYAN << "LeftValueExpr " << RESET << entry->getName();
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
     size_t pos       = newPrefix.rfind('|');
     if (pos + 4 < newPrefix.size()) newPrefix.erase(pos + 4);
     if (dims)
     {
-        for (size_t i = 0; i < dims->size(); ++i) *oss << "[Dim" << i << "]";
+        for (size_t i = 0; i < dims->size(); ++i) *oss << YELLOW << "[Dim" << i << "]" << RESET;
         *oss << '\n';
         for (size_t i = 0; i < dims->size(); ++i)
             (*dims)[i]->printAST(oss, newPrefix + "|   Dim" + to_string(i) + " = ", i == dims->size() - 1);
@@ -66,14 +66,14 @@ ConstExpr::~ConstExpr() {}
 
 void ConstExpr::printAST(std::ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast) << "Const ";
+    *oss << getFirstPrefix(prefix, isLast) << YELLOW << "Const " << RESET;
     switch (type)
     {
-        case 1: *oss << "Int: " << get<int>(value); break;
-        case 2: *oss << "LL: " << get<long long>(value); break;
-        case 3: *oss << "Float: " << get<float>(value); break;
-        case 4: *oss << "Str: " << *get<shared_ptr<string>>(value); break;
-        default: *oss << "Undefined"; break;
+        case 1: *oss << YELLOW << "Int: " << RESET << get<int>(value); break;
+        case 2: *oss << YELLOW << "LL: " << RESET << get<long long>(value); break;
+        case 3: *oss << YELLOW << "Float: " << RESET << get<float>(value); break;
+        case 4: *oss << YELLOW << "Str: " << RESET << *get<shared_ptr<string>>(value); break;
+        default: *oss << YELLOW << "Undefined" << RESET; break;
     }
     *oss << '\n';
 }
@@ -84,7 +84,7 @@ UnaryExpr::~UnaryExpr() { delete val; }
 
 void UnaryExpr::printAST(std::ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast) << "UnaryExpr " << getOpStr(op) << '\n';
+    *oss << getFirstPrefix(prefix, isLast) << GREEN << "UnaryExpr " << RESET << getOpStr(op) << '\n';
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
     if (val) val->printAST(oss, newPrefix + "|   ", true);
 }
@@ -99,7 +99,7 @@ BinaryExpr::~BinaryExpr()
 
 void BinaryExpr::printAST(std::ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast) << "BinaryExpr " << getOpStr(op) << '\n';
+    *oss << getFirstPrefix(prefix, isLast) << BLUE << "BinaryExpr " << RESET << getOpStr(op) << '\n';
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
     if (lhs) lhs->printAST(oss, newPrefix + "|   ", false);
     if (rhs) rhs->printAST(oss, newPrefix + "|   ", true);
@@ -118,15 +118,15 @@ FuncCallExpr::~FuncCallExpr()
 
 void FuncCallExpr::printAST(std::ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast) << "FuncCallExpr " << entry->getName() << '\n';
+    *oss << getFirstPrefix(prefix, isLast) << YELLOW << "FuncCallExpr " << RESET << entry->getName() << '\n';
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
     if (args)
     {
         for (size_t i = 0; i < args->size(); ++i)
         {
-            (*args)[i]->printAST(oss, newPrefix + "|   Arg" + to_string(i) + " = ", i == args->size() - 1);
+            (*args)[i]->printAST(oss, newPrefix + "|   " + MAGENTA + "Arg" + to_string(i) + " = " + RESET, i == args->size() - 1);
         }
     }
     else
-        *oss << newPrefix << "`-- No args\n";
+        *oss << newPrefix << "`-- " << RED << "No args" << RESET << '\n';
 }

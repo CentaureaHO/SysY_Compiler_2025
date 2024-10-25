@@ -34,9 +34,10 @@ ExprStmt::~ExprStmt()
 
 void ExprStmt::printAST(ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast) << "ExprStmt\n";
+    *oss << getFirstPrefix(prefix, isLast) << GREEN << "ExprStmt\n" << RESET;
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
-    for (size_t i = 0; i < exprs->size(); ++i) (*exprs)[i]->printAST(oss, newPrefix + "|   ", i == exprs->size() - 1);
+    for (size_t i = 0; i < exprs->size(); ++i) 
+        (*exprs)[i]->printAST(oss, newPrefix + "|   ", i == exprs->size() - 1);
 }
 
 /* Definition of VarDeclStmt: head */
@@ -50,11 +51,12 @@ VarDeclStmt::~VarDeclStmt()
 
 void VarDeclStmt::printAST(ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast) << "VarDecl BaseType: " << (isConst ? "const " : "")
-         << baseType->getTypeName() << '\n';
+    *oss << getFirstPrefix(prefix, isLast) << MAGENTA << "VarDecl BaseType: " << RESET 
+         << (isConst ? "const " : "") << YELLOW << baseType->getTypeName() << RESET << '\n';
     if (!defs) return;
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
-    for (size_t i = 0; i < defs->size(); ++i) (*defs)[i]->printAST(oss, newPrefix + "|   ", i == defs->size() - 1);
+    for (size_t i = 0; i < defs->size(); ++i) 
+        (*defs)[i]->printAST(oss, newPrefix + "|   ", i == defs->size() - 1);
 }
 
 /* Definition of BlockStmt: head */
@@ -68,11 +70,12 @@ BlockStmt::~BlockStmt()
 
 void BlockStmt::printAST(ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast) << "BlockStmt\n";
+    *oss << getFirstPrefix(prefix, isLast) << MAGENTA << "BlockStmt" << RESET << '\n';
     if (!stmts) return;
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
     newPrefix += "|   ";
-    for (size_t i = 0; i < stmts->size(); ++i) (*stmts)[i]->printAST(oss, newPrefix, i == stmts->size() - 1);
+    for (size_t i = 0; i < stmts->size(); ++i) 
+        (*stmts)[i]->printAST(oss, newPrefix, i == stmts->size() - 1);
 }
 
 /* Definition of FuncDeclStmt: head */
@@ -92,22 +95,23 @@ FuncDeclStmt::~FuncDeclStmt()
 
 void FuncDeclStmt::printAST(ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast) << "FuncDecl @Name: " << entry->getName()
-         << " -> @RetType: " << returnType->getTypeName() << '\n';
+    *oss << getFirstPrefix(prefix, isLast) << YELLOW << "FuncDecl @Name: " << RESET << BLUE << entry->getName() 
+         << RESET << " -> @RetType: " << MAGENTA << returnType->getTypeName() << RESET << '\n';
 
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
 
-    *oss << newPrefix << "|-- Params:\n";
+    *oss << newPrefix << "|-- " << CYAN << "Params:\n" << RESET;
 
     if (!params || params->empty())
         *oss << newPrefix << "|       None\n";
     else
     {
         string newnewPrefix = newPrefix + "|   |   ";
-        for (size_t i = 0; i < params->size(); ++i) (*params)[i]->printAST(oss, newnewPrefix, i == params->size() - 1);
+        for (size_t i = 0; i < params->size(); ++i) 
+            (*params)[i]->printAST(oss, newnewPrefix, i == params->size() - 1);
     }
 
-    *oss << newPrefix << "`-- Body:\n";
+    *oss << newPrefix << "`-- " << CYAN << "Body:\n" << RESET;
     body->printAST(oss, newPrefix + "    |   ", true);
 }
 
@@ -117,7 +121,7 @@ ReturnStmt::~ReturnStmt() { delete expr; }
 
 void ReturnStmt::printAST(ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast) << "ReturnStmt\n";
+    *oss << getFirstPrefix(prefix, isLast) << MAGENTA << "ReturnStmt" << RESET << '\n';
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
     if (expr)
         expr->printAST(oss, newPrefix + "|   ", true);
@@ -135,11 +139,11 @@ WhileStmt::~WhileStmt()
 
 void WhileStmt::printAST(ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast) << "WhileStmt\n";
+    *oss << getFirstPrefix(prefix, isLast) << CYAN << "WhileStmt" << RESET << '\n';
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
-    *oss << "    |-- Cond:\n";
+    *oss << "    |-- " << GREEN << "Cond:\n" << RESET;
     condition->printAST(oss, newPrefix + "|   |   ", true);
-    *oss << "    `-- Body:\n";
+    *oss << "    `-- " << BLUE << "Body:\n" << RESET;
     body->printAST(oss, newPrefix + "    |   ", true);
 }
 
@@ -156,16 +160,16 @@ IfStmt::~IfStmt()
 
 void IfStmt::printAST(ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast) << "IfStmt\n";
+    *oss << getFirstPrefix(prefix, isLast) << GREEN << "IfStmt" << RESET << '\n';
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
 
-    *oss << newPrefix << "|-- Condition:\n";
+    *oss << newPrefix << "|-- " << GREEN << "Condition:\n" << RESET;
     if (condition) condition->printAST(oss, newPrefix + "|   |   ", true);
 
-    *oss << newPrefix << "|-- Thenbody:\n";
+    *oss << newPrefix << "|-- " << CYAN << "Thenbody:\n" << RESET;
     if (thenBody) thenBody->printAST(oss, newPrefix + "|   |   ", true);
 
-    *oss << newPrefix << "`-- Elsebody:\n";
+    *oss << newPrefix << "`-- " << YELLOW << "Elsebody:\n" << RESET;
     if (elseBody)
         elseBody->printAST(oss, newPrefix + "    |   ", true);
     else
@@ -186,28 +190,28 @@ ForStmt::~ForStmt()
 
 void ForStmt::printAST(ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast) << "ForStmt\n";
+    *oss << getFirstPrefix(prefix, isLast) << BLUE << "ForStmt" << RESET << '\n';
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
 
-    *oss << newPrefix << "|-- Init:\n";
+    *oss << newPrefix << "|-- " << GREEN << "Init:\n" << RESET;
     if (init)
         init->printAST(oss, newPrefix + "|   |   ", true);
     else
         *oss << newPrefix << "|   |   `-- None\n";
 
-    *oss << newPrefix << "|-- Condition:\n";
+    *oss << newPrefix << "|-- " << CYAN << "Condition:\n" << RESET;
     if (condition)
         condition->printAST(oss, newPrefix + "|   |   ", true);
     else
         *oss << newPrefix << "|   |   `-- None\n";
 
-    *oss << newPrefix << "|-- Update:\n";
+    *oss << newPrefix << "|-- " << YELLOW << "Update:\n" << RESET;
     if (update)
         update->printAST(oss, newPrefix + "|   |   ", true);
     else
         *oss << newPrefix << "|   |   `-- None\n";
 
-    *oss << newPrefix << "`-- Body:\n";
+    *oss << newPrefix << "`-- " << MAGENTA << "Body:\n" << RESET;
     if (body)
         body->printAST(oss, newPrefix + "    |   ", true);
     else
@@ -220,5 +224,5 @@ BreakStmt::~BreakStmt() {}
 
 void BreakStmt::printAST(ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << getFirstPrefix(prefix, isLast) << "BreakStmt\n";
+    *oss << getFirstPrefix(prefix, isLast) << BLUE << "BreakStmt" << RESET << '\n';
 }
