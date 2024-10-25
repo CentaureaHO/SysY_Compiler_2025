@@ -6,7 +6,7 @@ string getFirstPrefix(string str, bool isLast)
     size_t pos = str.rfind('|');
     if (pos != string::npos && pos + 3 < str.size())
     {
-        str[pos]     = isLast ? '`' : '|'; 
+        str[pos]     = isLast ? '`' : '|';
         str[pos + 1] = '-';
         str[pos + 2] = '-';
         str[pos + 3] = ' ';

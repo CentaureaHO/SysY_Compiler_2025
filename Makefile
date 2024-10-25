@@ -91,3 +91,7 @@ $(BISON_C) $(BISON_H) $(LOC_H): $(BISON_SRC)
 	mv $(BISON_C_T) $(BISON_C)
 	mv $(BISON_H_T) $(BISON_H)
 	mv $(LOC_H_T) $(LOC_H)
+
+.PHONY: format
+format:
+	find . -type f \( -name "*.c" -o -name "*.cpp" -o -name "*.h" -o -name "*.hpp" -o -name "*.hh" \) -exec clang-format -i {} +

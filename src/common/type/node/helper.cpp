@@ -59,8 +59,7 @@ void InitMulti::printAST(ostream* oss, const string& prefix, bool isLast)
     *oss << getFirstPrefix(prefix, isLast) << "InitMulti\n";
     if (!exprs) return;
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
-    for (size_t i = 0; i < exprs->size(); ++i)
-        (*exprs)[i]->printAST(oss, newPrefix + "|   ", i == exprs->size() - 1);
+    for (size_t i = 0; i < exprs->size(); ++i) (*exprs)[i]->printAST(oss, newPrefix + "|   ", i == exprs->size() - 1);
 }
 
 int InitMulti::getSize() { return exprs ? static_cast<int>(exprs->size()) : 0; }
