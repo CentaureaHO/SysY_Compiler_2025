@@ -92,6 +92,7 @@
 
 %nterm <ExprNode*> CONST_EXPR
 %nterm <ExprNode*> BASIC_EXPR
+%nterm <ExprNode*> FUNC_CALL_EXPR
 
 %nterm <ExprNode*> UNARY_EXPR
 
@@ -103,6 +104,7 @@
 %nterm <ExprNode*> LOGICAL_OR_EXPR
 %nterm <ExprNode*> ASSIGN_EXPR      /* 由于C语言中=语句也有返回值，因此定义ASSIGN为EXPR而非STMT */
 %nterm <ExprNode*> EXPR
+%nterm <std::vector<ExprNode*>*> EXPR_LIST
 
 %nterm <ExprNode*> ARRAY_DIMESION_EXPR
 %nterm <std::vector<ExprNode*>*> ARRAY_DIMESION_EXPR_LIST
@@ -116,6 +118,7 @@
 %nterm <StmtNode*> RETURN_STMT
 %nterm <StmtNode*> WHILE_STMT
 %nterm <StmtNode*> IF_STMT
+%nterm <StmtNode*> BREAK_STMT
 
 %nterm <StmtNode*> FOR_INIT_STMT
 %nterm <StmtNode*> FOR_INCR_STMT
@@ -179,6 +182,15 @@ STMT:
     | FOR_STMT {
         $$ = $1;
     }
+    | BREAK_STMT {
+        $$ = $1;
+    }
+    ;
+
+BREAK_STMT:
+    BREAK SEMICOLON {
+        $$ = new BreakStmt();
+    }
     ;
 
 BLOCK_STMT:
@@ -191,7 +203,7 @@ BLOCK_STMT:
     ;
 
 EXPR_STMT:
-    EXPR SEMICOLON {
+    EXPR_LIST SEMICOLON {
         $$ = new ExprStmt($1);
     }
     ;
@@ -250,7 +262,7 @@ FOR_INCR_STMT:
     /* empty */ {
         $$ = nullptr;
     }
-    | EXPR {
+    | EXPR_LIST {
         $$ = new ExprStmt($1);
     }
     ;
@@ -358,6 +370,17 @@ ASSIGN_EXPR:
     }
     ;
 
+EXPR_LIST:
+    EXPR {
+        $$ = new std::vector<ExprNode*>();
+        $$->push_back($1);
+    }
+    | EXPR_LIST COMMA EXPR {
+        $$ = $1;
+        $$->push_back($3);
+    }
+    ;
+
 EXPR:
     LOGICAL_OR_EXPR {
         $$ = $1;
@@ -460,6 +483,20 @@ BASIC_EXPR:
     }
     | LPAREN EXPR RPAREN {
         $$ = $2;
+    }
+    | FUNC_CALL_EXPR {
+        $$ = $1;
+    }
+    ;
+
+FUNC_CALL_EXPR:
+    IDENT LPAREN RPAREN {
+        Symbol::Entry* entry = Symbol::Entry::getEntry(*$1);
+        $$ = new FuncCallExpr(entry, nullptr);
+    }
+    | IDENT LPAREN EXPR_LIST RPAREN {
+        Symbol::Entry* entry = Symbol::Entry::getEntry(*$1);
+        $$ = new FuncCallExpr(entry, $3);
     }
     ;
 

@@ -65,8 +65,8 @@ class DefNode : public HelperNode
 class FuncParamDefNode : public HelperNode
 {
   private:
-    Type*          baseType;
-    Symbol::Entry* entry;
+    Type*                   baseType;
+    Symbol::Entry*          entry;
     std::vector<ExprNode*>* dims;
 
   public:

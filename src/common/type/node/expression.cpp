@@ -1,4 +1,5 @@
 #include <common/type/node/expression.h>
+#include <str/format_str.h>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -17,7 +18,8 @@ const std::string CYAN    = "\033[36m";
 ExprNode::ExprNode(int line_num, bool isConst) : Node(line_num), isConst(isConst) {}
 ExprNode::~ExprNode() {}
 
-void ExprNode::printAST(ostream* oss, const string& prefix, bool isLast) {
+void ExprNode::printAST(ostream* oss, const string& prefix, bool isLast)
+{
     *oss << prefix << (isLast ? "└── " : "├── ") << MAGENTA << "ExprNode" << RESET << '\n';
 }
 
@@ -26,24 +28,32 @@ void ExprNode::setNonConst() { isConst = false; }
 
 /* Definition of LeftValueExpr */
 LeftValueExpr::LeftValueExpr(Symbol::Entry* entry, vector<ExprNode*>* dims, int scope)
-    : entry(entry), dims(dims), scope(scope) {}
-LeftValueExpr::~LeftValueExpr() {
-    if (dims) {
+    : entry(entry), dims(dims), scope(scope)
+{}
+LeftValueExpr::~LeftValueExpr()
+{
+    if (dims)
+    {
         for (auto dim : *dims) { delete dim; }
         delete dims;
     }
 }
 
-void LeftValueExpr::printAST(ostream* oss, const string& prefix, bool isLast) {
-    *oss << prefix << (isLast ? "└── " : "├── ") << CYAN << "LeftValueExpr " << RESET;
-    if (entry) *oss << entry->getName();
-    *oss << '\n';
-
-    if (dims) {
-        for (size_t i = 0; i < dims->size(); ++i) {
-            (*dims)[i]->printAST(oss, prefix + (isLast ? "    " : "│   "), i == dims->size() - 1);
-        }
+void LeftValueExpr::printAST(ostream* oss, const string& prefix, bool isLast)
+{
+    *oss << getFirstPrefix(prefix, isLast) << "LeftValueExpr " << entry->getName();
+    string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
+    size_t pos       = newPrefix.rfind('|');
+    if (pos + 4 < newPrefix.size()) newPrefix.erase(pos + 4);
+    if (dims)
+    {
+        for (size_t i = 0; i < dims->size(); ++i) *oss << "[Dim" << i << "]";
+        *oss << '\n';
+        for (size_t i = 0; i < dims->size(); ++i)
+            (*dims)[i]->printAST(oss, newPrefix + "|   Dim" + to_string(i) + " = ", i == dims->size() - 1);
     }
+    else
+        *oss << '\n';
 }
 
 /* Definition of ConstExpr */
@@ -54,14 +64,16 @@ ConstExpr::ConstExpr(float val) : value(val), type(3) {}
 ConstExpr::ConstExpr(shared_ptr<string> val) : value(val), type(4) {}
 ConstExpr::~ConstExpr() {}
 
-void ConstExpr::printAST(std::ostream* oss, const string& prefix, bool isLast) {
-    *oss << prefix << (isLast ? "└── " : "├── ") << YELLOW << "Const " << RESET;
-    switch (type) {
-        case 1: *oss << "int: " << get<int>(value); break;
-        case 2: *oss << "long long: " << get<long long>(value); break;
-        case 3: *oss << "float: " << get<float>(value); break;
-        case 4: *oss << "string: " << *get<shared_ptr<string>>(value); break;
-        default: *oss << "undefined"; break;
+void ConstExpr::printAST(std::ostream* oss, const string& prefix, bool isLast)
+{
+    *oss << getFirstPrefix(prefix, isLast) << "Const ";
+    switch (type)
+    {
+        case 1: *oss << "Int: " << get<int>(value); break;
+        case 2: *oss << "LL: " << get<long long>(value); break;
+        case 3: *oss << "Float: " << get<float>(value); break;
+        case 4: *oss << "Str: " << *get<shared_ptr<string>>(value); break;
+        default: *oss << "Undefined"; break;
     }
     *oss << '\n';
 }
@@ -70,20 +82,51 @@ void ConstExpr::printAST(std::ostream* oss, const string& prefix, bool isLast) {
 UnaryExpr::UnaryExpr(OpCode op, ExprNode* expr) : op(op), val(expr) {}
 UnaryExpr::~UnaryExpr() { delete val; }
 
-void UnaryExpr::printAST(std::ostream* oss, const string& prefix, bool isLast) {
-    *oss << prefix << (isLast ? "└── " : "├── ") << GREEN << "UnaryExpr " << getOpStr(op) << RESET << '\n';
-    if (val) val->printAST(oss, prefix + (isLast ? "    " : "│   "), true);
+void UnaryExpr::printAST(std::ostream* oss, const string& prefix, bool isLast)
+{
+    *oss << getFirstPrefix(prefix, isLast) << "UnaryExpr " << getOpStr(op) << '\n';
+    string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
+    if (val) val->printAST(oss, newPrefix + "|   ", true);
 }
 
 /* Definition of BinaryExpr */
 BinaryExpr::BinaryExpr(OpCode op, ExprNode* lhs, ExprNode* rhs) : op(op), lhs(lhs), rhs(rhs) {}
-BinaryExpr::~BinaryExpr() {
+BinaryExpr::~BinaryExpr()
+{
     delete lhs;
     delete rhs;
 }
 
-void BinaryExpr::printAST(std::ostream* oss, const string& prefix, bool isLast) {
-    *oss << prefix << (isLast ? "└── " : "├── ") << BLUE << "BinaryExpr " << getOpStr(op) << RESET << '\n';
-    if (lhs) lhs->printAST(oss, prefix + (isLast ? "    " : "│   "), false);
-    if (rhs) rhs->printAST(oss, prefix + (isLast ? "    " : "│   "), true);
+void BinaryExpr::printAST(std::ostream* oss, const string& prefix, bool isLast)
+{
+    *oss << getFirstPrefix(prefix, isLast) << "BinaryExpr " << getOpStr(op) << '\n';
+    string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
+    if (lhs) lhs->printAST(oss, newPrefix + "|   ", false);
+    if (rhs) rhs->printAST(oss, newPrefix + "|   ", true);
+}
+
+/* Definition of FuncCallExpr */
+FuncCallExpr::FuncCallExpr(Symbol::Entry* entry, vector<ExprNode*>* args) : entry(entry), args(args) {}
+FuncCallExpr::~FuncCallExpr()
+{
+    if (args)
+    {
+        for (auto arg : *args) { delete arg; }
+        delete args;
+    }
+}
+
+void FuncCallExpr::printAST(std::ostream* oss, const string& prefix, bool isLast)
+{
+    *oss << getFirstPrefix(prefix, isLast) << "FuncCallExpr " << entry->getName() << '\n';
+    string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
+    if (args)
+    {
+        for (size_t i = 0; i < args->size(); ++i)
+        {
+            (*args)[i]->printAST(oss, newPrefix + "|   Arg" + to_string(i) + " = ", i == args->size() - 1);
+        }
+    }
+    else
+        *oss << newPrefix << "`-- No args\n";
 }

@@ -37,7 +37,7 @@ namespace Yacc
       public:
         Driver(std::istream* is = &std::cin, std::ostream* os = &std::cout);
 
-        int lexical_parse();
+        int     lexical_parse();
         ASTree* parse();
 
         std::vector<Token> getTokens() const { return tokens; }

@@ -15,7 +15,7 @@ long long convertToInt(const char* str, const char end, bool& isLongLong)
     static int  aOffset    = 'a' - 10;
     static int  AOffset    = 'A' - 10;
     int*        offset     = NULL;
-    isLongLong = false;  // 初始化为false，表示默认是int类型
+    isLongLong             = false;  // 初始化为false，表示默认是int类型
 
     if (*ptr == '-')
     {
@@ -60,7 +60,7 @@ long long convertToInt(const char* str, const char end, bool& isLongLong)
     // 如果结果超出了int范围，但在long long范围内，返回long long类型
     if (result > numeric_limits<int>::max() || result < numeric_limits<int>::min())
     {
-        isLongLong = true; // 标记返回的值超出int范围
+        isLongLong = true;  // 标记返回的值超出int范围
         if (result > numeric_limits<long long>::max() || result < numeric_limits<long long>::min())
         {
             throw std::out_of_range(str + string(" overflow or underflow for long long"));

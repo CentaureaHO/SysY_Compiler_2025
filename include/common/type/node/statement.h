@@ -20,13 +20,13 @@ class StmtNode : public Node
 class ExprStmt : public StmtNode
 {
   private:
-    ExprNode* expr;
+    std::vector<ExprNode*>* exprs;
 
   public:
-    ExprStmt(ExprNode* expr = nullptr);
+    ExprStmt(std::vector<ExprNode*>* exprs = nullptr);
     ~ExprStmt();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) ;
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
 };
 
 class VarDeclStmt : public StmtNode
@@ -52,7 +52,7 @@ class BlockStmt : public StmtNode
     BlockStmt(std::vector<StmtNode*>* stmts = nullptr);
     ~BlockStmt();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) ;
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
 };
 
 class FuncDeclStmt : public StmtNode
@@ -68,7 +68,7 @@ class FuncDeclStmt : public StmtNode
         std::vector<FuncParamDefNode*>* params = nullptr, StmtNode* body = nullptr);
     ~FuncDeclStmt();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) ;
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
 };
 
 class ReturnStmt : public StmtNode
@@ -80,7 +80,7 @@ class ReturnStmt : public StmtNode
     ReturnStmt(ExprNode* expr = nullptr);
     ~ReturnStmt();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) ;
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
 };
 
 class WhileStmt : public StmtNode
@@ -93,7 +93,7 @@ class WhileStmt : public StmtNode
     WhileStmt(ExprNode* condition = nullptr, StmtNode* body = nullptr);
     ~WhileStmt();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) ;
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
 };
 
 class IfStmt : public StmtNode
@@ -107,7 +107,7 @@ class IfStmt : public StmtNode
     IfStmt(ExprNode* condition = nullptr, StmtNode* thenBody = nullptr, StmtNode* elseBody = nullptr);
     ~IfStmt();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) ;
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
 };
 
 class ForStmt : public StmtNode
@@ -123,7 +123,16 @@ class ForStmt : public StmtNode
         StmtNode* init = nullptr, ExprNode* condition = nullptr, StmtNode* update = nullptr, StmtNode* body = nullptr);
     ~ForStmt();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) ;
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+};
+
+class BreakStmt : public StmtNode
+{
+  public:
+    BreakStmt();
+    ~BreakStmt();
+
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
 };
 
 #endif

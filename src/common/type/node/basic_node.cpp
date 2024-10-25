@@ -6,8 +6,8 @@
 using namespace std;
 
 /* ANSI color codes */
-const std::string RESET   = "\033[0m";
-const std::string RED     = "\033[31m";
+const std::string RESET = "\033[0m";
+const std::string RED   = "\033[31m";
 
 /* Definition of Node */
 Node::Node(int line_num) : line_num(line_num) {}
@@ -24,11 +24,9 @@ ASTree::~ASTree()
 
 void ASTree::printAST(ostream* oss, const string& prefix, bool isLast)
 {
-    *oss << prefix  << RED << "ASTree" << RESET << '\n';
+    *oss << prefix << RED << "ASTree" << RESET << '\n';
     if (!stmts) return;
 
-    for (size_t i = 0; i < stmts->size(); ++i)
-    {
-        (*stmts)[i]->printAST(oss, prefix + (isLast ? "    " : "│   "), i == stmts->size() - 1);
-    }
+    size_t s = stmts->size() - 1;
+    for (size_t i = 0; i <= s; ++i) (*stmts)[i]->printAST(oss, prefix + "|   ", i == s);
 }

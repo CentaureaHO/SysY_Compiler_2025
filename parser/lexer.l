@@ -86,7 +86,7 @@
 
 "//".*              { 
     auto str = std::make_shared<std::string>(yytext);
-    return Parser::make_SLASH_COMMENT(str, loc);
+    // return Parser::make_SLASH_COMMENT(str, loc);
 }
 
 "/*"([^*]|\*[^/])*"*/" {
@@ -99,7 +99,7 @@
     }
     for (int i = 0; i < cnt; ++i) loc.lines();
     auto str = std::make_shared<std::string>(yytext);
-    return Parser::make_SLASH_COMMENT(str, loc);
+    // return Parser::make_SLASH_COMMENT(str, loc);
 }
 
 "/*" {

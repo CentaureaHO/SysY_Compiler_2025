@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
     istream* inStream  = &cin;
     ostream* outStream = &cout;
 
-    Driver driver(inStream, outStream);
+    Driver  driver(inStream, outStream);
     ASTree* ast = driver.parse();
     if (ast) { ast->printAST(outStream); }
 

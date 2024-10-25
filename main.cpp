@@ -68,13 +68,13 @@ int main(int argc, char* argv[])
     auto tokens = driver.getTokens();
 
     *outStream << left;
-    *outStream << setw(STR_PW) << "Token" << setw(STR_PW) << "Lexeme" << setw(STR_PW) << "Property" << setw(INT_PW) << "Line"
-               << setw(INT_PW) << "Column" << endl;
+    *outStream << setw(STR_PW) << "Token" << setw(STR_PW) << "Lexeme" << setw(STR_PW) << "Property" << setw(INT_PW)
+               << "Line" << setw(INT_PW) << "Column" << endl;
 
     for (auto& token : tokens)
     {
-        *outStream << setw(STR_PW) << truncateString(token.token_name, STR_REAL_WIDTH)   // Token
-                   << setw(STR_PW) << truncateString(token.lexeme, STR_REAL_WIDTH);      // Lexeme
+        *outStream << setw(STR_PW) << truncateString(token.token_name, STR_REAL_WIDTH)  // Token
+                   << setw(STR_PW) << truncateString(token.lexeme, STR_REAL_WIDTH);     // Lexeme
 
         // 输出 Property，仅适用于特定的 Token 类型
         if (token.token_name == "INT_CONST" || token.token_name == "STR_CONST" || token.token_name == "FLOAT_CONST" ||
@@ -83,33 +83,19 @@ int main(int argc, char* argv[])
             std::visit(
                 [&](auto&& arg) {
                     using T = std::decay_t<decltype(arg)>;
-                    if constexpr (std::is_same_v<T, int>)
-                    {
-                        *outStream << setw(STR_PW) << arg;
-                    }
-                    else if constexpr (std::is_same_v<T, float>)
-                    {
-                        *outStream << setw(STR_PW) << arg;
-                    }
+                    if constexpr (std::is_same_v<T, int>) { *outStream << setw(STR_PW) << arg; }
+                    else if constexpr (std::is_same_v<T, float>) { *outStream << setw(STR_PW) << arg; }
                     else if constexpr (std::is_same_v<T, std::shared_ptr<std::string>>)
                     {
                         *outStream << setw(STR_PW) << truncateString(*arg, STR_REAL_WIDTH);
                     }
-                    else
-                    {
-                        *outStream << setw(STR_PW) << "N/A";
-                    }
+                    else { *outStream << setw(STR_PW) << "N/A"; }
                 },
                 token.value);
         }
-        else
-        {
-            *outStream << setw(STR_PW) << "NULL";
-        }
+        else { *outStream << setw(STR_PW) << "NULL"; }
 
-        *outStream << setw(INT_PW) << token.line
-                   << setw(INT_PW) << token.column
-                   << endl;
+        *outStream << setw(INT_PW) << token.line << setw(INT_PW) << token.column << endl;
     }
 
     if (file.is_open()) file.close();
