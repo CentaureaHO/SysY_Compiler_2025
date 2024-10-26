@@ -185,6 +185,9 @@ STMT:
     | BREAK_STMT {
         $$ = $1;
     }
+    | SEMICOLON {
+        $$ = nullptr;
+    }
     ;
 
 BREAK_STMT:
@@ -469,7 +472,7 @@ UNARY_EXPR:
     BASIC_EXPR {
         $$ = $1;
     }
-    | UNARY_OP BASIC_EXPR {
+    | UNARY_OP UNARY_EXPR {
         $$ = new UnaryExpr($1, $2);
     }
     ;

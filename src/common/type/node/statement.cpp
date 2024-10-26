@@ -72,7 +72,8 @@ void BlockStmt::printAST(ostream* oss, const string& prefix, bool isLast)
     if (!stmts) return;
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
     newPrefix += "|   ";
-    for (size_t i = 0; i < stmts->size(); ++i) (*stmts)[i]->printAST(oss, newPrefix, i == stmts->size() - 1);
+    for (size_t i = 0; i < stmts->size(); ++i)
+        if ((*stmts)[i] != nullptr) (*stmts)[i]->printAST(oss, newPrefix, i == stmts->size() - 1);
 }
 
 /* Definition of FuncDeclStmt: head */
@@ -137,10 +138,13 @@ void WhileStmt::printAST(ostream* oss, const string& prefix, bool isLast)
 {
     *oss << getFirstPrefix(prefix, isLast) << CYAN << "WhileStmt" << RESET << '\n';
     string newPrefix = isLast ? removeLastPrefix(prefix) : prefix;
-    *oss << "    |-- " << GREEN << "Cond:\n" << RESET;
-    condition->printAST(oss, newPrefix + "|   |   ", true);
-    *oss << "    `-- " << BLUE << "Body:\n" << RESET;
-    body->printAST(oss, newPrefix + "    |   ", true);
+    *oss << newPrefix << "|    |-- " << GREEN << "Cond:\n" << RESET;
+    condition->printAST(oss, newPrefix + "|   |   ", false);
+    *oss << newPrefix << "|    `-- " << BLUE << "Body:\n" << RESET;
+    if (body)
+        body->printAST(oss, newPrefix + "    |   ", true);
+    else
+        *oss << newPrefix << "    `-- None\n";
 }
 
 /* Definition of IfStmt: head */
