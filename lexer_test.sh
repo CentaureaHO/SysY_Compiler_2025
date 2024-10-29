@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Step 1: 执行 make lexer_test
 echo "Running 'make lexer_test'..."
 make lexer_test
 if [ $? -ne 0 ]; then
