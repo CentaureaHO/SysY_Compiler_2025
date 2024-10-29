@@ -1,11 +1,7 @@
-build/
 .vscode/
-testcase/build/
-test.in
-test.out
-*.token
-obj/
 bin/
-main
-test.err
+obj/
+test_output/
+test.*
+!test.py
 valgrind_report

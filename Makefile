@@ -41,7 +41,7 @@ LOC_H := $(INCLUDE_DIR)/parser/location.hh
 VAL_OPTS := --leak-check=full --track-origins=yes -s
 
 .PHONY: all
-all: obj
+all: obj bin
 
 .PHONY: obj
 obj: $(OBJECTS)
@@ -54,12 +54,26 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+.PHONY: bin
+bin: $(BIN_DIR)/compiler
+
+$(BIN_DIR)/compiler: $(OBJECTS) main.cpp
+	@mkdir -p $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) main.cpp $(OBJECTS) -o $(BIN_DIR)/compiler
+
 .PHONY: test
 test: $(BIN_DIR)/test
 
 $(BIN_DIR)/test: $(OBJECTS) test.cpp
 	@mkdir -p $(BIN_DIR)
 	$(CXX) $(CXXFLAGS) test.cpp $(OBJECTS) -o $(BIN_DIR)/test
+
+.PHONY: lexer_test
+lexer_test: $(BIN_DIR)/lexer_test
+
+$(BIN_DIR)/lexer_test: $(OBJECTS) lexer_test.cpp
+	@mkdir -p $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) lexer_test.cpp $(OBJECTS) -o $(BIN_DIR)/lexer_test
 
 .PHONY: valgrind
 valgrind: $(BIN_DIR)/test
@@ -68,14 +82,6 @@ valgrind: $(BIN_DIR)/test
 .PHONY: clean
 clean:
 	rm -rf $(OBJ_DIR) $(TEST_BUILD_DIR) $(BIN_DIR)
-
-.PHONY: testLexicalAnalysis
-testLexicalAnalysis: $(OBJECTS)
-	@mkdir -p $(TEST_BUILD_DIR)/1_lexicalAnalyzer
-	$(CXX) $(CXXFLAGS) $(TEST_SRC_DIR)/1_lexicalAnalyzer/lexAnalyzer.cpp \
-		$(OBJECTS) \
-		-o $(TEST_BUILD_DIR)/1_lexicalAnalyzer/lexAnalyzer
-	@echo "Compiled test: lexAnalyzer"
 
 .PHONY: lexer
 lexer: $(LEXER_C) $(BISON_C) $(BISON_H) $(LOC_H)

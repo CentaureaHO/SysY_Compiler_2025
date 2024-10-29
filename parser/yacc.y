@@ -14,11 +14,11 @@
     #include <string>
     #include <sstream>
     #include <common/type/type_defs.h>
-    #include <common/type/node/basic_node.h>
-    #include <common/type/node/statement.h>
-    #include <common/type/node/expression.h>
+    #include <ast/basic_node.h>
+    #include <ast/statement.h>
+    #include <ast/expression.h>
     #include <common/type/symtab/symbol_table.h>
-    #include <common/type/node/helper.h>
+    #include <ast/helper.h>
 
     namespace Yacc
     {
@@ -119,6 +119,7 @@
 %nterm <StmtNode*> WHILE_STMT
 %nterm <StmtNode*> IF_STMT
 %nterm <StmtNode*> BREAK_STMT
+%nterm <StmtNode*> CONTINUE_STMT
 
 %nterm <StmtNode*> FOR_INIT_STMT
 %nterm <StmtNode*> FOR_INCR_STMT
@@ -149,11 +150,11 @@ PROGRAM:
 STMT_LIST:
     STMT {
         $$ = new std::vector<StmtNode*>();
-        $$->push_back($1);
+        if ($1) $$->push_back($1);
     }
     | STMT_LIST STMT {
         $$ = $1;
-        $$->push_back($2);
+        if ($2) $$->push_back($2);
     }
     ;
 
@@ -185,38 +186,54 @@ STMT:
     | BREAK_STMT {
         $$ = $1;
     }
+    | CONTINUE_STMT {
+        $$ = $1;
+    }
     | SEMICOLON {
         $$ = nullptr;
+    }
+    ;
+
+CONTINUE_STMT:
+    CONTINUE SEMICOLON {
+        $$ = new ContinueStmt();
+        $$->set_line(@1.begin.line);
     }
     ;
 
 BREAK_STMT:
     BREAK SEMICOLON {
         $$ = new BreakStmt();
+        $$->set_line(@1.begin.line);
     }
     ;
 
 BLOCK_STMT:
     LBRACE STMT_LIST RBRACE {
         $$ = new BlockStmt($2);
+        $$->set_line(@1.begin.line);
     }
     | LBRACE RBRACE {
         $$ = new BlockStmt(nullptr);
+        $$->set_line(@1.begin.line);
     }
     ;
 
 EXPR_STMT:
     EXPR_LIST SEMICOLON {
         $$ = new ExprStmt($1);
+        $$->set_line((*$1)[0]->get_line());
     }
     ;
 
 VAR_DECL_STMT:
     TYPE DEF_LIST SEMICOLON {
         $$ = new VarDeclStmt($1, $2);
+        $$->set_line(@1.begin.line);
     }
     | CONST TYPE DEF_LIST SEMICOLON {
         $$ = new VarDeclStmt($2, $3, true);
+        $$->set_line(@1.begin.line);
     }
     ;
 
@@ -224,29 +241,35 @@ FUNC_DECL_STMT:
     TYPE IDENT LPAREN FUNC_PARAM_DEF_LIST RPAREN BLOCK_STMT {
         Symbol::Entry* entry = Symbol::Entry::getEntry(*$2);
         $$ = new FuncDeclStmt(entry, $1, $4, $6);
+        $$->set_line(@1.begin.line);
     }
 
 RETURN_STMT:
     RETURN SEMICOLON {
         $$ = new ReturnStmt(nullptr);
+        $$->set_line(@1.begin.line);
     }
     | RETURN EXPR SEMICOLON {
         $$ = new ReturnStmt($2);
+        $$->set_line(@1.begin.line);
     }
     ;
 
 WHILE_STMT:
     WHILE LPAREN EXPR RPAREN STMT {
         $$ = new WhileStmt($3, $5);
+        $$->set_line(@1.begin.line);
     }
     ;
 
 IF_STMT:
     IF LPAREN EXPR RPAREN STMT %prec THEN {
         $$ = new IfStmt($3, $5, nullptr);
+        $$->set_line(@1.begin.line);
     }
     | IF LPAREN EXPR RPAREN STMT ELSE STMT {
         $$ = new IfStmt($3, $5, $7);
+        $$->set_line(@1.begin.line);
     }
     ;
 
@@ -273,6 +296,7 @@ FOR_INCR_STMT:
 FOR_STMT:
     FOR LPAREN FOR_INIT_STMT EXPR SEMICOLON FOR_INCR_STMT RPAREN STMT {
         $$ = new ForStmt($3, $4, $6, $8);
+        $$->set_line(@1.begin.line);
     }
     ;
 
@@ -387,9 +411,11 @@ EXPR_LIST:
 EXPR:
     LOGICAL_OR_EXPR {
         $$ = $1;
+        $$->set_line(@1.begin.line);
     }
     | ASSIGN_EXPR {
         $$ = $1;
+        $$->set_line(@1.begin.line);
     }
     ;
 

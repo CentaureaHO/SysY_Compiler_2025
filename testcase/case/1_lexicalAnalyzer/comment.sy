@@ -1,7 +1,0 @@
-// this is a comment in global scope
-
-int main() { return 1.9; }
-
-/*
-    this is a multi-lines comment
-*/

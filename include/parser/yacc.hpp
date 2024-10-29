@@ -51,11 +51,11 @@
     #include <string>
     #include <sstream>
     #include <common/type/type_defs.h>
-    #include <common/type/node/basic_node.h>
-    #include <common/type/node/statement.h>
-    #include <common/type/node/expression.h>
+    #include <ast/basic_node.h>
+    #include <ast/statement.h>
+    #include <ast/expression.h>
     #include <common/type/symtab/symbol_table.h>
-    #include <common/type/node/helper.h>
+    #include <ast/helper.h>
 
     namespace Yacc
     {
@@ -455,6 +455,7 @@ namespace  Yacc  {
       char dummy6[sizeof (OpCode)];
 
       // STMT
+      // CONTINUE_STMT
       // BREAK_STMT
       // BLOCK_STMT
       // EXPR_STMT
@@ -682,41 +683,42 @@ namespace  Yacc  {
         S_PROGRAM = 56,                          // PROGRAM
         S_STMT_LIST = 57,                        // STMT_LIST
         S_STMT = 58,                             // STMT
-        S_BREAK_STMT = 59,                       // BREAK_STMT
-        S_BLOCK_STMT = 60,                       // BLOCK_STMT
-        S_EXPR_STMT = 61,                        // EXPR_STMT
-        S_VAR_DECL_STMT = 62,                    // VAR_DECL_STMT
-        S_FUNC_DECL_STMT = 63,                   // FUNC_DECL_STMT
-        S_RETURN_STMT = 64,                      // RETURN_STMT
-        S_WHILE_STMT = 65,                       // WHILE_STMT
-        S_IF_STMT = 66,                          // IF_STMT
-        S_FOR_INIT_STMT = 67,                    // FOR_INIT_STMT
-        S_FOR_INCR_STMT = 68,                    // FOR_INCR_STMT
-        S_FOR_STMT = 69,                         // FOR_STMT
-        S_FUNC_PARAM_DEF = 70,                   // FUNC_PARAM_DEF
-        S_FUNC_PARAM_DEF_LIST = 71,              // FUNC_PARAM_DEF_LIST
-        S_DEF = 72,                              // DEF
-        S_DEF_LIST = 73,                         // DEF_LIST
-        S_INITIALIZER = 74,                      // INITIALIZER
-        S_INITIALIZER_LIST = 75,                 // INITIALIZER_LIST
-        S_ASSIGN_EXPR = 76,                      // ASSIGN_EXPR
-        S_EXPR_LIST = 77,                        // EXPR_LIST
-        S_EXPR = 78,                             // EXPR
-        S_LOGICAL_OR_EXPR = 79,                  // LOGICAL_OR_EXPR
-        S_LOGICAL_AND_EXPR = 80,                 // LOGICAL_AND_EXPR
-        S_EQUALITY_EXPR = 81,                    // EQUALITY_EXPR
-        S_RELATIONAL_EXPR = 82,                  // RELATIONAL_EXPR
-        S_ADDSUB_EXPR = 83,                      // ADDSUB_EXPR
-        S_MULDIV_EXPR = 84,                      // MULDIV_EXPR
-        S_UNARY_EXPR = 85,                       // UNARY_EXPR
-        S_BASIC_EXPR = 86,                       // BASIC_EXPR
-        S_FUNC_CALL_EXPR = 87,                   // FUNC_CALL_EXPR
-        S_ARRAY_DIMESION_EXPR = 88,              // ARRAY_DIMESION_EXPR
-        S_ARRAY_DIMESION_EXPR_LIST = 89,         // ARRAY_DIMESION_EXPR_LIST
-        S_LEFT_VAL_EXPR = 90,                    // LEFT_VAL_EXPR
-        S_CONST_EXPR = 91,                       // CONST_EXPR
-        S_TYPE = 92,                             // TYPE
-        S_UNARY_OP = 93                          // UNARY_OP
+        S_CONTINUE_STMT = 59,                    // CONTINUE_STMT
+        S_BREAK_STMT = 60,                       // BREAK_STMT
+        S_BLOCK_STMT = 61,                       // BLOCK_STMT
+        S_EXPR_STMT = 62,                        // EXPR_STMT
+        S_VAR_DECL_STMT = 63,                    // VAR_DECL_STMT
+        S_FUNC_DECL_STMT = 64,                   // FUNC_DECL_STMT
+        S_RETURN_STMT = 65,                      // RETURN_STMT
+        S_WHILE_STMT = 66,                       // WHILE_STMT
+        S_IF_STMT = 67,                          // IF_STMT
+        S_FOR_INIT_STMT = 68,                    // FOR_INIT_STMT
+        S_FOR_INCR_STMT = 69,                    // FOR_INCR_STMT
+        S_FOR_STMT = 70,                         // FOR_STMT
+        S_FUNC_PARAM_DEF = 71,                   // FUNC_PARAM_DEF
+        S_FUNC_PARAM_DEF_LIST = 72,              // FUNC_PARAM_DEF_LIST
+        S_DEF = 73,                              // DEF
+        S_DEF_LIST = 74,                         // DEF_LIST
+        S_INITIALIZER = 75,                      // INITIALIZER
+        S_INITIALIZER_LIST = 76,                 // INITIALIZER_LIST
+        S_ASSIGN_EXPR = 77,                      // ASSIGN_EXPR
+        S_EXPR_LIST = 78,                        // EXPR_LIST
+        S_EXPR = 79,                             // EXPR
+        S_LOGICAL_OR_EXPR = 80,                  // LOGICAL_OR_EXPR
+        S_LOGICAL_AND_EXPR = 81,                 // LOGICAL_AND_EXPR
+        S_EQUALITY_EXPR = 82,                    // EQUALITY_EXPR
+        S_RELATIONAL_EXPR = 83,                  // RELATIONAL_EXPR
+        S_ADDSUB_EXPR = 84,                      // ADDSUB_EXPR
+        S_MULDIV_EXPR = 85,                      // MULDIV_EXPR
+        S_UNARY_EXPR = 86,                       // UNARY_EXPR
+        S_BASIC_EXPR = 87,                       // BASIC_EXPR
+        S_FUNC_CALL_EXPR = 88,                   // FUNC_CALL_EXPR
+        S_ARRAY_DIMESION_EXPR = 89,              // ARRAY_DIMESION_EXPR
+        S_ARRAY_DIMESION_EXPR_LIST = 90,         // ARRAY_DIMESION_EXPR_LIST
+        S_LEFT_VAL_EXPR = 91,                    // LEFT_VAL_EXPR
+        S_CONST_EXPR = 92,                       // CONST_EXPR
+        S_TYPE = 93,                             // TYPE
+        S_UNARY_OP = 94                          // UNARY_OP
       };
     };
 
@@ -791,6 +793,7 @@ namespace  Yacc  {
         break;
 
       case symbol_kind::S_STMT: // STMT
+      case symbol_kind::S_CONTINUE_STMT: // CONTINUE_STMT
       case symbol_kind::S_BREAK_STMT: // BREAK_STMT
       case symbol_kind::S_BLOCK_STMT: // BLOCK_STMT
       case symbol_kind::S_EXPR_STMT: // EXPR_STMT
@@ -1172,6 +1175,7 @@ switch (yykind)
         break;
 
       case symbol_kind::S_STMT: // STMT
+      case symbol_kind::S_CONTINUE_STMT: // CONTINUE_STMT
       case symbol_kind::S_BREAK_STMT: // BREAK_STMT
       case symbol_kind::S_BLOCK_STMT: // BLOCK_STMT
       case symbol_kind::S_EXPR_STMT: // EXPR_STMT
@@ -2583,9 +2587,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 378,     ///< Last index in yytable_.
-      yynnts_ = 39,  ///< Number of nonterminal symbols.
-      yyfinal_ = 63 ///< Termination state number.
+      yylast_ = 361,     ///< Last index in yytable_.
+      yynnts_ = 40,  ///< Number of nonterminal symbols.
+      yyfinal_ = 66 ///< Termination state number.
     };
 
 
@@ -2695,6 +2699,7 @@ switch (yykind)
         break;
 
       case symbol_kind::S_STMT: // STMT
+      case symbol_kind::S_CONTINUE_STMT: // CONTINUE_STMT
       case symbol_kind::S_BREAK_STMT: // BREAK_STMT
       case symbol_kind::S_BLOCK_STMT: // BLOCK_STMT
       case symbol_kind::S_EXPR_STMT: // EXPR_STMT
@@ -2822,6 +2827,7 @@ switch (yykind)
         break;
 
       case symbol_kind::S_STMT: // STMT
+      case symbol_kind::S_CONTINUE_STMT: // CONTINUE_STMT
       case symbol_kind::S_BREAK_STMT: // BREAK_STMT
       case symbol_kind::S_BLOCK_STMT: // BLOCK_STMT
       case symbol_kind::S_EXPR_STMT: // EXPR_STMT
@@ -2947,7 +2953,7 @@ switch (yykind)
 
 #line 4 "parser/yacc.y"
 } //  Yacc 
-#line 2951 "parser/yacc.hpp"
+#line 2957 "parser/yacc.hpp"
 
 
 

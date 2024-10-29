@@ -1,0 +1,53 @@
+int main(){
+	int a = 893;
+	int b = 716;
+	{
+		int aa = 837;
+		aa = aa + 128;
+		b = b + aa;
+		{
+			int bb = 241;
+			aa = aa + bb - 412;
+			{
+				int aaa = 771;
+				bb = bb + aaa -18;
+				aaa = bb + 66;
+			}
+			bb = bb + aa - 33;
+			aa = bb - 55;
+            {
+                return (aa + bb) % 21;
+            }
+            
+		}
+		aa = b + aa - 97;
+		b = (b - aa) % 62;
+        {
+             return (aa + b) % 17;
+        }
+        return (aa + b) % 13;
+	}
+	a = (b * a) % 83;
+	b = a + b - 771;	
+	return (a + b) % 11;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

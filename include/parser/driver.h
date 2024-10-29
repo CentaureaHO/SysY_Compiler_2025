@@ -8,7 +8,7 @@
 
 #include <parser/scanner.h>
 #include <parser/yacc.hpp>
-#include <common/type/node/basic_node.h>
+#include <ast/basic_node.h>
 
 namespace Yacc
 {
