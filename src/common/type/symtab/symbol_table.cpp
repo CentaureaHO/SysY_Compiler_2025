@@ -20,7 +20,7 @@ Entry* Entry::getEntry(string name)
 
 Entry::Entry(string name) : name(name) {}
 
-const string& Entry::getName() { return name; }
+const string& Entry::getName() const { return name; }
 
 EntryDeleter::EntryDeleter() {}
 EntryDeleter::~EntryDeleter() { Entry::clear(); }
@@ -34,13 +34,13 @@ namespace
     EntryDeleter& instance = EntryDeleter::getInstance();
 }
 
-size_t EntryHasher::operator()(Entry* entry) const { return hash<string>()(entry->getName()); }
-bool   EntryEqual::operator()(Entry* lhs, Entry* rhs) const { return lhs->getName() == rhs->getName(); }
+size_t EntryHasher::operator()(const Entry* entry) const { return hash<string>()(entry->getName()); }
+bool   EntryEqual::operator()(const Entry* lhs, const Entry* rhs) const { return lhs->getName() == rhs->getName(); }
 
 /* Definition of Symbol::Entry: tail */
 /* Definition of Symbol::Table: head */
 
-Table::Scope::Scope(Scope* parent) : parent(parent), scopeLevel(parent ? parent->scopeLevel + 1 : -1) {}
+Table::Scope::Scope(Scope* parent) : parent(parent), scopeLevel(parent ? parent->scopeLevel + 1 : 0) {}
 Table::Scope::~Scope() { symbolMap.clear(); }
 
 Table::Table() : currentScope(new Scope(nullptr)) {}
@@ -68,6 +68,12 @@ VarAttribute* Table::getSymbol(Entry* entry)
     return nullptr;
 }
 
+Type* Table::getSymType(Entry* entry)
+{
+    VarAttribute* attr = getSymbol(entry);
+    return attr ? attr->getType() : nullptr;
+}
+
 bool Table::enterScope()
 {
     currentScope = new Scope(currentScope);
@@ -79,7 +85,6 @@ bool Table::exitScope()
     Scope* parent = currentScope->parent;
     delete currentScope;
     currentScope = parent;
-    if (currentScope != nullptr && currentScope->scopeLevel <= 1) paramEntrys.clear();
     return true;
 }
 

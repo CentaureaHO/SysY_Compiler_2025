@@ -1,5 +1,5 @@
-#ifndef __COMMON_TYPE_AST_SYMBOLTABLE_H__
-#define __COMMON_TYPE_AST_SYMBOLTABLE_H__
+#ifndef __COMMON_TYPE_SYMTAB_SYMBOLTABLE_H__
+#define __COMMON_TYPE_SYMTAB_SYMBOLTABLE_H__
 
 #include <list>
 #include <string>
@@ -25,7 +25,7 @@ namespace Symbol
         std::string name;
 
       public:
-        const std::string& getName();
+        const std::string& getName() const;
     };
 
     class EntryDeleter
@@ -42,12 +42,12 @@ namespace Symbol
 
     struct EntryHasher
     {
-        std::size_t operator()(Entry* entry) const;
+        std::size_t operator()(const Entry* entry) const;
     };
 
     struct EntryEqual
     {
-        bool operator()(Entry* lhs, Entry* rhs) const;
+        bool operator()(const Entry* lhs, const Entry* rhs) const;
     };
 
     class Table
@@ -58,10 +58,10 @@ namespace Symbol
             std::unordered_map<Entry*, VarAttribute, EntryHasher, EntryEqual> symbolMap;
             Scope*                                                            parent;
             /*
-             * -1: unknown
-             *  0: global
-             *  1: parameter
-             *  2: local
+             *  -1  : unknown
+             *  0   : global
+             *  1   : parameter
+             *  >= 2: local
              */
             int scopeLevel;
 
@@ -69,8 +69,7 @@ namespace Symbol
             ~Scope();
         };
 
-        Scope*                                              currentScope;
-        std::unordered_set<Entry*, EntryHasher, EntryEqual> paramEntrys;
+        Scope* currentScope;
 
       public:
         Table();
@@ -86,6 +85,7 @@ namespace Symbol
         template <typename T>
         int           addSymbol(Entry* entry, T&& attribute);
         VarAttribute* getSymbol(Entry* entry);
+        Type*         getSymType(Entry* entry);
 
         bool enterScope();
         bool exitScope();

@@ -75,7 +75,7 @@ void DefNode::printAST(ostream* oss, const string& prefix, bool isLast)
 }
 
 /* Definition of FuncParamDefNode */
-FuncParamDefNode::FuncParamDefNode(Type* type, Symbol::Entry* entry, vector<ExprNode*>* dims)
+FuncParamDefNode::FuncParamDefNode(const Type* type, const Symbol::Entry* entry, vector<ExprNode*>* dims)
     : HelperNode(), baseType(type), entry(entry), dims(dims)
 {}
 FuncParamDefNode::~FuncParamDefNode()

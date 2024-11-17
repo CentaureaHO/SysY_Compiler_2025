@@ -4,6 +4,7 @@
 #include <iostream>
 #include <common/type/type_defs.h>
 #include <vector>
+#include <string>
 
 class StmtNode;
 class ExprNode;
@@ -19,6 +20,8 @@ class Node
     virtual ~Node();
 
     virtual void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) = 0;
+    virtual void typeCheck()                                                                     = 0;
+    virtual void genIRCode()                                                                     = 0;
 
     void set_line(int line_num);
     int  get_line() const;
@@ -34,6 +37,8 @@ class ASTree : public Node
     virtual ~ASTree();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
+    void typeCheck() override;
+    void genIRCode() override;
 };
 
 #endif

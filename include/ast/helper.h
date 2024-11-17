@@ -12,6 +12,8 @@ class HelperNode : public Node
     virtual ~HelperNode();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void typeCheck() override;
+    void genIRCode() override;
 };
 
 class InitNode : public HelperNode  // 初始化类型的节点
@@ -21,6 +23,7 @@ class InitNode : public HelperNode  // 初始化类型的节点
     virtual ~InitNode();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void typeCheck() override;
 };
 
 class InitSingle : public InitNode  // 单一表达式的初始化节点
@@ -33,6 +36,7 @@ class InitSingle : public InitNode  // 单一表达式的初始化节点
     ~InitSingle();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void typeCheck() override;
 };
 
 class InitMulti : public InitNode
@@ -45,6 +49,7 @@ class InitMulti : public InitNode
     ~InitMulti();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void typeCheck() override;
 
     int getSize();
 };
@@ -60,20 +65,22 @@ class DefNode : public HelperNode
     ~DefNode();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void typeCheck() override;
 };
 
 class FuncParamDefNode : public HelperNode
 {
   private:
-    Type*                   baseType;
-    Symbol::Entry*          entry;
+    const Type*             baseType;
+    const Symbol::Entry*    entry;
     std::vector<ExprNode*>* dims;
 
   public:
-    FuncParamDefNode(Type* type, Symbol::Entry* entry, std::vector<ExprNode*>* dims = nullptr);
+    FuncParamDefNode(const Type* type, const Symbol::Entry* entry, std::vector<ExprNode*>* dims = nullptr);
     ~FuncParamDefNode();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void typeCheck() override;
 };
 
 #endif

@@ -15,6 +15,8 @@ class StmtNode : public Node
     virtual ~StmtNode();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void typeCheck() override;
+    void genIRCode() override;
 };
 
 class ExprStmt : public StmtNode
@@ -27,20 +29,22 @@ class ExprStmt : public StmtNode
     ~ExprStmt();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void typeCheck() override;
 };
 
 class VarDeclStmt : public StmtNode
 {
   private:
-    Type*                  baseType;
+    const Type*            baseType;
     std::vector<DefNode*>* defs;
     bool                   isConst;
 
   public:
-    VarDeclStmt(Type* bt = voidType, std::vector<DefNode*>* defs = nullptr, bool isConst = false);
+    VarDeclStmt(const Type* bt = voidType, std::vector<DefNode*>* defs = nullptr, bool isConst = false);
     ~VarDeclStmt();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void typeCheck() override;
 };
 
 class BlockStmt : public StmtNode
@@ -53,22 +57,24 @@ class BlockStmt : public StmtNode
     ~BlockStmt();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void typeCheck() override;
 };
 
 class FuncDeclStmt : public StmtNode
 {
   private:
-    Symbol::Entry*                  entry;
-    Type*                           returnType;
+    const Symbol::Entry*            entry;
+    const Type*                     returnType;
     std::vector<FuncParamDefNode*>* params;
     StmtNode*                       body;
 
   public:
-    FuncDeclStmt(Symbol::Entry* entry = nullptr, Type* returnType = voidType,
+    FuncDeclStmt(const Symbol::Entry* entry = nullptr, const Type* returnType = voidType,
         std::vector<FuncParamDefNode*>* params = nullptr, StmtNode* body = nullptr);
     ~FuncDeclStmt();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void typeCheck() override;
 };
 
 class ReturnStmt : public StmtNode
@@ -81,6 +87,7 @@ class ReturnStmt : public StmtNode
     ~ReturnStmt();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void typeCheck() override;
 };
 
 class WhileStmt : public StmtNode
@@ -94,6 +101,7 @@ class WhileStmt : public StmtNode
     ~WhileStmt();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void typeCheck() override;
 };
 
 class IfStmt : public StmtNode
@@ -108,6 +116,7 @@ class IfStmt : public StmtNode
     ~IfStmt();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void typeCheck() override;
 };
 
 class ForStmt : public StmtNode
@@ -124,6 +133,7 @@ class ForStmt : public StmtNode
     ~ForStmt();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void typeCheck() override;
 };
 
 class BreakStmt : public StmtNode
@@ -133,6 +143,7 @@ class BreakStmt : public StmtNode
     ~BreakStmt();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void typeCheck() override;
 };
 
 class ContinueStmt : public StmtNode
@@ -142,6 +153,7 @@ class ContinueStmt : public StmtNode
     ~ContinueStmt();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void typeCheck() override;
 };
 
 #endif

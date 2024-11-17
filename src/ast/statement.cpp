@@ -32,7 +32,9 @@ void ExprStmt::printAST(ostream* oss, const string& prefix, bool isLast)
 }
 
 /* Definition of VarDeclStmt: head */
-VarDeclStmt::VarDeclStmt(Type* bt, vector<DefNode*>* defs, bool isConst) : baseType(bt), defs(defs), isConst(isConst) {}
+VarDeclStmt::VarDeclStmt(const Type* bt, vector<DefNode*>* defs, bool isConst)
+    : baseType(bt), defs(defs), isConst(isConst)
+{}
 VarDeclStmt::~VarDeclStmt()
 {
     if (!defs) return;
@@ -70,7 +72,7 @@ void BlockStmt::printAST(ostream* oss, const string& prefix, bool isLast)
 
 /* Definition of FuncDeclStmt: head */
 FuncDeclStmt::FuncDeclStmt(
-    Symbol::Entry* entry, Type* returnType, std::vector<FuncParamDefNode*>* params, StmtNode* body)
+    const Symbol::Entry* entry, const Type* returnType, std::vector<FuncParamDefNode*>* params, StmtNode* body)
     : entry(entry), returnType(returnType), params(params), body(body)
 {}
 FuncDeclStmt::~FuncDeclStmt()
