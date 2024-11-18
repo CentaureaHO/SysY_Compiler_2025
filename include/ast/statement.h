@@ -35,12 +35,12 @@ class ExprStmt : public StmtNode
 class VarDeclStmt : public StmtNode
 {
   private:
-    const Type*            baseType;
+    Type*                  baseType;
     std::vector<DefNode*>* defs;
     bool                   isConst;
 
   public:
-    VarDeclStmt(const Type* bt = voidType, std::vector<DefNode*>* defs = nullptr, bool isConst = false);
+    VarDeclStmt(Type* bt = voidType, std::vector<DefNode*>* defs = nullptr, bool isConst = false);
     ~VarDeclStmt();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
@@ -62,14 +62,14 @@ class BlockStmt : public StmtNode
 
 class FuncDeclStmt : public StmtNode
 {
-  private:
+  public:
     const Symbol::Entry*            entry;
-    const Type*                     returnType;
+    Type*                           returnType;
     std::vector<FuncParamDefNode*>* params;
     StmtNode*                       body;
 
   public:
-    FuncDeclStmt(const Symbol::Entry* entry = nullptr, const Type* returnType = voidType,
+    FuncDeclStmt(const Symbol::Entry* entry = nullptr, Type* returnType = voidType,
         std::vector<FuncParamDefNode*>* params = nullptr, StmtNode* body = nullptr);
     ~FuncDeclStmt();
 

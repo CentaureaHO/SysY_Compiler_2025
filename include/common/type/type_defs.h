@@ -185,16 +185,15 @@ class ConstValue
 
 class VarAttribute
 {
-  private:
+  public:
     Type* type;
-    bool  isConstVar;
+    bool  isConst;
 
-    std::vector<int>   dims;
-    std::vector<int>   initInts;
-    std::vector<float> initFloats;
+    std::vector<int>                                 dims;
+    std::vector<std::variant<int, long long, float>> initVals;
 
   public:
-    VarAttribute(Type* type = voidType, bool isConstVar = false);
+    VarAttribute(Type* type = voidType, bool isConst = false);
 
     Type* getType() const;
 };

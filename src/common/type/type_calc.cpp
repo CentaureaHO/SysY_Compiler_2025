@@ -675,6 +675,35 @@ namespace
         if (result.val.isConst) result.val.value = std::get<float>(lhs.val.value) || std::get<float>(rhs.val.value);
         return result;
     }
+
+    NodeAttribute AssignInt(const NodeAttribute& lhs, const NodeAttribute& rhs)
+    {
+        cout << "Enter AssignInt" << endl;
+        NodeAttribute result;
+        result.val.type    = intType;
+        result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        if (result.val.isConst) result.val.value = std::get<int>(rhs.val.value);
+        cout << "Exit AssignInt" << endl;
+        return result;
+    }
+
+    NodeAttribute AssignLL(const NodeAttribute& lhs, const NodeAttribute& rhs)
+    {
+        NodeAttribute result;
+        result.val.type    = llType;
+        result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        if (result.val.isConst) result.val.value = std::get<long long>(rhs.val.value);
+        return result;
+    }
+
+    NodeAttribute AssignFloat(const NodeAttribute& lhs, const NodeAttribute& rhs)
+    {
+        NodeAttribute result;
+        result.val.type    = floatType;
+        result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        if (result.val.isConst) result.val.value = std::get<float>(rhs.val.value);
+        return result;
+    }
 }  // namespace
 
 namespace
@@ -700,7 +729,8 @@ namespace
         {SIZE_T(OpCode::BitOr), BitOrInt},
         {SIZE_T(OpCode::BitAnd), BitAndInt},
         {SIZE_T(OpCode::And), AndInt},
-        {SIZE_T(OpCode::Or), OrInt}};
+        {SIZE_T(OpCode::Or), OrInt},
+        {SIZE_T(OpCode::Assign), AssignInt}};
 
     unordered_map<size_t, BinaryFunc> BinaryLL = {{SIZE_T(OpCode::Add), BinaryAddLL},
         {SIZE_T(OpCode::Sub), BinarySubLL},
@@ -716,7 +746,8 @@ namespace
         {SIZE_T(OpCode::BitOr), BitOrLL},
         {SIZE_T(OpCode::BitAnd), BitAndLL},
         {SIZE_T(OpCode::And), AndLL},
-        {SIZE_T(OpCode::Or), OrLL}};
+        {SIZE_T(OpCode::Or), OrLL},
+        {SIZE_T(OpCode::Assign), AssignLL}};
 
     unordered_map<size_t, BinaryFunc> BinaryFloat = {{SIZE_T(OpCode::Add), BinaryAddFloat},
         {SIZE_T(OpCode::Sub), BinarySubFloat},
@@ -732,7 +763,8 @@ namespace
         {SIZE_T(OpCode::BitOr), BitOrFloat},
         {SIZE_T(OpCode::BitAnd), BitAndFloat},
         {SIZE_T(OpCode::And), AndFloat},
-        {SIZE_T(OpCode::Or), OrFloat}};
+        {SIZE_T(OpCode::Or), OrFloat},
+        {SIZE_T(OpCode::Assign), AssignFloat}};
 }  // namespace
 
 NodeAttribute SemanticInt(NodeAttribute a, OpCode op) { return UnaryInt[SIZE_T(op)](a); }
@@ -865,17 +897,12 @@ NodeAttribute Semantic(NodeAttribute a, NodeAttribute b, OpCode op)
             }
             break;
         case TypeKind::Int:
-            cout << "a is int" << endl;
             switch (b.val.type->getKind())
             {
                 case TypeKind::Bool: return SemanticBool_Int(b, a, op);
                 case TypeKind::Int: return SemanticInt_Int(a, b, op);
                 case TypeKind::LL: return SemanticInt_LL(a, b, op);
-                case TypeKind::Float:
-                {
-                    cout << "b is float" << endl;
-                    return SemanticInt_Float(a, b, op);
-                }
+                case TypeKind::Float: return SemanticInt_Float(a, b, op);
                 default: return SemanticErr(a, b, op);
             }
             break;

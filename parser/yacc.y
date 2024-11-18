@@ -343,17 +343,33 @@ DEF:
     | LEFT_VAL_EXPR ASSIGN INITIALIZER {
         $$ = new DefNode($1, $3);
     }
+    | IDENT ARRAY_DIMESION_EXPR_LIST INITIALIZER {
+        Symbol::Entry* entry = Symbol::Entry::getEntry(*$1);
+        $$ = new DefNode(new LeftValueExpr(entry, $2, -1), $3);
+    }
     | IDENT LBRACKET RBRACKET ASSIGN INITIALIZER {
         std::vector<ExprNode*>* dim = new std::vector<ExprNode*>();
         dim->emplace_back(new ConstExpr(static_cast<InitMulti*>($5)->getSize()));
         Symbol::Entry* entry = Symbol::Entry::getEntry(*$1);
         $$ = new DefNode(new LeftValueExpr(entry, dim, -1), $5);
     }
+    | IDENT LBRACKET RBRACKET INITIALIZER {
+        std::vector<ExprNode*>* dim = new std::vector<ExprNode*>();
+        dim->emplace_back(new ConstExpr(static_cast<InitMulti*>($4)->getSize()));
+        Symbol::Entry* entry = Symbol::Entry::getEntry(*$1);
+        $$ = new DefNode(new LeftValueExpr(entry, dim, -1), $4);
+    }
     | IDENT LBRACKET RBRACKET ARRAY_DIMESION_EXPR_LIST ASSIGN INITIALIZER {
         std::vector<ExprNode*>* dim = $4;
         dim->insert(dim->begin(), new ConstExpr(static_cast<InitMulti*>($6)->getSize()));
         Symbol::Entry* entry = Symbol::Entry::getEntry(*$1);
         $$ = new DefNode(new LeftValueExpr(entry, dim, -1), $6);
+    }
+    | IDENT LBRACKET RBRACKET ARRAY_DIMESION_EXPR_LIST INITIALIZER {
+        std::vector<ExprNode*>* dim = $4;
+        dim->insert(dim->begin(), new ConstExpr(static_cast<InitMulti*>($5)->getSize()));
+        Symbol::Entry* entry = Symbol::Entry::getEntry(*$1);
+        $$ = new DefNode(new LeftValueExpr(entry, dim, -1), $5);
     }
     ; 
 

@@ -56,7 +56,7 @@ class InitMulti : public InitNode
 
 class DefNode : public HelperNode
 {
-  private:
+  public:
     ExprNode* lval;
     InitNode* rval;
 

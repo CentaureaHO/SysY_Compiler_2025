@@ -15,6 +15,8 @@ using namespace std;
 using namespace Yacc;
 using namespace Symbol;
 
+extern vector<string> semanticErrMsgs;
+
 string truncateString(const string& str, size_t width)
 {
     if (str.length() > width) return str.substr(0, width - 3) + "...";
@@ -32,20 +34,11 @@ string getOutputFileName(const string& inputFile, const string& mode)
 
 int main(int argc, char* argv[])
 {
-    if (argc < 3)
-    {
-        cerr << "Usage: " << argv[0] << " <lexer|parser> <input_file>" << endl;
-        return 1;
-    }
+    string mode = "parser";
+    // cin >> mode;
 
-    string mode = argv[1];
-    if (mode != "lexer" && mode != "parser")
-    {
-        cerr << "Error: The first argument must be 'lexer' or 'parser'." << endl;
-        return 1;
-    }
-
-    string   inputFile = argv[2];
+    string inputFile = "test.in";
+    // cin >> inputFile;
     ifstream file(inputFile);
     if (!file)
     {
@@ -54,7 +47,9 @@ int main(int argc, char* argv[])
     }
     istream* inStream = &file;
 
-    string   outputFile = getOutputFileName(inputFile, mode);
+    string outputFile = getOutputFileName(inputFile, mode);
+    outputFile        = "test.out";
+    // cin >> outputFile;
     ofstream outFile(outputFile);
     if (!outFile)
     {
@@ -106,6 +101,9 @@ int main(int argc, char* argv[])
     {
         ASTree* ast = driver.parse();
         if (ast) { ast->printAST(outStream); }
+
+        ast->typeCheck();
+        // for (auto& msgs: semanticErrMsgs) { *outStream << msgs << endl; }
     }
 
     if (file.is_open()) file.close();

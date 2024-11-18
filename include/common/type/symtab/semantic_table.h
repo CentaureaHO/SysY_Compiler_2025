@@ -8,7 +8,7 @@
 
 class FuncDeclStmt;
 
-namespace Semantic
+namespace SemanticTable
 {
     class Table
     {
@@ -21,6 +21,8 @@ namespace Semantic
         Table();
         ~Table();
     };
-}  // namespace Semantic
+}  // namespace SemanticTable
+
+extern SemanticTable::Table semTable;
 
 #endif

@@ -3,7 +3,7 @@
 #include <ast/expression.h>
 #include <ast/statement.h>
 using namespace std;
-using namespace Semantic;
+using namespace SemanticTable;
 using SymTab = Symbol::Table;
 using SymEnt = Symbol::Entry;
 
@@ -101,3 +101,5 @@ Table::~Table()
 {
     for (auto& [_, decl] : funcDeclMap) delete decl;
 }
+
+Table semTable;

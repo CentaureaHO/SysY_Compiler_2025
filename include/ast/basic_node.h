@@ -11,7 +11,7 @@ class ExprNode;
 
 class Node
 {
-  protected:
+  public:
     int           line_num;
     NodeAttribute attr;
 
