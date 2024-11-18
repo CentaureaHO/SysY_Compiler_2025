@@ -5,6 +5,7 @@
 #include <string>
 #include <parser/driver.h>
 #include <common/type/symtab/symbol_table.h>
+#include <common/type/symtab/semantic_table.h>
 
 #define STR_PW 30
 #define INT_PW 8
@@ -15,7 +16,8 @@ using namespace std;
 using namespace Yacc;
 using namespace Symbol;
 
-extern vector<string> semanticErrMsgs;
+extern vector<string>       semanticErrMsgs;
+extern SemanticTable::Table semTable;
 
 string truncateString(const string& str, size_t width)
 {
@@ -102,8 +104,36 @@ int main(int argc, char* argv[])
         ASTree* ast = driver.parse();
         if (ast) { ast->printAST(outStream); }
 
+        // 以下为调试暂用代码
         ast->typeCheck();
-        // for (auto& msgs: semanticErrMsgs) { *outStream << msgs << endl; }
+        for (auto& msgs : semanticErrMsgs) { *outStream << msgs << endl; }
+
+        cout << "Global variables: " << endl;
+        for (auto& [entry, attr] : semTable.glbSymMap)
+        {
+            cout << (attr.isConst ? "const " : "var ") << attr.type->getTypeName() << " ";
+            cout << entry->getName();
+            if (attr.dims.size() > 0)
+            {
+                cout << "[";
+                for (auto& dim : attr.dims) { cout << dim << " "; }
+                cout << "]";
+            }
+
+            cout << " = ";
+            if (attr.initVals.size() > 1) { cout << "{"; }
+
+            for (auto& val : attr.initVals)
+            {
+                if (attr.type->getKind() == TypeKind::Float) { cout << get<float>(val) << " "; }
+                else if (attr.type->getKind() == TypeKind::Int) { cout << get<int>(val) << " "; }
+                else if (attr.type->getKind() == TypeKind::LL) { cout << get<long long>(val) << " "; }
+            }
+
+            if (attr.initVals.size() > 1) { cout << "}"; }
+
+            cout << endl;
+        }
     }
 
     if (file.is_open()) file.close();

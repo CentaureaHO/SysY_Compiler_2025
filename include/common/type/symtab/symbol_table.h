@@ -52,7 +52,7 @@ namespace Symbol
 
     class Table
     {
-      private:
+      public:
         struct Scope
         {
             std::unordered_map<Entry*, VarAttribute, EntryHasher, EntryEqual> symbolMap;

@@ -41,7 +41,7 @@ class InitSingle : public InitNode  // 单一表达式的初始化节点
 
 class InitMulti : public InitNode
 {
-  private:
+  public:
     std::vector<InitNode*>* exprs;
 
   public:

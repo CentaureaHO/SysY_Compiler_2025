@@ -13,8 +13,81 @@ using BinaryFunc = NodeAttribute (*)(const NodeAttribute& a, const NodeAttribute
 
 extern std::vector<std::string> semanticErrMsgs;
 
+#define TO_BOOL(x) std::visit(safe_cast_to_bool, x)
+#define TO_INT(x) std::visit(safe_cast_to_int, x)
+#define TO_LL(x) std::visit(safe_cast_to_ll, x)
+#define TO_FLOAT(x) std::visit(safe_cast_to_float, x)
+
 namespace
 {
+    auto safe_cast_to_bool = [](auto&& value) -> int {
+        using T = std::decay_t<decltype(value)>;
+        if constexpr (std::is_same_v<T, bool>)
+            return static_cast<bool>(value);
+        else if constexpr (std::is_same_v<T, int>)
+            return static_cast<bool>(value);
+        else if constexpr (std::is_same_v<T, long long>)
+            return static_cast<bool>(value);
+        else if constexpr (std::is_same_v<T, float>)
+            return static_cast<bool>(value);
+        else
+        {
+            std::cerr << "Unexpected type: " << typeid(T).name() << '\n';
+            throw std::bad_variant_access();
+        }
+    };
+
+    auto safe_cast_to_int = [](auto&& value) -> int {
+        using T = std::decay_t<decltype(value)>;
+        if constexpr (std::is_same_v<T, bool>)
+            return static_cast<int>(value);
+        else if constexpr (std::is_same_v<T, int>)
+            return static_cast<int>(value);
+        else if constexpr (std::is_same_v<T, long long>)
+            return static_cast<int>(value);
+        else if constexpr (std::is_same_v<T, float>)
+            return static_cast<int>(value);
+        else
+        {
+            std::cerr << "Unexpected type: " << typeid(T).name() << '\n';
+            throw std::bad_variant_access();
+        }
+    };
+
+    auto safe_cast_to_ll = [](auto&& value) -> int {
+        using T = std::decay_t<decltype(value)>;
+        if constexpr (std::is_same_v<T, bool>)
+            return static_cast<long long>(value);
+        else if constexpr (std::is_same_v<T, int>)
+            return static_cast<long long>(value);
+        else if constexpr (std::is_same_v<T, long long>)
+            return static_cast<long long>(value);
+        else if constexpr (std::is_same_v<T, float>)
+            return static_cast<long long>(value);
+        else
+        {
+            std::cerr << "Unexpected type: " << typeid(T).name() << '\n';
+            throw std::bad_variant_access();
+        }
+    };
+
+    auto safe_cast_to_float = [](auto&& value) -> int {
+        using T = std::decay_t<decltype(value)>;
+        if constexpr (std::is_same_v<T, bool>)
+            return static_cast<float>(value);
+        else if constexpr (std::is_same_v<T, int>)
+            return static_cast<float>(value);
+        else if constexpr (std::is_same_v<T, long long>)
+            return static_cast<float>(value);
+        else if constexpr (std::is_same_v<T, float>)
+            return static_cast<float>(value);
+        else
+        {
+            std::cerr << "Unexpected type: " << typeid(T).name() << '\n';
+            throw std::bad_variant_access();
+        }
+    };
+
     NodeAttribute UnaryAddInt(const NodeAttribute& node)
     {
         NodeAttribute result;
@@ -96,7 +169,7 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = node.val.isConst;
-        if (result.val.isConst) result.val.value = !std::get<int>(node.val.value);
+        if (result.val.isConst) result.val.value = static_cast<bool>(!std::get<int>(node.val.value));
         return result;
     }
 
@@ -105,7 +178,7 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = node.val.isConst;
-        if (result.val.isConst) result.val.value = !std::get<long long>(node.val.value);
+        if (result.val.isConst) result.val.value = static_cast<bool>(!std::get<long long>(node.val.value));
         return result;
     }
 
@@ -114,7 +187,7 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = node.val.isConst;
-        if (result.val.isConst) result.val.value = !std::get<float>(node.val.value);
+        if (result.val.isConst) result.val.value = static_cast<bool>(!std::get<float>(node.val.value));
         return result;
     }
 
@@ -160,8 +233,6 @@ namespace
 
     NodeAttribute BinaryAddFloat(const NodeAttribute& lhs, const NodeAttribute& rhs)
     {
-        std::cout << "lhs: " << std::get<float>(lhs.val.value) << " rhs: " << std::get<float>(rhs.val.value)
-                  << std::endl;
         NodeAttribute result;
         result.val.type    = floatType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
@@ -404,7 +475,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst) result.val.value = std::get<int>(lhs.val.value) > std::get<int>(rhs.val.value);
+        if (result.val.isConst)
+            result.val.value = static_cast<bool>(std::get<int>(lhs.val.value) > std::get<int>(rhs.val.value));
         return result;
     }
 
@@ -414,7 +486,8 @@ namespace
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         if (result.val.isConst)
-            result.val.value = std::get<long long>(lhs.val.value) > std::get<long long>(rhs.val.value);
+            result.val.value =
+                static_cast<bool>(std::get<long long>(lhs.val.value) > std::get<long long>(rhs.val.value));
         return result;
     }
 
@@ -423,7 +496,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst) result.val.value = std::get<float>(lhs.val.value) > std::get<float>(rhs.val.value);
+        if (result.val.isConst)
+            result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) > std::get<float>(rhs.val.value));
         return result;
     }
 
@@ -432,7 +506,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst) result.val.value = std::get<int>(lhs.val.value) >= std::get<int>(rhs.val.value);
+        if (result.val.isConst)
+            result.val.value = static_cast<bool>(std::get<int>(lhs.val.value) >= std::get<int>(rhs.val.value));
         return result;
     }
 
@@ -442,7 +517,8 @@ namespace
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         if (result.val.isConst)
-            result.val.value = std::get<long long>(lhs.val.value) >= std::get<long long>(rhs.val.value);
+            result.val.value =
+                static_cast<bool>(std::get<long long>(lhs.val.value) >= std::get<long long>(rhs.val.value));
         return result;
     }
 
@@ -451,7 +527,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst) result.val.value = std::get<float>(lhs.val.value) >= std::get<float>(rhs.val.value);
+        if (result.val.isConst)
+            result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) >= std::get<float>(rhs.val.value));
         return result;
     }
 
@@ -460,7 +537,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst) result.val.value = std::get<int>(lhs.val.value) < std::get<int>(rhs.val.value);
+        if (result.val.isConst)
+            result.val.value = static_cast<bool>(std::get<int>(lhs.val.value) < std::get<int>(rhs.val.value));
         return result;
     }
 
@@ -470,7 +548,8 @@ namespace
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         if (result.val.isConst)
-            result.val.value = std::get<long long>(lhs.val.value) < std::get<long long>(rhs.val.value);
+            result.val.value =
+                static_cast<bool>(std::get<long long>(lhs.val.value) < std::get<long long>(rhs.val.value));
         return result;
     }
 
@@ -479,7 +558,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst) result.val.value = std::get<float>(lhs.val.value) < std::get<float>(rhs.val.value);
+        if (result.val.isConst)
+            result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) < std::get<float>(rhs.val.value));
         return result;
     }
 
@@ -488,7 +568,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst) result.val.value = std::get<int>(lhs.val.value) <= std::get<int>(rhs.val.value);
+        if (result.val.isConst)
+            result.val.value = static_cast<bool>(std::get<int>(lhs.val.value) <= std::get<int>(rhs.val.value));
         return result;
     }
 
@@ -498,7 +579,8 @@ namespace
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         if (result.val.isConst)
-            result.val.value = std::get<long long>(lhs.val.value) <= std::get<long long>(rhs.val.value);
+            result.val.value =
+                static_cast<bool>(std::get<long long>(lhs.val.value) <= std::get<long long>(rhs.val.value));
         return result;
     }
 
@@ -507,7 +589,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst) result.val.value = std::get<float>(lhs.val.value) <= std::get<float>(rhs.val.value);
+        if (result.val.isConst)
+            result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) <= std::get<float>(rhs.val.value));
         return result;
     }
 
@@ -516,7 +599,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst) result.val.value = std::get<int>(lhs.val.value) == std::get<int>(rhs.val.value);
+        if (result.val.isConst)
+            result.val.value = static_cast<bool>(std::get<int>(lhs.val.value) == std::get<int>(rhs.val.value));
         return result;
     }
 
@@ -526,7 +610,8 @@ namespace
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         if (result.val.isConst)
-            result.val.value = std::get<long long>(lhs.val.value) == std::get<long long>(rhs.val.value);
+            result.val.value =
+                static_cast<bool>(std::get<long long>(lhs.val.value) == std::get<long long>(rhs.val.value));
         return result;
     }
 
@@ -535,7 +620,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst) result.val.value = std::get<float>(lhs.val.value) == std::get<float>(rhs.val.value);
+        if (result.val.isConst)
+            result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) == std::get<float>(rhs.val.value));
         return result;
     }
 
@@ -544,7 +630,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst) result.val.value = std::get<int>(lhs.val.value) != std::get<int>(rhs.val.value);
+        if (result.val.isConst)
+            result.val.value = static_cast<bool>(std::get<int>(lhs.val.value) != std::get<int>(rhs.val.value));
         return result;
     }
 
@@ -554,7 +641,8 @@ namespace
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         if (result.val.isConst)
-            result.val.value = std::get<long long>(lhs.val.value) != std::get<long long>(rhs.val.value);
+            result.val.value =
+                static_cast<bool>(std::get<long long>(lhs.val.value) != std::get<long long>(rhs.val.value));
         return result;
     }
 
@@ -563,7 +651,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst) result.val.value = std::get<float>(lhs.val.value) != std::get<float>(rhs.val.value);
+        if (result.val.isConst)
+            result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) != std::get<float>(rhs.val.value));
         return result;
     }
 
@@ -625,7 +714,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst) result.val.value = std::get<int>(lhs.val.value) && std::get<int>(rhs.val.value);
+        if (result.val.isConst)
+            result.val.value = static_cast<bool>(std::get<int>(lhs.val.value) && std::get<int>(rhs.val.value));
         return result;
     }
 
@@ -635,7 +725,8 @@ namespace
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         if (result.val.isConst)
-            result.val.value = std::get<long long>(lhs.val.value) && std::get<long long>(rhs.val.value);
+            result.val.value =
+                static_cast<bool>(std::get<long long>(lhs.val.value) && std::get<long long>(rhs.val.value));
         return result;
     }
 
@@ -644,7 +735,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst) result.val.value = std::get<float>(lhs.val.value) && std::get<float>(rhs.val.value);
+        if (result.val.isConst)
+            result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) && std::get<float>(rhs.val.value));
         return result;
     }
 
@@ -653,7 +745,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst) result.val.value = std::get<int>(lhs.val.value) || std::get<int>(rhs.val.value);
+        if (result.val.isConst)
+            result.val.value = static_cast<bool>(std::get<int>(lhs.val.value) || std::get<int>(rhs.val.value));
         return result;
     }
 
@@ -663,7 +756,8 @@ namespace
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         if (result.val.isConst)
-            result.val.value = std::get<long long>(lhs.val.value) || std::get<long long>(rhs.val.value);
+            result.val.value =
+                static_cast<bool>(std::get<long long>(lhs.val.value) || std::get<long long>(rhs.val.value));
         return result;
     }
 
@@ -672,7 +766,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst) result.val.value = std::get<float>(lhs.val.value) || std::get<float>(rhs.val.value);
+        if (result.val.isConst)
+            result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) || std::get<float>(rhs.val.value));
         return result;
     }
 
@@ -777,13 +872,13 @@ NodeAttribute SemanticBool(NodeAttribute a, OpCode op)
 {
     NodeAttribute tmp_a = a;
     tmp_a.val.type      = intType;
-    tmp_a.val.value     = static_cast<int>(get<bool>(a.val.value));
+    tmp_a.val.value     = TO_INT(a.val.value);
     return UnaryInt[SIZE_T(op)](tmp_a);
 }
 
 NodeAttribute SemanticErr(NodeAttribute a, OpCode op)
 {
-    semanticErrMsgs.push_back("Invalid operator at line " + to_string(a.line_num));
+    semanticErrMsgs.push_back("Invalid unary operator " + getOpStr(op) + " at line " + to_string(a.line_num));
     return NodeAttribute();
 }
 
@@ -805,10 +900,10 @@ NodeAttribute SemanticBool_Bool(NodeAttribute a, NodeAttribute b, OpCode op)
 {
     NodeAttribute tmp_a = a;
     tmp_a.val.type      = intType;
-    tmp_a.val.value     = static_cast<int>(get<bool>(a.val.value));
+    tmp_a.val.value     = TO_INT(a.val.value);
     NodeAttribute tmp_b = b;
     tmp_b.val.type      = intType;
-    tmp_b.val.value     = static_cast<int>(get<bool>(b.val.value));
+    tmp_b.val.value     = TO_INT(b.val.value);
 
     return BinaryInt[SIZE_T(op)](tmp_a, tmp_b);
 }
@@ -817,7 +912,7 @@ NodeAttribute SemanticBool_Int(NodeAttribute a, NodeAttribute b, OpCode op)
 {
     NodeAttribute tmp_a = a;
     tmp_a.val.type      = intType;
-    tmp_a.val.value     = static_cast<int>(get<bool>(a.val.value));
+    tmp_a.val.value     = TO_INT(a.val.value);
 
     return BinaryInt[SIZE_T(op)](tmp_a, b);
 }
@@ -826,7 +921,7 @@ NodeAttribute SemanticBool_LL(NodeAttribute a, NodeAttribute b, OpCode op)
 {
     NodeAttribute tmp_a = a;
     tmp_a.val.type      = llType;
-    tmp_a.val.value     = static_cast<long long>(get<bool>(a.val.value));
+    tmp_a.val.value     = TO_LL(a.val.value);
 
     return BinaryLL[SIZE_T(op)](tmp_a, b);
 }
@@ -835,7 +930,7 @@ NodeAttribute SemanticBool_Float(NodeAttribute a, NodeAttribute b, OpCode op)
 {
     NodeAttribute tmp_a = a;
     tmp_a.val.type      = floatType;
-    tmp_a.val.value     = static_cast<float>(get<bool>(a.val.value));
+    tmp_a.val.value     = TO_FLOAT(a.val.value);
 
     return BinaryFloat[SIZE_T(op)](tmp_a, b);
 }
@@ -847,7 +942,7 @@ NodeAttribute SemanticInt_LL(NodeAttribute a, NodeAttribute b, OpCode op)
 {
     NodeAttribute tmp_a = a;
     tmp_a.val.type      = llType;
-    tmp_a.val.value     = static_cast<long long>(get<int>(a.val.value));
+    tmp_a.val.value     = TO_LL(a.val.value);
 
     return BinaryLL[SIZE_T(op)](tmp_a, b);
 }
@@ -856,7 +951,7 @@ NodeAttribute SemanticInt_Float(NodeAttribute a, NodeAttribute b, OpCode op)
 {
     NodeAttribute tmp_a = a;
     tmp_a.val.type      = floatType;
-    tmp_a.val.value     = static_cast<float>(get<int>(a.val.value));
+    tmp_a.val.value     = TO_FLOAT(a.val.value);
 
     return BinaryFloat[SIZE_T(op)](tmp_a, b);
 }
@@ -868,7 +963,7 @@ NodeAttribute SemanticLL_Float(NodeAttribute a, NodeAttribute b, OpCode op)
 {
     NodeAttribute tmp_a = a;
     tmp_a.val.type      = floatType;
-    tmp_a.val.value     = static_cast<float>(get<long long>(a.val.value));
+    tmp_a.val.value     = TO_FLOAT(a.val.value);
 
     return BinaryFloat[SIZE_T(op)](tmp_a, b);
 }
@@ -878,7 +973,7 @@ NodeAttribute SemanticFloat_Float(NodeAttribute a, NodeAttribute b, OpCode op) {
 
 NodeAttribute SemanticErr(NodeAttribute a, NodeAttribute b, OpCode op)
 {
-    semanticErrMsgs.push_back("Invalid operator at line " + to_string(a.line_num));
+    semanticErrMsgs.push_back("Invalid binary operator " + getOpStr(op) + " at line " + to_string(a.line_num));
     return NodeAttribute();
 }
 

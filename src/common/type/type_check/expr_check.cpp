@@ -46,6 +46,14 @@ void LeftValueExpr::typeCheck()
         val = &it->second;
     }
 
+    attr.val.type = val->type;
+    if (attr.val.type == intType)
+        attr.val.value = 0;
+    else if (attr.val.type == floatType)
+        attr.val.value = static_cast<float>(0);
+
+    if (val->type == voidType) { cout << "Error: Void type variable at line " << attr.line_num << endl; }
+
     if (arr_dims.size() == val->dims.size())
     {
         attr.val.type    = val->type;

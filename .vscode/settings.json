@@ -91,6 +91,7 @@
         "unordered_set": "cpp",
         "ranges": "cpp",
         "barrier": "cpp",
-        "typeindex": "cpp"
+        "typeindex": "cpp",
+        "__string": "cpp"
     }
 }
