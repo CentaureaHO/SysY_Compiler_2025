@@ -24,7 +24,7 @@ string truncateString(const string& str, size_t width)
 string getOutputFileName(const string& inputFile, const string& mode)
 {
     string outputFile = inputFile;
-    size_t pos = outputFile.find(".sy");
+    size_t pos        = outputFile.find(".sy");
     if (pos != string::npos) { outputFile = outputFile.substr(0, pos); }
     outputFile += (mode == "lexer") ? ".token" : ".ast";
     return outputFile;
@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    string inputFile = argv[2];
+    string   inputFile = argv[2];
     ifstream file(inputFile);
     if (!file)
     {
@@ -55,14 +55,8 @@ int main(int argc, char* argv[])
     istream* inStream = &file;
 
     string outputFile;
-    if (argc >= 4)
-    {
-        outputFile = argv[3];
-    }
-    else
-    {
-        outputFile = getOutputFileName(inputFile, mode);
-    }
+    if (argc >= 4) { outputFile = argv[3]; }
+    else { outputFile = getOutputFileName(inputFile, mode); }
 
     ofstream outFile(outputFile);
     if (!outFile)

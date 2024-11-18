@@ -18,8 +18,8 @@ void ExprNode::setConst() { isConst = true; }
 void ExprNode::setNonConst() { isConst = false; }
 
 /* Definition of LeftValueExpr */
-LeftValueExpr::LeftValueExpr(Symbol::Entry* entry, vector<ExprNode*>* dims, int scope)
-    : entry(entry), dims(dims), scope(scope)
+LeftValueExpr::LeftValueExpr(Symbol::Entry* entry, vector<ExprNode*>* dims, int scope, bool isL)
+    : isLval(isL), entry(entry), dims(dims), scope(scope)
 {}
 LeftValueExpr::~LeftValueExpr()
 {
@@ -50,7 +50,9 @@ ConstExpr::ConstExpr() : value(0), type(0) {}
 ConstExpr::ConstExpr(int val) : value(val), type(1) {}
 ConstExpr::ConstExpr(long long val) : value(val), type(2) {}
 ConstExpr::ConstExpr(float val) : value(val), type(3) {}
-ConstExpr::ConstExpr(shared_ptr<string> val) : value(val), type(4) {}
+ConstExpr::ConstExpr(double val) : value(val), type(4) {}
+ConstExpr::ConstExpr(bool val) : value(val), type(5) {}
+ConstExpr::ConstExpr(shared_ptr<string> val) : value(val), type(6) {}
 ConstExpr::~ConstExpr() {}
 
 void ConstExpr::printAST(std::ostream* oss, const string& prefix, bool isLast)
@@ -61,7 +63,9 @@ void ConstExpr::printAST(std::ostream* oss, const string& prefix, bool isLast)
         case 1: *oss << "Int: " << get<int>(value); break;
         case 2: *oss << "LL: " << get<long long>(value); break;
         case 3: *oss << "Float: " << get<float>(value); break;
-        case 4: *oss << "Str: " << *get<shared_ptr<string>>(value); break;
+        case 4: *oss << "Double: " << get<double>(value); break;
+        case 5: *oss << "Bool: " << get<bool>(value); break;
+        case 6: *oss << "String: " << *get<shared_ptr<string>>(value); break;
         default: *oss << "Undefined"; break;
     }
     *oss << '\n';

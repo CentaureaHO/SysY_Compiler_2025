@@ -6,11 +6,15 @@
 using namespace std;
 
 /* Definition of Node */
-Node::Node(int line_num) : line_num(line_num) {}
+Node::Node(int line_num) : line_num(line_num) { attr.line_num = line_num; }
 Node::~Node() {}
 
-void Node::set_line(int line_num) { this->line_num = line_num; }
-int  Node::get_line() const { return line_num; }
+void Node::set_line(int line_num)
+{
+    this->line_num = line_num;
+    attr.line_num  = line_num;
+}
+int Node::get_line() const { return line_num; }
 
 /* Definition of ASTree */
 ASTree::ASTree(vector<StmtNode*>* stmts, int line_num) : Node(line_num), stmts(stmts) {}

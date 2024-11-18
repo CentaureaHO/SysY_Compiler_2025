@@ -13,5 +13,5 @@ void ASTree::typeCheck()
 {
     for (auto& stmt : *stmts) stmt->typeCheck();
 
-    if (!mainExists) semanticErrMsgs.push_back("No main function found");
+    if (!mainExists) semanticErrMsgs.emplace_back("No main function found");
 }

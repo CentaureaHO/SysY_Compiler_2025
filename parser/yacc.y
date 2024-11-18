@@ -550,25 +550,35 @@ LEFT_VAL_EXPR:
     IDENT {
         Symbol::Entry* entry = Symbol::Entry::getEntry(*$1);
         $$ = new LeftValueExpr(entry, nullptr, -1);
+        $$->set_line(@1.begin.line);
     }
     | IDENT ARRAY_DIMESION_EXPR_LIST {
         Symbol::Entry* entry = Symbol::Entry::getEntry(*$1);
         $$ = new LeftValueExpr(entry, $2, -1);
+        $$->set_line(@1.begin.line);
     }
     ;
 
 CONST_EXPR:
     INT_CONST {
         $$ = new ConstExpr($1);
+        $$->setConst();
+        $$->set_line(@1.begin.line);
     }
     | LL_CONST {
         $$ = new ConstExpr($1);
+        $$->setConst();
+        $$->set_line(@1.begin.line);
     }
     | FLOAT_CONST {
         $$ = new ConstExpr($1);
+        $$->setConst();
+        $$->set_line(@1.begin.line);
     }
     | STR_CONST {
         $$ = new ConstExpr($1);
+        $$->setConst();
+        $$->set_line(@1.begin.line);
     }
     ;
 

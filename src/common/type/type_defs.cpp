@@ -16,7 +16,7 @@ namespace
     };
 }  // namespace
 
-const string& getOpStr(OpCode op) { return opStr[static_cast<size_t>(op)]; }
+const string& getOpStr(OpCode op) { return opStr[SIZE_T(op)]; }
 
 /* Definition of Type: head */
 
@@ -152,32 +152,17 @@ Type* boolType   = TypeSystem::getBasicType(TypeKind::Bool);
 Type* strType    = TypeSystem::getBasicType(TypeKind::Str);
 
 /* Definition of TypeSystem: tail */
-/* Definition of LiteralValue: head */
+/* Definition of ConstValue: head */
 
-LiteralValue::LiteralValue() : type(voidType), value(0) {}
-LiteralValue::LiteralValue(int val) : type(intType), value(val) {}
-LiteralValue::LiteralValue(long long val) : type(llType), value(val) {}
-LiteralValue::LiteralValue(float val) : type(floatType), value(val) {}
-LiteralValue::LiteralValue(double val) : type(doubleType), value(val) {}
-LiteralValue::LiteralValue(bool val) : type(boolType), value(val) {}
-LiteralValue::LiteralValue(string val) : type(strType), value(val) {}
+ConstValue::ConstValue() : type(voidType), value(0), isConst(false) {}
+ConstValue::ConstValue(int val) : type(intType), value(val), isConst(false) {}
+ConstValue::ConstValue(long long val) : type(llType), value(val), isConst(false) {}
+ConstValue::ConstValue(float val) : type(floatType), value(val), isConst(false) {}
+ConstValue::ConstValue(double val) : type(doubleType), value(val), isConst(false) {}
+ConstValue::ConstValue(bool val) : type(boolType), value(val), isConst(false) {}
+ConstValue::ConstValue(shared_ptr<string> val) : type(strType), value(val), isConst(false) {}
 
-string LiteralValue::getLiteralInfo()
-{
-    if (type == voidType) return "Literal undefined";
-
-    return "Literal " + type->getTypeName() + ": " +
-           visit(
-               [](auto&& arg) -> string {
-                   if constexpr (is_same_v<decay_t<decltype(arg)>, string>)
-                       return arg;
-                   else
-                       return to_string(arg);
-               },
-               value);
-}
-
-/* Definition of LiteralValue: tail */
+/* Definition of ConstValue: tail */
 /* Definition of VarAttribute: head */
 
 VarAttribute::VarAttribute(Type* type, bool isConst)
@@ -189,16 +174,9 @@ Type* VarAttribute::getType() const { return type; }
 /* Definition of VarAttribute: tail */
 /* Definition of NodeAttribute: head */
 
-NodeAttribute::NodeAttribute(OpCode op, std::shared_ptr<LiteralValue> literal, unsigned int line_num)
-    : op(op), literal(literal), line_num(line_num)
-{}
+NodeAttribute::NodeAttribute(OpCode op, ConstValue v, unsigned int line_num) : op(op), val(v), line_num(line_num) {}
 
-string NodeAttribute::getAttributeInfo()
-{
-    string res;
-    if (op != OpCode::PlaceHolder) res = "Operator: " + opStr[static_cast<size_t>(op)] + " ";
-    if (literal) res = literal->getLiteralInfo();
-    return res;
-}
+OpCode&     NodeAttribute::getOp() { return op; }
+ConstValue& NodeAttribute::getVal() { return val; }
 
 /* Definition of NodeAttribute: tail */

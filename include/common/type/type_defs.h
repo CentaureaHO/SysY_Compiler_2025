@@ -41,6 +41,8 @@
     X(Or, ||, 16)                  \
     X(Assign, =, 17)
 
+#define SIZE_T(x) static_cast<size_t>(x)
+
 enum class TypeKind
 {
 #define X(name, type, id) name = id,
@@ -164,22 +166,21 @@ extern Type* doubleType;
 extern Type* boolType;
 extern Type* strType;
 
-class LiteralValue
+class ConstValue
 {
-  private:
-    Type*                                                          type;
-    std::variant<int, long long, float, double, bool, std::string> value;
+  public:
+    Type*                                                                           type;
+    std::variant<int, long long, float, double, bool, std::shared_ptr<std::string>> value;
+    bool                                                                            isConst;
 
   public:
-    LiteralValue();
-    LiteralValue(int val);
-    LiteralValue(long long val);
-    LiteralValue(float val);
-    LiteralValue(double val);
-    LiteralValue(bool val);
-    LiteralValue(std::string val);
-
-    std::string getLiteralInfo();
+    ConstValue();
+    ConstValue(int val);
+    ConstValue(long long val);
+    ConstValue(float val);
+    ConstValue(double val);
+    ConstValue(bool val);
+    ConstValue(std::shared_ptr<std::string> val);
 };
 
 class VarAttribute
@@ -200,17 +201,17 @@ class VarAttribute
 
 class NodeAttribute
 {
-  private:
-    OpCode                        op;
-    std::shared_ptr<LiteralValue> literal;
+  public:
+    OpCode     op;
+    ConstValue val;
 
     unsigned int line_num;
 
   public:
-    NodeAttribute(
-        OpCode op = OpCode::PlaceHolder, std::shared_ptr<LiteralValue> literal = nullptr, unsigned int line_num = 0);
+    NodeAttribute(OpCode op = OpCode::PlaceHolder, ConstValue v = ConstValue(), unsigned int line_num = 0);
 
-    std::string getAttributeInfo();
+    OpCode&     getOp();
+    ConstValue& getVal();
 };
 
 #endif

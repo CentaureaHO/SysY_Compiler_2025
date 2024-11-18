@@ -92,6 +92,6 @@ namespace Symbol
     };
 }  // namespace Symbol
 
-#include <common/type/symtab/symbol_table.hpp>
+#include <common/type/symtab/symbol_table.tpp>
 
 #endif

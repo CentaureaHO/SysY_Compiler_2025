@@ -14,7 +14,7 @@ class ExprNode : public Node
     bool isConst;
 
   public:
-    ExprNode(int line_num = -1, bool isConst = true);
+    ExprNode(int line_num = -1, bool isConst = false);
     virtual ~ExprNode();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
@@ -27,13 +27,15 @@ class ExprNode : public Node
 
 class LeftValueExpr : public ExprNode
 {
-  private:
+  public:
+    bool                    isLval;
     Symbol::Entry*          entry;
     std::vector<ExprNode*>* dims;
     int                     scope;
 
   public:
-    LeftValueExpr(Symbol::Entry* entry = nullptr, std::vector<ExprNode*>* dims = nullptr, int scope = -1);
+    LeftValueExpr(
+        Symbol::Entry* entry = nullptr, std::vector<ExprNode*>* dims = nullptr, int scope = -1, bool isL = false);
     ~LeftValueExpr();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
@@ -45,15 +47,17 @@ class LeftValueExpr : public ExprNode
  */
 class ConstExpr : public ExprNode
 {
-  private:
-    std::variant<int, long long, float, std::shared_ptr<std::string>> value;
-    int                                                               type;
+  public:
+    std::variant<int, long long, float, double, bool, std::shared_ptr<std::string>> value;
+    int                                                                             type;
 
   public:
     ConstExpr();
     ConstExpr(int val);
     ConstExpr(long long val);
     ConstExpr(float val);
+    ConstExpr(double val);
+    ConstExpr(bool val);
     ConstExpr(std::shared_ptr<std::string> val);
     ~ConstExpr();
 
@@ -66,7 +70,7 @@ class ConstExpr : public ExprNode
  */
 class UnaryExpr : public ExprNode
 {
-  private:
+  public:
     OpCode    op;
     ExprNode* val;
 
@@ -83,7 +87,7 @@ class UnaryExpr : public ExprNode
  */
 class BinaryExpr : public ExprNode
 {
-  private:
+  public:
     OpCode    op;
     ExprNode* lhs;
     ExprNode* rhs;
@@ -98,7 +102,7 @@ class BinaryExpr : public ExprNode
 
 class FuncCallExpr : public ExprNode
 {
-  private:
+  public:
     Symbol::Entry*          entry;
     std::vector<ExprNode*>* args;
 

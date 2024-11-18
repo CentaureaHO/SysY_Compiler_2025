@@ -1,4 +1,5 @@
 #include <ast/statement.h>
+#include <ast/expression.h>
 #include <common/type/type_defs.h>
 #include <common/type/symtab/semantic_table.h>
 using namespace std;
@@ -10,7 +11,10 @@ extern Semantic::Table semTable;
 
 void StmtNode::typeCheck() {}
 
-void ExprStmt::typeCheck() {}
+void ExprStmt::typeCheck()
+{
+    for (auto& expr : *exprs) expr->typeCheck();
+}
 
 void VarDeclStmt::typeCheck() {}
 
