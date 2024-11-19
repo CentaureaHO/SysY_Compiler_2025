@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 #include <variant>
-#include <unordered_map>
+#include <map>
 
 #define VALUE_TYPES            \
     X(Void, std::monostate, 0) \
@@ -138,7 +138,7 @@ class TypeSystem
     TypeSystem();
     ~TypeSystem();
 
-    static std::unordered_map<size_t, Type*> typeMap;
+    static std::map<size_t, Type*> typeMap;
 
     static size_t generateHash(TypeKind kind);
     static size_t generateHash(TypeKind kind, Type* baseType);

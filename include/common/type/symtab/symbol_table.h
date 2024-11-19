@@ -3,7 +3,7 @@
 
 #include <list>
 #include <string>
-#include <unordered_map>
+#include <map>
 #include <unordered_set>
 #include <common/type/type_defs.h>
 
@@ -14,13 +14,13 @@ namespace Symbol
         friend class EntryDeleter;
 
       private:
-        static std::unordered_map<std::string, Entry*> entryMap;
-        static void                                    clear();
+        // static std::map<std::string, Entry*> entryMap;
+        static void clear();
 
       public:
         static Entry* getEntry(std::string name);
 
-      private:
+      public:
         Entry(std::string name = "NULL");
         std::string name;
 
@@ -40,23 +40,13 @@ namespace Symbol
         static EntryDeleter& getInstance();
     };
 
-    struct EntryHasher
-    {
-        std::size_t operator()(const Entry* entry) const;
-    };
-
-    struct EntryEqual
-    {
-        bool operator()(const Entry* lhs, const Entry* rhs) const;
-    };
-
     class Table
     {
       public:
         struct Scope
         {
-            std::unordered_map<Entry*, VarAttribute, EntryHasher, EntryEqual> symbolMap;
-            Scope*                                                            parent;
+            std::map<Entry*, VarAttribute> symbolMap;
+            Scope*                         parent;
             /*
              *  -1  : unknown
              *  0   : global

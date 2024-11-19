@@ -2,20 +2,13 @@
 using namespace std;
 using namespace Symbol;
 
-/* Definition of Symbol::Entry: head */
-
-unordered_map<string, Entry*> Entry::entryMap;
-
-void Entry::clear()
-{
-    for (auto& [name, entry] : entryMap) delete entry;
-    entryMap.clear();
-}
+void Entry::clear() {}
 
 Entry* Entry::getEntry(string name)
 {
-    if (entryMap.find(name) == entryMap.end()) entryMap[name] = new Entry(name);
-    return entryMap[name];
+    static std::map<std::string, std::unique_ptr<Entry>> entryMap;
+    if (entryMap.find(name) == entryMap.end()) entryMap[name] = std::make_unique<Entry>(name);
+    return entryMap[name].get();
 }
 
 Entry::Entry(string name) : name(name) {}
@@ -33,12 +26,6 @@ namespace
 {
     EntryDeleter& instance = EntryDeleter::getInstance();
 }
-
-size_t EntryHasher::operator()(const Entry* entry) const { return hash<string>()(entry->getName()); }
-bool   EntryEqual::operator()(const Entry* lhs, const Entry* rhs) const { return lhs->getName() == rhs->getName(); }
-
-/* Definition of Symbol::Entry: tail */
-/* Definition of Symbol::Table: head */
 
 Table::Scope::Scope(Scope* parent) : parent(parent), scopeLevel(parent ? parent->scopeLevel + 1 : 0) {}
 Table::Scope::~Scope() { symbolMap.clear(); }
@@ -87,5 +74,3 @@ bool Table::exitScope()
     currentScope = parent;
     return true;
 }
-
-/* Definition of Symbol::Table: tail */

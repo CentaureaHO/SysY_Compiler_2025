@@ -801,6 +801,7 @@ namespace
     }
 }  // namespace
 
+/*
 namespace
 {
     unordered_map<size_t, UnaryFunc> UnaryInt = {
@@ -861,19 +862,33 @@ namespace
         {SIZE_T(OpCode::Or), OrFloat},
         {SIZE_T(OpCode::Assign), AssignFloat}};
 }  // namespace
+*/
 
-NodeAttribute SemanticInt(NodeAttribute a, OpCode op) { return UnaryInt[SIZE_T(op)](a); }
+NodeAttribute SemanticInt(NodeAttribute a, OpCode op)
+{
+    return UnaryAddInt(a);
+    // return UnaryInt[SIZE_T(op)](a);
+}
 
-NodeAttribute SemanticLL(NodeAttribute a, OpCode op) { return UnaryLL[SIZE_T(op)](a); }
+NodeAttribute SemanticLL(NodeAttribute a, OpCode op)
+{
+    return UnaryAddLL(a);
+    //    return UnaryLL[SIZE_T(op)](a);
+}
 
-NodeAttribute SemanticFloat(NodeAttribute a, OpCode op) { return UnaryFloat[SIZE_T(op)](a); }
+NodeAttribute SemanticFloat(NodeAttribute a, OpCode op)
+{
+    return UnaryAddFloat(a);
+    // return UnaryFloat[SIZE_T(op)](a);
+}
 
 NodeAttribute SemanticBool(NodeAttribute a, OpCode op)
 {
     NodeAttribute tmp_a = a;
     tmp_a.val.type      = intType;
     tmp_a.val.value     = TO_INT(a.val.value);
-    return UnaryInt[SIZE_T(op)](tmp_a);
+    return UnaryAddInt(tmp_a);
+    //    return UnaryInt[SIZE_T(op)](tmp_a);
 }
 
 NodeAttribute SemanticErr(NodeAttribute a, OpCode op)
@@ -905,7 +920,8 @@ NodeAttribute SemanticBool_Bool(NodeAttribute a, NodeAttribute b, OpCode op)
     tmp_b.val.type      = intType;
     tmp_b.val.value     = TO_INT(b.val.value);
 
-    return BinaryInt[SIZE_T(op)](tmp_a, tmp_b);
+    return BinaryAddInt(tmp_a, tmp_b);
+    // return BinaryInt[SIZE_T(op)](tmp_a, tmp_b);
 }
 
 NodeAttribute SemanticBool_Int(NodeAttribute a, NodeAttribute b, OpCode op)
@@ -914,7 +930,8 @@ NodeAttribute SemanticBool_Int(NodeAttribute a, NodeAttribute b, OpCode op)
     tmp_a.val.type      = intType;
     tmp_a.val.value     = TO_INT(a.val.value);
 
-    return BinaryInt[SIZE_T(op)](tmp_a, b);
+    return BinaryAddInt(tmp_a, b);
+    //    return BinaryInt[SIZE_T(op)](tmp_a, b);
 }
 
 NodeAttribute SemanticBool_LL(NodeAttribute a, NodeAttribute b, OpCode op)
@@ -923,7 +940,8 @@ NodeAttribute SemanticBool_LL(NodeAttribute a, NodeAttribute b, OpCode op)
     tmp_a.val.type      = llType;
     tmp_a.val.value     = TO_LL(a.val.value);
 
-    return BinaryLL[SIZE_T(op)](tmp_a, b);
+    return BinaryAddLL(tmp_a, b);
+    //    return BinaryLL[SIZE_T(op)](tmp_a, b);
 }
 
 NodeAttribute SemanticBool_Float(NodeAttribute a, NodeAttribute b, OpCode op)
@@ -932,11 +950,16 @@ NodeAttribute SemanticBool_Float(NodeAttribute a, NodeAttribute b, OpCode op)
     tmp_a.val.type      = floatType;
     tmp_a.val.value     = TO_FLOAT(a.val.value);
 
-    return BinaryFloat[SIZE_T(op)](tmp_a, b);
+    return BinaryAddFloat(tmp_a, b);
+    //    return BinaryFloat[SIZE_T(op)](tmp_a, b);
 }
 
 // int & other
-NodeAttribute SemanticInt_Int(NodeAttribute a, NodeAttribute b, OpCode op) { return BinaryInt[SIZE_T(op)](a, b); }
+NodeAttribute SemanticInt_Int(NodeAttribute a, NodeAttribute b, OpCode op)
+{
+    return BinaryAddInt(a, b);
+    // return BinaryInt[SIZE_T(op)](a, b);
+}
 
 NodeAttribute SemanticInt_LL(NodeAttribute a, NodeAttribute b, OpCode op)
 {
@@ -944,7 +967,8 @@ NodeAttribute SemanticInt_LL(NodeAttribute a, NodeAttribute b, OpCode op)
     tmp_a.val.type      = llType;
     tmp_a.val.value     = TO_LL(a.val.value);
 
-    return BinaryLL[SIZE_T(op)](tmp_a, b);
+    return BinaryAddLL(tmp_a, b);
+    // return BinaryLL[SIZE_T(op)](tmp_a, b);
 }
 
 NodeAttribute SemanticInt_Float(NodeAttribute a, NodeAttribute b, OpCode op)
@@ -953,11 +977,16 @@ NodeAttribute SemanticInt_Float(NodeAttribute a, NodeAttribute b, OpCode op)
     tmp_a.val.type      = floatType;
     tmp_a.val.value     = TO_FLOAT(a.val.value);
 
-    return BinaryFloat[SIZE_T(op)](tmp_a, b);
+    return BinaryAddFloat(tmp_a, b);
+    // return BinaryFloat[SIZE_T(op)](tmp_a, b);
 }
 
 // long long & other
-NodeAttribute SemanticLL_LL(NodeAttribute a, NodeAttribute b, OpCode op) { return BinaryLL[SIZE_T(op)](a, b); }
+NodeAttribute SemanticLL_LL(NodeAttribute a, NodeAttribute b, OpCode op)
+{
+    return BinaryAddLL(a, b);
+    // return BinaryLL[SIZE_T(op)](a, b);
+}
 
 NodeAttribute SemanticLL_Float(NodeAttribute a, NodeAttribute b, OpCode op)
 {
@@ -965,11 +994,16 @@ NodeAttribute SemanticLL_Float(NodeAttribute a, NodeAttribute b, OpCode op)
     tmp_a.val.type      = floatType;
     tmp_a.val.value     = TO_FLOAT(a.val.value);
 
-    return BinaryFloat[SIZE_T(op)](tmp_a, b);
+    return BinaryAddFloat(tmp_a, b);
+    // return BinaryFloat[SIZE_T(op)](tmp_a, b);
 }
 
 // float
-NodeAttribute SemanticFloat_Float(NodeAttribute a, NodeAttribute b, OpCode op) { return BinaryFloat[SIZE_T(op)](a, b); }
+NodeAttribute SemanticFloat_Float(NodeAttribute a, NodeAttribute b, OpCode op)
+{
+    return BinaryAddFloat(a, b);
+    // return BinaryFloat[SIZE_T(op)](a, b);
+}
 
 NodeAttribute SemanticErr(NodeAttribute a, NodeAttribute b, OpCode op)
 {

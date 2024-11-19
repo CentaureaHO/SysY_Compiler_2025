@@ -87,17 +87,18 @@ string   FunctionType::getTypeName() const
 TypeSystem::TypeSystem() {}
 TypeSystem::~TypeSystem() { clear(); }
 
-unordered_map<size_t, Type*> TypeSystem::typeMap;
+std::map<size_t, Type*> TypeSystem::typeMap;
 
 size_t TypeSystem::generateHash(TypeKind kind) { return std::hash<int>{}(static_cast<int>(kind)); }
 size_t TypeSystem::generateHash(TypeKind kind, Type* baseType)
 {
-    return std::hash<int>{}(static_cast<int>(kind)) ^ std::hash<Type*>{}(baseType);
+    // 仍使用 std::hash 组合两个值生成键
+    return std::hash<int>{}(static_cast<int>(kind)) ^ reinterpret_cast<size_t>(baseType);
 }
 size_t TypeSystem::generateHash(TypeKind kind, Type* returnType, const std::vector<Type*>& paramTypes)
 {
-    size_t hash = std::hash<int>{}(static_cast<int>(kind)) ^ std::hash<Type*>{}(returnType);
-    for (auto param : paramTypes) { hash ^= std::hash<Type*>{}(param); }
+    size_t hash = std::hash<int>{}(static_cast<int>(kind)) ^ reinterpret_cast<size_t>(returnType);
+    for (auto param : paramTypes) { hash ^= reinterpret_cast<size_t>(param); }
     return hash;
 }
 
@@ -107,19 +108,22 @@ Type* TypeSystem::getBasicType(TypeKind kind)
     if (typeMap.find(hash) == typeMap.end()) typeMap[hash] = new BasicType(kind);
     return typeMap[hash];
 }
+
 Type* TypeSystem::getPointerType(Type* baseType)
 {
     size_t hash = generateHash(TypeKind::Ptr, baseType);
     if (typeMap.find(hash) == typeMap.end()) typeMap[hash] = new PointerType(baseType);
     return typeMap[hash];
 }
+
 Type* TypeSystem::getArrayType(Type* baseType, size_t size)
 {
     size_t hash = generateHash(TypeKind::Arr, baseType);
     if (typeMap.find(hash) == typeMap.end()) typeMap[hash] = new ArrayType(baseType, size);
     return typeMap[hash];
 }
-Type* TypeSystem::getFunctionType(Type* returnType, const vector<Type*>& paramTypes)
+
+Type* TypeSystem::getFunctionType(Type* returnType, const std::vector<Type*>& paramTypes)
 {
     size_t hash = generateHash(TypeKind::Func, returnType, paramTypes);
     if (typeMap.find(hash) == typeMap.end()) typeMap[hash] = new FunctionType(returnType, paramTypes);
@@ -128,7 +132,7 @@ Type* TypeSystem::getFunctionType(Type* returnType, const vector<Type*>& paramTy
 
 void TypeSystem::clear()
 {
-    for (auto& [key, type] : typeMap) delete type;
+    for (auto& [key, type] : typeMap) delete type;  // 清理所有动态分配的 Type
     typeMap.clear();
 }
 
