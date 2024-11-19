@@ -95,10 +95,12 @@ void ConstExpr::typeCheck()
         case 1:
             attr.val.type  = intType;
             attr.val.value = get<int>(value);
+            // printf("ConstExpr: int %d\n", TO_INT(attr.val.value));
             break;
         case 2:
             attr.val.type  = llType;
             attr.val.value = get<long long>(value);
+            // printf("ConstExpr: ll %lld\n", TO_LL(attr.val.value));
             break;
         case 3:
             attr.val.type  = floatType;
@@ -125,7 +127,22 @@ void ConstExpr::typeCheck()
 void UnaryExpr::typeCheck()
 {
     val->typeCheck();
+    /*
+    if (val->attr.val.type == intType) cout << "UnaryExpr: int " << TO_INT(val->attr.val.value);
+    if (val->attr.val.type == llType) cout << "UnaryExpr: ll " << TO_LL(val->attr.val.value);
+    if (val->attr.val.type == floatType) cout << "UnaryExpr: float " << TO_FLOAT(val->attr.val.value);
+    if (val->attr.val.type == boolType) cout << "UnaryExpr: bool " << TO_BOOL(val->attr.val.value);
+    */
+
     attr = Semantic(val->attr, op);
+
+    /*
+    cout << "\t" << getOpStr(op) << "\t";
+    if (attr.val.type == intType) cout << "UnaryExpr: int " << TO_INT(attr.val.value) << endl;
+    if (attr.val.type == llType) cout << "UnaryExpr: ll " << TO_LL(attr.val.value) << endl;
+    if (attr.val.type == floatType) cout << "UnaryExpr: float " << TO_FLOAT(attr.val.value) << endl;
+    if (attr.val.type == boolType) cout << "UnaryExpr: bool " << TO_BOOL(attr.val.value) << endl;
+    */
 }
 
 void BinaryExpr::typeCheck()

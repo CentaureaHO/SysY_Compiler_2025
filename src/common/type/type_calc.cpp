@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <climits>
 using namespace std;
 
 using UnaryFunc  = NodeAttribute (*)(const NodeAttribute& a);
@@ -13,87 +14,15 @@ using BinaryFunc = NodeAttribute (*)(const NodeAttribute& a, const NodeAttribute
 
 extern std::vector<std::string> semanticErrMsgs;
 
-#define TO_BOOL(x) std::visit(safe_cast_to_bool, x)
-#define TO_INT(x) std::visit(safe_cast_to_int, x)
-#define TO_LL(x) std::visit(safe_cast_to_ll, x)
-#define TO_FLOAT(x) std::visit(safe_cast_to_float, x)
-
 namespace
 {
-    auto safe_cast_to_bool = [](auto&& value) -> int {
-        using T = std::decay_t<decltype(value)>;
-        if constexpr (std::is_same_v<T, bool>)
-            return static_cast<bool>(value);
-        else if constexpr (std::is_same_v<T, int>)
-            return static_cast<bool>(value);
-        else if constexpr (std::is_same_v<T, long long>)
-            return static_cast<bool>(value);
-        else if constexpr (std::is_same_v<T, float>)
-            return static_cast<bool>(value);
-        else
-        {
-            std::cerr << "Unexpected type: " << typeid(T).name() << '\n';
-            throw std::bad_variant_access();
-        }
-    };
-
-    auto safe_cast_to_int = [](auto&& value) -> int {
-        using T = std::decay_t<decltype(value)>;
-        if constexpr (std::is_same_v<T, bool>)
-            return static_cast<int>(value);
-        else if constexpr (std::is_same_v<T, int>)
-            return static_cast<int>(value);
-        else if constexpr (std::is_same_v<T, long long>)
-            return static_cast<int>(value);
-        else if constexpr (std::is_same_v<T, float>)
-            return static_cast<int>(value);
-        else
-        {
-            std::cerr << "Unexpected type: " << typeid(T).name() << '\n';
-            throw std::bad_variant_access();
-        }
-    };
-
-    auto safe_cast_to_ll = [](auto&& value) -> int {
-        using T = std::decay_t<decltype(value)>;
-        if constexpr (std::is_same_v<T, bool>)
-            return static_cast<long long>(value);
-        else if constexpr (std::is_same_v<T, int>)
-            return static_cast<long long>(value);
-        else if constexpr (std::is_same_v<T, long long>)
-            return static_cast<long long>(value);
-        else if constexpr (std::is_same_v<T, float>)
-            return static_cast<long long>(value);
-        else
-        {
-            std::cerr << "Unexpected type: " << typeid(T).name() << '\n';
-            throw std::bad_variant_access();
-        }
-    };
-
-    auto safe_cast_to_float = [](auto&& value) -> int {
-        using T = std::decay_t<decltype(value)>;
-        if constexpr (std::is_same_v<T, bool>)
-            return static_cast<float>(value);
-        else if constexpr (std::is_same_v<T, int>)
-            return static_cast<float>(value);
-        else if constexpr (std::is_same_v<T, long long>)
-            return static_cast<float>(value);
-        else if constexpr (std::is_same_v<T, float>)
-            return static_cast<float>(value);
-        else
-        {
-            std::cerr << "Unexpected type: " << typeid(T).name() << '\n';
-            throw std::bad_variant_access();
-        }
-    };
-
     NodeAttribute UnaryAddInt(const NodeAttribute& node)
     {
         NodeAttribute result;
         result.val.type    = intType;
         result.val.isConst = node.val.isConst;
-        if (result.val.isConst) result.val.value = std::get<int>(node.val.value);
+        result.line_num    = node.line_num;
+        if (result.val.isConst) result.val.value = TO_INT(node.val.value);
         return result;
     }
 
@@ -102,7 +31,8 @@ namespace
         NodeAttribute result;
         result.val.type    = llType;
         result.val.isConst = node.val.isConst;
-        if (result.val.isConst) result.val.value = std::get<long long>(node.val.value);
+        result.line_num    = node.line_num;
+        if (result.val.isConst) result.val.value = TO_LL(node.val.value);
         return result;
     }
 
@@ -111,6 +41,7 @@ namespace
         NodeAttribute result;
         result.val.type    = floatType;
         result.val.isConst = node.val.isConst;
+        result.line_num    = node.line_num;
         if (result.val.isConst) result.val.value = std::get<float>(node.val.value);
         return result;
     }
@@ -120,9 +51,19 @@ namespace
         NodeAttribute result;
         result.val.type    = intType;
         result.val.isConst = node.val.isConst;
+        result.line_num    = node.line_num;
         if (result.val.isConst)
         {
-            long long longValue = -std::get<int>(node.val.value);
+            int intValue = TO_INT(node.val.value);
+            if (intValue == INT_MIN)
+            {
+                result.val.type = llType;
+                // cout << "\n" << 2147483648LL << "\n";
+                result.val.value = 2147483648LL;
+                return result;
+            }
+
+            long long longValue = -TO_INT(node.val.value);
             if (IN_INT(longValue))
                 result.val.value = static_cast<int>(longValue);
             else
@@ -140,16 +81,23 @@ namespace
         NodeAttribute result;
         result.val.type    = llType;
         result.val.isConst = node.val.isConst;
+        result.line_num    = node.line_num;
         if (result.val.isConst)
         {
-            long long longValue = -std::get<long long>(node.val.value);
+            long long longValue = -TO_LL(node.val.value);
+
             if (IN_INT(longValue))
             {
+                // cout << "Dbg in subll int: " << longValue << endl;
+                // cout << "To int: " << static_cast<int>(longValue) << "\t";
                 result.val.value = static_cast<int>(longValue);
                 result.val.type  = intType;
             }
             else
+            {
+                // cout << "Dbg in subll ll: " << longValue << endl;
                 result.val.value = longValue;
+            }
         }
 
         return result;
@@ -160,6 +108,7 @@ namespace
         NodeAttribute result;
         result.val.type    = floatType;
         result.val.isConst = node.val.isConst;
+        result.line_num    = node.line_num;
         if (result.val.isConst) result.val.value = -std::get<float>(node.val.value);
         return result;
     }
@@ -169,7 +118,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = node.val.isConst;
-        if (result.val.isConst) result.val.value = static_cast<bool>(!std::get<int>(node.val.value));
+        result.line_num    = node.line_num;
+        if (result.val.isConst) result.val.value = static_cast<bool>(!TO_INT(node.val.value));
         return result;
     }
 
@@ -178,7 +128,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = node.val.isConst;
-        if (result.val.isConst) result.val.value = static_cast<bool>(!std::get<long long>(node.val.value));
+        result.line_num    = node.line_num;
+        if (result.val.isConst) result.val.value = static_cast<bool>(!TO_LL(node.val.value));
         return result;
     }
 
@@ -187,6 +138,7 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = node.val.isConst;
+        result.line_num    = node.line_num;
         if (result.val.isConst) result.val.value = static_cast<bool>(!std::get<float>(node.val.value));
         return result;
     }
@@ -196,9 +148,10 @@ namespace
         NodeAttribute result;
         result.val.type    = intType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst)
         {
-            long long longValue = static_cast<long long>(std::get<int>(lhs.val.value)) + std::get<int>(rhs.val.value);
+            long long longValue = static_cast<long long>(TO_INT(lhs.val.value)) + TO_INT(rhs.val.value);
             if (IN_INT(longValue))
                 result.val.value = static_cast<int>(longValue);
             else
@@ -216,9 +169,10 @@ namespace
         NodeAttribute result;
         result.val.type    = llType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst)
         {
-            long long longValue = std::get<long long>(lhs.val.value) + std::get<long long>(rhs.val.value);
+            long long longValue = TO_LL(lhs.val.value) + TO_LL(rhs.val.value);
             if (IN_INT(longValue))
             {
                 result.val.value = static_cast<int>(longValue);
@@ -236,6 +190,7 @@ namespace
         NodeAttribute result;
         result.val.type    = floatType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst)
             result.val.value = static_cast<float>(std::get<float>(lhs.val.value) + std::get<float>(rhs.val.value));
 
@@ -247,9 +202,10 @@ namespace
         NodeAttribute result;
         result.val.type    = intType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst)
         {
-            long long longValue = static_cast<long long>(std::get<int>(lhs.val.value)) - std::get<int>(rhs.val.value);
+            long long longValue = static_cast<long long>(TO_INT(lhs.val.value)) - TO_INT(rhs.val.value);
             if (IN_INT(longValue))
                 result.val.value = static_cast<int>(longValue);
             else
@@ -267,9 +223,10 @@ namespace
         NodeAttribute result;
         result.val.type    = llType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst)
         {
-            long long longValue = std::get<long long>(lhs.val.value) - std::get<long long>(rhs.val.value);
+            long long longValue = TO_LL(lhs.val.value) - TO_LL(rhs.val.value);
             if (IN_INT(longValue))
             {
                 result.val.value = static_cast<int>(longValue);
@@ -287,6 +244,7 @@ namespace
         NodeAttribute result;
         result.val.type    = floatType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst) result.val.value = std::get<float>(lhs.val.value) - std::get<float>(rhs.val.value);
         return result;
     }
@@ -296,9 +254,10 @@ namespace
         NodeAttribute result;
         result.val.type    = intType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst)
         {
-            long long longValue = static_cast<long long>(std::get<int>(lhs.val.value)) * std::get<int>(rhs.val.value);
+            long long longValue = static_cast<long long>(TO_INT(lhs.val.value)) * TO_INT(rhs.val.value);
             if (IN_INT(longValue))
                 result.val.value = static_cast<int>(longValue);
             else
@@ -316,9 +275,10 @@ namespace
         NodeAttribute result;
         result.val.type    = llType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst)
         {
-            long long longValue = std::get<long long>(lhs.val.value) * std::get<long long>(rhs.val.value);
+            long long longValue = TO_LL(lhs.val.value) * TO_LL(rhs.val.value);
             if (IN_INT(longValue))
             {
                 result.val.value = static_cast<int>(longValue);
@@ -336,25 +296,27 @@ namespace
         NodeAttribute result;
         result.val.type    = floatType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst) result.val.value = std::get<float>(lhs.val.value) * std::get<float>(rhs.val.value);
         return result;
     }
 
     NodeAttribute DivInt(const NodeAttribute& lhs, const NodeAttribute& rhs)
     {
-        int rhsValue = std::get<int>(rhs.val.value);
+        int rhsValue = TO_INT(rhs.val.value);
         if (rhsValue == 0)
         {
             semanticErrMsgs.push_back("Division by zero at line " + std::to_string(lhs.line_num));
-            return NodeAttribute();
+            return NodeAttribute(OpCode::PlaceHolder, ConstValue(), lhs.line_num);
         }
 
         NodeAttribute result;
         result.val.type    = intType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst)
         {
-            long long longValue = static_cast<long long>(std::get<int>(lhs.val.value)) / rhsValue;
+            long long longValue = static_cast<long long>(TO_INT(lhs.val.value)) / rhsValue;
             if (IN_INT(longValue))
                 result.val.value = static_cast<int>(longValue);
             else
@@ -369,19 +331,20 @@ namespace
 
     NodeAttribute DivLL(const NodeAttribute& lhs, const NodeAttribute& rhs)
     {
-        long long rhsValue = std::get<long long>(rhs.val.value);
+        long long rhsValue = TO_LL(rhs.val.value);
         if (rhsValue == 0)
         {
             semanticErrMsgs.push_back("Division by zero at line " + std::to_string(lhs.line_num));
-            return NodeAttribute();
+            return NodeAttribute(OpCode::PlaceHolder, ConstValue(), lhs.line_num);
         }
 
         NodeAttribute result;
         result.val.type    = llType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst)
         {
-            long long longValue = std::get<long long>(lhs.val.value) / rhsValue;
+            long long longValue = TO_LL(lhs.val.value) / rhsValue;
             if (IN_INT(longValue))
             {
                 result.val.value = static_cast<int>(longValue);
@@ -400,31 +363,33 @@ namespace
         if (rhsValue == 0)
         {
             semanticErrMsgs.push_back("Division by zero at line " + std::to_string(lhs.line_num));
-            return NodeAttribute();
+            return NodeAttribute(OpCode::PlaceHolder, ConstValue(), lhs.line_num);
         }
 
         NodeAttribute result;
         result.val.type    = floatType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst) result.val.value = std::get<float>(lhs.val.value) / rhsValue;
         return result;
     }
 
     NodeAttribute ModInt(const NodeAttribute& lhs, const NodeAttribute& rhs)
     {
-        int rhsValue = std::get<int>(rhs.val.value);
+        int rhsValue = TO_INT(rhs.val.value);
         if (rhsValue == 0)
         {
             semanticErrMsgs.push_back("Mod by zero at line " + std::to_string(lhs.line_num));
-            return NodeAttribute();
+            return NodeAttribute(OpCode::PlaceHolder, ConstValue(), lhs.line_num);
         }
 
         NodeAttribute result;
         result.val.type    = intType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst)
         {
-            long long longValue = static_cast<long long>(std::get<int>(lhs.val.value)) % rhsValue;
+            long long longValue = static_cast<long long>(TO_INT(lhs.val.value)) % rhsValue;
             if (IN_INT(longValue))
                 result.val.value = static_cast<int>(longValue);
             else
@@ -439,19 +404,20 @@ namespace
 
     NodeAttribute ModLL(const NodeAttribute& lhs, const NodeAttribute& rhs)
     {
-        long long rhsValue = std::get<long long>(rhs.val.value);
+        long long rhsValue = TO_LL(rhs.val.value);
         if (rhsValue == 0)
         {
             semanticErrMsgs.push_back("Mod by zero at line " + std::to_string(lhs.line_num));
-            return NodeAttribute();
+            return NodeAttribute(OpCode::PlaceHolder, ConstValue(), lhs.line_num);
         }
 
         NodeAttribute result;
         result.val.type    = llType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst)
         {
-            long long longValue = std::get<long long>(lhs.val.value) % rhsValue;
+            long long longValue = TO_LL(lhs.val.value) % rhsValue;
             if (IN_INT(longValue))
             {
                 result.val.value = static_cast<int>(longValue);
@@ -467,7 +433,7 @@ namespace
     NodeAttribute ModFloat(const NodeAttribute& lhs, const NodeAttribute& rhs)
     {
         semanticErrMsgs.push_back("Mod operation on float at line " + std::to_string(lhs.line_num));
-        return NodeAttribute();
+        return NodeAttribute(OpCode::PlaceHolder, ConstValue(), lhs.line_num);
     }
 
     NodeAttribute GtInt(const NodeAttribute& lhs, const NodeAttribute& rhs)
@@ -475,8 +441,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst)
-            result.val.value = static_cast<bool>(std::get<int>(lhs.val.value) > std::get<int>(rhs.val.value));
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) result.val.value = static_cast<bool>(TO_INT(lhs.val.value) > TO_INT(rhs.val.value));
         return result;
     }
 
@@ -485,9 +451,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst)
-            result.val.value =
-                static_cast<bool>(std::get<long long>(lhs.val.value) > std::get<long long>(rhs.val.value));
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) result.val.value = static_cast<bool>(TO_LL(lhs.val.value) > TO_LL(rhs.val.value));
         return result;
     }
 
@@ -496,6 +461,7 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst)
             result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) > std::get<float>(rhs.val.value));
         return result;
@@ -506,8 +472,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst)
-            result.val.value = static_cast<bool>(std::get<int>(lhs.val.value) >= std::get<int>(rhs.val.value));
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) result.val.value = static_cast<bool>(TO_INT(lhs.val.value) >= TO_INT(rhs.val.value));
         return result;
     }
 
@@ -516,9 +482,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst)
-            result.val.value =
-                static_cast<bool>(std::get<long long>(lhs.val.value) >= std::get<long long>(rhs.val.value));
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) result.val.value = static_cast<bool>(TO_LL(lhs.val.value) >= TO_LL(rhs.val.value));
         return result;
     }
 
@@ -527,6 +492,7 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst)
             result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) >= std::get<float>(rhs.val.value));
         return result;
@@ -537,8 +503,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst)
-            result.val.value = static_cast<bool>(std::get<int>(lhs.val.value) < std::get<int>(rhs.val.value));
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) result.val.value = static_cast<bool>(TO_INT(lhs.val.value) < TO_INT(rhs.val.value));
         return result;
     }
 
@@ -547,9 +513,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst)
-            result.val.value =
-                static_cast<bool>(std::get<long long>(lhs.val.value) < std::get<long long>(rhs.val.value));
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) result.val.value = static_cast<bool>(TO_LL(lhs.val.value) < TO_LL(rhs.val.value));
         return result;
     }
 
@@ -558,6 +523,7 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst)
             result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) < std::get<float>(rhs.val.value));
         return result;
@@ -568,8 +534,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst)
-            result.val.value = static_cast<bool>(std::get<int>(lhs.val.value) <= std::get<int>(rhs.val.value));
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) result.val.value = static_cast<bool>(TO_INT(lhs.val.value) <= TO_INT(rhs.val.value));
         return result;
     }
 
@@ -578,9 +544,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst)
-            result.val.value =
-                static_cast<bool>(std::get<long long>(lhs.val.value) <= std::get<long long>(rhs.val.value));
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) result.val.value = static_cast<bool>(TO_LL(lhs.val.value) <= TO_LL(rhs.val.value));
         return result;
     }
 
@@ -589,6 +554,7 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst)
             result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) <= std::get<float>(rhs.val.value));
         return result;
@@ -599,8 +565,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst)
-            result.val.value = static_cast<bool>(std::get<int>(lhs.val.value) == std::get<int>(rhs.val.value));
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) result.val.value = static_cast<bool>(TO_INT(lhs.val.value) == TO_INT(rhs.val.value));
         return result;
     }
 
@@ -609,9 +575,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst)
-            result.val.value =
-                static_cast<bool>(std::get<long long>(lhs.val.value) == std::get<long long>(rhs.val.value));
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) result.val.value = static_cast<bool>(TO_LL(lhs.val.value) == TO_LL(rhs.val.value));
         return result;
     }
 
@@ -620,6 +585,7 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst)
             result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) == std::get<float>(rhs.val.value));
         return result;
@@ -630,8 +596,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst)
-            result.val.value = static_cast<bool>(std::get<int>(lhs.val.value) != std::get<int>(rhs.val.value));
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) result.val.value = static_cast<bool>(TO_INT(lhs.val.value) != TO_INT(rhs.val.value));
         return result;
     }
 
@@ -640,9 +606,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst)
-            result.val.value =
-                static_cast<bool>(std::get<long long>(lhs.val.value) != std::get<long long>(rhs.val.value));
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) result.val.value = static_cast<bool>(TO_LL(lhs.val.value) != TO_LL(rhs.val.value));
         return result;
     }
 
@@ -651,6 +616,7 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst)
             result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) != std::get<float>(rhs.val.value));
         return result;
@@ -661,8 +627,8 @@ namespace
         NodeAttribute result;
         result.val.type    = intType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst)
-            result.val.value = static_cast<int>(std::get<int>(lhs.val.value) | std::get<int>(rhs.val.value));
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) result.val.value = static_cast<int>(TO_INT(lhs.val.value) | TO_INT(rhs.val.value));
         return result;
     }
 
@@ -671,16 +637,15 @@ namespace
         NodeAttribute result;
         result.val.type    = llType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst)
-            result.val.value =
-                static_cast<long long>(std::get<long long>(lhs.val.value) | std::get<long long>(rhs.val.value));
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) result.val.value = static_cast<long long>(TO_LL(lhs.val.value) | TO_LL(rhs.val.value));
         return result;
     }
 
     NodeAttribute BitOrFloat(const NodeAttribute& lhs, const NodeAttribute& rhs)
     {
         semanticErrMsgs.push_back("Bitwise operation on float at line " + std::to_string(lhs.line_num));
-        return NodeAttribute();
+        return NodeAttribute(OpCode::PlaceHolder, ConstValue(), lhs.line_num);
     }
 
     NodeAttribute BitAndInt(const NodeAttribute& lhs, const NodeAttribute& rhs)
@@ -688,8 +653,8 @@ namespace
         NodeAttribute result;
         result.val.type    = intType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst)
-            result.val.value = static_cast<int>(std::get<int>(lhs.val.value) & std::get<int>(rhs.val.value));
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) result.val.value = static_cast<int>(TO_INT(lhs.val.value) & TO_INT(rhs.val.value));
         return result;
     }
 
@@ -698,15 +663,15 @@ namespace
         NodeAttribute result;
         result.val.type    = llType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst)
-            static_cast<long long>(std::get<long long>(lhs.val.value) & std::get<long long>(rhs.val.value));
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) static_cast<long long>(TO_LL(lhs.val.value) & TO_LL(rhs.val.value));
         return result;
     }
 
     NodeAttribute BitAndFloat(const NodeAttribute& lhs, const NodeAttribute& rhs)
     {
         semanticErrMsgs.push_back("Bitwise operation on float at line " + std::to_string(lhs.line_num));
-        return NodeAttribute();
+        return NodeAttribute(OpCode::PlaceHolder, ConstValue(), lhs.line_num);
     }
 
     NodeAttribute AndInt(const NodeAttribute& lhs, const NodeAttribute& rhs)
@@ -714,8 +679,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst)
-            result.val.value = static_cast<bool>(std::get<int>(lhs.val.value) && std::get<int>(rhs.val.value));
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) result.val.value = static_cast<bool>(TO_INT(lhs.val.value) && TO_INT(rhs.val.value));
         return result;
     }
 
@@ -724,9 +689,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst)
-            result.val.value =
-                static_cast<bool>(std::get<long long>(lhs.val.value) && std::get<long long>(rhs.val.value));
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) result.val.value = static_cast<bool>(TO_LL(lhs.val.value) && TO_LL(rhs.val.value));
         return result;
     }
 
@@ -735,6 +699,7 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst)
             result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) && std::get<float>(rhs.val.value));
         return result;
@@ -745,8 +710,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst)
-            result.val.value = static_cast<bool>(std::get<int>(lhs.val.value) || std::get<int>(rhs.val.value));
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) result.val.value = static_cast<bool>(TO_INT(lhs.val.value) || TO_INT(rhs.val.value));
         return result;
     }
 
@@ -755,9 +720,8 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst)
-            result.val.value =
-                static_cast<bool>(std::get<long long>(lhs.val.value) || std::get<long long>(rhs.val.value));
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) result.val.value = static_cast<bool>(TO_LL(lhs.val.value) || TO_LL(rhs.val.value));
         return result;
     }
 
@@ -766,6 +730,7 @@ namespace
         NodeAttribute result;
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst)
             result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) || std::get<float>(rhs.val.value));
         return result;
@@ -773,12 +738,13 @@ namespace
 
     NodeAttribute AssignInt(const NodeAttribute& lhs, const NodeAttribute& rhs)
     {
-        cout << "Enter AssignInt" << endl;
+        // cout << "Enter AssignInt" << endl;
         NodeAttribute result;
         result.val.type    = intType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst) result.val.value = std::get<int>(rhs.val.value);
-        cout << "Exit AssignInt" << endl;
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) result.val.value = TO_INT(rhs.val.value);
+        // cout << "Exit AssignInt" << endl;
         return result;
     }
 
@@ -787,7 +753,8 @@ namespace
         NodeAttribute result;
         result.val.type    = llType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
-        if (result.val.isConst) result.val.value = std::get<long long>(rhs.val.value);
+        result.line_num    = lhs.line_num;
+        if (result.val.isConst) result.val.value = TO_LL(rhs.val.value);
         return result;
     }
 
@@ -796,12 +763,12 @@ namespace
         NodeAttribute result;
         result.val.type    = floatType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
+        result.line_num    = lhs.line_num;
         if (result.val.isConst) result.val.value = std::get<float>(rhs.val.value);
         return result;
     }
 }  // namespace
 
-/*
 namespace
 {
     unordered_map<size_t, UnaryFunc> UnaryInt = {
@@ -862,24 +829,23 @@ namespace
         {SIZE_T(OpCode::Or), OrFloat},
         {SIZE_T(OpCode::Assign), AssignFloat}};
 }  // namespace
-*/
 
 NodeAttribute SemanticInt(NodeAttribute a, OpCode op)
 {
-    return UnaryAddInt(a);
-    // return UnaryInt[SIZE_T(op)](a);
+    // return UnaryAddInt(a);
+    return UnaryInt[SIZE_T(op)](a);
 }
 
 NodeAttribute SemanticLL(NodeAttribute a, OpCode op)
 {
-    return UnaryAddLL(a);
-    //    return UnaryLL[SIZE_T(op)](a);
+    // return UnaryAddLL(a);
+    return UnaryLL[SIZE_T(op)](a);
 }
 
 NodeAttribute SemanticFloat(NodeAttribute a, OpCode op)
 {
-    return UnaryAddFloat(a);
-    // return UnaryFloat[SIZE_T(op)](a);
+    // return UnaryAddFloat(a);
+    return UnaryFloat[SIZE_T(op)](a);
 }
 
 NodeAttribute SemanticBool(NodeAttribute a, OpCode op)
@@ -887,8 +853,8 @@ NodeAttribute SemanticBool(NodeAttribute a, OpCode op)
     NodeAttribute tmp_a = a;
     tmp_a.val.type      = intType;
     tmp_a.val.value     = TO_INT(a.val.value);
-    return UnaryAddInt(tmp_a);
-    //    return UnaryInt[SIZE_T(op)](tmp_a);
+    // return UnaryAddInt(tmp_a);
+    return UnaryInt[SIZE_T(op)](tmp_a);
 }
 
 NodeAttribute SemanticErr(NodeAttribute a, OpCode op)
@@ -920,8 +886,8 @@ NodeAttribute SemanticBool_Bool(NodeAttribute a, NodeAttribute b, OpCode op)
     tmp_b.val.type      = intType;
     tmp_b.val.value     = TO_INT(b.val.value);
 
-    return BinaryAddInt(tmp_a, tmp_b);
-    // return BinaryInt[SIZE_T(op)](tmp_a, tmp_b);
+    // return BinaryAddInt(tmp_a, tmp_b);
+    return BinaryInt[SIZE_T(op)](tmp_a, tmp_b);
 }
 
 NodeAttribute SemanticBool_Int(NodeAttribute a, NodeAttribute b, OpCode op)
@@ -930,8 +896,8 @@ NodeAttribute SemanticBool_Int(NodeAttribute a, NodeAttribute b, OpCode op)
     tmp_a.val.type      = intType;
     tmp_a.val.value     = TO_INT(a.val.value);
 
-    return BinaryAddInt(tmp_a, b);
-    //    return BinaryInt[SIZE_T(op)](tmp_a, b);
+    // return BinaryAddInt(tmp_a, b);
+    return BinaryInt[SIZE_T(op)](tmp_a, b);
 }
 
 NodeAttribute SemanticBool_LL(NodeAttribute a, NodeAttribute b, OpCode op)
@@ -940,8 +906,8 @@ NodeAttribute SemanticBool_LL(NodeAttribute a, NodeAttribute b, OpCode op)
     tmp_a.val.type      = llType;
     tmp_a.val.value     = TO_LL(a.val.value);
 
-    return BinaryAddLL(tmp_a, b);
-    //    return BinaryLL[SIZE_T(op)](tmp_a, b);
+    // return BinaryAddLL(tmp_a, b);
+    return BinaryLL[SIZE_T(op)](tmp_a, b);
 }
 
 NodeAttribute SemanticBool_Float(NodeAttribute a, NodeAttribute b, OpCode op)
@@ -950,15 +916,15 @@ NodeAttribute SemanticBool_Float(NodeAttribute a, NodeAttribute b, OpCode op)
     tmp_a.val.type      = floatType;
     tmp_a.val.value     = TO_FLOAT(a.val.value);
 
-    return BinaryAddFloat(tmp_a, b);
-    //    return BinaryFloat[SIZE_T(op)](tmp_a, b);
+    // return BinaryAddFloat(tmp_a, b);
+    return BinaryFloat[SIZE_T(op)](tmp_a, b);
 }
 
 // int & other
 NodeAttribute SemanticInt_Int(NodeAttribute a, NodeAttribute b, OpCode op)
 {
-    return BinaryAddInt(a, b);
-    // return BinaryInt[SIZE_T(op)](a, b);
+    // return BinaryAddInt(a, b);
+    return BinaryInt[SIZE_T(op)](a, b);
 }
 
 NodeAttribute SemanticInt_LL(NodeAttribute a, NodeAttribute b, OpCode op)
@@ -967,8 +933,8 @@ NodeAttribute SemanticInt_LL(NodeAttribute a, NodeAttribute b, OpCode op)
     tmp_a.val.type      = llType;
     tmp_a.val.value     = TO_LL(a.val.value);
 
-    return BinaryAddLL(tmp_a, b);
-    // return BinaryLL[SIZE_T(op)](tmp_a, b);
+    // return BinaryAddLL(tmp_a, b);
+    return BinaryLL[SIZE_T(op)](tmp_a, b);
 }
 
 NodeAttribute SemanticInt_Float(NodeAttribute a, NodeAttribute b, OpCode op)
@@ -977,15 +943,15 @@ NodeAttribute SemanticInt_Float(NodeAttribute a, NodeAttribute b, OpCode op)
     tmp_a.val.type      = floatType;
     tmp_a.val.value     = TO_FLOAT(a.val.value);
 
-    return BinaryAddFloat(tmp_a, b);
-    // return BinaryFloat[SIZE_T(op)](tmp_a, b);
+    // return BinaryAddFloat(tmp_a, b);
+    return BinaryFloat[SIZE_T(op)](tmp_a, b);
 }
 
 // long long & other
 NodeAttribute SemanticLL_LL(NodeAttribute a, NodeAttribute b, OpCode op)
 {
-    return BinaryAddLL(a, b);
-    // return BinaryLL[SIZE_T(op)](a, b);
+    // return BinaryAddLL(a, b);
+    return BinaryLL[SIZE_T(op)](a, b);
 }
 
 NodeAttribute SemanticLL_Float(NodeAttribute a, NodeAttribute b, OpCode op)
@@ -994,15 +960,15 @@ NodeAttribute SemanticLL_Float(NodeAttribute a, NodeAttribute b, OpCode op)
     tmp_a.val.type      = floatType;
     tmp_a.val.value     = TO_FLOAT(a.val.value);
 
-    return BinaryAddFloat(tmp_a, b);
-    // return BinaryFloat[SIZE_T(op)](tmp_a, b);
+    // return BinaryAddFloat(tmp_a, b);
+    return BinaryFloat[SIZE_T(op)](tmp_a, b);
 }
 
 // float
 NodeAttribute SemanticFloat_Float(NodeAttribute a, NodeAttribute b, OpCode op)
 {
-    return BinaryAddFloat(a, b);
-    // return BinaryFloat[SIZE_T(op)](a, b);
+    // return BinaryAddFloat(a, b);
+    return BinaryFloat[SIZE_T(op)](a, b);
 }
 
 NodeAttribute SemanticErr(NodeAttribute a, NodeAttribute b, OpCode op)

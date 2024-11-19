@@ -1,4 +1,5 @@
 #include <common/type/type_defs.h>
+#include <iostream>
 using namespace std;
 
 namespace
@@ -182,3 +183,91 @@ OpCode&     NodeAttribute::getOp() { return op; }
 ConstValue& NodeAttribute::getVal() { return val; }
 
 /* Definition of NodeAttribute: tail */
+
+bool safe_cast_to_bool(const std::variant<int, long long, float, double, bool, std::shared_ptr<std::string>>& value)
+{
+    return std::visit(
+        [](auto&& value) -> bool {
+            using T = std::decay_t<decltype(value)>;
+            if constexpr (std::is_same_v<T, bool>)
+                return static_cast<bool>(value);
+            else if constexpr (std::is_same_v<T, int>)
+                return static_cast<bool>(value);
+            else if constexpr (std::is_same_v<T, long long>)
+                return static_cast<bool>(value);
+            else if constexpr (std::is_same_v<T, float>)
+                return static_cast<bool>(value);
+            else
+            {
+                std::cerr << "Unexpected type: " << typeid(T).name() << '\n';
+                throw std::bad_variant_access();
+            }
+        },
+        value);
+}
+
+int safe_cast_to_int(const std::variant<int, long long, float, double, bool, std::shared_ptr<std::string>>& value)
+{
+    return std::visit(
+        [](auto&& value) -> int {
+            using T = std::decay_t<decltype(value)>;
+            if constexpr (std::is_same_v<T, bool>)
+                return static_cast<int>(value);
+            else if constexpr (std::is_same_v<T, int>)
+                return static_cast<int>(value);
+            else if constexpr (std::is_same_v<T, long long>)
+                return static_cast<int>(value);
+            else if constexpr (std::is_same_v<T, float>)
+                return static_cast<int>(value);
+            else
+            {
+                std::cerr << "Unexpected type: " << typeid(T).name() << '\n';
+                throw std::bad_variant_access();
+            }
+        },
+        value);
+}
+
+long long safe_cast_to_ll(const std::variant<int, long long, float, double, bool, std::shared_ptr<std::string>>& value)
+{
+    return std::visit(
+        [](auto&& value) -> long long {
+            using T = std::decay_t<decltype(value)>;
+            if constexpr (std::is_same_v<T, bool>)
+                return static_cast<long long>(value);
+            else if constexpr (std::is_same_v<T, int>)
+                return static_cast<long long>(value);
+            else if constexpr (std::is_same_v<T, long long>)
+                return static_cast<long long>(value);
+            else if constexpr (std::is_same_v<T, float>)
+                return static_cast<long long>(value);
+            else
+            {
+                std::cerr << "Unexpected type: " << typeid(T).name() << '\n';
+                throw std::bad_variant_access();
+            }
+        },
+        value);
+}
+
+float safe_cast_to_float(const std::variant<int, long long, float, double, bool, std::shared_ptr<std::string>>& value)
+{
+    return std::visit(
+        [](auto&& value) -> float {
+            using T = std::decay_t<decltype(value)>;
+            if constexpr (std::is_same_v<T, bool>)
+                return static_cast<float>(value);
+            else if constexpr (std::is_same_v<T, int>)
+                return static_cast<float>(value);
+            else if constexpr (std::is_same_v<T, long long>)
+                return static_cast<float>(value);
+            else if constexpr (std::is_same_v<T, float>)
+                return static_cast<float>(value);
+            else
+            {
+                std::cerr << "Unexpected type: " << typeid(T).name() << '\n';
+                throw std::bad_variant_access();
+            }
+        },
+        value);
+}

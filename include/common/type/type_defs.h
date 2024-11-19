@@ -213,4 +213,14 @@ class NodeAttribute
     ConstValue& getVal();
 };
 
+bool safe_cast_to_bool(const std::variant<int, long long, float, double, bool, std::shared_ptr<std::string>>& value);
+int  safe_cast_to_int(const std::variant<int, long long, float, double, bool, std::shared_ptr<std::string>>& value);
+long long safe_cast_to_ll(const std::variant<int, long long, float, double, bool, std::shared_ptr<std::string>>& value);
+float safe_cast_to_float(const std::variant<int, long long, float, double, bool, std::shared_ptr<std::string>>& value);
+
+#define TO_BOOL(x) std::visit(safe_cast_to_bool, x)
+#define TO_INT(x) std::visit(safe_cast_to_int, x)
+#define TO_LL(x) std::visit(safe_cast_to_ll, x)
+#define TO_FLOAT(x) std::visit(safe_cast_to_float, x)
+
 #endif

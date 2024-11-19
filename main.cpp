@@ -106,7 +106,7 @@ int main(int argc, char* argv[])
 
         // 以下为调试暂用代码
         ast->typeCheck();
-        for (auto& msgs : semanticErrMsgs) { *outStream << msgs << endl; }
+        for (auto& msgs : semanticErrMsgs) { cerr << msgs << endl; }
 
         cout << "Global variables: " << endl;
         for (auto& [entry, attr] : semTable.glbSymMap)

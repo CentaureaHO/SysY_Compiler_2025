@@ -92,6 +92,7 @@
         "ranges": "cpp",
         "barrier": "cpp",
         "typeindex": "cpp",
-        "__string": "cpp"
+        "__string": "cpp",
+        "iostream": "cpp"
     }
 }
