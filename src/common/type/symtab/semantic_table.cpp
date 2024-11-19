@@ -52,51 +52,65 @@ namespace
 Table::Table() : symTable(), glbSymMap(), funcDeclMap()
 {
     // int getint()
-    funcDeclMap[getint] = new FuncDeclStmt(getint, intType);
+    funcDeclMap[getint] = new FuncDeclStmt(getint, TypeSystem::getBasicType(TypeKind::Int));
 
     // int getch()
-    funcDeclMap[getch] = new FuncDeclStmt(getch, intType);
+    funcDeclMap[getch] = new FuncDeclStmt(getch, TypeSystem::getBasicType(TypeKind::Int));
 
     // int getarray(int a[])
     funcDeclMap[getarray] = new FuncDeclStmt(getarray,
-        intType,
-        new std::vector<FuncParamDefNode*>{
-            new FuncParamDefNode(intType, SymEnt::getEntry("a"), new std::vector<ExprNode*>{new ConstExpr(-1)})});
+        TypeSystem::getBasicType(TypeKind::Int),
+        new std::vector<FuncParamDefNode*>{new FuncParamDefNode(TypeSystem::getBasicType(TypeKind::Int),
+            SymEnt::getEntry("a"),
+            new std::vector<ExprNode*>{new ConstExpr(-1)})});
 
     // float getfloat()
-    funcDeclMap[getfloat] = new FuncDeclStmt(getfloat, floatType);
+    funcDeclMap[getfloat] = new FuncDeclStmt(getfloat, TypeSystem::getBasicType(TypeKind::Float));
 
     // int getfarray(float a[])
     funcDeclMap[getfarray] = new FuncDeclStmt(getfarray,
-        intType,
-        new std::vector<FuncParamDefNode*>{
-            new FuncParamDefNode(floatType, SymEnt::getEntry("a"), new std::vector<ExprNode*>{new ConstExpr(-1)})});
+        TypeSystem::getBasicType(TypeKind::Int),
+        new std::vector<FuncParamDefNode*>{new FuncParamDefNode(TypeSystem::getBasicType(TypeKind::Float),
+            SymEnt::getEntry("a"),
+            new std::vector<ExprNode*>{new ConstExpr(-1)})});
 
     // void putint(int a)
-    funcDeclMap[putint] = new FuncDeclStmt(
-        putint, voidType, new std::vector<FuncParamDefNode*>{new FuncParamDefNode(intType, SymEnt::getEntry("a"))});
+    funcDeclMap[putint] = new FuncDeclStmt(putint,
+        TypeSystem::getBasicType(TypeKind::Void),
+        new std::vector<FuncParamDefNode*>{
+            new FuncParamDefNode(TypeSystem::getBasicType(TypeKind::Int), SymEnt::getEntry("a"))});
 
     // void putch(int a)
-    funcDeclMap[putch] = new FuncDeclStmt(
-        putch, voidType, new std::vector<FuncParamDefNode*>{new FuncParamDefNode(intType, SymEnt::getEntry("a"))});
+    funcDeclMap[putch] = new FuncDeclStmt(putch,
+        TypeSystem::getBasicType(TypeKind::Void),
+        new std::vector<FuncParamDefNode*>{
+            new FuncParamDefNode(TypeSystem::getBasicType(TypeKind::Int), SymEnt::getEntry("a"))});
 
     // void putarray(int n, int a[])
     funcDeclMap[putarray] = new FuncDeclStmt(putarray,
-        voidType,
-        new std::vector<FuncParamDefNode*>{new FuncParamDefNode(intType, SymEnt::getEntry("n")),
-            new FuncParamDefNode(intType, SymEnt::getEntry("a"), new std::vector<ExprNode*>{new ConstExpr(-1)})});
+        TypeSystem::getBasicType(TypeKind::Void),
+        new std::vector<FuncParamDefNode*>{
+            new FuncParamDefNode(TypeSystem::getBasicType(TypeKind::Int), SymEnt::getEntry("n")),
+            new FuncParamDefNode(TypeSystem::getBasicType(TypeKind::Int),
+                SymEnt::getEntry("a"),
+                new std::vector<ExprNode*>{new ConstExpr(-1)})});
 
     // void putfloat(float a)
-    funcDeclMap[putfloat] = new FuncDeclStmt(
-        putfloat, voidType, new std::vector<FuncParamDefNode*>{new FuncParamDefNode(floatType, SymEnt::getEntry("a"))});
+    funcDeclMap[putfloat] = new FuncDeclStmt(putfloat,
+        TypeSystem::getBasicType(TypeKind::Void),
+        new std::vector<FuncParamDefNode*>{
+            new FuncParamDefNode(TypeSystem::getBasicType(TypeKind::Float), SymEnt::getEntry("a"))});
 
     // void putfarray(int n, float a[])
     funcDeclMap[putfarray] = new FuncDeclStmt(putfarray,
-        voidType,
-        new std::vector<FuncParamDefNode*>{new FuncParamDefNode(intType, SymEnt::getEntry("n")),
-            new FuncParamDefNode(floatType, SymEnt::getEntry("a"), new std::vector<ExprNode*>{new ConstExpr(-1)})});
+        TypeSystem::getBasicType(TypeKind::Void),
+        new std::vector<FuncParamDefNode*>{
+            new FuncParamDefNode(TypeSystem::getBasicType(TypeKind::Int), SymEnt::getEntry("n")),
+            new FuncParamDefNode(TypeSystem::getBasicType(TypeKind::Float),
+                SymEnt::getEntry("a"),
+                new std::vector<ExprNode*>{new ConstExpr(-1)})});
 
-    for (auto& [_, decl] : funcDeclMap) { decl->typeCheck(); }
+    // for (auto& [_, decl] : funcDeclMap) { decl->typeCheck(); }
 }
 
 Table::~Table()
@@ -109,4 +123,9 @@ Table::~Table()
     }
 }
 
-Table semTable;
+void Table::reg_funcs()
+{
+    for (auto& [_, decl] : funcDeclMap) { decl->typeCheck(); }
+}
+
+Table* semTable = nullptr;

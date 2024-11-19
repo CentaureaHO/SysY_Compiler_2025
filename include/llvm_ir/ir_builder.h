@@ -7,6 +7,6 @@ namespace LLVMIR
     {
         // todo
     };
-}
+}  // namespace LLVMIR
 
 #endif

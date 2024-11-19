@@ -20,9 +20,11 @@ namespace SemanticTable
       public:
         Table();
         ~Table();
+
+        void reg_funcs();
     };
 }  // namespace SemanticTable
 
-extern SemanticTable::Table semTable;
+extern SemanticTable::Table* semTable;
 
 #endif

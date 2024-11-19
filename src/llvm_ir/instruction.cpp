@@ -65,19 +65,3 @@ void StoreInst::PrintIR(ostream& s)
 {
     // todo
 }
-
-ArithmeticInst::ArithmeticInst(IROpCode op, DataType t, Operand* l, Operand* r, Operand* res)
-    : Instruction(op), type(t), lhs(l), rhs(r), result(res)
-{}
-void ArithmeticInst::PrintIR(ostream& s)
-{
-    // todo
-}
-
-IcmpInst::IcmpInst(DataType t, IcmpCond c, Operand* l, Operand* r, Operand* res)
-    : Instruction(IROpCode::ICMP), type(t), cond(c), lhs(l), rhs(r), result(res)
-{}
-void IcmpInst::PrintIR(ostream& s)
-{
-    // todo
-}

@@ -8,7 +8,7 @@ using namespace SemanticTable;
 bool           mainExists = false;
 bool           inGlb      = true;
 vector<string> semanticErrMsgs{};
-extern Table   semTable;
+extern Table*  semTable;
 
 void ASTree::typeCheck()
 {

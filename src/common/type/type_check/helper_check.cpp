@@ -4,7 +4,7 @@
 using namespace std;
 using namespace SemanticTable;
 extern bool           inGlb;
-extern Table          semTable;
+extern Table*         semTable;
 extern vector<string> semanticErrMsgs;
 
 void HelperNode::typeCheck() {}
@@ -38,7 +38,7 @@ void FuncParamDefNode::typeCheck()
     VarAttribute param;
     param.type    = baseType;
     param.isConst = false;
-    param.scope   = semTable.symTable.currentScope->scopeLevel;
+    param.scope   = semTable->symTable.currentScope->scopeLevel;
     // cout << "param name: " << entry->getName() << " at scope " << param.scope << endl;
 
     if (dims)
@@ -65,7 +65,7 @@ void FuncParamDefNode::typeCheck()
         }
     }
 
-    if (semTable.symTable.getSymbolScope(entry) != -1)
+    if (semTable->symTable.getSymbolScope(entry) != -1)
     {
         semanticErrMsgs.emplace_back("Error: Redefinition of parameter " + entry->getName());
         return;
@@ -73,7 +73,7 @@ void FuncParamDefNode::typeCheck()
 
     // cout << "Registering param " << entry->getName() << " at scope " << param.scope << endl;
 
-    semTable.symTable.addSymbol(entry, param);
+    semTable->symTable.addSymbol(entry, param);
 
     attr.val.type = param.type;
 }

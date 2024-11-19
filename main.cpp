@@ -17,9 +17,9 @@ using namespace std;
 using namespace Yacc;
 using namespace Symbol;
 
-extern vector<string>       semanticErrMsgs;
-extern SemanticTable::Table semTable;
-size_t                      errCnt = 0;
+extern vector<string>        semanticErrMsgs;
+extern SemanticTable::Table* semTable;
+size_t                       errCnt = 0;
 
 string truncateString(const string& str, size_t width)
 {
@@ -126,6 +126,8 @@ int main(int argc, char** argv)
         return 0;
     }
 
+    semTable = new SemanticTable::Table();
+    semTable->reg_funcs();
     ast->typeCheck();
     if (semanticErrMsgs.size() > 0)
     {
@@ -139,6 +141,11 @@ int main(int argc, char** argv)
         if (in.is_open()) in.close();
         if (out.is_open()) out.close();
 
+        if (semTable)
+        {
+            delete semTable;
+            semTable = nullptr;
+        }
         return 3;
     }
 
@@ -146,5 +153,10 @@ int main(int argc, char** argv)
 
     if (in.is_open()) in.close();
     if (out.is_open()) out.close();
+    if (semTable)
+    {
+        delete semTable;
+        semTable = nullptr;
+    }
     return 0;
 }

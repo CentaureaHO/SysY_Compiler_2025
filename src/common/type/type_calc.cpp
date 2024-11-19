@@ -462,8 +462,7 @@ namespace
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         result.line_num    = lhs.line_num;
-        if (result.val.isConst)
-            result.val.value = static_cast<bool>(TO_FLOAT(lhs.val.value) > TO_FLOAT(rhs.val.value));
+        if (result.val.isConst) result.val.value = static_cast<bool>(TO_FLOAT(lhs.val.value) > TO_FLOAT(rhs.val.value));
         return result;
     }
 
@@ -524,8 +523,7 @@ namespace
         result.val.type    = boolType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         result.line_num    = lhs.line_num;
-        if (result.val.isConst)
-            result.val.value = static_cast<bool>(TO_FLOAT(lhs.val.value) < TO_FLOAT(rhs.val.value));
+        if (result.val.isConst) result.val.value = static_cast<bool>(TO_FLOAT(lhs.val.value) < TO_FLOAT(rhs.val.value));
         return result;
     }
 

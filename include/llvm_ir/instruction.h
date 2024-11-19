@@ -198,33 +198,6 @@ namespace LLVMIR
 
         virtual void PrintIR(std::ostream& s);
     };
-
-    class ArithmeticInst : public Instruction
-    {
-      public:
-        DataType type;
-        Operand* lhs;
-        Operand* rhs;
-        Operand* res;
-
-        ArithmeticInst(IROpCode op, DataType t, Operand* l, Operand* r, Operand* res);
-
-        virtual void PrintIR(std::ostream& s);
-    };
-
-    class IcmpInst : public Instruction
-    {
-      public:
-        DataType type;
-        IcmpCond cond;
-        Operand* lhs;
-        Operand* rhs;
-        Operand* res;
-
-        IcmpInst(DataType t, IcmpCond c, Operand* l, Operand* r, Operand* res);
-
-        virtual void PrintIR(std::ostream& s);
-    };
 }  // namespace LLVMIR
 
 #endif

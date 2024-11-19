@@ -9,7 +9,7 @@ using namespace SemanticTable;
 extern bool           mainExists;
 extern bool           inGlb;
 extern vector<string> semanticErrMsgs;
-extern Table          semTable;
+extern Table*         semTable;
 
 namespace
 {
@@ -178,8 +178,8 @@ void VarDeclStmt::typeCheck()
             LeftValueExpr* lval = static_cast<LeftValueExpr*>(def->lval);
             InitNode*      rval = def->rval;
 
-            auto it = semTable.glbSymMap.find(lval->entry);
-            if (it != semTable.glbSymMap.end())
+            auto it = semTable->glbSymMap.find(lval->entry);
+            if (it != semTable->glbSymMap.end())
             {
                 semanticErrMsgs.push_back("Error: Redefinition of global variable " + lval->entry->getName() +
                                           " at line " + to_string(attr.line_num));
@@ -189,7 +189,7 @@ void VarDeclStmt::typeCheck()
             VarAttribute val;
             val.isConst = isConst;
             val.type    = baseType;
-            val.scope   = semTable.symTable.currentScope->scopeLevel;
+            val.scope   = semTable->symTable.currentScope->scopeLevel;
             // cout << "var name: " << lval->entry->getName() << " at scope " << val.scope << endl;
 
             if (lval->dims)
@@ -217,7 +217,7 @@ void VarDeclStmt::typeCheck()
                     fillFloatInitials(rval, val);
             }
 
-            semTable.glbSymMap[lval->entry] = val;
+            semTable->glbSymMap[lval->entry] = val;
         }
         return;
     }
@@ -227,7 +227,7 @@ void VarDeclStmt::typeCheck()
         LeftValueExpr* lval = static_cast<LeftValueExpr*>(def->lval);
         InitNode*      rval = def->rval;
 
-        auto& curTable = semTable.symTable.currentScope->symbolMap;
+        auto& curTable = semTable->symTable.currentScope->symbolMap;
         auto  it       = curTable.find(lval->entry);
         if (it != curTable.end())
         {
@@ -236,7 +236,7 @@ void VarDeclStmt::typeCheck()
             continue;
         }
 
-        if (semTable.symTable.getSymbolScope(lval->entry) == 1)
+        if (semTable->symTable.getSymbolScope(lval->entry) == 1)
         {
             semanticErrMsgs.push_back("Error: Redefinition with parameter " + lval->entry->getName() + " at line " +
                                       to_string(attr.line_num));
@@ -245,7 +245,7 @@ void VarDeclStmt::typeCheck()
         VarAttribute val;
         val.isConst = isConst;
         val.type    = baseType;
-        val.scope   = semTable.symTable.currentScope->scopeLevel;
+        val.scope   = semTable->symTable.currentScope->scopeLevel;
         // cout << "var name: " << lval->entry->getName() << " at scope " << val.scope << endl;
 
         if (lval->dims)
@@ -281,7 +281,7 @@ void BlockStmt::typeCheck()
 {
     if (!stmts) return;
 
-    semTable.symTable.enterScope();
+    semTable->symTable.enterScope();
 
     for (auto stmt : *stmts)
     {
@@ -290,10 +290,11 @@ void BlockStmt::typeCheck()
         stmt->typeCheck();
     }
 
-    semTable.symTable.exitScope();
+    semTable->symTable.exitScope();
 }
 
-bool funcWithReturn = false;
+bool funcWithReturn  = false;
+bool funcDeclareOnly = false;
 
 void FuncDeclStmt::typeCheck()
 {
@@ -303,23 +304,27 @@ void FuncDeclStmt::typeCheck()
 
     if (entry->getName() == "main") mainExists = true;
 
-    semTable.symTable.enterScope();
+    semTable->symTable.enterScope();
     inGlb = false;
 
-    semTable.funcDeclMap[entry] = this;
+    semTable->funcDeclMap[entry] = this;
 
     if (params)
     {
         for (auto param : *params) param->typeCheck();
     }
 
-    funcWithReturn = false;
+    funcWithReturn  = false;
+    funcDeclareOnly = false;
 
-    if (body) body->typeCheck();
-    if (!funcWithReturn && returnType != voidType)
+    if (body)
+        body->typeCheck();
+    else
+        funcDeclareOnly = true;
+    if (!funcDeclareOnly && !funcWithReturn && returnType != voidType)
         semanticErrMsgs.push_back("Error: Function without return statement at line " + to_string(attr.line_num));
 
-    semTable.symTable.exitScope();
+    semTable->symTable.exitScope();
     inGlb = true;
 }
 
@@ -371,18 +376,18 @@ void ForStmt::typeCheck()
 {
     if (inGlb) semanticErrMsgs.push_back("Error: For statement in global scope at line " + to_string(attr.line_num));
 
-    semTable.symTable.enterScope();
-    
+    semTable->symTable.enterScope();
+
     if (init) init->typeCheck();
     if (condition) condition->typeCheck();
     if (update) update->typeCheck();
-    
+
     ++loop_counts;
 
     if (body) body->typeCheck();
 
     --loop_counts;
-    semTable.symTable.exitScope();
+    semTable->symTable.exitScope();
 }
 
 void BreakStmt::typeCheck()

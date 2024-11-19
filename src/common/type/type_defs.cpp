@@ -1,4 +1,5 @@
 #include <common/type/type_defs.h>
+#include <mutex>
 #include <iostream>
 using namespace std;
 
@@ -88,7 +89,7 @@ string   FunctionType::getTypeName() const
 TypeSystem::TypeSystem() {}
 TypeSystem::~TypeSystem() { clear(); }
 
-std::map<size_t, Type*> TypeSystem::typeMap;
+std::map<size_t, Type*> TypeSystem::typeMap = {};
 
 size_t TypeSystem::generateHash(TypeKind kind) { return std::hash<int>{}(static_cast<int>(kind)); }
 size_t TypeSystem::generateHash(TypeKind kind, Type* baseType)
@@ -106,15 +107,16 @@ size_t TypeSystem::generateHash(TypeKind kind, Type* returnType, const std::vect
 Type* TypeSystem::getBasicType(TypeKind kind)
 {
     static TypeSystem& ensure = TypeSystem::getInstance();
-    size_t hash = generateHash(kind);
+    size_t             hash   = generateHash(kind);
     if (typeMap.find(hash) == typeMap.end()) typeMap[hash] = new BasicType(kind);
     return typeMap[hash];
 }
 
 Type* TypeSystem::getPointerType(Type* baseType)
 {
+    if (baseType == nullptr) { throw std::invalid_argument("baseType cannot be null"); }
     static TypeSystem& ensure = TypeSystem::getInstance();
-    size_t hash = generateHash(TypeKind::Ptr, baseType);
+    size_t             hash   = generateHash(TypeKind::Ptr, baseType);
     if (typeMap.find(hash) == typeMap.end()) typeMap[hash] = new PointerType(baseType);
     return typeMap[hash];
 }
@@ -122,7 +124,7 @@ Type* TypeSystem::getPointerType(Type* baseType)
 Type* TypeSystem::getArrayType(Type* baseType, size_t size)
 {
     static TypeSystem& ensure = TypeSystem::getInstance();
-    size_t hash = generateHash(TypeKind::Arr, baseType);
+    size_t             hash   = generateHash(TypeKind::Arr, baseType);
     if (typeMap.find(hash) == typeMap.end()) typeMap[hash] = new ArrayType(baseType, size);
     return typeMap[hash];
 }
@@ -130,7 +132,7 @@ Type* TypeSystem::getArrayType(Type* baseType, size_t size)
 Type* TypeSystem::getFunctionType(Type* returnType, const std::vector<Type*>& paramTypes)
 {
     static TypeSystem& ensure = TypeSystem::getInstance();
-    size_t hash = generateHash(TypeKind::Func, returnType, paramTypes);
+    size_t             hash   = generateHash(TypeKind::Func, returnType, paramTypes);
     if (typeMap.find(hash) == typeMap.end()) typeMap[hash] = new FunctionType(returnType, paramTypes);
     return typeMap[hash];
 }

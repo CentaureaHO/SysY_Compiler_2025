@@ -9,7 +9,7 @@ using namespace std;
 using namespace SemanticTable;
 
 extern vector<string> semanticErrMsgs;
-extern Table          semTable;
+extern Table*         semTable;
 extern bool           inGlb;
 
 void ExprNode::typeCheck() {}
@@ -33,11 +33,11 @@ void LeftValueExpr::typeCheck()
             }
         }
 
-    VarAttribute* val = semTable.symTable.getSymbol(entry);
+    VarAttribute* val = semTable->symTable.getSymbol(entry);
     if (!val)
     {
-        auto it = semTable.glbSymMap.find(entry);
-        if (it == semTable.glbSymMap.end())
+        auto it = semTable->glbSymMap.find(entry);
+        if (it == semTable->glbSymMap.end())
         {
             semanticErrMsgs.emplace_back(
                 "Variable " + entry->getName() + " not declared at line " + to_string(attr.line_num));
@@ -164,11 +164,11 @@ void BinaryExpr::typeCheck()
         LeftValueExpr* lval = dynamic_cast<LeftValueExpr*>(lhs);
         if (lval)
         {
-            VarAttribute* val = semTable.symTable.getSymbol(lval->entry);
+            VarAttribute* val = semTable->symTable.getSymbol(lval->entry);
             if (!val)
             {
-                auto it = semTable.glbSymMap.find(lval->entry);
-                if (it == semTable.glbSymMap.end())
+                auto it = semTable->glbSymMap.find(lval->entry);
+                if (it == semTable->glbSymMap.end())
                 {
                     // 如果不存在也在上面的typeCheck中报过了，不需要重复报
                     return;
@@ -202,8 +202,8 @@ void FuncCallExpr::typeCheck()
         }
     }
 
-    auto it = semTable.funcDeclMap.find(entry);
-    if (it == semTable.funcDeclMap.end())
+    auto it = semTable->funcDeclMap.find(entry);
+    if (it == semTable->funcDeclMap.end())
     {
         semanticErrMsgs.emplace_back(
             "Function " + entry->getName() + " not declared at line " + to_string(attr.line_num));
