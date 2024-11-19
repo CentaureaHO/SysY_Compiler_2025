@@ -112,8 +112,6 @@ class FuncCallExpr : public ExprNode
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
     void typeCheck() override;
-    const std::string getName() const { return entry->getName(); }
-
 };
 
 #endif

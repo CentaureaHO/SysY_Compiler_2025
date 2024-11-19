@@ -214,7 +214,7 @@ void FuncCallExpr::typeCheck()
     auto          f_params   = funDecl->params;
     size_t        param_size = 0;
     if (f_params) param_size = f_params->size();
-    //添加对函数形式参数的检查和实际参数的位置和类型的检查
+
     if (arg_size != param_size)
     {
         semanticErrMsgs.emplace_back("Function " + entry->getName() + " expects " + to_string(param_size) +
@@ -223,31 +223,32 @@ void FuncCallExpr::typeCheck()
         return;
     }
 
-    for (size_t i = 0; i < param_size; ++i)
+    // 考虑到隐式转换，目前仅仅实现数字类型，都可以互相转，不检查参数类型是否匹配
+    // 错了，有个指针类型
+
+    for (size_t i = 0; i < arg_size; ++i)
     {
-        auto param = (*f_params)[i];
-        auto arg = (*args)[i];
-
-        // 获取形参和实参的类型
-        auto* paramType = param;
- 
-        auto* argType = arg->attr.val.type;
-
-        // 检查类型是否兼容
-        if (paramType->getName() != argType->getTypeName())
+        if ((*f_params)[i]->attr.val.type != (*args)[i]->attr.val.type)
         {
-                auto temp = param;
-                // 类型不兼容，报错
-                semanticErrMsgs.emplace_back("Function " + entry->getName() + " argument type mismatch at parameter " +
-                                             to_string(i + 1) + " at line " + to_string(attr.line_num) +
-                                             ": expected " + temp->getName()  + " but got " +
-                                             argType->getTypeName());
-                return;
+            if ((*f_params)[i]->attr.val.type->getKind() == TypeKind::Ptr ||
+                (*args)[i]->attr.val.type->getKind() == TypeKind::Ptr)
+            {
+                PointerType* p1 = dynamic_cast<PointerType*>((*f_params)[i]->attr.val.type);
+                PointerType* p2 = dynamic_cast<PointerType*>((*args)[i]->attr.val.type);
+                if (p1 == nullptr || p2 == nullptr || p1->baseType != p2->baseType)
+                {
+                    semanticErrMsgs.emplace_back("Function " + entry->getName() + " expects " +
+                                                 (*f_params)[i]->attr.val.type->getTypeName() + " but got " +
+                                                 (*args)[i]->attr.val.type->getTypeName() + " at line " +
+                                                 to_string(attr.line_num));
+                    return;
+                }
+            }
+            else
+                continue;
         }
     }
 
     attr.val.type    = funDecl->returnType;
     attr.val.isConst = false;
-
-
 }

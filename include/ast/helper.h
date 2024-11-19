@@ -79,8 +79,6 @@ class FuncParamDefNode : public HelperNode
     FuncParamDefNode(Type* type, Symbol::Entry* entry, std::vector<ExprNode*>* dims = nullptr);
     ~FuncParamDefNode();
 
-    const std::string getName() const { return baseType->getTypeName(); }
-
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
     void typeCheck() override;
 };
