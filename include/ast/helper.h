@@ -70,13 +70,13 @@ class DefNode : public HelperNode
 
 class FuncParamDefNode : public HelperNode
 {
-  private:
-    const Type*             baseType;
-    const Symbol::Entry*    entry;
+  public:
+    Type*                   baseType;
+    Symbol::Entry*          entry;
     std::vector<ExprNode*>* dims;
 
   public:
-    FuncParamDefNode(const Type* type, const Symbol::Entry* entry, std::vector<ExprNode*>* dims = nullptr);
+    FuncParamDefNode(Type* type, Symbol::Entry* entry, std::vector<ExprNode*>* dims = nullptr);
     ~FuncParamDefNode();
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);

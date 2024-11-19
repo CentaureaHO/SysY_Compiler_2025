@@ -55,6 +55,12 @@ VarAttribute* Table::getSymbol(Entry* entry)
     return nullptr;
 }
 
+int Table::getSymbolScope(Entry* entry)
+{
+    VarAttribute* attr = getSymbol(entry);
+    return attr ? attr->scope : -1;
+}
+
 Type* Table::getSymType(Entry* entry)
 {
     VarAttribute* attr = getSymbol(entry);

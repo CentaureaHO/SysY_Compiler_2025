@@ -27,7 +27,11 @@ void InitNode::printAST(ostream* oss, const string& prefix, bool isLast)
 
 /* Definition of InitSingle */
 InitSingle::InitSingle(ExprNode* expr) : InitNode(), expr(expr) {}
-InitSingle::~InitSingle() { delete expr; }
+InitSingle::~InitSingle()
+{
+    delete expr;
+    expr = nullptr;
+}
 
 void InitSingle::printAST(ostream* oss, const string& prefix, bool isLast)
 {
@@ -41,8 +45,13 @@ InitMulti::InitMulti(vector<InitNode*>* es) : InitNode(), exprs(es) {}
 InitMulti::~InitMulti()
 {
     if (!exprs) return;
-    for (auto expr : *exprs) delete expr;
+    for (auto expr : *exprs)
+    {
+        delete expr;
+        expr = nullptr;
+    }
     delete exprs;
+    exprs = nullptr;
 }
 
 void InitMulti::printAST(ostream* oss, const string& prefix, bool isLast)
@@ -61,6 +70,9 @@ DefNode::~DefNode()
 {
     delete lval;
     delete rval;
+
+    lval = nullptr;
+    rval = nullptr;
 }
 
 void DefNode::printAST(ostream* oss, const string& prefix, bool isLast)
@@ -75,15 +87,20 @@ void DefNode::printAST(ostream* oss, const string& prefix, bool isLast)
 }
 
 /* Definition of FuncParamDefNode */
-FuncParamDefNode::FuncParamDefNode(const Type* type, const Symbol::Entry* entry, vector<ExprNode*>* dims)
+FuncParamDefNode::FuncParamDefNode(Type* type, Symbol::Entry* entry, vector<ExprNode*>* dims)
     : HelperNode(), baseType(type), entry(entry), dims(dims)
 {}
 FuncParamDefNode::~FuncParamDefNode()
 {
     if (dims)
     {
-        for (auto dim : *dims) delete dim;
+        for (auto dim : *dims)
+        {
+            delete dim;
+            dim = nullptr;
+        }
         delete dims;
+        dims = nullptr;
     }
 }
 

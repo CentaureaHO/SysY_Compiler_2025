@@ -18,6 +18,7 @@ using namespace Symbol;
 
 extern vector<string>       semanticErrMsgs;
 extern SemanticTable::Table semTable;
+size_t                      errCnt = 0;
 
 string truncateString(const string& str, size_t width)
 {
@@ -102,6 +103,13 @@ int main(int argc, char* argv[])
     else if (mode == "parser")
     {
         ASTree* ast = driver.parse();
+
+        if (errCnt)
+        {
+            cerr << "Error: " << errCnt << " syntax error(s) found." << endl;
+            return 1;
+        }
+
         if (ast) { ast->printAST(outStream); }
 
         // 以下为调试暂用代码

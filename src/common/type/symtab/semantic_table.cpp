@@ -99,7 +99,12 @@ Table::Table() : symTable(), glbSymMap(), funcDeclMap()
 
 Table::~Table()
 {
-    for (auto& [_, decl] : funcDeclMap) delete decl;
+    for (auto& [_, decl] : funcDeclMap)
+    {
+        if (_ == getint || _ == getch || _ == getarray || _ == getfloat || _ == getfarray || _ == putint ||
+            _ == putch || _ == putarray || _ == putfloat || _ == putfarray)
+            delete decl;
+    }
 }
 
 Table semTable;

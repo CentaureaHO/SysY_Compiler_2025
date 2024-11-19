@@ -12,8 +12,6 @@ extern Table   semTable;
 
 void ASTree::typeCheck()
 {
-    semTable.symTable.enterScope();  // to 1, params
-
     for (auto& stmt : *stmts) stmt->typeCheck();
 
     if (!mainExists) semanticErrMsgs.emplace_back("No main function found");

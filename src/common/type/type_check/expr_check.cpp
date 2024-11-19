@@ -1,6 +1,7 @@
 #include <vector>
 #include <ast/expression.h>
 #include <ast/statement.h>
+#include <ast/helper.h>
 #include <common/type/type_calc.h>
 #include <common/type/type_defs.h>
 #include <common/type/symtab/semantic_table.h>
@@ -76,9 +77,9 @@ void LeftValueExpr::typeCheck()
     }
     else if (arr_dims.size() < val->dims.size())
     {
-        size_t level = val->dims.size() - arr_dims.size();
-        Type*  type  = val->type;
-        for (size_t i = 0; i < level; i++) type = TypeSystem::getPointerType(type);
+        size_t level     = val->dims.size() - arr_dims.size();
+        Type*  type      = val->type;
+        type             = TypeSystem::getPointerType(type);
         attr.val.type    = type;
         attr.val.isConst = false;
     }
@@ -187,6 +188,8 @@ void FuncCallExpr::typeCheck()
                                      to_string(attr.line_num));
         return;
     }
+
+    // 考虑到隐式转换，目前仅仅实现数字类型，都可以互相转，不检查参数类型是否匹配
 
     attr.val.type = funDecl->returnType;
 }

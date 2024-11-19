@@ -170,7 +170,9 @@ ConstValue::ConstValue(shared_ptr<string> val) : type(strType), value(val), isCo
 /* Definition of ConstValue: tail */
 /* Definition of VarAttribute: head */
 
-VarAttribute::VarAttribute(Type* type, bool isConst) : type(type), isConst(isConst), dims(vector<int>{}), initVals() {}
+VarAttribute::VarAttribute(Type* type, bool isConst)
+    : type(type), isConst(isConst), scope(0), dims(vector<int>{}), initVals()
+{}
 
 Type* VarAttribute::getType() const { return type; }
 

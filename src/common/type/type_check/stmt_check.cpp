@@ -110,18 +110,15 @@ namespace
 
             return;
         }
-        else  // 数组
-        {
-            InitMulti* im = dynamic_cast<InitMulti*>(initVals);
-            if (!im)
-            {
-                semanticErrMsgs.push_back(
-                    "Error: Invalid initialization at line " + to_string(initVals->attr.line_num));
-                return;
-            }
 
-            arrayInit(im, var, 0, arr_size - 1, 0);
+        InitMulti* im = dynamic_cast<InitMulti*>(initVals);
+        if (!im)
+        {
+            semanticErrMsgs.push_back("Error: Invalid initialization at line " + to_string(initVals->attr.line_num));
+            return;
         }
+
+        arrayInit(im, var, 0, arr_size - 1, 0);
     }
 
     void fillFloatInitials(InitNode* initVals, VarAttribute& var)
@@ -162,18 +159,15 @@ namespace
 
             return;
         }
-        else  // 数组
-        {
-            InitMulti* im = dynamic_cast<InitMulti*>(initVals);
-            if (!im)
-            {
-                semanticErrMsgs.push_back(
-                    "Error: Invalid initialization at line " + to_string(initVals->attr.line_num));
-                return;
-            }
 
-            arrayInit(im, var, 0, arr_size - 1, 0);
+        InitMulti* im = dynamic_cast<InitMulti*>(initVals);
+        if (!im)
+        {
+            semanticErrMsgs.push_back("Error: Invalid initialization at line " + to_string(initVals->attr.line_num));
+            return;
         }
+
+        arrayInit(im, var, 0, arr_size - 1, 0);
     }
 }  // namespace
 
@@ -204,6 +198,8 @@ void VarDeclStmt::typeCheck()
             VarAttribute val;
             val.isConst = isConst;
             val.type    = baseType;
+            val.scope   = semTable.symTable.currentScope->scopeLevel;
+            cout << "var name: " << lval->entry->getName() << " at scope " << val.scope << endl;
 
             if (lval->dims)
             {
@@ -249,9 +245,17 @@ void VarDeclStmt::typeCheck()
             continue;
         }
 
+        if (semTable.symTable.getSymbolScope(lval->entry) == 1)
+        {
+            semanticErrMsgs.push_back("Error: Redefinition with parameter " + lval->entry->getName() + " at line " +
+                                      to_string(attr.line_num));
+        }
+
         VarAttribute val;
         val.isConst = isConst;
         val.type    = baseType;
+        val.scope   = semTable.symTable.currentScope->scopeLevel;
+        cout << "var name: " << lval->entry->getName() << " at scope " << val.scope << endl;
 
         if (lval->dims)
         {
@@ -304,11 +308,21 @@ void FuncDeclStmt::typeCheck()
         semanticErrMsgs.push_back(
             "Error: Function declaration in non-global scope at line " + to_string(attr.line_num));
 
-    inGlb = false;
     if (entry->getName() == "main") mainExists = true;
+
+    semTable.symTable.enterScope();
+    inGlb = false;
+
+    semTable.funcDeclMap[entry] = this;
+
+    if (params)
+    {
+        for (auto param : *params) param->typeCheck();
+    }
 
     body->typeCheck();
 
+    semTable.symTable.exitScope();
     inGlb = true;
 }
 

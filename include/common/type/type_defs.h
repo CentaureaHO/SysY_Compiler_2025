@@ -188,6 +188,7 @@ class VarAttribute
   public:
     Type* type;
     bool  isConst;
+    int   scope;
 
     std::vector<int>                                 dims;
     std::vector<std::variant<int, long long, float>> initVals;

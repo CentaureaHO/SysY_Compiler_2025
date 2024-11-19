@@ -21,8 +21,13 @@ ASTree::ASTree(vector<StmtNode*>* stmts, int line_num) : Node(line_num), stmts(s
 ASTree::~ASTree()
 {
     if (!stmts) return;
-    for (auto stmt : *stmts) delete stmt;
+    for (auto stmt : *stmts)
+    {
+        delete stmt;
+        stmt = nullptr;
+    }
     delete stmts;
+    stmts = nullptr;
 }
 
 void ASTree::printAST(ostream* oss, const string& prefix, bool isLast)

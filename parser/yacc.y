@@ -49,6 +49,8 @@
     {
         return scanner.nextToken(); 
     }
+
+    extern size_t errCnt;
 }
 
 %lex-param { Yacc::Scanner& scanner }
@@ -627,4 +629,5 @@ UNARY_OP:
 void Yacc::Parser::error(const Yacc::location& location, const std::string& message)
 {
     std::cerr << "msg: " << message << ", error happened at: " << location << std::endl;
+    ++errCnt;
 }

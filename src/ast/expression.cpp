@@ -25,8 +25,13 @@ LeftValueExpr::~LeftValueExpr()
 {
     if (dims)
     {
-        for (auto dim : *dims) { delete dim; }
+        for (auto dim : *dims)
+        {
+            delete dim;
+            dim = nullptr;
+        }
         delete dims;
+        dims = nullptr;
     }
 }
 
@@ -73,7 +78,11 @@ void ConstExpr::printAST(std::ostream* oss, const string& prefix, bool isLast)
 
 /* Definition of UnaryExpr */
 UnaryExpr::UnaryExpr(OpCode op, ExprNode* expr) : op(op), val(expr) {}
-UnaryExpr::~UnaryExpr() { delete val; }
+UnaryExpr::~UnaryExpr()
+{
+    delete val;
+    val = nullptr;
+}
 
 void UnaryExpr::printAST(std::ostream* oss, const string& prefix, bool isLast)
 {
@@ -88,6 +97,9 @@ BinaryExpr::~BinaryExpr()
 {
     delete lhs;
     delete rhs;
+
+    lhs = nullptr;
+    rhs = nullptr;
 }
 
 void BinaryExpr::printAST(std::ostream* oss, const string& prefix, bool isLast)
@@ -104,8 +116,13 @@ FuncCallExpr::~FuncCallExpr()
 {
     if (args)
     {
-        for (auto arg : *args) { delete arg; }
+        for (auto arg : *args)
+        {
+            delete arg;
+            arg = nullptr;
+        }
         delete args;
+        args = nullptr;
     }
 }
 

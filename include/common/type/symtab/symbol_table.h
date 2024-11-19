@@ -75,6 +75,7 @@ namespace Symbol
         template <typename T>
         int           addSymbol(Entry* entry, T&& attribute);
         VarAttribute* getSymbol(Entry* entry);
+        int           getSymbolScope(Entry* entry);
         Type*         getSymType(Entry* entry);
 
         bool enterScope();

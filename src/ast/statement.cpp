@@ -20,8 +20,13 @@ ExprStmt::ExprStmt(std::vector<ExprNode*>* exprs) : exprs(exprs) {}
 ExprStmt::~ExprStmt()
 {
     if (!exprs) return;
-    for (auto expr : *exprs) delete expr;
+    for (auto expr : *exprs)
+    {
+        delete expr;
+        expr = nullptr;
+    }
     delete exprs;
+    exprs = nullptr;
 }
 
 void ExprStmt::printAST(ostream* oss, const string& prefix, bool isLast)
@@ -36,8 +41,13 @@ VarDeclStmt::VarDeclStmt(Type* bt, vector<DefNode*>* defs, bool isConst) : baseT
 VarDeclStmt::~VarDeclStmt()
 {
     if (!defs) return;
-    for (auto def : *defs) delete def;
+    for (auto def : *defs)
+    {
+        delete def;
+        def = nullptr;
+    }
     delete defs;
+    defs = nullptr;
 }
 
 void VarDeclStmt::printAST(ostream* oss, const string& prefix, bool isLast)
@@ -54,8 +64,13 @@ BlockStmt::BlockStmt(vector<StmtNode*>* stmts) : stmts(stmts) {}
 BlockStmt::~BlockStmt()
 {
     if (!stmts) return;
-    for (auto stmt : *stmts) delete stmt;
+    for (auto stmt : *stmts)
+    {
+        delete stmt;
+        stmt = nullptr;
+    }
     delete stmts;
+    stmts = nullptr;
 }
 
 void BlockStmt::printAST(ostream* oss, const string& prefix, bool isLast)
@@ -77,10 +92,16 @@ FuncDeclStmt::~FuncDeclStmt()
 {
     if (params)
     {
-        for (auto param : *params) delete param;
+        for (auto param : *params)
+        {
+            delete param;
+            param = nullptr;
+        }
         delete params;
+        params = nullptr;
     }
     delete body;
+    body = nullptr;
 }
 
 void FuncDeclStmt::printAST(ostream* oss, const string& prefix, bool isLast)
@@ -106,7 +127,11 @@ void FuncDeclStmt::printAST(ostream* oss, const string& prefix, bool isLast)
 
 /* Definition of ReturnStmt: head */
 ReturnStmt::ReturnStmt(ExprNode* expr) : expr(expr) {}
-ReturnStmt::~ReturnStmt() { delete expr; }
+ReturnStmt::~ReturnStmt()
+{
+    delete expr;
+    expr = nullptr;
+}
 
 void ReturnStmt::printAST(ostream* oss, const string& prefix, bool isLast)
 {
@@ -124,6 +149,9 @@ WhileStmt::~WhileStmt()
 {
     delete condition;
     delete body;
+
+    condition = nullptr;
+    body      = nullptr;
 }
 
 void WhileStmt::printAST(ostream* oss, const string& prefix, bool isLast)
@@ -148,6 +176,10 @@ IfStmt::~IfStmt()
     delete condition;
     delete thenBody;
     delete elseBody;
+
+    condition = nullptr;
+    thenBody  = nullptr;
+    elseBody  = nullptr;
 }
 
 void IfStmt::printAST(ostream* oss, const string& prefix, bool isLast)
@@ -178,6 +210,11 @@ ForStmt::~ForStmt()
     delete condition;
     delete update;
     delete body;
+
+    init      = nullptr;
+    condition = nullptr;
+    update    = nullptr;
+    body      = nullptr;
 }
 
 void ForStmt::printAST(ostream* oss, const string& prefix, bool isLast)
