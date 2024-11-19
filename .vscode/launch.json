@@ -5,7 +5,7 @@
             "type": "cppdbg",
             "request": "launch",
             "name": "Debug with GDB",
-            "program": "${workspaceFolder}/bin/compiler",
+            "program": "${workspaceFolder}/bin/SysYc",
             "cwd": "${workspaceFolder}",
             "externalConsole": false,
             "internalConsoleOptions": "openOnSessionStart",
@@ -17,16 +17,7 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "build"
-        },
-        {
-            "type": "cppdbg",
-            "request": "launch",
-            "name": "Debug with LLDB",
-            "program": "${workspaceFolder}/bin/compiler",
-            "cwd": "${workspaceFolder}",
-            "externalConsole": true,
-            "MIMode": "lldb",  // 使用 LLDB 调试器
+            "args": ["test.in", "-", "-o", "test.out"],
             "preLaunchTask": "build"
         }
     ]

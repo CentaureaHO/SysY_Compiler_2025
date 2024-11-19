@@ -151,6 +151,32 @@ void BinaryExpr::typeCheck()
     lhs->typeCheck();
     rhs->typeCheck();
 
+    if (op == OpCode::Assign)
+    {
+        LeftValueExpr* lval = dynamic_cast<LeftValueExpr*>(lhs);
+        if (lval)
+        {
+            VarAttribute* val = semTable.symTable.getSymbol(lval->entry);
+            if (!val)
+            {
+                auto it = semTable.glbSymMap.find(lval->entry);
+                if (it == semTable.glbSymMap.end())
+                {
+                    // 如果不存在也在上面的typeCheck中报过了，不需要重复报
+                    return;
+                }
+
+                val = &it->second;
+            }
+
+            if (val->isConst)
+            {
+                semanticErrMsgs.emplace_back("Assign to const variable at line " + to_string(attr.line_num));
+                return;
+            }
+        }
+    }
+
     attr = Semantic(lhs->attr, rhs->attr, op);
 }
 
@@ -191,5 +217,6 @@ void FuncCallExpr::typeCheck()
 
     // 考虑到隐式转换，目前仅仅实现数字类型，都可以互相转，不检查参数类型是否匹配
 
-    attr.val.type = funDecl->returnType;
+    attr.val.type    = funDecl->returnType;
+    attr.val.isConst = false;
 }

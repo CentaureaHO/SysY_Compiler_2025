@@ -304,7 +304,7 @@ namespace
     NodeAttribute DivInt(const NodeAttribute& lhs, const NodeAttribute& rhs)
     {
         int rhsValue = TO_INT(rhs.val.value);
-        if (rhsValue == 0)
+        if (rhsValue == 0 && rhs.val.isConst)
         {
             semanticErrMsgs.push_back("Division by zero at line " + std::to_string(lhs.line_num));
             return NodeAttribute(OpCode::PlaceHolder, ConstValue(), lhs.line_num);
@@ -332,7 +332,7 @@ namespace
     NodeAttribute DivLL(const NodeAttribute& lhs, const NodeAttribute& rhs)
     {
         long long rhsValue = TO_LL(rhs.val.value);
-        if (rhsValue == 0)
+        if (rhsValue == 0 && rhs.val.isConst)
         {
             semanticErrMsgs.push_back("Division by zero at line " + std::to_string(lhs.line_num));
             return NodeAttribute(OpCode::PlaceHolder, ConstValue(), lhs.line_num);
@@ -360,7 +360,7 @@ namespace
     NodeAttribute DivFloat(const NodeAttribute& lhs, const NodeAttribute& rhs)
     {
         float rhsValue = std::get<float>(rhs.val.value);
-        if (rhsValue == 0)
+        if (rhsValue == 0 && rhs.val.isConst)
         {
             semanticErrMsgs.push_back("Division by zero at line " + std::to_string(lhs.line_num));
             return NodeAttribute(OpCode::PlaceHolder, ConstValue(), lhs.line_num);
@@ -377,7 +377,7 @@ namespace
     NodeAttribute ModInt(const NodeAttribute& lhs, const NodeAttribute& rhs)
     {
         int rhsValue = TO_INT(rhs.val.value);
-        if (rhsValue == 0)
+        if (rhsValue == 0 && rhs.val.isConst)
         {
             semanticErrMsgs.push_back("Mod by zero at line " + std::to_string(lhs.line_num));
             return NodeAttribute(OpCode::PlaceHolder, ConstValue(), lhs.line_num);
@@ -405,7 +405,7 @@ namespace
     NodeAttribute ModLL(const NodeAttribute& lhs, const NodeAttribute& rhs)
     {
         long long rhsValue = TO_LL(rhs.val.value);
-        if (rhsValue == 0)
+        if (rhsValue == 0 && rhs.val.isConst)
         {
             semanticErrMsgs.push_back("Mod by zero at line " + std::to_string(lhs.line_num));
             return NodeAttribute(OpCode::PlaceHolder, ConstValue(), lhs.line_num);

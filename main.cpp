@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <cstring>
 #include <string>
 #include <parser/driver.h>
 #include <common/type/symtab/symbol_table.h>
@@ -26,44 +27,45 @@ string truncateString(const string& str, size_t width)
     return str;
 }
 
-string getOutputFileName(const string& inputFile, const string& mode)
-{
-    string outputFile = inputFile;
-    size_t pos        = outputFile.find(".sy");
-    if (pos != string::npos) { outputFile = outputFile.substr(0, pos); }
-    outputFile += (mode == "lexer") ? ".token" : ".ast";
-    return outputFile;
-}
+#define file_in 1
+#define step_tag 2
+#define o_tag 3
+#define file_out 4
+#define optimize_tag 5
 
-int main(int argc, char* argv[])
+int main(int argc, char** argv)
 {
-    string mode = "parser";
-    // cin >> mode;
-
-    string inputFile = "test.in";
-    // cin >> inputFile;
-    ifstream file(inputFile);
-    if (!file)
+    if (argc < 4)
     {
-        cerr << "Error: Cannot open input file " << inputFile << endl;
+        std::cerr << "Usage: " << argv[0] << " <input file> <step> <output file> <optimize>" << std::endl;
+        return 0;
+    }
+
+    cout << "File_in: " << argv[file_in] << endl;
+    cout << "Step: " << argv[step_tag] << endl;
+    cout << "Output: " << argv[file_out] << endl;
+    cout << "Optimize: " << argv[optimize_tag] << endl;
+
+    ifstream in(argv[file_in]);
+    if (!in)
+    {
+        std::cerr << "Cannot open input file " << argv[file_in] << std::endl;
         return 1;
     }
-    istream* inStream = &file;
+    istream* inStream = &in;
 
-    string outputFile = getOutputFileName(inputFile, mode);
-    outputFile        = "test.out";
-    // cin >> outputFile;
-    ofstream outFile(outputFile);
-    if (!outFile)
+    ofstream out(argv[file_out]);
+    if (!out)
     {
-        cerr << "Error: Cannot open output file " << outputFile << endl;
+        std::cerr << "Cannot open output file " << argv[file_out] << std::endl;
+        if (in.is_open()) in.close();
         return 1;
     }
-    ostream* outStream = &outFile;
+    ostream* outStream = &out;
 
     Driver driver(inStream, outStream);
 
-    if (mode == "lexer")
+    if (strcmp(argv[step_tag], "-lexer") == 0)
     {
         driver.lexical_parse();
         auto tokens = driver.getTokens();
@@ -99,53 +101,50 @@ int main(int argc, char* argv[])
 
             *outStream << setw(INT_PW) << token.line << setw(INT_PW) << token.column << endl;
         }
+
+        if (in.is_open()) in.close();
+        if (out.is_open()) out.close();
+
+        return 0;
     }
-    else if (mode == "parser")
+
+    ASTree* ast = driver.parse();
+    if (errCnt)
     {
-        ASTree* ast = driver.parse();
+        *outStream << errCnt << " errors found during parsing, exiting..." << endl;
+        if (in.is_open()) in.close();
+        if (out.is_open()) out.close();
 
-        if (errCnt)
-        {
-            cerr << "Error: " << errCnt << " syntax error(s) found." << endl;
-            return 1;
-        }
-
-        if (ast) { ast->printAST(outStream); }
-
-        // 以下为调试暂用代码
-        ast->typeCheck();
-        for (auto& msgs : semanticErrMsgs) { cerr << msgs << endl; }
-
-        cout << "Global variables: " << endl;
-        for (auto& [entry, attr] : semTable.glbSymMap)
-        {
-            cout << (attr.isConst ? "const " : "var ") << attr.type->getTypeName() << " ";
-            cout << entry->getName();
-            if (attr.dims.size() > 0)
-            {
-                cout << "[";
-                for (auto& dim : attr.dims) { cout << dim << " "; }
-                cout << "]";
-            }
-
-            cout << " = ";
-            if (attr.initVals.size() > 1) { cout << "{"; }
-
-            for (auto& val : attr.initVals)
-            {
-                if (attr.type->getKind() == TypeKind::Float) { cout << get<float>(val) << " "; }
-                else if (attr.type->getKind() == TypeKind::Int) { cout << get<int>(val) << " "; }
-                else if (attr.type->getKind() == TypeKind::LL) { cout << get<long long>(val) << " "; }
-            }
-
-            if (attr.initVals.size() > 1) { cout << "}"; }
-
-            cout << endl;
-        }
+        return 2;
     }
 
-    if (file.is_open()) file.close();
-    if (outFile.is_open()) outFile.close();
+    if (strcmp(argv[step_tag], "-parser") == 0)
+    {
+        if (ast) { ast->printAST(outStream); }
+        if (in.is_open()) in.close();
+        if (out.is_open()) out.close();
+        return 0;
+    }
 
+    ast->typeCheck();
+    if (semanticErrMsgs.size() > 0)
+    {
+        cout << "\nSemantic errors found: " << endl;
+
+        int idx = 0;
+        for (auto& msg : semanticErrMsgs) cerr << ++idx << ". " << msg << endl;
+
+        cout << "\n\nExiting..." << endl;
+
+        if (in.is_open()) in.close();
+        if (out.is_open()) out.close();
+
+        return 3;
+    }
+
+    // ast->genIRCode();
+
+    if (in.is_open()) in.close();
+    if (out.is_open()) out.close();
     return 0;
 }

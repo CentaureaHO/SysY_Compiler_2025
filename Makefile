@@ -55,11 +55,11 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 .PHONY: bin
-bin: $(BIN_DIR)/compiler
+bin: $(BIN_DIR)/SysYc
 
-$(BIN_DIR)/compiler: $(OBJECTS) main.cpp
+$(BIN_DIR)/SysYc: $(OBJECTS) main.cpp
 	@mkdir -p $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) main.cpp $(OBJECTS) -o $(BIN_DIR)/compiler
+	$(CXX) $(CXXFLAGS) main.cpp $(OBJECTS) -o $(BIN_DIR)/SysYc
 
 .PHONY: test
 test: $(BIN_DIR)/test
