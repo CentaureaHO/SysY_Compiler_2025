@@ -95,6 +95,8 @@ Table::Table() : symTable(), glbSymMap(), funcDeclMap()
         voidType,
         new std::vector<FuncParamDefNode*>{new FuncParamDefNode(intType, SymEnt::getEntry("n")),
             new FuncParamDefNode(floatType, SymEnt::getEntry("a"), new std::vector<ExprNode*>{new ConstExpr(-1)})});
+
+    for (auto& [_, decl] : funcDeclMap) { decl->typeCheck(); }
 }
 
 Table::~Table()

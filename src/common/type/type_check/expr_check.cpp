@@ -24,9 +24,9 @@ void LeftValueExpr::typeCheck()
         for (auto dim : *dims)
         {
             dim->typeCheck();
-            if (dim->attr.val.type == voidType || dim->attr.val.type == floatType || dim->attr.val.type == boolType)
+            if (dim->attr.val.type == voidType || dim->attr.val.type == floatType)
                 semanticErrMsgs.emplace_back("Invalid array dimension at line " + to_string(dim->attr.line_num));
-            else if (dim->attr.val.type == intType)
+            else if (dim->attr.val.type == intType || dim->attr.val.type == llType || dim->attr.val.type == boolType)
             {
                 arr_dims.emplace_back(get<int>(dim->attr.val.value));
                 const_dims &= dim->attr.val.isConst;
@@ -57,7 +57,14 @@ void LeftValueExpr::typeCheck()
 
     if (arr_dims.size() == val->dims.size())
     {
-        attr.val.type    = val->type;
+        attr.val.type      = val->type;
+        PointerType* pType = dynamic_cast<PointerType*>(val->type);
+        if (pType != nullptr)
+        {
+            // for (size_t i = 1; i < arr_dims.size(); ++i) pType = dynamic_cast<PointerType*>(pType->baseType);
+            attr.val.type = pType->baseType;
+        }
+
         attr.val.isConst = val->isConst && const_dims;
         if (!attr.val.isConst) return;
 
@@ -77,9 +84,10 @@ void LeftValueExpr::typeCheck()
     }
     else if (arr_dims.size() < val->dims.size())
     {
-        size_t level     = val->dims.size() - arr_dims.size();
-        Type*  type      = val->type;
-        type             = TypeSystem::getPointerType(type);
+        size_t level = val->dims.size() - arr_dims.size();
+        Type*  type  = val->type;
+        if (type->getKind() != TypeKind::Ptr) type = TypeSystem::getPointerType(type);
+        // for (size_t i = 0; i < level; ++i) type = TypeSystem::getPointerType(type);
         attr.val.type    = type;
         attr.val.isConst = false;
     }
@@ -216,6 +224,30 @@ void FuncCallExpr::typeCheck()
     }
 
     // 考虑到隐式转换，目前仅仅实现数字类型，都可以互相转，不检查参数类型是否匹配
+    // 错了，有个指针类型
+
+    for (size_t i = 0; i < arg_size; ++i)
+    {
+        if ((*f_params)[i]->attr.val.type != (*args)[i]->attr.val.type)
+        {
+            if ((*f_params)[i]->attr.val.type->getKind() == TypeKind::Ptr ||
+                (*args)[i]->attr.val.type->getKind() == TypeKind::Ptr)
+            {
+                PointerType* p1 = dynamic_cast<PointerType*>((*f_params)[i]->attr.val.type);
+                PointerType* p2 = dynamic_cast<PointerType*>((*args)[i]->attr.val.type);
+                if (p1 == nullptr || p2 == nullptr || p1->baseType != p2->baseType)
+                {
+                    semanticErrMsgs.emplace_back("Function " + entry->getName() + " expects " +
+                                                 (*f_params)[i]->attr.val.type->getTypeName() + " but got " +
+                                                 (*args)[i]->attr.val.type->getTypeName() + " at line " +
+                                                 to_string(attr.line_num));
+                    return;
+                }
+            }
+            else
+                continue;
+        }
+    }
 
     attr.val.type    = funDecl->returnType;
     attr.val.isConst = false;

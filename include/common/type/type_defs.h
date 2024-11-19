@@ -95,7 +95,7 @@ class PointerType : public Type
 {
     friend class TypeSystem;
 
-  private:
+  public:
     PointerType(Type* baseType = nullptr);
     Type* baseType;
 

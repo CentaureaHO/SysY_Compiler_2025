@@ -359,7 +359,7 @@ namespace
 
     NodeAttribute DivFloat(const NodeAttribute& lhs, const NodeAttribute& rhs)
     {
-        float rhsValue = std::get<float>(rhs.val.value);
+        float rhsValue = TO_FLOAT(rhs.val.value);
         if (rhsValue == 0 && rhs.val.isConst)
         {
             semanticErrMsgs.push_back("Division by zero at line " + std::to_string(lhs.line_num));

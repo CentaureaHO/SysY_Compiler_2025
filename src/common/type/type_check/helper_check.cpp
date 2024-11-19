@@ -19,7 +19,12 @@ void InitSingle::typeCheck()
 
 void InitMulti::typeCheck()
 {
-    for (auto& expr : *exprs) expr->typeCheck();
+    if (!exprs) return;
+    for (auto& expr : *exprs)
+    {
+        if (!expr) continue;
+        expr->typeCheck();
+    }
 }
 
 void DefNode::typeCheck()
@@ -34,7 +39,7 @@ void FuncParamDefNode::typeCheck()
     param.type    = baseType;
     param.isConst = false;
     param.scope   = semTable.symTable.currentScope->scopeLevel;
-    cout << "param name: " << entry->getName() << " at scope " << param.scope << endl;
+    // cout << "param name: " << entry->getName() << " at scope " << param.scope << endl;
 
     if (dims)
     {
@@ -66,7 +71,9 @@ void FuncParamDefNode::typeCheck()
         return;
     }
 
-    cout << "Registering param " << entry->getName() << " at scope " << param.scope << endl;
+    // cout << "Registering param " << entry->getName() << " at scope " << param.scope << endl;
 
     semTable.symTable.addSymbol(entry, param);
+
+    attr.val.type = param.type;
 }

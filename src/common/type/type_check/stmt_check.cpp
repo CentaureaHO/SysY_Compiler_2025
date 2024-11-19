@@ -34,6 +34,7 @@ namespace
         if (!in) return;
         int pos = begPos;
 
+        if (!in->exprs) return;
         for (auto& expr : *in->exprs)
         {
             InitMulti* im = dynamic_cast<InitMulti*>(expr);
@@ -96,14 +97,9 @@ namespace
                     "Error: Initialization with void type expression at line " + to_string(initVals->attr.line_num));
                 return;
             }
-            else if (is->attr.val.type == intType)
-                var.initVals[0] = get<int>(is->attr.val.value);
-            else if (is->attr.val.type == llType)
-                var.initVals[0] = static_cast<int>(get<long long>(is->attr.val.value));
-            else if (is->attr.val.type == floatType)
-                var.initVals[0] = static_cast<int>(get<float>(is->attr.val.value));
-            else if (is->attr.val.type == boolType)
-                var.initVals[0] = static_cast<int>(get<bool>(is->attr.val.value));
+            else if (is->attr.val.type == intType || is->attr.val.type == llType || is->attr.val.type == floatType ||
+                     is->attr.val.type == boolType)
+                var.initVals[0] = TO_INT(is->attr.val.value);
             else
                 semanticErrMsgs.push_back(
                     "Error: Invalid initialization at line " + to_string(initVals->attr.line_num));
@@ -145,14 +141,9 @@ namespace
                     "Error: Initialization with void type expression at line " + to_string(initVals->attr.line_num));
                 return;
             }
-            else if (is->attr.val.type == intType)
-                var.initVals[0] = static_cast<float>(get<int>(is->attr.val.value));
-            else if (is->attr.val.type == llType)
-                var.initVals[0] = static_cast<float>(get<long long>(is->attr.val.value));
-            else if (is->attr.val.type == floatType)
-                var.initVals[0] = get<float>(is->attr.val.value);
-            else if (is->attr.val.type == boolType)
-                var.initVals[0] = static_cast<float>(get<bool>(is->attr.val.value));
+            else if (is->attr.val.type == intType || is->attr.val.type == llType || is->attr.val.type == floatType ||
+                     is->attr.val.type == boolType)
+                var.initVals[0] = TO_FLOAT(is->attr.val.value);
             else
                 semanticErrMsgs.push_back(
                     "Error: Invalid initialization at line " + to_string(initVals->attr.line_num));
@@ -199,7 +190,7 @@ void VarDeclStmt::typeCheck()
             val.isConst = isConst;
             val.type    = baseType;
             val.scope   = semTable.symTable.currentScope->scopeLevel;
-            cout << "var name: " << lval->entry->getName() << " at scope " << val.scope << endl;
+            // cout << "var name: " << lval->entry->getName() << " at scope " << val.scope << endl;
 
             if (lval->dims)
             {
@@ -255,7 +246,7 @@ void VarDeclStmt::typeCheck()
         val.isConst = isConst;
         val.type    = baseType;
         val.scope   = semTable.symTable.currentScope->scopeLevel;
-        cout << "var name: " << lval->entry->getName() << " at scope " << val.scope << endl;
+        // cout << "var name: " << lval->entry->getName() << " at scope " << val.scope << endl;
 
         if (lval->dims)
         {
@@ -302,6 +293,8 @@ void BlockStmt::typeCheck()
     semTable.symTable.exitScope();
 }
 
+bool funcWithReturn = false;
+
 void FuncDeclStmt::typeCheck()
 {
     if (!inGlb)
@@ -320,7 +313,11 @@ void FuncDeclStmt::typeCheck()
         for (auto param : *params) param->typeCheck();
     }
 
-    body->typeCheck();
+    funcWithReturn = false;
+
+    if (body) body->typeCheck();
+    if (!funcWithReturn && returnType != voidType)
+        semanticErrMsgs.push_back("Error: Function without return statement at line " + to_string(attr.line_num));
 
     semTable.symTable.exitScope();
     inGlb = true;
@@ -340,6 +337,8 @@ void ReturnStmt::typeCheck()
     if (expr->attr.val.type == voidType)
         semanticErrMsgs.push_back(
             "Error: Return statement with void type expression at line " + to_string(attr.line_num));
+
+    funcWithReturn = true;
 }
 
 void WhileStmt::typeCheck()
