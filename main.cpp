@@ -123,9 +123,25 @@ int main(int argc, char** argv)
         if (ast) { ast->printAST(outStream); }
         if (in.is_open()) in.close();
         if (out.is_open()) out.close();
+        cout<<"Type checking..."<<endl;
+    ast->typeCheck();
+    if (semanticErrMsgs.size() > 0)
+    {
+        cout << "\nSemantic errors found: " << endl;
+
+        int idx = 0;
+        for (auto& msg : semanticErrMsgs) cerr << ++idx << ". " << msg << endl;
+
+        cout << "\n\nExiting..." << endl;
+
+        if (in.is_open()) in.close();
+        if (out.is_open()) out.close();
+
+        return 3;
+    }
         return 0;
     }
-
+    cout<<"Type checking..."<<endl;
     ast->typeCheck();
     if (semanticErrMsgs.size() > 0)
     {
