@@ -3,98 +3,13 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
+#include <utility>
+#include <common/type/type_defs.h>
+#include <llvm_ir/defs.h>
 
 namespace LLVMIR
 {
-    enum class DataType
-    {
-        I32    = 1,
-        F32    = 2,
-        PTR    = 3,
-        VOID   = 4,
-        I8     = 5,
-        I1     = 6,
-        I64    = 7,
-        DOUBLE = 8
-    };
-
-    enum class OperandType
-    {
-        UNKNOWN = 0,
-        REG     = 1,
-        IMMEI32 = 2,
-        IMMEF32 = 3,
-        GLOBAL  = 4,
-        LABEL   = 5,
-        IMMEI64 = 6
-    };
-
-    enum class IROpCode
-    {
-        OTHER         = 0,
-        LOAD          = 1,
-        STORE         = 2,
-        ADD           = 3,
-        SUB           = 4,
-        ICMP          = 5,
-        PHI           = 6,
-        ALLOCA        = 7,
-        MUL           = 8,
-        DIV           = 9,
-        BR_COND       = 10,
-        BR_UNCOND     = 11,
-        FADD          = 12,
-        FSUB          = 13,
-        FMUL          = 14,
-        FDIV          = 15,
-        FCMP          = 16,
-        MOD           = 17,
-        BITXOR        = 18,
-        RET           = 19,
-        ZEXT          = 20,
-        SHL           = 21,
-        FPTOSI        = 24,
-        GETELEMENTPTR = 25,
-        CALL          = 26,
-        SITOFP        = 27,
-        GLOBAL_VAR    = 28,
-        GLOBAL_STR    = 29,
-    };
-
-    enum class IcmpCond
-    {
-        eq  = 1,
-        ne  = 2,
-        ugt = 3,
-        uge = 4,
-        ult = 5,
-        ule = 6,
-        sgt = 7,
-        sge = 8,
-        slt = 9,
-        sle = 10
-    };
-
-    enum class FcmpCond
-    {
-        FALSE = 1,
-        OEQ   = 2,
-        OGT   = 3,
-        OGE   = 4,
-        OLT   = 5,
-        OLE   = 6,
-        ONE   = 7,
-        ORD   = 8,
-        UEQ   = 9,
-        UGT   = 10,
-        UGE   = 11,
-        ULT   = 12,
-        ULE   = 13,
-        UNE   = 14,
-        UNO   = 15,
-        TRUE  = 16
-    };
-
     class Operand
     {
       public:
@@ -195,6 +110,203 @@ namespace LLVMIR
         Operand* val;
 
         StoreInst(DataType t, Operand* p, Operand* v);
+
+        virtual void PrintIR(std::ostream& s);
+    };
+
+    class ArithmeticInst : public Instruction
+    {
+      public:
+        DataType type;
+        Operand* lhs;
+        Operand* rhs;
+        Operand* res;
+
+        ArithmeticInst(IROpCode op, DataType t, Operand* l, Operand* r, Operand* res);
+
+        virtual void PrintIR(std::ostream& s);
+    };
+
+    class IcmpInst : public Instruction
+    {
+      public:
+        DataType type;
+        IcmpCond cond;
+        Operand* lhs;
+        Operand* rhs;
+        Operand* res;
+
+        IcmpInst(DataType t, IcmpCond c, Operand* l, Operand* r, Operand* res);
+
+        virtual void PrintIR(std::ostream& s);
+    };
+
+    class FcmpInst : public Instruction
+    {
+      public:
+        DataType type;
+        FcmpCond cond;
+        Operand* lhs;
+        Operand* rhs;
+        Operand* res;
+
+        FcmpInst(DataType t, FcmpCond c, Operand* l, Operand* r, Operand* res);
+
+        virtual void PrintIR(std::ostream& s);
+    };
+
+    class PhiInst : public Instruction
+    {
+      public:
+        DataType                                   type;
+        Operand*                                   res;
+        std::vector<std::pair<Operand*, Operand*>> vals;
+
+        PhiInst(DataType t, Operand* r, std::vector<std::pair<Operand*, Operand*>> v = {});
+
+        virtual void PrintIR(std::ostream& s);
+    };
+
+    class AllocInst : public Instruction
+    {
+      public:
+        DataType         type;
+        Operand*         res;
+        std::vector<int> dims;
+
+        AllocInst(DataType t, Operand* r, std::vector<int> d = {});
+
+        virtual void PrintIR(std::ostream& s);
+    };
+
+    class BranchCondInst : public Instruction
+    {
+        Operand* cond;
+        Operand* true_label;
+        Operand* false_label;
+
+        BranchCondInst(Operand* c, Operand* t, Operand* f);
+
+        virtual void PrintIR(std::ostream& s);
+    };
+
+    class BranchUncondInst : public Instruction
+    {
+        Operand* target_label;
+
+        BranchUncondInst(Operand* t);
+
+        virtual void PrintIR(std::ostream& s);
+    };
+
+    class GlbvarDefInst : public Instruction
+    {
+      public:
+        DataType      type;
+        std::string   name;
+        Operand*      init;
+        VarAttribute* arr_init;
+
+        GlbvarDefInst(DataType t, std::string n, Operand* i);
+        GlbvarDefInst(DataType t, std::string n, VarAttribute* a);
+
+        virtual void PrintIR(std::ostream& s);
+    };
+
+    class CallInst : public Instruction
+    {
+      public:
+        DataType                                   ret_type;
+        std::string                                func_name;
+        std::vector<std::pair<DataType, Operand*>> args;
+        Operand*                                   res;
+
+        CallInst(DataType rt, std::string fn, Operand* r);
+        CallInst(DataType rt, std::string fn, std::vector<std::pair<DataType, Operand*>> a, Operand* r);
+
+        virtual void PrintIR(std::ostream& s);
+    };
+
+    class RetInst : public Instruction
+    {
+      public:
+        DataType ret_type;
+        Operand* ret;
+
+        RetInst(DataType t, Operand* r);
+
+        virtual void PrintIR(std::ostream& s);
+    };
+
+    class GEPInst : public Instruction
+    {
+      public:
+        DataType              type;
+        DataType              idx_type;
+        Operand*              base_ptr;
+        Operand*              res;
+        std::vector<int>      dims;
+        std::vector<Operand*> idxs;
+
+        GEPInst(
+            DataType t, DataType it, Operand* bp, Operand* r, std::vector<int> d = {}, std::vector<Operand*> is = {});
+
+        virtual void PrintIR(std::ostream& s);
+    };
+
+    class FuncDeclareInst : public Instruction
+    {
+      public:
+        DataType              ret_type;
+        std::string           func_name;
+        std::vector<DataType> arg_types;
+
+        FuncDeclareInst(DataType rt, std::string fn, std::vector<DataType> at = {});
+
+        virtual void PrintIR(std::ostream& s);
+    };
+
+    class FuncDefInst : public FuncDeclareInst
+    {
+      public:
+        std::vector<Operand*> arg_regs;
+
+        FuncDefInst(DataType rt, std::string fn, std::vector<DataType> at = {});
+
+        virtual void PrintIR(std::ostream& s);
+    };
+
+    class SI2FPInst : public Instruction
+    {
+      public:
+        Operand* f_si;
+        Operand* t_fp;
+
+        SI2FPInst(Operand* f, Operand* t);
+
+        virtual void PrintIR(std::ostream& s);
+    };
+
+    class FP2SIInst : public Instruction
+    {
+      public:
+        Operand* f_fp;
+        Operand* t_si;
+
+        FP2SIInst(Operand* f, Operand* t);
+
+        virtual void PrintIR(std::ostream& s);
+    };
+
+    class ZextInst : public Instruction
+    {
+      public:
+        DataType from;
+        DataType to;
+        Operand* src;
+        Operand* dest;
+
+        ZextInst(DataType f, DataType t, Operand* s, Operand* d);
 
         virtual void PrintIR(std::ostream& s);
     };

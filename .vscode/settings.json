@@ -93,6 +93,7 @@
         "barrier": "cpp",
         "typeindex": "cpp",
         "__string": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "__functional_03": "cpp"
     }
 }
