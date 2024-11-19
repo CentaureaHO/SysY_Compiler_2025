@@ -28,7 +28,7 @@ void LeftValueExpr::typeCheck()
                 semanticErrMsgs.emplace_back("Invalid array dimension at line " + to_string(dim->attr.line_num));
             else if (dim->attr.val.type == intType || dim->attr.val.type == llType || dim->attr.val.type == boolType)
             {
-                arr_dims.emplace_back(get<int>(dim->attr.val.value));
+                arr_dims.emplace_back(TO_INT(dim->attr.val.value));
                 const_dims &= dim->attr.val.isConst;
             }
         }
@@ -76,11 +76,11 @@ void LeftValueExpr::typeCheck()
             idx += arr_dims[i];
         }
         if (attr.val.type == intType)
-            attr.val.value = get<int>(val->initVals[idx]);
+            attr.val.value = TO_INT(val->initVals[idx]);
         else if (attr.val.type == llType)
-            attr.val.value = get<long long>(val->initVals[idx]);
+            attr.val.value = TO_LL(val->initVals[idx]);
         else if (attr.val.type == floatType)
-            attr.val.value = get<float>(val->initVals[idx]);
+            attr.val.value = TO_FLOAT(val->initVals[idx]);
     }
     else if (arr_dims.size() < val->dims.size())
     {
@@ -103,17 +103,17 @@ void ConstExpr::typeCheck()
     {
         case 1:
             attr.val.type  = intType;
-            attr.val.value = get<int>(value);
+            attr.val.value = TO_INT(value);
             // printf("ConstExpr: int %d\n", TO_INT(attr.val.value));
             break;
         case 2:
             attr.val.type  = llType;
-            attr.val.value = get<long long>(value);
+            attr.val.value = TO_LL(value);
             // printf("ConstExpr: ll %lld\n", TO_LL(attr.val.value));
             break;
         case 3:
             attr.val.type  = floatType;
-            attr.val.value = get<float>(value);
+            attr.val.value = TO_FLOAT(value);
             break;
         case 4:
             attr.val.type  = doubleType;
@@ -121,7 +121,7 @@ void ConstExpr::typeCheck()
             break;
         case 5:
             attr.val.type  = boolType;
-            attr.val.value = get<bool>(value);
+            attr.val.value = TO_BOOL(value);
             break;
         case 6:
             attr.val.type  = strType;

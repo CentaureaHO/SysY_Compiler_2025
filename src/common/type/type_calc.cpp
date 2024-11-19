@@ -42,7 +42,7 @@ namespace
         result.val.type    = floatType;
         result.val.isConst = node.val.isConst;
         result.line_num    = node.line_num;
-        if (result.val.isConst) result.val.value = std::get<float>(node.val.value);
+        if (result.val.isConst) result.val.value = TO_FLOAT(node.val.value);
         return result;
     }
 
@@ -109,7 +109,7 @@ namespace
         result.val.type    = floatType;
         result.val.isConst = node.val.isConst;
         result.line_num    = node.line_num;
-        if (result.val.isConst) result.val.value = -std::get<float>(node.val.value);
+        if (result.val.isConst) result.val.value = -TO_FLOAT(node.val.value);
         return result;
     }
 
@@ -139,7 +139,7 @@ namespace
         result.val.type    = boolType;
         result.val.isConst = node.val.isConst;
         result.line_num    = node.line_num;
-        if (result.val.isConst) result.val.value = static_cast<bool>(!std::get<float>(node.val.value));
+        if (result.val.isConst) result.val.value = static_cast<bool>(!TO_FLOAT(node.val.value));
         return result;
     }
 
@@ -192,7 +192,7 @@ namespace
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         result.line_num    = lhs.line_num;
         if (result.val.isConst)
-            result.val.value = static_cast<float>(std::get<float>(lhs.val.value) + std::get<float>(rhs.val.value));
+            result.val.value = static_cast<float>(TO_FLOAT(lhs.val.value) + TO_FLOAT(rhs.val.value));
 
         return result;
     }
@@ -245,7 +245,7 @@ namespace
         result.val.type    = floatType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         result.line_num    = lhs.line_num;
-        if (result.val.isConst) result.val.value = std::get<float>(lhs.val.value) - std::get<float>(rhs.val.value);
+        if (result.val.isConst) result.val.value = TO_FLOAT(lhs.val.value) - TO_FLOAT(rhs.val.value);
         return result;
     }
 
@@ -297,7 +297,7 @@ namespace
         result.val.type    = floatType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         result.line_num    = lhs.line_num;
-        if (result.val.isConst) result.val.value = std::get<float>(lhs.val.value) * std::get<float>(rhs.val.value);
+        if (result.val.isConst) result.val.value = TO_FLOAT(lhs.val.value) * TO_FLOAT(rhs.val.value);
         return result;
     }
 
@@ -370,7 +370,7 @@ namespace
         result.val.type    = floatType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         result.line_num    = lhs.line_num;
-        if (result.val.isConst) result.val.value = std::get<float>(lhs.val.value) / rhsValue;
+        if (result.val.isConst) result.val.value = TO_FLOAT(lhs.val.value) / rhsValue;
         return result;
     }
 
@@ -463,7 +463,7 @@ namespace
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         result.line_num    = lhs.line_num;
         if (result.val.isConst)
-            result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) > std::get<float>(rhs.val.value));
+            result.val.value = static_cast<bool>(TO_FLOAT(lhs.val.value) > TO_FLOAT(rhs.val.value));
         return result;
     }
 
@@ -494,7 +494,7 @@ namespace
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         result.line_num    = lhs.line_num;
         if (result.val.isConst)
-            result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) >= std::get<float>(rhs.val.value));
+            result.val.value = static_cast<bool>(TO_FLOAT(lhs.val.value) >= TO_FLOAT(rhs.val.value));
         return result;
     }
 
@@ -525,7 +525,7 @@ namespace
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         result.line_num    = lhs.line_num;
         if (result.val.isConst)
-            result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) < std::get<float>(rhs.val.value));
+            result.val.value = static_cast<bool>(TO_FLOAT(lhs.val.value) < TO_FLOAT(rhs.val.value));
         return result;
     }
 
@@ -556,7 +556,7 @@ namespace
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         result.line_num    = lhs.line_num;
         if (result.val.isConst)
-            result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) <= std::get<float>(rhs.val.value));
+            result.val.value = static_cast<bool>(TO_FLOAT(lhs.val.value) <= TO_FLOAT(rhs.val.value));
         return result;
     }
 
@@ -587,7 +587,7 @@ namespace
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         result.line_num    = lhs.line_num;
         if (result.val.isConst)
-            result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) == std::get<float>(rhs.val.value));
+            result.val.value = static_cast<bool>(TO_FLOAT(lhs.val.value) == TO_FLOAT(rhs.val.value));
         return result;
     }
 
@@ -618,7 +618,7 @@ namespace
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         result.line_num    = lhs.line_num;
         if (result.val.isConst)
-            result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) != std::get<float>(rhs.val.value));
+            result.val.value = static_cast<bool>(TO_FLOAT(lhs.val.value) != TO_FLOAT(rhs.val.value));
         return result;
     }
 
@@ -701,7 +701,7 @@ namespace
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         result.line_num    = lhs.line_num;
         if (result.val.isConst)
-            result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) && std::get<float>(rhs.val.value));
+            result.val.value = static_cast<bool>(TO_FLOAT(lhs.val.value) && TO_FLOAT(rhs.val.value));
         return result;
     }
 
@@ -732,7 +732,7 @@ namespace
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         result.line_num    = lhs.line_num;
         if (result.val.isConst)
-            result.val.value = static_cast<bool>(std::get<float>(lhs.val.value) || std::get<float>(rhs.val.value));
+            result.val.value = static_cast<bool>(TO_FLOAT(lhs.val.value) || TO_FLOAT(rhs.val.value));
         return result;
     }
 
@@ -764,7 +764,7 @@ namespace
         result.val.type    = floatType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         result.line_num    = lhs.line_num;
-        if (result.val.isConst) result.val.value = std::get<float>(rhs.val.value);
+        if (result.val.isConst) result.val.value = TO_FLOAT(rhs.val.value);
         return result;
     }
 }  // namespace

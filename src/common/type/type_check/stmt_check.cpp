@@ -204,7 +204,7 @@ void VarDeclStmt::typeCheck()
                     if (!dim->attr.val.isConst)
                         semanticErrMsgs.push_back(
                             "Error: Array dimension is not a constant at line " + to_string(attr.line_num));
-                    val.dims.push_back(get<int>(dim->attr.val.value));
+                    val.dims.push_back(TO_INT(dim->attr.val.value));
                 }
             }
 
@@ -260,7 +260,7 @@ void VarDeclStmt::typeCheck()
                 if (!dim->attr.val.isConst)
                     semanticErrMsgs.push_back(
                         "Error: Array dimension is not a constant at line " + to_string(attr.line_num));
-                val.dims.push_back(get<int>(dim->attr.val.value));
+                val.dims.push_back(TO_INT(dim->attr.val.value));
             }
         }
 
@@ -369,9 +369,20 @@ void IfStmt::typeCheck()
 
 void ForStmt::typeCheck()
 {
-    // todo
-
     if (inGlb) semanticErrMsgs.push_back("Error: For statement in global scope at line " + to_string(attr.line_num));
+
+    semTable.symTable.enterScope();
+    
+    if (init) init->typeCheck();
+    if (condition) condition->typeCheck();
+    if (update) update->typeCheck();
+    
+    ++loop_counts;
+
+    if (body) body->typeCheck();
+
+    --loop_counts;
+    semTable.symTable.exitScope();
 }
 
 void BreakStmt::typeCheck()
