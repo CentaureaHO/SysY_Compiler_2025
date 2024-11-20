@@ -80,3 +80,50 @@ bool Table::exitScope()
     currentScope = parent;
     return true;
 }
+
+RegTable::Scope::Scope(Scope* parent) : parent(parent), scopeLevel(parent ? parent->scopeLevel + 1 : 0) {}
+RegTable::Scope::~Scope() { symbolMap.clear(); }
+
+RegTable::RegTable() : currentScope(new Scope(nullptr)) {}
+RegTable::~RegTable()
+{
+    Scope* scope = currentScope;
+    while (scope)
+    {
+        Scope* parent = scope->parent;
+        delete scope;
+        scope = parent;
+    }
+}
+
+int RegTable::addSymbol(Entry* entry, int reg)
+{
+    Scope* scope            = currentScope;
+    scope->symbolMap[entry] = reg;
+    return 0;
+}
+int RegTable::getReg(Entry* entry)
+{
+    Scope* scope = currentScope;
+    while (scope)
+    {
+        if (scope->symbolMap.find(entry) != scope->symbolMap.end()) return scope->symbolMap[entry];
+        scope = scope->parent;
+    }
+    return -1;
+}
+
+bool RegTable::enterScope()
+{
+    currentScope = new Scope(currentScope);
+    return true;
+}
+
+bool RegTable::exitScope()
+{
+    if (currentScope == nullptr) return false;
+    Scope* parent = currentScope->parent;
+    delete currentScope;
+    currentScope = parent;
+    return true;
+}

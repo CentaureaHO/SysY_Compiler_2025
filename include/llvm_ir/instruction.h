@@ -181,6 +181,7 @@ namespace LLVMIR
 
     class BranchCondInst : public Instruction
     {
+      public:
         Operand* cond;
         Operand* true_label;
         Operand* false_label;
@@ -192,6 +193,7 @@ namespace LLVMIR
 
     class BranchUncondInst : public Instruction
     {
+      public:
         Operand* target_label;
 
         BranchUncondInst(Operand* t);
@@ -202,13 +204,13 @@ namespace LLVMIR
     class GlbvarDefInst : public Instruction
     {
       public:
-        DataType      type;
-        std::string   name;
-        Operand*      init;
-        VarAttribute* arr_init;
+        DataType     type;
+        std::string  name;
+        Operand*     init;
+        VarAttribute arr_init;
 
         GlbvarDefInst(DataType t, std::string n, Operand* i);
-        GlbvarDefInst(DataType t, std::string n, VarAttribute* a);
+        GlbvarDefInst(DataType t, std::string n, VarAttribute a);
 
         virtual void PrintIR(std::ostream& s);
     };
@@ -311,5 +313,7 @@ namespace LLVMIR
         virtual void PrintIR(std::ostream& s);
     };
 }  // namespace LLVMIR
+
+std::ostream& operator<<(std::ostream& s, LLVMIR::Operand* op);
 
 #endif

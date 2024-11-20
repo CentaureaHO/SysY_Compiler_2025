@@ -6,8 +6,23 @@
 #include <llvm_ir/instruction.h>
 #include <llvm_ir/block.h>
 
+namespace Symbol
+{
+    class RegTable;
+}
+
 namespace LLVMIR
 {
+    class IRTable
+    {
+      public:
+        Symbol::RegTable*           symTab;
+        std::map<int, VarAttribute> regMap;
+        std::map<int, int>          formalArrTab;
+
+        IRTable();
+    };
+
     class IR
     {
       public:

@@ -81,6 +81,38 @@ namespace Symbol
         bool enterScope();
         bool exitScope();
     };
+
+    class RegTable
+    {
+      public:
+        struct Scope
+        {
+            std::map<Entry*, int> symbolMap;
+            Scope*                parent;
+            /*
+             *  -1  : unknown
+             *  0   : global
+             *  1   : parameter
+             *  >= 2: local
+             */
+            int scopeLevel;
+
+            Scope(Scope* parent = nullptr);
+            ~Scope();
+        };
+
+        Scope* currentScope;
+
+      public:
+        RegTable();
+        ~RegTable();
+
+        int addSymbol(Entry* entry, int reg);
+        int getReg(Entry* entry);
+
+        bool enterScope();
+        bool exitScope();
+    };
 }  // namespace Symbol
 
 #include <common/type/symtab/symbol_table.tpp>
