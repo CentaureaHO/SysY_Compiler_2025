@@ -1,0 +1,101 @@
+[92mAccept [0mtestcase/functional_test/Advanced/038_continue.sy
+[92mAccept [0mtestcase/functional_test/Advanced/101_scope2.sy
+[92mAccept [0mtestcase/functional_test/Advanced/115_nested_calls.sy
+[92mAccept [0mtestcase/functional_test/Advanced/093_n_queens.sy
+[93mCompile Error on [0mtestcase/functional_test/Advanced/00007_DP.sy
+[92mAccept [0mtestcase/functional_test/Advanced/088_hanoi.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/1090_insert_order.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/200_matrix_mul.sy
+[93mCompile Error on [0mtestcase/functional_test/Advanced/23_json.sy
+[93mCompile Error on [0mtestcase/functional_test/Advanced/089_hidden_var.sy
+[93mCompile Error on [0mtestcase/functional_test/Advanced/094_substr.sy
+[92mAccept [0mtestcase/functional_test/Advanced/083_brainfk.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/081_exgcd.sy
+[92mAccept [0mtestcase/functional_test/Advanced/070_multiplication_puzzle.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/065_sort_test5.sy
+[92mAccept [0mtestcase/functional_test/Advanced/090_int_io.sy
+[92mAccept [0mtestcase/functional_test/Advanced/072_percolation.sy
+[92mAccept [0mtestcase/functional_test/Advanced/1084_palindrome_number.sy
+[92mAccept [0mtestcase/functional_test/Advanced/002_var_defn2.sy
+[92mAccept [0mtestcase/functional_test/Advanced/116_nested_calls2.sy
+[92mAccept [0mtestcase/functional_test/Advanced/086_full_conn.sy
+[92mAccept [0mtestcase/functional_test/Advanced/099_skip_spaces.sy
+[92mAccept [0mtestcase/functional_test/Advanced/035_while_test2.sy
+[92mAccept [0mtestcase/functional_test/Advanced/102_short_circuit3.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/1075_max_container.sy
+[92mAccept [0mtestcase/functional_test/Advanced/098_chaos_token.sy
+[92mAccept [0mtestcase/functional_test/Advanced/114_register_alloc.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/00004_csememtest3.sy
+[93mCompile Error on [0mtestcase/functional_test/Advanced/078_big_int_mul.sy
+[92mAccept [0mtestcase/functional_test/Advanced/107_long_code2.sy
+[92mAccept [0mtestcase/functional_test/Advanced/rbtree_in_segtree.sy
+[95mRunTime Error on [0mtestcase/functional_test/Advanced/080_color.sy
+[91mWrong Answer on [0mtestcase/functional_test/Advanced/04_break_continue.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/092_max_flow.sy
+[93mCompile Error on [0mtestcase/functional_test/Advanced/109_many_params2.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/199_matrix_sub.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/198_matrix_add.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/37_dct.sy
+[92mAccept [0mtestcase/functional_test/Advanced/060_scope.sy
+[93mCompile Error on [0mtestcase/functional_test/Advanced/15_graph_coloring.sy
+[92mAccept [0mtestcase/functional_test/Advanced/10_DFS.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/38_light2d.sy
+[92mAccept [0mtestcase/functional_test/Advanced/1080_lcm.sy
+[92mAccept [0mtestcase/functional_test/Advanced/29_long_line.sy
+[92mAccept [0mtestcase/functional_test/Advanced/1086_bin_search.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/1071_max_subsequence_sum.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/36_rotate.sy
+[92mAccept [0mtestcase/functional_test/Advanced/110_many_params3.sy
+[92mAccept [0mtestcase/functional_test/Advanced/1091_line_search.sy
+[92mAccept [0mtestcase/functional_test/Advanced/11_BST.sy
+[92mAccept [0mtestcase/functional_test/Advanced/12_DSU.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/2048.sy
+[95mRunTime Error on [0mtestcase/functional_test/Advanced/30_many_dimensions.sy
+[92mAccept [0mtestcase/functional_test/Advanced/085_dijkstra.sy
+[91mWrong Answer on [0mtestcase/functional_test/Advanced/091_kmp.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/066_sort_test6.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/39_fp_params.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/073_backpack.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/106_long_code.sy
+[92mAccept [0mtestcase/functional_test/Advanced/042_arr_expr_len.sy
+[92mAccept [0mtestcase/functional_test/Advanced/splay.sy
+[92mAccept [0mtestcase/functional_test/Advanced/complex_array4.sy
+[92mAccept [0mtestcase/functional_test/Advanced/111_many_globals.sy
+[92mAccept [0mtestcase/functional_test/Advanced/117_nested_loops.sy
+[92mAccept [0mtestcase/functional_test/Advanced/068_genealogical_tree.sy
+[92mAccept [0mtestcase/functional_test/Advanced/067_sort_test7.sy
+[93mCompile Error on [0mtestcase/functional_test/Advanced/006_arr_defn3.sy
+[92mAccept [0mtestcase/functional_test/Advanced/112_many_locals.sy
+[92mAccept [0mtestcase/functional_test/Advanced/011_const_array_defn.sy
+[93mCompile Error on [0mtestcase/functional_test/Advanced/105_long_array2.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/1081_jump_game.sy
+[92mAccept [0mtestcase/functional_test/Advanced/059_short_circuit2.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/1067_remove_duplicate_element.sy
+[92mAccept [0mtestcase/functional_test/Advanced/16_k_smallest.sy
+[92mAccept [0mtestcase/functional_test/Advanced/097_var_name.sy
+[93mCompile Error on [0mtestcase/functional_test/Advanced/007_arr_defn4.sy
+[92mAccept [0mtestcase/functional_test/Advanced/lisp2.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/35_math.sy
+[92mAccept [0mtestcase/functional_test/Advanced/09_BFS.sy
+[95mRunTime Error on [0mtestcase/functional_test/Advanced/1077_unique_path.sy
+[91mWrong Answer on [0mtestcase/functional_test/Advanced/1088_array_concat.sy
+[91mWrong Answer on [0mtestcase/functional_test/Advanced/201_matrix_tran.sy
+[93mCompile Error on [0mtestcase/functional_test/Advanced/084_expr_eval.sy
+[92mAccept [0mtestcase/functional_test/Advanced/096_side_effect.sy
+[92mAccept [0mtestcase/functional_test/Advanced/058_short_circuit.sy
+[92mAccept [0mtestcase/functional_test/Advanced/071_exchange_array.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/1069_last_word_length.sy
+[92mAccept [0mtestcase/functional_test/Advanced/13_LCA.sy
+[92mAccept [0mtestcase/functional_test/Advanced/14_dp.sy
+[92mAccept [0mtestcase/functional_test/Advanced/lisp1.sy
+[93mCompile Error on [0mtestcase/functional_test/Advanced/100_int_literal.sy
+[92mAccept [0mtestcase/functional_test/Advanced/079_calculator.sy
+[92mAccept [0mtestcase/functional_test/Advanced/104_long_array.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/derich1.sy
+[92mAccept [0mtestcase/functional_test/Advanced/037_break.sy
+[92mAccept [0mtestcase/functional_test/Advanced/103_long_func.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/196_float.sy
+[92mAccept [0mtestcase/functional_test/Advanced/00001_csememtest1.sy
+[93mOutPut Error on [0mtestcase/functional_test/Advanced/1082_int_split.sy
+[93mCompile Error on [0mtestcase/functional_test/Advanced/108_many_params.sy
+IRTest-Grade:55/100

@@ -6,7 +6,7 @@
 using namespace std;
 
 /* Definition of ExprNode */
-ExprNode::ExprNode(int line_num, bool isConst) : Node(line_num), isConst(isConst) {}
+ExprNode::ExprNode(int line_num, bool isConst) : Node(line_num), isConst(isConst), true_label(-1), false_label(-1) {}
 ExprNode::~ExprNode() {}
 
 void ExprNode::printAST(ostream* oss, const string& prefix, bool isLast)

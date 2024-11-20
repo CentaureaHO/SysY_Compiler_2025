@@ -19,6 +19,9 @@ class ExprNode : public Node
     bool isConst;
 
   public:
+    int true_label;
+    int false_label;
+
     ExprNode(int line_num = -1, bool isConst = false);
     virtual ~ExprNode();
 

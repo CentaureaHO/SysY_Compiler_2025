@@ -314,12 +314,84 @@ void ReturnStmt::genIRCode()
     block->insertRetReg(TYPE2LLVM(ret_type->getKind()), max_reg);
 }
 
-void WhileStmt::genIRCode() { cerr << "WhileStmt genIRCode not implemented" << endl; }
+void WhileStmt::genIRCode()
+{
+    IRBlock* cond_block = NEW_BLOCK();
+    IRBlock* body_block = NEW_BLOCK();
+    IRBlock* end_block  = NEW_BLOCK();
+    IRBlock* block      = builder.getBlock(cur_func, cur_label);
 
-void IfStmt::genIRCode() { cerr << "IfStmt genIRCode not implemented" << endl; }
+    int start_label_bak = loop_start_label;
+    int end_label_bak   = loop_end_label;
+
+    loop_start_label = cond_block->block_id;
+    loop_end_label   = end_block->block_id;
+
+    block->insertUncondBranch(cond_block->block_id);
+    cur_label = cond_block->block_id;
+
+    condition->true_label  = body_block->block_id;
+    condition->false_label = end_block->block_id;
+    condition->genIRCode();
+
+    block = builder.getBlock(cur_func, cur_label);
+    block->insertTypeConvert(condition->attr.val.type->getKind(), TypeKind::Bool, max_reg);
+    block->insertCondBranch(max_reg, body_block->block_id, end_block->block_id);
+
+    cur_label = body_block->block_id;
+    if (body) body->genIRCode();
+    block = builder.getBlock(cur_func, cur_label);
+    block->insertUncondBranch(cond_block->block_id);
+
+    cur_label = end_block->block_id;
+
+    loop_start_label = start_label_bak;
+    loop_end_label   = end_label_bak;
+}
+
+void IfStmt::genIRCode()
+{
+    IRBlock* then_block = NEW_BLOCK();
+    IRBlock* else_block = NEW_BLOCK();
+    IRBlock* end_block  = NEW_BLOCK();
+
+    condition->true_label  = then_block->block_id;
+    condition->false_label = else_block->block_id;
+    condition->genIRCode();
+
+    IRBlock* block = builder.getBlock(cur_func, cur_label);
+    block->insertTypeConvert(condition->attr.val.type->getKind(), TypeKind::Bool, max_reg);
+    block->insertCondBranch(max_reg, then_block->block_id, else_block->block_id);
+
+    cur_label = then_block->block_id;
+    if (thenBody) thenBody->genIRCode();
+    block = builder.getBlock(cur_func, cur_label);
+    block->insertUncondBranch(end_block->block_id);
+
+    cur_label = else_block->block_id;
+    if (elseBody) elseBody->genIRCode();
+    block = builder.getBlock(cur_func, cur_label);
+    block->insertUncondBranch(end_block->block_id);
+
+    cur_label = end_block->block_id;
+}
 
 void ForStmt::genIRCode() { cerr << "ForStmt genIRCode not implemented" << endl; }
 
-void BreakStmt::genIRCode() { cerr << "BreakStmt genIRCode not implemented" << endl; }
+void BreakStmt::genIRCode()
+{
+    IRBlock* block = builder.getBlock(cur_func, cur_label);
+    block->insertUncondBranch(loop_end_label);
 
-void ContinueStmt::genIRCode() { cerr << "ContinueStmt genIRCode not implemented" << endl; }
+    block     = NEW_BLOCK();
+    cur_label = block->block_id;
+}
+
+void ContinueStmt::genIRCode()
+{
+    IRBlock* block = builder.getBlock(cur_func, cur_label);
+    block->insertUncondBranch(loop_start_label);
+
+    block     = NEW_BLOCK();
+    cur_label = block->block_id;
+}

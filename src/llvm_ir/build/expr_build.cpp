@@ -12,6 +12,8 @@ using namespace LLVMIR;
 
 using DT = DataType;
 
+#define NEW_BLOCK() builder.createBlock(cur_func, ++max_label)
+
 extern SemanticTable::Table* semTable;
 
 extern IRTable irgen_table;
@@ -127,9 +129,116 @@ void BinaryExpr::genIRCode_Assign()
     block->insertStore(dtype, getRegOperand(max_reg), lval->lv_ptr);
 }
 
-void BinaryExpr::genIRCode_LogicalAnd() {}
+/*
+Logical AND Short Circuit Evaluation:
 
-void BinaryExpr::genIRCode_LogicalOr() {}
+        +-------------------+
+        |                   |
+        |   Evaluate Left   |
+        |     Operand       |
+        |                   |
+        +---------+---------+
+                  |
+         Is Left True?
+                  |
+          +-------+------+
+          |              |
+        Yes             No
+          |              |
+          |          Jump to False Label
+          |              |
+   +------+------+
+   |             |
+   |  Evaluate   |
+   |  Right      |
+   |  Operand    |
+   |             |
+   +------+------+
+          |
+     Is Right True?
+          |
+    +-----+-----+
+    |           |
+   Yes         No
+    |           |
+  Jump to     Jump to
+  True Label  False Label
+*/
+void BinaryExpr::genIRCode_LogicalAnd()
+{
+    IRBlock* right_eval_block = NEW_BLOCK();
+
+    lhs->true_label  = right_eval_block->block_id;
+    lhs->false_label = false_label;
+
+    rhs->true_label  = true_label;
+    rhs->false_label = false_label;
+
+    lhs->genIRCode();
+    IRBlock* block = builder.getBlock(cur_func, cur_label);
+    block->insertTypeConvert(lhs->attr.val.type->getKind(), TypeKind::Bool, max_reg);
+    block->insertCondBranch(max_reg, lhs->true_label, lhs->false_label);
+
+    cur_label = lhs->true_label;
+    rhs->genIRCode();
+    block = builder.getBlock(cur_func, cur_label);
+    block->insertTypeConvert(rhs->attr.val.type->getKind(), TypeKind::Bool, max_reg);
+    // block->insertCondBranch(max_reg, rhs->true_label, rhs->false_label);
+}
+
+/*
+Logical OR Short Circuit Evaluation:
+
+        +-------------------+
+        |                   |
+        |   Evaluate Left   |
+        |     Operand       |
+        |                   |
+        +---------+---------+
+                  |
+         Is Left False?
+                  |
+          +-------+------+
+          |              |
+         No            Yes
+          |              |
+      Jump to       +----+-----+
+     True Label     |          |
+                    | Evaluate |
+                    |  Right   |
+                    | Operand  |
+                    |          |
+                    +----+-----+
+                         |
+                   Is Right True?
+                         |
+                   +-----+-----+
+                   |           |
+                  Yes         No
+                   |           |
+                 Jump to     Jump to
+                 True Label  False Label
+*/
+void BinaryExpr::genIRCode_LogicalOr()
+{
+    IRBlock* right_eval_block = NEW_BLOCK();
+
+    lhs->true_label  = true_label;
+    lhs->false_label = right_eval_block->block_id;
+
+    rhs->true_label  = true_label;
+    rhs->false_label = false_label;
+
+    lhs->genIRCode();
+    IRBlock* block = builder.getBlock(cur_func, cur_label);
+    block->insertTypeConvert(lhs->attr.val.type->getKind(), TypeKind::Bool, max_reg);
+    block->insertCondBranch(max_reg, lhs->true_label, lhs->false_label);
+
+    cur_label = right_eval_block->block_id;
+    rhs->genIRCode();
+    block = builder.getBlock(cur_func, cur_label);
+    block->insertTypeConvert(rhs->attr.val.type->getKind(), TypeKind::Bool, max_reg);
+}
 
 void BinaryExpr::genIRCode()
 {
