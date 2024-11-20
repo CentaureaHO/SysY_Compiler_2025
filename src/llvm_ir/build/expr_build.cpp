@@ -167,6 +167,7 @@ Logical AND Short Circuit Evaluation:
 void BinaryExpr::genIRCode_LogicalAnd()
 {
     IRBlock* right_eval_block = NEW_BLOCK();
+    right_eval_block->comment = "And opertor at line " + to_string(line_num);
 
     lhs->true_label  = right_eval_block->block_id;
     lhs->false_label = false_label;
@@ -222,6 +223,7 @@ Logical OR Short Circuit Evaluation:
 void BinaryExpr::genIRCode_LogicalOr()
 {
     IRBlock* right_eval_block = NEW_BLOCK();
+    right_eval_block->comment = "Or opertor at line " + to_string(line_num);
 
     lhs->true_label  = true_label;
     lhs->false_label = right_eval_block->block_id;

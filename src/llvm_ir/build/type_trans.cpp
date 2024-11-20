@@ -305,7 +305,7 @@ void IR_BinaryFloat_Bool(ExprNode* lhs, ExprNode* rhs, OpCode op, IRBlock* block
     int lhs_reg = max_reg;
 
     rhs->genIRCode();
-    block->insertTypeConvert(rhs->attr.val.type->getKind(), TypeKind::Float, ++max_reg);
+    block->insertTypeConvert(rhs->attr.val.type->getKind(), TypeKind::Float, max_reg);
 
     BinaryIRFloat[INT(op)](block, lhs_reg, max_reg);
 }
@@ -316,7 +316,7 @@ void IR_BinaryFloat_Int(ExprNode* lhs, ExprNode* rhs, OpCode op, IRBlock* block)
     int lhs_reg = max_reg;
 
     rhs->genIRCode();
-    block->insertTypeConvert(rhs->attr.val.type->getKind(), TypeKind::Float, ++max_reg);
+    block->insertTypeConvert(rhs->attr.val.type->getKind(), TypeKind::Float, max_reg);
 
     BinaryIRFloat[INT(op)](block, lhs_reg, max_reg);
 }

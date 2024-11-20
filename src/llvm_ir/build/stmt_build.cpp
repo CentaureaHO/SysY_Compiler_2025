@@ -53,13 +53,6 @@ int FindMinDimStepIR(const std::vector<int> dims, int relativePos, int dimsIdx, 
 
 std::vector<int> GetIndexes(std::vector<int> dims, int absoluteIndex)
 {
-    //[3][4]
-    // 0-> {0,0}  {absoluteIndex/4,absoluteIndex%4}
-    // 1-> {0,1}
-    // 2-> {0,2}
-    // 3-> {0,3}
-    // 4-> {1,0}
-    // 5-> {1,1}
     std::vector<int> ret;
     for (std::vector<int>::reverse_iterator it = dims.rbegin(); it != dims.rend(); ++it)
     {
@@ -75,16 +68,18 @@ void RecursiveArrayInitIR(IRBlock* block, const std::vector<int> dims, int array
 {
     InitMulti* init_multi = static_cast<InitMulti*>(init);
     if (!init_multi) return;
+    if (!init_multi->exprs) return;
 
     int pos = beginPos;
 
     for (InitNode* iv : *(init_multi->exprs))
     {
-        InitSingle* init_single = static_cast<InitSingle*>(iv);
+        InitSingle* init_single = dynamic_cast<InitSingle*>(iv);
 
         if (init_single)  // 单个数
         {
             ExprNode* expr = init_single->expr;
+            if (!expr) continue;
             expr->genIRCode();
             block->insertTypeConvert(expr->attr.val.type->getKind(), baseType->getKind(), max_reg);
 
@@ -227,6 +222,7 @@ void FuncDeclStmt::genIRCode()
 
     builder.enterFunc(func_def);
     IRBlock* block = NEW_BLOCK();
+    block->comment = "Func define at line " + to_string(line_num);
 
     if (params)
     {
@@ -243,11 +239,13 @@ void FuncDeclStmt::genIRCode()
                 func_def->arg_types.push_back(DT::PTR);
                 irgen_table.formalArrTab[i] = true;
                 for (size_t j = 1; j < pdefNode.dims->size(); ++j)
+                {
                     val.dims.push_back(TO_INT(pdefNode.dims->at(j)->attr.val.value));
+                }
 
-                irgen_table.symTab->addSymbol(pdefNode.entry, max_reg);
-                irgen_table.regMap[max_reg] = val;
-                func_def->arg_regs.push_back(getRegOperand(i));
+                irgen_table.symTab->addSymbol(pdefNode.entry, i);
+                irgen_table.regMap[i] = val;
+                func_def->arg_regs.push_back(getRegOperand(func_def->arg_regs.size()));
             }
             else
             {
@@ -259,8 +257,11 @@ void FuncDeclStmt::genIRCode()
 
                 irgen_table.symTab->addSymbol(pdefNode.entry, max_reg);
                 irgen_table.regMap[max_reg] = val;
-                func_def->arg_regs.push_back(getRegOperand(i));
+                func_def->arg_regs.push_back(getRegOperand(func_def->arg_regs.size()));
             }
+
+            cerr << "In func " << entry->getName() << " add param " << pdefNode.entry->getName() << " at reg "
+                 << max_reg << endl;
         }
     }
 
@@ -268,8 +269,9 @@ void FuncDeclStmt::genIRCode()
 
     block->insertUncondBranch(1);
 
-    block     = NEW_BLOCK();
-    cur_label = max_label;
+    block          = NEW_BLOCK();
+    block->comment = "Func end at line " + to_string(line_num);
+    cur_label      = max_label;
 
     for (auto& [idx, block] : builder.function_block_map[func_def])
     {
@@ -317,8 +319,11 @@ void ReturnStmt::genIRCode()
 void WhileStmt::genIRCode()
 {
     IRBlock* cond_block = NEW_BLOCK();
+    cond_block->comment = "While condition at line " + to_string(line_num);
     IRBlock* body_block = NEW_BLOCK();
+    body_block->comment = "While body at line " + to_string(line_num);
     IRBlock* end_block  = NEW_BLOCK();
+    end_block->comment  = "While end at line " + to_string(line_num);
     IRBlock* block      = builder.getBlock(cur_func, cur_label);
 
     int start_label_bak = loop_start_label;
@@ -352,8 +357,11 @@ void WhileStmt::genIRCode()
 void IfStmt::genIRCode()
 {
     IRBlock* then_block = NEW_BLOCK();
+    then_block->comment = "If then at line " + to_string(line_num);
     IRBlock* else_block = NEW_BLOCK();
+    else_block->comment = "If else at line " + to_string(line_num);
     IRBlock* end_block  = NEW_BLOCK();
+    end_block->comment  = "If end at line " + to_string(line_num);
 
     condition->true_label  = then_block->block_id;
     condition->false_label = else_block->block_id;
@@ -383,8 +391,9 @@ void BreakStmt::genIRCode()
     IRBlock* block = builder.getBlock(cur_func, cur_label);
     block->insertUncondBranch(loop_end_label);
 
-    block     = NEW_BLOCK();
-    cur_label = block->block_id;
+    block          = NEW_BLOCK();
+    block->comment = "Break at line " + to_string(line_num);
+    cur_label      = block->block_id;
 }
 
 void ContinueStmt::genIRCode()
@@ -392,6 +401,7 @@ void ContinueStmt::genIRCode()
     IRBlock* block = builder.getBlock(cur_func, cur_label);
     block->insertUncondBranch(loop_start_label);
 
-    block     = NEW_BLOCK();
-    cur_label = block->block_id;
+    block          = NEW_BLOCK();
+    block->comment = "Continue at line " + to_string(line_num);
+    cur_label      = block->block_id;
 }
