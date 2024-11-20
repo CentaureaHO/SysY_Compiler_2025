@@ -60,15 +60,15 @@ string GlobalOperand::getName() { return "@" + global_name; }
 Instruction::Instruction(IROpCode op) : opcode(op) {}
 
 LoadInst::LoadInst(DataType t, Operand* p, Operand* r) : Instruction(IROpCode::LOAD), type(t), ptr(p), res(r) {}
-void LoadInst::PrintIR(ostream& s) { s << res << " = load " << type << ", ptr " << res << "\n"; }
+void LoadInst::printIR(ostream& s) { s << res << " = load " << type << ", ptr " << ptr << "\n"; }
 
 StoreInst::StoreInst(DataType t, Operand* p, Operand* r) : Instruction(IROpCode::STORE), type(t), ptr(p), val(r) {}
-void StoreInst::PrintIR(ostream& s) { s << "store " << type << " " << val << ", ptr " << ptr << "\n"; }
+void StoreInst::printIR(ostream& s) { s << "store " << type << " " << val << ", ptr " << ptr << "\n"; }
 
 ArithmeticInst::ArithmeticInst(IROpCode op, DataType t, Operand* l, Operand* r, Operand* res)
     : Instruction(op), type(t), lhs(l), rhs(r), res(res)
 {}
-void ArithmeticInst::PrintIR(ostream& s)
+void ArithmeticInst::printIR(ostream& s)
 {
     s << res << " = " << opcode << " " << type << " " << lhs << "," << rhs << "\n";
 }
@@ -76,7 +76,7 @@ void ArithmeticInst::PrintIR(ostream& s)
 IcmpInst::IcmpInst(DataType t, IcmpCond c, Operand* l, Operand* r, Operand* res)
     : Instruction(IROpCode::ICMP), type(t), cond(c), lhs(l), rhs(r), res(res)
 {}
-void IcmpInst::PrintIR(ostream& s)
+void IcmpInst::printIR(ostream& s)
 {
     s << res << " = icmp " << cond << " " << type << " " << lhs << "," << rhs << "\n";
 }
@@ -84,7 +84,7 @@ void IcmpInst::PrintIR(ostream& s)
 FcmpInst::FcmpInst(DataType t, FcmpCond c, Operand* l, Operand* r, Operand* res)
     : Instruction(IROpCode::FCMP), type(t), cond(c), lhs(l), rhs(r), res(res)
 {}
-void FcmpInst::PrintIR(ostream& s)
+void FcmpInst::printIR(ostream& s)
 {
     s << res << " = fcmp " << cond << " " << type << " " << lhs << "," << rhs << "\n";
 }
@@ -92,7 +92,7 @@ void FcmpInst::PrintIR(ostream& s)
 PhiInst::PhiInst(DataType t, Operand* r, vector<pair<Operand*, Operand*>> v)
     : Instruction(IROpCode::PHI), type(t), res(r), vals(v)
 {}
-void PhiInst::PrintIR(ostream& s)
+void PhiInst::printIR(ostream& s)
 {
     s << res << " = phi " << type << " ";
     auto it = vals.begin();
@@ -107,7 +107,7 @@ void PhiInst::PrintIR(ostream& s)
 }
 
 AllocInst::AllocInst(DataType t, Operand* r, vector<int> d) : Instruction(IROpCode::ALLOCA), type(t), res(r), dims(d) {}
-void AllocInst::PrintIR(ostream& s)
+void AllocInst::printIR(ostream& s)
 {
     s << res << " = alloca ";
     if (dims.empty())
@@ -123,13 +123,13 @@ void AllocInst::PrintIR(ostream& s)
 BranchCondInst::BranchCondInst(Operand* c, Operand* t, Operand* f)
     : Instruction(IROpCode::BR_COND), cond(c), true_label(t), false_label(f)
 {}
-void BranchCondInst::PrintIR(ostream& s)
+void BranchCondInst::printIR(ostream& s)
 {
     s << "br i1 " << cond << ", label " << true_label << ", label " << false_label << "\n";
 }
 
 BranchUncondInst::BranchUncondInst(Operand* t) : Instruction(IROpCode::BR_UNCOND), target_label(t) {}
-void BranchUncondInst::PrintIR(ostream& s) { s << "br label " << target_label << "\n"; }
+void BranchUncondInst::printIR(ostream& s) { s << "br label " << target_label << "\n"; }
 
 GlbvarDefInst::GlbvarDefInst(DataType t, string n, Operand* v)
     : Instruction(IROpCode::GLOBAL_VAR), type(t), name(n), init(v)
@@ -198,7 +198,7 @@ void recursive_init(ostream& s, DataType type, VarAttribute& v, int dimDph, int 
 
     s << "]";
 }
-void GlbvarDefInst::PrintIR(ostream& s)
+void GlbvarDefInst::printIR(ostream& s)
 {
     s << "@" << name << " = global ";
     if (arr_init.dims.empty())
@@ -227,7 +227,7 @@ CallInst::CallInst(DataType rt, string fn, Operand* r)
 CallInst::CallInst(DataType rt, string fn, vector<pair<DataType, Operand*>> a, Operand* r)
     : Instruction(IROpCode::CALL), ret_type(rt), func_name(fn), args(a), res(r)
 {}
-void CallInst::PrintIR(ostream& s)
+void CallInst::printIR(ostream& s)
 {
     if (ret_type != DT::VOID) s << res << " = ";
     s << "call " << ret_type << " @" << func_name << "(";
@@ -244,7 +244,7 @@ void CallInst::PrintIR(ostream& s)
 }
 
 RetInst::RetInst(DataType t, Operand* r) : Instruction(IROpCode::RET), ret_type(t), ret(r) {}
-void RetInst::PrintIR(ostream& s)
+void RetInst::printIR(ostream& s)
 {
     s << "ret " << ret_type;
     if (ret) s << " " << ret;
@@ -254,7 +254,7 @@ void RetInst::PrintIR(ostream& s)
 GEPInst::GEPInst(DataType t, DataType it, Operand* bp, Operand* r, vector<int> d, vector<Operand*> is)
     : Instruction(IROpCode::GETELEMENTPTR), type(t), idx_type(it), base_ptr(bp), res(r), dims(d), idxs(is)
 {}
-void GEPInst::PrintIR(ostream& s)
+void GEPInst::printIR(ostream& s)
 {
     s << res << " = getelementptr ";
     if (dims.empty())
@@ -273,7 +273,7 @@ void GEPInst::PrintIR(ostream& s)
 FuncDeclareInst::FuncDeclareInst(DataType rt, string fn, vector<DataType> at)
     : Instruction(IROpCode::OTHER), ret_type(rt), func_name(fn), arg_types(at)
 {}
-void FuncDeclareInst::PrintIR(ostream& s)
+void FuncDeclareInst::printIR(ostream& s)
 {
     s << "declare " << ret_type << " @" << func_name << "(";
     auto it = arg_types.begin();
@@ -288,7 +288,7 @@ void FuncDeclareInst::PrintIR(ostream& s)
 }
 
 FuncDefInst::FuncDefInst(DataType rt, string fn, vector<DataType> at) : FuncDeclareInst(rt, fn, at), arg_regs({}) {}
-void FuncDefInst::PrintIR(ostream& s)
+void FuncDefInst::printIR(ostream& s)
 {
     size_t arg_num = arg_types.size();
     size_t reg_num = arg_regs.size();
@@ -306,15 +306,15 @@ void FuncDefInst::PrintIR(ostream& s)
 }
 
 SI2FPInst::SI2FPInst(Operand* f, Operand* t) : Instruction(IROpCode::SITOFP), f_si(f), t_fp(t) {}
-void SI2FPInst::PrintIR(ostream& s) { s << t_fp << " = sitofp i32 " << f_si << " to float\n"; }
+void SI2FPInst::printIR(ostream& s) { s << t_fp << " = sitofp i32 " << f_si << " to float\n"; }
 
 FP2SIInst::FP2SIInst(Operand* f, Operand* t) : Instruction(IROpCode::FPTOSI), f_fp(f), t_si(t) {}
-void FP2SIInst::PrintIR(ostream& s) { s << t_si << " = fptosi float " << f_fp << " to i32\n"; }
+void FP2SIInst::printIR(ostream& s) { s << t_si << " = fptosi float " << f_fp << " to i32\n"; }
 
 ZextInst::ZextInst(DataType f, DataType t, Operand* s, Operand* d)
     : Instruction(IROpCode::ZEXT), from(f), to(t), src(s), dest(d)
 {}
-void ZextInst::PrintIR(ostream& s) { s << dest << " = zext " << from << " " << src << " to " << to << "\n"; }
+void ZextInst::printIR(ostream& s) { s << dest << " = zext " << from << " " << src << " to " << to << "\n"; }
 
 ostream& operator<<(std::ostream& s, LLVMIR::Operand* op)
 {

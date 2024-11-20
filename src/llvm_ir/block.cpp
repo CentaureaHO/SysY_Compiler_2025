@@ -57,7 +57,12 @@ IRBlock::~IRBlock() {}
 
 void IRBlock::printIR(ostream& s)
 {
-    // todo
+    s << "L" << block_id << ":  ;" << comment << "\n";
+    for (auto& inst : insts)
+    {
+        s << "\t";
+        inst->printIR(s);
+    }
 }
 
 void IRBlock::insertLoad(DataType t, Operand* ptr, int res_reg)

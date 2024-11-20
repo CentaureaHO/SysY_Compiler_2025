@@ -14,17 +14,17 @@ namespace LLVMIR
     {
       public:
         std::string comment;
-        int         block_id = 0;
+        int         block_id;
 
         std::deque<Instruction*> insts;
 
-        IRBlock(int id);
+        IRBlock(int id = 0);
         ~IRBlock();
 
         void printIR(std::ostream& s);
 
-        public:
-        void insertInst(Instruction* inst, bool is_back = 1);
+      public:
+        // void insertInst(Instruction* inst, bool is_back = 1);
 
       public:
         void insertLoad(DataType t, Operand* ptr, int res_reg);

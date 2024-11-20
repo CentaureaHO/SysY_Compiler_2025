@@ -12,6 +12,7 @@ IRTable::IRTable() : symTab(nullptr), regMap({}), formalArrTab({}) {}
 IR::IR() : global_def({}), function_declare({}), function_block_map({}) {}
 IR::~IR()
 {
+    /*
     for (auto& inst : global_def)
     {
         delete inst;
@@ -22,6 +23,7 @@ IR::~IR()
         delete inst;
         inst = nullptr;
     }
+    */
 }
 
 void IR::registerLibraryFunctions()
@@ -60,4 +62,21 @@ void IR::registerLibraryFunctions()
     function_declare.emplace_back(new FuncDeclareInst(DT::VOID, "putfarray", {DT::I32, DT::PTR}));
 
     registered = true;
+}
+
+void IR::enterFunc(FuncDefInst* func) { function_block_map[func] = {}; }
+
+void IR::printIR(ostream& s)
+{
+    for (auto& inst : global_def) inst->printIR(s);
+    for (auto& inst : function_declare) inst->printIR(s);
+
+    for (auto& [func, blocks] : function_block_map)
+    {
+        func->printIR(s);
+
+        s << "{\n";
+        for (auto& [label, block] : blocks) block->printIR(s);
+        s << "}\n";
+    }
 }

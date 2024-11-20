@@ -35,6 +35,8 @@ namespace LLVMIR
 
         void registerLibraryFunctions();
 
+        void enterFunc(FuncDefInst* func);
+
         void printIR(std::ostream& s);
     };
 }  // namespace LLVMIR

@@ -7,6 +7,7 @@
 #include <parser/driver.h>
 #include <common/type/symtab/symbol_table.h>
 #include <common/type/symtab/semantic_table.h>
+#include <llvm_ir/ir_builder.h>
 
 #define STR_PW 30
 #define INT_PW 8
@@ -16,9 +17,11 @@
 using namespace std;
 using namespace Yacc;
 using namespace Symbol;
+using namespace LLVMIR;
 
 extern vector<string>        semanticErrMsgs;
 extern SemanticTable::Table* semTable;
+extern IR                    builder;
 size_t                       errCnt = 0;
 
 string truncateString(const string& str, size_t width)
@@ -149,7 +152,15 @@ int main(int argc, char** argv)
         return 3;
     }
 
-    // ast->genIRCode();
+    ast->genIRCode();
+
+    if (strcmp(argv[step_tag], "-llvm") == 0)
+    {
+        builder.printIR(out);
+        if (in.is_open()) in.close();
+        if (out.is_open()) out.close();
+        return 0;
+    }
 
     if (in.is_open()) in.close();
     if (out.is_open()) out.close();

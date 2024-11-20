@@ -14,7 +14,8 @@ IR      builder;
 FuncDefInst* cur_func = nullptr;
 Type*        ret_type = nullptr;
 
-int cur_label        = 0;
+int cur_label = 0;
+
 int loop_start_label = -1;  // continue;
 int loop_end_label   = -1;  // break;
 
@@ -25,4 +26,6 @@ void ASTree::genIRCode()
 {
     // todo
     irgen_table.symTab = &regTable;
+
+    builder.registerLibraryFunctions();
 }

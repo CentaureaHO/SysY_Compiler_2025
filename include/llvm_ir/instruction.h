@@ -8,6 +8,9 @@
 #include <common/type/type_defs.h>
 #include <llvm_ir/defs.h>
 
+#define IS_BR(inst) (inst->opcode == LLVMIR::IROpCode::BR_COND || inst->opcode == LLVMIR::IROpCode::BR_UNCOND)
+#define IS_RET(inst) (inst->opcode == LLVMIR::IROpCode::RET)
+
 namespace LLVMIR
 {
     class Operand
@@ -88,7 +91,7 @@ namespace LLVMIR
         Instruction(IROpCode op = IROpCode::OTHER);
         virtual ~Instruction() = default;
 
-        virtual void PrintIR(std::ostream& s) = 0;
+        virtual void printIR(std::ostream& s) = 0;
     };
 
     class LoadInst : public Instruction
@@ -100,7 +103,7 @@ namespace LLVMIR
 
         LoadInst(DataType t, Operand* p, Operand* r);
 
-        virtual void PrintIR(std::ostream& s);
+        virtual void printIR(std::ostream& s);
     };
 
     class StoreInst : public Instruction
@@ -112,7 +115,7 @@ namespace LLVMIR
 
         StoreInst(DataType t, Operand* p, Operand* v);
 
-        virtual void PrintIR(std::ostream& s);
+        virtual void printIR(std::ostream& s);
     };
 
     class ArithmeticInst : public Instruction
@@ -125,7 +128,7 @@ namespace LLVMIR
 
         ArithmeticInst(IROpCode op, DataType t, Operand* l, Operand* r, Operand* res);
 
-        virtual void PrintIR(std::ostream& s);
+        virtual void printIR(std::ostream& s);
     };
 
     class IcmpInst : public Instruction
@@ -139,7 +142,7 @@ namespace LLVMIR
 
         IcmpInst(DataType t, IcmpCond c, Operand* l, Operand* r, Operand* res);
 
-        virtual void PrintIR(std::ostream& s);
+        virtual void printIR(std::ostream& s);
     };
 
     class FcmpInst : public Instruction
@@ -153,7 +156,7 @@ namespace LLVMIR
 
         FcmpInst(DataType t, FcmpCond c, Operand* l, Operand* r, Operand* res);
 
-        virtual void PrintIR(std::ostream& s);
+        virtual void printIR(std::ostream& s);
     };
 
     class PhiInst : public Instruction
@@ -165,7 +168,7 @@ namespace LLVMIR
 
         PhiInst(DataType t, Operand* r, std::vector<std::pair<Operand*, Operand*>> v = {});
 
-        virtual void PrintIR(std::ostream& s);
+        virtual void printIR(std::ostream& s);
     };
 
     class AllocInst : public Instruction
@@ -177,7 +180,7 @@ namespace LLVMIR
 
         AllocInst(DataType t, Operand* r, std::vector<int> d = {});
 
-        virtual void PrintIR(std::ostream& s);
+        virtual void printIR(std::ostream& s);
     };
 
     class BranchCondInst : public Instruction
@@ -189,7 +192,7 @@ namespace LLVMIR
 
         BranchCondInst(Operand* c, Operand* t, Operand* f);
 
-        virtual void PrintIR(std::ostream& s);
+        virtual void printIR(std::ostream& s);
     };
 
     class BranchUncondInst : public Instruction
@@ -199,7 +202,7 @@ namespace LLVMIR
 
         BranchUncondInst(Operand* t);
 
-        virtual void PrintIR(std::ostream& s);
+        virtual void printIR(std::ostream& s);
     };
 
     class GlbvarDefInst : public Instruction
@@ -213,7 +216,7 @@ namespace LLVMIR
         GlbvarDefInst(DataType t, std::string n, Operand* i);
         GlbvarDefInst(DataType t, std::string n, VarAttribute a);
 
-        virtual void PrintIR(std::ostream& s);
+        virtual void printIR(std::ostream& s);
     };
 
     class CallInst : public Instruction
@@ -227,7 +230,7 @@ namespace LLVMIR
         CallInst(DataType rt, std::string fn, Operand* r);
         CallInst(DataType rt, std::string fn, std::vector<std::pair<DataType, Operand*>> a, Operand* r);
 
-        virtual void PrintIR(std::ostream& s);
+        virtual void printIR(std::ostream& s);
     };
 
     class RetInst : public Instruction
@@ -238,7 +241,7 @@ namespace LLVMIR
 
         RetInst(DataType t, Operand* r);
 
-        virtual void PrintIR(std::ostream& s);
+        virtual void printIR(std::ostream& s);
     };
 
     class GEPInst : public Instruction
@@ -254,7 +257,7 @@ namespace LLVMIR
         GEPInst(
             DataType t, DataType it, Operand* bp, Operand* r, std::vector<int> d = {}, std::vector<Operand*> is = {});
 
-        virtual void PrintIR(std::ostream& s);
+        virtual void printIR(std::ostream& s);
     };
 
     class FuncDeclareInst : public Instruction
@@ -266,7 +269,7 @@ namespace LLVMIR
 
         FuncDeclareInst(DataType rt, std::string fn, std::vector<DataType> at = {});
 
-        virtual void PrintIR(std::ostream& s);
+        virtual void printIR(std::ostream& s);
     };
 
     class FuncDefInst : public FuncDeclareInst
@@ -276,7 +279,7 @@ namespace LLVMIR
 
         FuncDefInst(DataType rt, std::string fn, std::vector<DataType> at = {});
 
-        virtual void PrintIR(std::ostream& s);
+        virtual void printIR(std::ostream& s);
     };
 
     class SI2FPInst : public Instruction
@@ -287,7 +290,7 @@ namespace LLVMIR
 
         SI2FPInst(Operand* f, Operand* t);
 
-        virtual void PrintIR(std::ostream& s);
+        virtual void printIR(std::ostream& s);
     };
 
     class FP2SIInst : public Instruction
@@ -298,7 +301,7 @@ namespace LLVMIR
 
         FP2SIInst(Operand* f, Operand* t);
 
-        virtual void PrintIR(std::ostream& s);
+        virtual void printIR(std::ostream& s);
     };
 
     class ZextInst : public Instruction
@@ -311,7 +314,7 @@ namespace LLVMIR
 
         ZextInst(DataType f, DataType t, Operand* s, Operand* d);
 
-        virtual void PrintIR(std::ostream& s);
+        virtual void printIR(std::ostream& s);
     };
 }  // namespace LLVMIR
 
