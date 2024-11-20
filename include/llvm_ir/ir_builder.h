@@ -37,6 +37,9 @@ namespace LLVMIR
 
         void enterFunc(FuncDefInst* func);
 
+        IRBlock* createBlock(FuncDefInst* func, int label);
+        IRBlock* getBlock(FuncDefInst* func, int label);
+
         void printIR(std::ostream& s);
     };
 }  // namespace LLVMIR

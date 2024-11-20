@@ -2,6 +2,7 @@
 #include <ast/helper.h>
 #include <llvm_ir/ir_builder.h>
 #include <common/type/symtab/semantic_table.h>
+#include <iostream>
 using namespace std;
 using namespace LLVMIR;
 
@@ -20,7 +21,4 @@ extern int loop_end_label;    // break;
 extern int max_label;
 extern int max_reg;
 
-void HelperNode::genIRCode()
-{
-    // todo
-}
+void HelperNode::genIRCode() { cerr << "HelperNode genIRCode not implemented" << endl; }

@@ -7,6 +7,7 @@
 #include <string>
 
 class StmtNode;
+class VarDeclStmt;
 class ExprNode;
 
 class Node
@@ -38,6 +39,8 @@ class ASTree : public Node
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
+
+    void handleGlobalVarDecl(VarDeclStmt* decls);
     void genIRCode() override;
 };
 

@@ -66,6 +66,14 @@ void IR::registerLibraryFunctions()
 
 void IR::enterFunc(FuncDefInst* func) { function_block_map[func] = {}; }
 
+IRBlock* IR::createBlock(FuncDefInst* func, int label)
+{
+    auto block                      = new IRBlock(label);
+    function_block_map[func][label] = block;
+    return block;
+}
+IRBlock* IR::getBlock(FuncDefInst* func, int label) { return function_block_map[func][label]; }
+
 void IR::printIR(ostream& s)
 {
     for (auto& inst : global_def) inst->printIR(s);

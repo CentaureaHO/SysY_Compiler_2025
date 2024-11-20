@@ -30,11 +30,12 @@ class ExprStmt : public StmtNode
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
     void typeCheck() override;
+    void genIRCode() override;
 };
 
 class VarDeclStmt : public StmtNode
 {
-  private:
+  public:
     Type*                  baseType;
     std::vector<DefNode*>* defs;
     bool                   isConst;
@@ -45,6 +46,7 @@ class VarDeclStmt : public StmtNode
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
     void typeCheck() override;
+    void genIRCode() override;
 };
 
 class BlockStmt : public StmtNode
@@ -58,6 +60,7 @@ class BlockStmt : public StmtNode
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
     void typeCheck() override;
+    void genIRCode() override;
 };
 
 class FuncDeclStmt : public StmtNode
@@ -75,6 +78,7 @@ class FuncDeclStmt : public StmtNode
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
     void typeCheck() override;
+    void genIRCode() override;
 };
 
 class ReturnStmt : public StmtNode
@@ -88,6 +92,7 @@ class ReturnStmt : public StmtNode
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
     void typeCheck() override;
+    void genIRCode() override;
 };
 
 class WhileStmt : public StmtNode
@@ -102,6 +107,7 @@ class WhileStmt : public StmtNode
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
     void typeCheck() override;
+    void genIRCode() override;
 };
 
 class IfStmt : public StmtNode
@@ -117,6 +123,7 @@ class IfStmt : public StmtNode
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
     void typeCheck() override;
+    void genIRCode() override;
 };
 
 class ForStmt : public StmtNode
@@ -134,6 +141,7 @@ class ForStmt : public StmtNode
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
     void typeCheck() override;
+    void genIRCode() override;
 };
 
 class BreakStmt : public StmtNode
@@ -144,6 +152,7 @@ class BreakStmt : public StmtNode
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
     void typeCheck() override;
+    void genIRCode() override;
 };
 
 class ContinueStmt : public StmtNode
@@ -154,6 +163,7 @@ class ContinueStmt : public StmtNode
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
     void typeCheck() override;
+    void genIRCode() override;
 };
 
 #endif
