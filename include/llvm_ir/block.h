@@ -19,10 +19,18 @@ namespace LLVMIR
         std::deque<Instruction*> insts;
 
         IRBlock(int id);
+        ~IRBlock();
 
         void printIR(std::ostream& s);
 
+        public:
+        void insertInst(Instruction* inst, bool is_back = 1);
+
       public:
+        void insertLoad(DataType t, Operand* ptr, int res_reg);
+        void insertStore(DataType t, int val_reg, Operand* ptr);
+        void insertStore(DataType t, Operand* val, Operand* ptr);
+
         void insertArithmeticI32(IROpCode op, int lhs_reg, int rhs_reg, int res_reg);
         void insertArithmeticF32(IROpCode op, int lhs_reg, int rhs_reg, int res_reg);
 
@@ -42,12 +50,8 @@ namespace LLVMIR
         void insertSI2FP(int src_reg, int dest_reg);
         void insertZextI1toI32(int src_reg, int dest_reg);
 
-        void insertGEP_i32(DataType t, Operand* ptr, std::vector<int> dims, std::vector<Operand*> is, int res_reg);
-        void insertGEP_i64(DataType t, Operand* ptr, std::vector<int> dims, std::vector<Operand*> is, int res_reg);
-
-        void insertLoad(DataType t, Operand* ptr, int res_reg);
-        void insertStore(DataType t, int val_reg, Operand* ptr);
-        void insertStore(DataType t, Operand* val, Operand* ptr);
+        void insertGEP_I32(DataType t, Operand* ptr, std::vector<int> dims, std::vector<Operand*> is, int res_reg);
+        void insertGEP_I64(DataType t, Operand* ptr, std::vector<int> dims, std::vector<Operand*> is, int res_reg);
 
         void insertCall(
             DataType t, std::string func_name, std::vector<std::pair<DataType, Operand*>> args, int res_reg);
@@ -65,6 +69,8 @@ namespace LLVMIR
 
         void insertAlloc(DataType t, int reg);
         void insertAllocArray(DataType t, std::vector<int> dims, int reg);
+
+        void insertTypeConvert(TypeKind from, TypeKind to, int src_reg);
     };
 }  // namespace LLVMIR
 

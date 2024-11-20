@@ -7,7 +7,7 @@ using DT = DataType;
 vector<DT> type2LLVM_vec = {
     DT::VOID,    // Type::Void
     DT::I32,     // Type::Int
-    DT::I64,     // Type::LL, but cheat as I32
+    DT::I32,     // Type::LL, but cheat as I32
     DT::F32,     // Type::Float
     DT::DOUBLE,  // Type::Double, not implemented
     DT::I1,      // Type::Bool
