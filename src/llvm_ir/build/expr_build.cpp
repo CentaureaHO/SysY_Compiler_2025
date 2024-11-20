@@ -67,6 +67,8 @@ void LeftValueExpr::genIRCode()
         if (it != irgen_table.formalArrTab.end()) param_arr_flag = true;
     }
 
+    cerr << "Current max_reg is " << max_reg << endl;
+
     DT dtype = TYPE2LLVM(val->type->getKind());
 
     if (arr_flag || attr.val.type->getKind() == TypeKind::Ptr)

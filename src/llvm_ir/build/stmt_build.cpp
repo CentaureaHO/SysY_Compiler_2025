@@ -260,8 +260,8 @@ void FuncDeclStmt::genIRCode()
                 func_def->arg_regs.push_back(getRegOperand(func_def->arg_regs.size()));
             }
 
-            cerr << "In func " << entry->getName() << " add param " << pdefNode.entry->getName() << " at reg "
-                 << max_reg << endl;
+            // cerr << "In func " << entry->getName() << " add param " << pdefNode.entry->getName() << " at reg "
+            //   << max_reg << endl;
         }
     }
 

@@ -324,10 +324,10 @@ void IR_BinaryFloat_Int(ExprNode* lhs, ExprNode* rhs, OpCode op, IRBlock* block)
 void IR_BinaryFloat_Float(ExprNode* lhs, ExprNode* rhs, OpCode op, IRBlock* block)
 {
     lhs->genIRCode();
-    int lhs_reg = ++max_reg;
+    int lhs_reg = max_reg;
 
     rhs->genIRCode();
-    BinaryIRFloat[INT(op)](block, lhs_reg, ++max_reg);
+    BinaryIRFloat[INT(op)](block, lhs_reg, max_reg);
 }
 
 void IR_GenBinary(ExprNode* lhs, ExprNode* rhs, OpCode op, IRBlock* block)
