@@ -19,7 +19,7 @@ void ExprNode::setNonConst() { isConst = false; }
 
 /* Definition of LeftValueExpr */
 LeftValueExpr::LeftValueExpr(Symbol::Entry* entry, vector<ExprNode*>* dims, int scope, bool isL)
-    : isLval(isL), entry(entry), dims(dims), scope(scope)
+    : isLval(isL), entry(entry), dims(dims), scope(scope), lv_ptr(nullptr)
 {}
 LeftValueExpr::~LeftValueExpr()
 {

@@ -52,6 +52,7 @@ def execute_ir(input,output,opt,stdin,stdout,testout):
         return 0
         
     result = execute(["clang-15","-static","tmp.o","lib/libsysy_x86.a"])
+    # result = execute(["clang-15","-static","tmp.o","library/libsysy_rv.a"])
     if(result.returncode != 0):
         result = execute(["rm","-rf","tmp.o"])
         print("\033[93mLink Error on \033[0m"+input)

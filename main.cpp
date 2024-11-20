@@ -30,10 +30,10 @@ string truncateString(const string& str, size_t width)
     return str;
 }
 
-#define file_in 1
-#define step_tag 2
-#define o_tag 3
-#define file_out 4
+#define file_in 4
+#define step_tag 1
+#define o_tag 2
+#define file_out 3
 #define optimize_tag 5
 
 int main(int argc, char** argv)

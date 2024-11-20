@@ -919,6 +919,16 @@ NodeAttribute SemanticBool_Float(NodeAttribute a, NodeAttribute b, OpCode op)
 }
 
 // int & other
+NodeAttribute SemanticInt_Bool(NodeAttribute a, NodeAttribute b, OpCode op)
+{
+    NodeAttribute tmp_b = b;
+    tmp_b.val.type      = intType;
+    tmp_b.val.value     = TO_INT(b.val.value);
+
+    // return BinaryAddInt(a, tmp_b);
+    return BinaryInt[SIZE_T(op)](a, tmp_b);
+}
+
 NodeAttribute SemanticInt_Int(NodeAttribute a, NodeAttribute b, OpCode op)
 {
     // return BinaryAddInt(a, b);
@@ -946,6 +956,26 @@ NodeAttribute SemanticInt_Float(NodeAttribute a, NodeAttribute b, OpCode op)
 }
 
 // long long & other
+NodeAttribute SemanticLL_Bool(NodeAttribute a, NodeAttribute b, OpCode op)
+{
+    NodeAttribute tmp_b = b;
+    tmp_b.val.type      = llType;
+    tmp_b.val.value     = TO_LL(b.val.value);
+
+    // return BinaryAddLL(a, tmp_b);
+    return BinaryLL[SIZE_T(op)](a, tmp_b);
+}
+
+NodeAttribute SemanticLL_Int(NodeAttribute a, NodeAttribute b, OpCode op)
+{
+    NodeAttribute tmp_b = b;
+    tmp_b.val.type      = llType;
+    tmp_b.val.value     = TO_LL(b.val.value);
+
+    // return BinaryAddLL(a, tmp_b);
+    return BinaryLL[SIZE_T(op)](a, tmp_b);
+}
+
 NodeAttribute SemanticLL_LL(NodeAttribute a, NodeAttribute b, OpCode op)
 {
     // return BinaryAddLL(a, b);
@@ -963,6 +993,36 @@ NodeAttribute SemanticLL_Float(NodeAttribute a, NodeAttribute b, OpCode op)
 }
 
 // float
+NodeAttribute SemanticFloat_Bool(NodeAttribute a, NodeAttribute b, OpCode op)
+{
+    NodeAttribute tmp_b = b;
+    tmp_b.val.type      = floatType;
+    tmp_b.val.value     = TO_FLOAT(b.val.value);
+
+    // return BinaryAddFloat(a, tmp_b);
+    return BinaryFloat[SIZE_T(op)](a, tmp_b);
+}
+
+NodeAttribute SemanticFloat_Int(NodeAttribute a, NodeAttribute b, OpCode op)
+{
+    NodeAttribute tmp_b = b;
+    tmp_b.val.type      = floatType;
+    tmp_b.val.value     = TO_FLOAT(b.val.value);
+
+    // return BinaryAddFloat(a, tmp_b);
+    return BinaryFloat[SIZE_T(op)](a, tmp_b);
+}
+
+NodeAttribute SemanticFloat_LL(NodeAttribute a, NodeAttribute b, OpCode op)
+{
+    NodeAttribute tmp_b = b;
+    tmp_b.val.type      = floatType;
+    tmp_b.val.value     = TO_FLOAT(b.val.value);
+
+    // return BinaryAddFloat(a, tmp_b);
+    return BinaryFloat[SIZE_T(op)](a, tmp_b);
+}
+
 NodeAttribute SemanticFloat_Float(NodeAttribute a, NodeAttribute b, OpCode op)
 {
     // return BinaryAddFloat(a, b);
@@ -992,7 +1052,7 @@ NodeAttribute Semantic(NodeAttribute a, NodeAttribute b, OpCode op)
         case TypeKind::Int:
             switch (b.val.type->getKind())
             {
-                case TypeKind::Bool: return SemanticBool_Int(b, a, op);
+                case TypeKind::Bool: return SemanticInt_Bool(a, b, op);
                 case TypeKind::Int: return SemanticInt_Int(a, b, op);
                 case TypeKind::LL: return SemanticInt_LL(a, b, op);
                 case TypeKind::Float: return SemanticInt_Float(a, b, op);
@@ -1002,8 +1062,8 @@ NodeAttribute Semantic(NodeAttribute a, NodeAttribute b, OpCode op)
         case TypeKind::LL:
             switch (b.val.type->getKind())
             {
-                case TypeKind::Bool: return SemanticBool_LL(b, a, op);
-                case TypeKind::Int: return SemanticInt_LL(b, a, op);
+                case TypeKind::Bool: return SemanticLL_Bool(a, b, op);
+                case TypeKind::Int: return SemanticLL_Int(a, b, op);
                 case TypeKind::LL: return SemanticLL_LL(a, b, op);
                 case TypeKind::Float: return SemanticLL_Float(a, b, op);
                 default: return SemanticErr(a, b, op);
@@ -1012,9 +1072,9 @@ NodeAttribute Semantic(NodeAttribute a, NodeAttribute b, OpCode op)
         case TypeKind::Float:
             switch (b.val.type->getKind())
             {
-                case TypeKind::Bool: return SemanticBool_Float(b, a, op);
-                case TypeKind::Int: return SemanticInt_Float(b, a, op);
-                case TypeKind::LL: return SemanticLL_Float(b, a, op);
+                case TypeKind::Bool: return SemanticFloat_Bool(a, b, op);
+                case TypeKind::Int: return SemanticFloat_Int(a, b, op);
+                case TypeKind::LL: return SemanticFloat_LL(a, b, op);
                 case TypeKind::Float: return SemanticFloat_Float(a, b, op);
                 default: return SemanticErr(a, b, op);
             }

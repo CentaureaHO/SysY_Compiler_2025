@@ -1,4 +1,6 @@
 #include <ast/basic_node.h>
+#include <ast/statement.h>
+#include <ast/helper.h>
 #include <llvm_ir/ir_builder.h>
 #include <llvm_ir/build/type_trans.h>
 #include <ast/expression.h>
@@ -54,14 +56,13 @@ void LeftValueExpr::genIRCode()
     {
         val_ptr = getGlobalOperand(entry->getName());
         val     = &semTable->glbSymMap[entry];
-
-        auto it = irgen_table.formalArrTab.find(local_reg_num);
-        if (it != irgen_table.formalArrTab.end()) param_arr_flag = true;
     }
     else
     {
         val_ptr = getRegOperand(local_reg_num);
         val     = &irgen_table.regMap[local_reg_num];
+        auto it = irgen_table.formalArrTab.find(local_reg_num);
+        if (it != irgen_table.formalArrTab.end()) param_arr_flag = true;
     }
 
     DT dtype = TYPE2LLVM(val->type->getKind());
@@ -75,6 +76,8 @@ void LeftValueExpr::genIRCode()
     }
 
     if (!isLval && attr.val.type->getKind() != TypeKind::Ptr) block->insertLoad(dtype, val_ptr, ++max_reg);
+
+    lv_ptr = val_ptr;
 }
 
 void ConstExpr::genIRCode()
@@ -107,14 +110,89 @@ void UnaryExpr::genIRCode()
     IR_GenUnary(val, op, block);
 }
 
+void BinaryExpr::genIRCode_Assign()
+{
+    IRBlock* block = builder.getBlock(cur_func, cur_label);
+
+    lhs->genIRCode();
+    rhs->genIRCode();
+
+    LeftValueExpr* lval = dynamic_cast<LeftValueExpr*>(lhs);
+    assert(lval != nullptr);
+
+    DT dtype = TYPE2LLVM(lval->attr.val.type->getKind());
+
+    block->insertTypeConvert(rhs->attr.val.type->getKind(), lval->attr.val.type->getKind(), max_reg);
+
+    block->insertStore(dtype, getRegOperand(max_reg), lval->lv_ptr);
+}
+
 void BinaryExpr::genIRCode_LogicalAnd() {}
 
 void BinaryExpr::genIRCode_LogicalOr() {}
 
 void BinaryExpr::genIRCode()
 {
+    if (op == OpCode::Assign)
+    {
+        genIRCode_Assign();
+        return;
+    }
+    else if (op == OpCode::And)
+    {
+        genIRCode_LogicalAnd();
+        return;
+    }
+    else if (op == OpCode::Or)
+    {
+        genIRCode_LogicalOr();
+        return;
+    }
+
     IRBlock* block = builder.getBlock(cur_func, cur_label);
     IR_GenBinary(lhs, rhs, op, block);
 }
 
-void FuncCallExpr::genIRCode() { cerr << "FuncCallExpr genIRCode not implemented" << endl; }
+void FuncCallExpr::genIRCode()
+{
+    IRBlock* block = builder.getBlock(cur_func, cur_label);
+
+    FuncDeclStmt* func_decl = semTable->funcDeclMap[entry];
+    Type*         ret_type  = func_decl->returnType;
+    DT            dtype     = TYPE2LLVM(ret_type->getKind());
+
+    if (!args)
+    {
+        if (ret_type == voidType)
+            block->insertCallVoidNoargs(dtype, entry->getName());
+        else
+            block->insertCallNoargs(dtype, entry->getName(), ++max_reg);
+        return;
+    }
+
+    vector<pair<DataType, Operand*>> llvm_args;
+
+    auto& params_vec = *func_decl->params;
+    auto& args_vec   = *args;
+
+    size_t param_size = params_vec.size();
+    size_t args_size  = args_vec.size();
+    assert(param_size == args_size);
+
+    for (size_t i = 0; i < param_size; ++i)
+    {
+        TypeKind param_kind = params_vec[i]->baseType->getKind();
+        if (params_vec[i]->dims) param_kind = TypeKind::Ptr;
+
+        DT param_dtype = TYPE2LLVM(param_kind);
+
+        args_vec[i]->genIRCode();
+        block->insertTypeConvert(args_vec[i]->attr.val.type->getKind(), param_kind, max_reg);
+        llvm_args.push_back({param_dtype, getRegOperand(max_reg)});
+    }
+
+    if (ret_type == voidType)
+        block->insertCallVoid(dtype, entry->getName(), llvm_args);
+    else
+        block->insertCall(dtype, entry->getName(), llvm_args, ++max_reg);
+}

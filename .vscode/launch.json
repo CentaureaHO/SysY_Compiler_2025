@@ -17,7 +17,7 @@
                     "ignoreFailures": true
                 }
             ],
-            "args": ["test.in", "-llvm", "-o", "test.ll"],
+            "args": ["-llvm", "-o", "test.ll", "test.in"],
             "preLaunchTask": "build"
         },
         {

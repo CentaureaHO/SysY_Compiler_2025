@@ -85,7 +85,7 @@ void IR_UnaryFloat(ExprNode* expr, OpCode op, IRBlock* block)
 void IR_UnaryBool(ExprNode* expr, OpCode op, IRBlock* block)
 {
     expr->genIRCode();
-    block->insertTypeConvert(expr->attr.val.type->getKind(), TypeKind::Int, ++max_reg);
+    block->insertTypeConvert(expr->attr.val.type->getKind(), TypeKind::Int, max_reg);
     UnaryIRInt[INT(op)](block, max_reg);
     // IR_UnaryAddInt(block, max_reg);
 }

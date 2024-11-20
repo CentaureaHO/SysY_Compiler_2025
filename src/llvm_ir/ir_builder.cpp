@@ -61,6 +61,10 @@ void IR::registerLibraryFunctions()
     // void putfarray(int n, float a[]);
     function_declare.emplace_back(new FuncDeclareInst(DT::VOID, "putfarray", {DT::I32, DT::PTR}));
 
+    // llvm memset
+    function_declare.emplace_back(
+        new FuncDeclareInst(DT::VOID, "llvm.memset.p0.i32", {DT::PTR, DT::I8, DT::I32, DT::I1}));
+
     registered = true;
 }
 

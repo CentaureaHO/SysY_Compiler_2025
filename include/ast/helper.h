@@ -28,7 +28,7 @@ class InitNode : public HelperNode  // 初始化类型的节点
 
 class InitSingle : public InitNode  // 单一表达式的初始化节点
 {
-  private:
+  public:
     ExprNode* expr;
 
   public:

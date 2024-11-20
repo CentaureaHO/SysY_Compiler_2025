@@ -5,6 +5,11 @@
 #include <common/type/symtab/symbol_table.h>
 #include <ast/basic_node.h>
 
+namespace LLVMIR
+{
+    class Operand;
+}
+
 /**
  * @brief 抽象语法树中所有表达式节点基类
  */
@@ -32,6 +37,7 @@ class LeftValueExpr : public ExprNode
     Symbol::Entry*          entry;
     std::vector<ExprNode*>* dims;
     int                     scope;
+    LLVMIR::Operand*        lv_ptr;
 
   public:
     LeftValueExpr(
@@ -105,6 +111,7 @@ class BinaryExpr : public ExprNode
     void genIRCode() override;
     void genIRCode_LogicalAnd();
     void genIRCode_LogicalOr();
+    void genIRCode_Assign();
 };
 
 class FuncCallExpr : public ExprNode

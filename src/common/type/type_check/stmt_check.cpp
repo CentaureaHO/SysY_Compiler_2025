@@ -350,9 +350,9 @@ void ReturnStmt::typeCheck()
 
     expr->typeCheck();
 
-    if (expr->attr.val.type == voidType)
+    if (expr->attr.val.type == voidType || expr->attr.val.type->getKind() == TypeKind::Ptr)
         semanticErrMsgs.push_back(
-            "Error: Return statement with void type expression at line " + to_string(attr.line_num));
+            "Error: Return statement with error type expression at line " + to_string(attr.line_num));
 }
 
 void WhileStmt::typeCheck()

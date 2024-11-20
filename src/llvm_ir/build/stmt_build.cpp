@@ -29,9 +29,169 @@ extern int max_reg;
 
 void StmtNode::genIRCode() { cerr << "StmtNode genIRCode not implemented" << endl; }
 
-void ExprStmt::genIRCode() { cerr << "ExprStmt genIRCode not implemented" << endl; }
+void ExprStmt::genIRCode()
+{
+    if (!exprs) return;
 
-void VarDeclStmt::genIRCode() { cerr << "VarDeclStmt genIRCode not implemented" << endl; }
+    for (auto expr : *exprs)
+        if (expr) expr->genIRCode();
+}
+
+int FindMinDimStepIR(const std::vector<int> dims, int relativePos, int dimsIdx, int& max_subBlock_sz)
+{
+    int min_dim_step = 1;
+    int blockSz      = 1;
+    for (size_t i = dimsIdx + 1; i < dims.size(); ++i) { blockSz *= dims[i]; }
+    while (relativePos % blockSz != 0)
+    {
+        min_dim_step++;
+        blockSz /= dims[dimsIdx + min_dim_step - 1];
+    }
+    max_subBlock_sz = blockSz;
+    return min_dim_step;
+}
+
+std::vector<int> GetIndexes(std::vector<int> dims, int absoluteIndex)
+{
+    //[3][4]
+    // 0-> {0,0}  {absoluteIndex/4,absoluteIndex%4}
+    // 1-> {0,1}
+    // 2-> {0,2}
+    // 3-> {0,3}
+    // 4-> {1,0}
+    // 5-> {1,1}
+    std::vector<int> ret;
+    for (std::vector<int>::reverse_iterator it = dims.rbegin(); it != dims.rend(); ++it)
+    {
+        int dim = *it;
+        ret.insert(ret.begin(), absoluteIndex % dim);
+        absoluteIndex /= dim;
+    }
+    return ret;
+}
+
+void RecursiveArrayInitIR(IRBlock* block, const std::vector<int> dims, int arrayaddr_reg_no, InitNode* init,
+    int beginPos, int endPos, int dimsIdx, Type* baseType)
+{
+    InitMulti* init_multi = static_cast<InitMulti*>(init);
+    if (!init_multi) return;
+
+    int pos = beginPos;
+
+    for (InitNode* iv : *(init_multi->exprs))
+    {
+        InitSingle* init_single = static_cast<InitSingle*>(iv);
+
+        if (init_single)  // 单个数
+        {
+            ExprNode* expr = init_single->expr;
+            expr->genIRCode();
+            block->insertTypeConvert(expr->attr.val.type->getKind(), baseType->getKind(), max_reg);
+
+            int val_reg  = max_reg;
+            int addr_reg = ++max_reg;
+
+            GEPInst* gep = new GEPInst(TYPE2LLVM(baseType->getKind()),
+                DT::I32,
+                getRegOperand(arrayaddr_reg_no),
+                getRegOperand(addr_reg),
+                dims);
+
+            gep->idxs.emplace_back(new ImmeI32Operand(0));
+            std::vector<int> indexes = GetIndexes(dims, pos);
+            for (int idx : indexes) gep->idxs.emplace_back(new ImmeI32Operand(idx));
+
+            block->insts.push_back(gep);
+            block->insertStore(TYPE2LLVM(baseType->getKind()), getRegOperand(val_reg), getRegOperand(addr_reg));
+
+            ++pos;
+            continue;
+        }
+
+        // 数组
+        int max_subBlock_sz = 0;
+        int min_dim_step    = FindMinDimStepIR(dims, pos - beginPos, dimsIdx, max_subBlock_sz);
+        RecursiveArrayInitIR(
+            block, dims, arrayaddr_reg_no, iv, pos, pos + max_subBlock_sz - 1, dimsIdx + min_dim_step, baseType);
+        pos += max_subBlock_sz;
+    }
+}
+
+void VarDeclStmt::genIRCode()
+{
+    if (!defs) return;
+
+    IRBlock* declare_block = builder.getBlock(cur_func, 0);
+    IRBlock* block         = builder.getBlock(cur_func, cur_label);
+
+    DT dtype = TYPE2LLVM(baseType->getKind());
+
+    for (auto& def : *defs)
+    {
+        LeftValueExpr* lval = static_cast<LeftValueExpr*>(def->lval);
+        int            reg  = ++max_reg;
+        irgen_table.symTab->addSymbol(lval->entry, reg);
+
+        VarAttribute val;
+        val.type = baseType;
+
+        if (lval->dims)  // 数组
+        {
+            int dim_size = 1;
+            for (auto& dim : *lval->dims)
+            {
+                int d = TO_INT(dim->attr.val.value);
+                dim_size *= d;
+                val.dims.push_back(d);
+            }
+
+            declare_block->insertAllocArray(dtype, val.dims, reg);
+            irgen_table.regMap[reg] = val;
+
+            // 初始化为0
+            declare_block->insts.emplace_back(new CallInst(DT::VOID,
+                "llvm.memset.p0.i32",
+                {
+                    {DT::PTR, getRegOperand(reg)},
+                    {DT::I8, new ImmeI32Operand(0)},
+                    {DT::I32, new ImmeI32Operand(dim_size * sizeof(int))},
+                    {DT::I1, new ImmeI32Operand(1)},
+                },
+                nullptr));
+
+            // 覆盖初始化
+            InitMulti* init = static_cast<InitMulti*>(def->rval);
+            if (!init) continue;
+
+            RecursiveArrayInitIR(block, val.dims, reg, def->rval, 0, dim_size - 1, 0, baseType);
+
+            continue;
+        }
+
+        // 非数组
+        block->insertAlloc(dtype, reg);
+        irgen_table.regMap[reg] = val;
+
+        Operand* init_val = nullptr;
+
+        if (def->rval)  // 带初始值
+        {
+            InitSingle* init = static_cast<InitSingle*>(def->rval);
+            init->expr->genIRCode();
+            block->insertTypeConvert(init->expr->attr.val.type->getKind(), baseType->getKind(), max_reg);
+        }
+        else  // 不带初始值，置为0
+        {
+            if (dtype == DT::I32)
+                block->insertArithmeticI32_ImmeAll(IROpCode::ADD, 0, 0, ++max_reg);
+            else if (dtype == DT::F32)
+                block->insertArithmeticF32_ImmeAll(IROpCode::FADD, 0, 0, ++max_reg);
+        }
+
+        init_val = getRegOperand(max_reg);
+        block->insertStore(dtype, init_val, getRegOperand(reg));
+    }
+}
 
 void BlockStmt::genIRCode()
 {
@@ -104,12 +264,12 @@ void FuncDeclStmt::genIRCode()
         }
     }
 
+    if (body) body->genIRCode();
+
     block->insertUncondBranch(1);
 
     block     = NEW_BLOCK();
     cur_label = max_label;
-
-    if (body) body->genIRCode();
 
     for (auto& [idx, block] : builder.function_block_map[func_def])
     {
