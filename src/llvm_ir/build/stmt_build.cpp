@@ -33,7 +33,17 @@ void ExprStmt::genIRCode() { cerr << "ExprStmt genIRCode not implemented" << end
 
 void VarDeclStmt::genIRCode() { cerr << "VarDeclStmt genIRCode not implemented" << endl; }
 
-void BlockStmt::genIRCode() { cerr << "BlockStmt genIRCode not implemented" << endl; }
+void BlockStmt::genIRCode()
+{
+    irgen_table.symTab->enterScope();
+
+    if (stmts)
+    {
+        for (auto& stmt : *stmts) stmt->genIRCode();
+    }
+
+    irgen_table.symTab->exitScope();
+}
 
 void FuncDeclStmt::genIRCode()
 {
@@ -127,7 +137,22 @@ void FuncDeclStmt::genIRCode()
     irgen_table.symTab->exitScope();
 }
 
-void ReturnStmt::genIRCode() { cerr << "ReturnStmt genIRCode not implemented" << endl; }
+void ReturnStmt::genIRCode()
+{
+    IRBlock* block = builder.getBlock(cur_func, cur_label);
+
+    if (ret_type == voidType)
+    {
+        block->insertRetVoid();
+        return;
+    }
+
+    expr->genIRCode();
+    block = builder.getBlock(cur_func, cur_label);
+
+    block->insertTypeConvert(expr->attr.val.type->getKind(), ret_type->getKind(), max_reg);
+    block->insertRetReg(TYPE2LLVM(ret_type->getKind()), max_reg);
+}
 
 void WhileStmt::genIRCode() { cerr << "WhileStmt genIRCode not implemented" << endl; }
 

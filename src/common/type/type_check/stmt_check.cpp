@@ -11,6 +11,8 @@ extern bool           inGlb;
 extern vector<string> semanticErrMsgs;
 extern Table*         semTable;
 
+Type* curFuncRetType = voidType;
+
 namespace
 {
     size_t loop_counts = 0;
@@ -304,6 +306,8 @@ void FuncDeclStmt::typeCheck()
 
     if (entry->getName() == "main") mainExists = true;
 
+    curFuncRetType = returnType;
+
     semTable->symTable.enterScope();
     inGlb = false;
 
@@ -325,12 +329,19 @@ void FuncDeclStmt::typeCheck()
         semanticErrMsgs.push_back("Error: Function without return statement at line " + to_string(attr.line_num));
 
     semTable->symTable.exitScope();
-    inGlb = true;
+    inGlb          = true;
+    curFuncRetType = voidType;
 }
 
 void ReturnStmt::typeCheck()
 {
-    if (!expr) return;
+    funcWithReturn = true;
+    if (!expr)
+    {
+        if (curFuncRetType != voidType)
+            semanticErrMsgs.push_back("Error: Return void in non-void function at line " + to_string(attr.line_num));
+        return;
+    }
     if (inGlb)
     {
         semanticErrMsgs.push_back("Error: Return statement in global scope at line " + to_string(attr.line_num));
@@ -342,8 +353,6 @@ void ReturnStmt::typeCheck()
     if (expr->attr.val.type == voidType)
         semanticErrMsgs.push_back(
             "Error: Return statement with void type expression at line " + to_string(attr.line_num));
-
-    funcWithReturn = true;
 }
 
 void WhileStmt::typeCheck()

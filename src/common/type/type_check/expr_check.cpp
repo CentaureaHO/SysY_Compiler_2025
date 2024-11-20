@@ -164,6 +164,7 @@ void BinaryExpr::typeCheck()
         LeftValueExpr* lval = dynamic_cast<LeftValueExpr*>(lhs);
         if (lval)
         {
+            lval->isLval      = true;
             VarAttribute* val = semTable->symTable.getSymbol(lval->entry);
             if (!val)
             {

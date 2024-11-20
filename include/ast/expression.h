@@ -40,6 +40,7 @@ class LeftValueExpr : public ExprNode
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
     void typeCheck() override;
+    void genIRCode() override;
 };
 
 /**
@@ -63,6 +64,7 @@ class ConstExpr : public ExprNode
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
     void typeCheck() override;
+    void genIRCode() override;
 };
 
 /**
@@ -80,6 +82,7 @@ class UnaryExpr : public ExprNode
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
     void typeCheck() override;
+    void genIRCode() override;
 };
 
 /**
@@ -98,6 +101,7 @@ class BinaryExpr : public ExprNode
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
     void typeCheck() override;
+    void genIRCode() override;
 };
 
 class FuncCallExpr : public ExprNode
@@ -112,6 +116,7 @@ class FuncCallExpr : public ExprNode
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
     void typeCheck() override;
+    void genIRCode() override;
 };
 
 #endif
