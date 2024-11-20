@@ -84,12 +84,15 @@ void IR::printIR(ostream& s)
 
     s << "\n";
 
-    for (auto& [func, blocks] : function_block_map)
+    for (auto it = function_block_map.begin(); it != function_block_map.end(); ++it)
     {
+        auto& [func, blocks] = *it;
         func->printIR(s);
 
         s << "{\n";
         for (auto& [label, block] : blocks) block->printIR(s);
         s << "}\n";
+
+        if (next(it) != function_block_map.end()) s << "\n";
     }
 }

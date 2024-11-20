@@ -29,18 +29,52 @@ void ExprNode::genIRCode() { cerr << "ExprNode genIRCode not implemented" << end
 
 void LeftValueExpr::genIRCode()
 {
-    // cerr << "LeftValueExpr genIRCode not implemented" << endl;
+    IRBlock*         block = builder.getBlock(cur_func, cur_label);
+    vector<Operand*> idxs;
+    // VarAttribute     val   = semTable->glbSymMap[entry];
+    VarAttribute* val;
+    bool          arr_flag = false;
 
-    Operand*     ptr_operand = getGlobalOperand(entry->getName());
-    VarAttribute val         = semTable->glbSymMap[entry];
+    if (dims)
+    {
+        for (auto dim : *dims)
+        {
+            dim->genIRCode();
+            block->insertTypeConvert(dim->attr.val.type->getKind(), TypeKind::Int, max_reg);
+            idxs.push_back(getRegOperand(max_reg));
+        }
 
-    DT dtype = TYPE2LLVM(val.type->getKind());
+        arr_flag = !idxs.empty();
+    }
 
-    if (isLval || attr.val.type->getKind() == TypeKind::Ptr) return;
+    Operand* val_ptr        = nullptr;
+    int      local_reg_num  = irgen_table.symTab->getReg(entry);
+    bool     param_arr_flag = false;
+    if (local_reg_num == -1)  // 本地不存在，为全局变量
+    {
+        val_ptr = getGlobalOperand(entry->getName());
+        val     = &semTable->glbSymMap[entry];
 
-    ++max_reg;
-    IRBlock* block = builder.getBlock(cur_func, cur_label);
-    block->insertLoad(dtype, ptr_operand, max_reg);
+        auto it = irgen_table.formalArrTab.find(local_reg_num);
+        if (it != irgen_table.formalArrTab.end()) param_arr_flag = true;
+    }
+    else
+    {
+        val_ptr = getRegOperand(local_reg_num);
+        val     = &irgen_table.regMap[local_reg_num];
+    }
+
+    DT dtype = TYPE2LLVM(val->type->getKind());
+
+    if (arr_flag || attr.val.type->getKind() == TypeKind::Ptr)
+    {
+        if (!param_arr_flag) idxs.insert(idxs.begin(), new ImmeI32Operand(0));
+
+        block->insertGEP_I32(dtype, val_ptr, val->dims, idxs, ++max_reg);
+        val_ptr = getRegOperand(max_reg);
+    }
+
+    if (!isLval && attr.val.type->getKind() != TypeKind::Ptr) block->insertLoad(dtype, val_ptr, ++max_reg);
 }
 
 void ConstExpr::genIRCode()
