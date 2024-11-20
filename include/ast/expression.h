@@ -101,7 +101,10 @@ class BinaryExpr : public ExprNode
 
     void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
     void typeCheck() override;
+
     void genIRCode() override;
+    void genIRCode_LogicalAnd();
+    void genIRCode_LogicalOr();
 };
 
 class FuncCallExpr : public ExprNode

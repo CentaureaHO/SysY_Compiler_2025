@@ -101,8 +101,20 @@ void ConstExpr::genIRCode()
     }
 }
 
-void UnaryExpr::genIRCode() { cerr << "UnaryExpr genIRCode not implemented" << endl; }
+void UnaryExpr::genIRCode()
+{
+    IRBlock* block = builder.getBlock(cur_func, cur_label);
+    IR_GenUnary(val, op, block);
+}
 
-void BinaryExpr::genIRCode() { cerr << "BinaryExpr genIRCode not implemented" << endl; }
+void BinaryExpr::genIRCode_LogicalAnd() {}
+
+void BinaryExpr::genIRCode_LogicalOr() {}
+
+void BinaryExpr::genIRCode()
+{
+    IRBlock* block = builder.getBlock(cur_func, cur_label);
+    IR_GenBinary(lhs, rhs, op, block);
+}
 
 void FuncCallExpr::genIRCode() { cerr << "FuncCallExpr genIRCode not implemented" << endl; }
