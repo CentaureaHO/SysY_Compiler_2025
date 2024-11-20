@@ -162,11 +162,11 @@ void IRBlock::insertUncondBranch(int dst_label)
     insts.emplace_back(new BranchUncondInst(getLabelOperand(dst_label)));
 }
 
-void IRBlock::insertAlloc(DataType t, int reg) { insts.emplace_back(new AllocInst(t, getRegOperand(reg))); }
+void IRBlock::insertAlloc(DataType t, int reg) { insts.emplace_front(new AllocInst(t, getRegOperand(reg))); }
 
 void IRBlock::insertAllocArray(DataType t, std::vector<int> dims, int reg)
 {
-    insts.emplace_back(new AllocInst(t, getRegOperand(reg), dims));
+    insts.emplace_front(new AllocInst(t, getRegOperand(reg), dims));
 }
 
 void IRBlock::insertTypeConvert(TypeKind from, TypeKind to, int src_reg)

@@ -164,7 +164,7 @@ void VarDeclStmt::genIRCode()
         }
 
         // 非数组
-        block->insertAlloc(dtype, reg);
+        declare_block->insertAlloc(dtype, reg);
         irgen_table.regMap[reg] = val;
 
         Operand* init_val = nullptr;
