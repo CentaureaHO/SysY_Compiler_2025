@@ -31,6 +31,9 @@ namespace LLVMIR
         std::map<FuncDefInst*, std::map<int, IRBlock*>> function_block_map;
 
         IR();
+        ~IR();
+
+        void registerLibraryFunctions();
 
         void printIR(std::ostream& s);
     };

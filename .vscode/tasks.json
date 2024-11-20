@@ -11,6 +11,17 @@
             },
             "problemMatcher": ["$gcc"],
             "detail": "Task to build the project using Makefile"
+        },
+        {
+            "label": "test",
+            "type": "shell",
+            "command": "make test",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"],
+            "detail": "Task to build the project using Makefile"
         }
     ]
 }

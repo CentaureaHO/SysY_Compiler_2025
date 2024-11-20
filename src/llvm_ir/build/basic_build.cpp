@@ -21,8 +21,6 @@ int loop_end_label   = -1;  // break;
 int max_label = -1;
 int max_reg   = -1;
 
-void libFuncDeclare() {}
-
 void ASTree::genIRCode()
 {
     // todo

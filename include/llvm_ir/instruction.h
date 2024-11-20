@@ -86,6 +86,7 @@ namespace LLVMIR
         IROpCode opcode;
 
         Instruction(IROpCode op = IROpCode::OTHER);
+        virtual ~Instruction() = default;
 
         virtual void PrintIR(std::ostream& s) = 0;
     };
