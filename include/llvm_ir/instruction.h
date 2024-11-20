@@ -320,4 +320,8 @@ namespace LLVMIR
 
 std::ostream& operator<<(std::ostream& s, LLVMIR::Operand* op);
 
+LLVMIR::RegOperand*    getRegOperand(int num);
+LLVMIR::LabelOperand*  getLabelOperand(int num);
+LLVMIR::GlobalOperand* getGlobalOperand(std::string name);
+
 #endif

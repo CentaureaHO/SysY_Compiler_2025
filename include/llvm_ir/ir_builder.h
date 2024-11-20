@@ -16,9 +16,9 @@ namespace LLVMIR
     class IRTable
     {
       public:
-        Symbol::RegTable*           symTab;
+        Symbol::RegTable*           symTab;  // 仅有前向声明，只能用指针
         std::map<int, VarAttribute> regMap;
-        std::map<int, int>          formalArrTab;
+        std::map<int, bool>         formalArrTab;
 
         IRTable();
     };

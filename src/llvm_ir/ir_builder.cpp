@@ -76,8 +76,13 @@ IRBlock* IR::getBlock(FuncDefInst* func, int label) { return function_block_map[
 
 void IR::printIR(ostream& s)
 {
-    for (auto& inst : global_def) inst->printIR(s);
     for (auto& inst : function_declare) inst->printIR(s);
+
+    s << "\n";
+
+    for (auto& inst : global_def) inst->printIR(s);
+
+    s << "\n";
 
     for (auto& [func, blocks] : function_block_map)
     {

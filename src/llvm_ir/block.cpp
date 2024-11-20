@@ -10,47 +10,7 @@ using DT = DataType;
 using IC = IcmpCond;
 using FC = FcmpCond;
 
-static unordered_map<int, RegOperand*> RegOperandMap;
-static map<int, LabelOperand*>         LabelOperandMap;
-static map<string, GlobalOperand*>     GlobalOperandMap;
-
 extern int max_reg;
-
-RegOperand* getRegOperand(int num)
-{
-    auto it = RegOperandMap.find(num);
-    if (it == RegOperandMap.end())
-    {
-        RegOperand* op     = new RegOperand(num);
-        RegOperandMap[num] = op;
-        return op;
-    }
-    return it->second;
-}
-
-LabelOperand* getLabelOperand(int num)
-{
-    auto it = LabelOperandMap.find(num);
-    if (it == LabelOperandMap.end())
-    {
-        LabelOperand* op     = new LabelOperand(num);
-        LabelOperandMap[num] = op;
-        return op;
-    }
-    return it->second;
-}
-
-GlobalOperand* getGlobalOperand(string name)
-{
-    auto it = GlobalOperandMap.find(name);
-    if (it == GlobalOperandMap.end())
-    {
-        GlobalOperand* op      = new GlobalOperand(name);
-        GlobalOperandMap[name] = op;
-        return op;
-    }
-    return it->second;
-}
 
 IRBlock::IRBlock(int id) : comment(""), block_id(id), insts({}) {}
 IRBlock::~IRBlock() {}
