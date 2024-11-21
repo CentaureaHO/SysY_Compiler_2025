@@ -40,7 +40,7 @@ int main(int argc, char** argv)
 {
     if (argc < 4)
     {
-        std::cerr << "Usage: " << argv[0] << " <input file> <step> <output file> <optimize>" << std::endl;
+        std::cerr << "Usage: " << argv[0] << "<step> <output file> <input file> <optimize>" << std::endl;
         return 0;
     }
 

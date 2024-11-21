@@ -369,7 +369,7 @@ void IR_GenBinary(ExprNode* lhs, ExprNode* rhs, OpCode op, IRBlock* block)
         }
         case TypeKind::LL:
         {
-              switch (rhs->attr.val.type->getKind())
+            switch (rhs->attr.val.type->getKind())
             {
                 case TypeKind::Bool: IR_BinaryInt_Bool(lhs, rhs, op, block); break;
                 case TypeKind::Int: IR_BinaryInt_Int(lhs, rhs, op, block); break;

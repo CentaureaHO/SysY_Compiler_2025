@@ -3,6 +3,7 @@
 #include <sstream>
 #include <map>
 #include <unordered_map>
+#include <numeric>
 using namespace std;
 using namespace LLVMIR;
 
@@ -49,13 +50,15 @@ GlobalOperand* getGlobalOperand(string name)
     return it->second;
 }
 
+#include <cstring>
+
 long long float2DoubleBits(float f)
 {
-    float              rawFloat     = f;
-    unsigned long long rawFloatByte = *((int*)&rawFloat);
-    unsigned long long signBit      = rawFloatByte >> 31;
-    unsigned long long expBits      = (rawFloatByte >> 23) & ((1 << 8) - 1);
-    unsigned long long part1        = rawFloatByte & ((1 << 23) - 1);
+    unsigned int rawFloatByte;
+    std::memcpy(&rawFloatByte, &f, sizeof(float));
+    unsigned long long signBit = rawFloatByte >> 31;
+    unsigned long long expBits = (rawFloatByte >> 23) & ((1 << 8) - 1);
+    unsigned long long part1   = rawFloatByte & ((1 << 23) - 1);
 
     unsigned long long out_signBit                 = signBit << 63;
     unsigned long long out_sigBits                 = part1 << 29;
@@ -78,9 +81,6 @@ string RegOperand::getName() { return "%r" + to_string(reg_num); }
 
 ImmeI32Operand::ImmeI32Operand(int v) : Operand(OT::IMMEI32), value(v) {}
 string ImmeI32Operand::getName() { return to_string(value); }
-
-ImmeI64Operand::ImmeI64Operand(long long v) : Operand(OT::IMMEI64), value(v) {}
-string ImmeI64Operand::getName() { return to_string(value); }
 
 ImmeF32Operand::ImmeF32Operand(float v) : Operand(OT::IMMEF32), value(v) {}
 string ImmeF32Operand::getName()
@@ -129,23 +129,6 @@ FcmpInst::FcmpInst(DataType t, FcmpCond c, Operand* l, Operand* r, Operand* res)
 void FcmpInst::printIR(ostream& s)
 {
     s << res << " = fcmp " << cond << " " << type << " " << lhs << "," << rhs << "\n";
-}
-
-PhiInst::PhiInst(DataType t, Operand* r, vector<pair<Operand*, Operand*>> v)
-    : Instruction(IROpCode::PHI), type(t), res(r), vals(v)
-{}
-void PhiInst::printIR(ostream& s)
-{
-    s << res << " = phi " << type << " ";
-    auto it = vals.begin();
-    auto cp = it;
-    for (; it != vals.end(); ++it)
-    {
-        s << "[" << it->second << "," << it->first << "]";
-        ++cp;
-        if (cp != vals.end()) s << ",";
-    }
-    s << "\n";
 }
 
 AllocInst::AllocInst(DataType t, Operand* r, vector<int> d) : Instruction(IROpCode::ALLOCA), type(t), res(r), dims(d) {}

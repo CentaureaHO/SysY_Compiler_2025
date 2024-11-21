@@ -43,16 +43,6 @@ namespace LLVMIR
         virtual std::string getName();
     };
 
-    class ImmeI64Operand : public Operand
-    {
-      public:
-        long long value;
-
-        ImmeI64Operand(long long v);
-
-        virtual std::string getName();
-    };
-
     class ImmeF32Operand : public Operand
     {
       public:
@@ -155,18 +145,6 @@ namespace LLVMIR
         Operand* res;
 
         FcmpInst(DataType t, FcmpCond c, Operand* l, Operand* r, Operand* res);
-
-        virtual void printIR(std::ostream& s);
-    };
-
-    class PhiInst : public Instruction
-    {
-      public:
-        DataType                                   type;
-        Operand*                                   res;
-        std::vector<std::pair<Operand*, Operand*>> vals;
-
-        PhiInst(DataType t, Operand* r, std::vector<std::pair<Operand*, Operand*>> v = {});
 
         virtual void printIR(std::ostream& s);
     };

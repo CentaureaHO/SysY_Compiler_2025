@@ -151,7 +151,7 @@ namespace
         result.line_num    = lhs.line_num;
         if (result.val.isConst)
         {
-            long long longValue = static_cast<long long>(TO_INT(lhs.val.value)) + TO_INT(rhs.val.value);
+            long long longValue = TO_LL(lhs.val.value) + TO_INT(rhs.val.value);
             if (IN_INT(longValue))
                 result.val.value = static_cast<int>(longValue);
             else
@@ -191,8 +191,7 @@ namespace
         result.val.type    = floatType;
         result.val.isConst = lhs.val.isConst && rhs.val.isConst;
         result.line_num    = lhs.line_num;
-        if (result.val.isConst)
-            result.val.value = static_cast<float>(TO_FLOAT(lhs.val.value) + TO_FLOAT(rhs.val.value));
+        if (result.val.isConst) result.val.value = TO_FLOAT(lhs.val.value) + TO_FLOAT(rhs.val.value);
 
         return result;
     }
@@ -205,7 +204,7 @@ namespace
         result.line_num    = lhs.line_num;
         if (result.val.isConst)
         {
-            long long longValue = static_cast<long long>(TO_INT(lhs.val.value)) - TO_INT(rhs.val.value);
+            long long longValue = TO_LL(lhs.val.value) - TO_LL(rhs.val.value);
             if (IN_INT(longValue))
                 result.val.value = static_cast<int>(longValue);
             else
@@ -257,7 +256,7 @@ namespace
         result.line_num    = lhs.line_num;
         if (result.val.isConst)
         {
-            long long longValue = static_cast<long long>(TO_INT(lhs.val.value)) * TO_INT(rhs.val.value);
+            long long longValue = TO_LL(lhs.val.value) * TO_LL(rhs.val.value);
             if (IN_INT(longValue))
                 result.val.value = static_cast<int>(longValue);
             else
@@ -316,7 +315,7 @@ namespace
         result.line_num    = lhs.line_num;
         if (result.val.isConst)
         {
-            long long longValue = static_cast<long long>(TO_INT(lhs.val.value)) / rhsValue;
+            long long longValue = TO_LL(lhs.val.value) / rhsValue;
             if (IN_INT(longValue))
                 result.val.value = static_cast<int>(longValue);
             else
@@ -389,7 +388,7 @@ namespace
         result.line_num    = lhs.line_num;
         if (result.val.isConst)
         {
-            long long longValue = static_cast<long long>(TO_INT(lhs.val.value)) % rhsValue;
+            long long longValue = TO_LL(lhs.val.value) % rhsValue;
             if (IN_INT(longValue))
                 result.val.value = static_cast<int>(longValue);
             else

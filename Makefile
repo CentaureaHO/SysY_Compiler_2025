@@ -15,7 +15,7 @@ WERROR_FLAGS := -Wall -Wextra -Wpedantic -Werror
 
 WARNINGS_IGNORE := -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-value
 
-CXXFLAGS = $(CXX_STANDARD) $(INCLUDES) $(WERROR_FLAGS) $(DBGFLAGS) $(WARNINGS_IGNORE)
+CXXFLAGS = $(CXX_STANDARD) $(INCLUDES) $(WERROR_FLAGS) $(DBGFLAGS) $(WARNINGS_IGNORE) -O3
 
 SOURCES := $(shell find $(SRC_DIR) -name '*.cpp' -o -name '*.c')
 

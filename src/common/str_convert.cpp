@@ -155,7 +155,7 @@ float convertToFloatHex(const char* str)
     unsigned long long integerPart = 0;
     while (isxdigit(*str))
     {
-        int digit;
+        int digit = 0;
         if (isdigit(*str)) { digit = (*str - '0'); }
         else if (*str >= 'a' && *str <= 'f') { digit = (*str - 'a' + 10); }
         else if (*str >= 'A' && *str <= 'F') { digit = (*str - 'A' + 10); }
@@ -171,7 +171,7 @@ float convertToFloatHex(const char* str)
         unsigned long long denominator = 1;
         while (isxdigit(*str))
         {
-            int digit;
+            int digit = 0;
             if (isdigit(*str)) { digit = (*str - '0'); }
             else if (*str >= 'a' && *str <= 'f') { digit = (*str - 'a' + 10); }
             else if (*str >= 'A' && *str <= 'F') { digit = (*str - 'A' + 10); }
