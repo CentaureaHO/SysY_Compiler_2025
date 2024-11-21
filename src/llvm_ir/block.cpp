@@ -1,6 +1,7 @@
 #include <cassert>
 #include <llvm_ir/block.h>
 #include <llvm_ir/build/type_trans.h>
+#include <llvm_ir/function.h>
 #include <map>
 #include <iostream>
 using namespace std;
@@ -10,7 +11,7 @@ using DT = DataType;
 using IC = IcmpCond;
 using FC = FcmpCond;
 
-extern int max_reg;
+extern IRFunction* ir_func;
 
 IRBlock::IRBlock(int id) : comment(""), block_id(id), insts({}) {}
 IRBlock::~IRBlock() {}
@@ -184,12 +185,12 @@ void IRBlock::insertTypeConvert(TypeKind from, TypeKind to, int src_reg)
                 case static_cast<int>(TypeKind::LL): return;
                 case static_cast<int>(TypeKind::Float):
                 {
-                    insertSI2FP(src_reg, ++max_reg);
+                    insertSI2FP(src_reg, ++ir_func->max_reg);
                     break;
                 }
                 case static_cast<int>(TypeKind::Bool):
                 {
-                    insertIcmp_ImmeRight(IC::NE, src_reg, 0, ++max_reg);
+                    insertIcmp_ImmeRight(IC::NE, src_reg, 0, ++ir_func->max_reg);
                     break;
                 }
                 default: assert(false);
@@ -203,12 +204,12 @@ void IRBlock::insertTypeConvert(TypeKind from, TypeKind to, int src_reg)
                 case static_cast<int>(TypeKind::Int):
                 case static_cast<int>(TypeKind::LL):
                 {
-                    insertFP2SI(src_reg, ++max_reg);
+                    insertFP2SI(src_reg, ++ir_func->max_reg);
                     break;
                 }
                 case static_cast<int>(TypeKind::Bool):
                 {
-                    insertFcmp_ImmeRight(FC::ONE, src_reg, 0, ++max_reg);
+                    insertFcmp_ImmeRight(FC::ONE, src_reg, 0, ++ir_func->max_reg);
                     break;
                 }
                 default: assert(false);
@@ -222,13 +223,13 @@ void IRBlock::insertTypeConvert(TypeKind from, TypeKind to, int src_reg)
                 case static_cast<int>(TypeKind::Int):
                 case static_cast<int>(TypeKind::LL):
                 {
-                    insertZextI1toI32(src_reg, ++max_reg);
+                    insertZextI1toI32(src_reg, ++ir_func->max_reg);
                     break;
                 }
                 case static_cast<int>(TypeKind::Float):
                 {
-                    int tmp  = ++max_reg;
-                    int dest = ++max_reg;
+                    int tmp  = ++ir_func->max_reg;
+                    int dest = ++ir_func->max_reg;
                     insertZextI1toI32(src_reg, tmp);
                     insertSI2FP(tmp, dest);
                     break;

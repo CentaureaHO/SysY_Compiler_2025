@@ -2,6 +2,7 @@
 #include <ast/expression.h>
 #include <ast/helper.h>
 #include <llvm_ir/ir_builder.h>
+#include <llvm_ir/function.h>
 #include <llvm_ir/build/type_trans.h>
 #include <common/type/symtab/semantic_table.h>
 #include <iostream>
@@ -12,20 +13,14 @@ using DT = DataType;
 
 extern SemanticTable::Table* semTable;
 
-extern IRTable irgen_table;
-extern IR      builder;
+extern IRTable     irgen_table;
+extern IR          builder;
+extern IRFunction* ir_func;
 
 extern FuncDefInst* cur_func;
 extern Type*        ret_type;
 
-extern int cur_label;
-extern int loop_start_label;  // continue;
-extern int loop_end_label;    // break;
-
-extern int max_label;
-extern int max_reg;
-
-#define NEW_BLOCK() builder.createBlock(cur_func, ++max_label)
+#define NEW_BLOCK() builder.createBlock(cur_func, ++ir_func->max_label)
 
 void StmtNode::genIRCode() { cerr << "StmtNode genIRCode not implemented" << endl; }
 
@@ -81,10 +76,10 @@ void RecursiveArrayInitIR(IRBlock* block, const std::vector<int> dims, int array
             ExprNode* expr = init_single->expr;
             if (!expr) continue;
             expr->genIRCode();
-            block->insertTypeConvert(expr->attr.val.type->getKind(), baseType->getKind(), max_reg);
+            block->insertTypeConvert(expr->attr.val.type->getKind(), baseType->getKind(), ir_func->max_reg);
 
-            int val_reg  = max_reg;
-            int addr_reg = ++max_reg;
+            int val_reg  = ir_func->max_reg;
+            int addr_reg = ++ir_func->max_reg;
 
             GEPInst* gep = new GEPInst(TYPE2LLVM(baseType->getKind()),
                 DT::I32,
@@ -117,14 +112,14 @@ void VarDeclStmt::genIRCode()
     if (!defs) return;
 
     IRBlock* declare_block = builder.getBlock(cur_func, 0);
-    IRBlock* block         = builder.getBlock(cur_func, cur_label);
+    IRBlock* block         = builder.getBlock(cur_func, ir_func->cur_label);
 
     DT dtype = TYPE2LLVM(baseType->getKind());
 
     for (auto& def : *defs)
     {
         LeftValueExpr* lval = static_cast<LeftValueExpr*>(def->lval);
-        int            reg  = ++max_reg;
+        int            reg  = ++ir_func->max_reg;
         irgen_table.symTab->addSymbol(lval->entry, reg);
 
         VarAttribute val;
@@ -173,17 +168,17 @@ void VarDeclStmt::genIRCode()
         {
             InitSingle* init = static_cast<InitSingle*>(def->rval);
             init->expr->genIRCode();
-            block->insertTypeConvert(init->expr->attr.val.type->getKind(), baseType->getKind(), max_reg);
+            block->insertTypeConvert(init->expr->attr.val.type->getKind(), baseType->getKind(), ir_func->max_reg);
         }
         else  // 不带初始值，置为0
         {
             if (dtype == DT::I32)
-                block->insertArithmeticI32_ImmeAll(IROpCode::ADD, 0, 0, ++max_reg);
+                block->insertArithmeticI32_ImmeAll(IROpCode::ADD, 0, 0, ++ir_func->max_reg);
             else if (dtype == DT::F32)
-                block->insertArithmeticF32_ImmeAll(IROpCode::FADD, 0, 0, ++max_reg);
+                block->insertArithmeticF32_ImmeAll(IROpCode::FADD, 0, 0, ++ir_func->max_reg);
         }
 
-        init_val = getRegOperand(max_reg);
+        init_val = getRegOperand(ir_func->max_reg);
         block->insertStore(dtype, init_val, getRegOperand(reg));
     }
 }
@@ -212,13 +207,16 @@ void FuncDeclStmt::genIRCode()
     cur_func = func_def;
     ret_type = returnType;
 
-    cur_label = 0;
-    max_label = -1;
+    ir_func = nullptr;
+    ir_func = new IRFunction(returnType, func_def);
+
+    ir_func->cur_label = 0;
+    ir_func->max_label = -1;
 
     if (params)
-        max_reg = static_cast<int>(params->size() - 1);
+        ir_func->max_reg = static_cast<int>(params->size() - 1);
     else
-        max_reg = -1;
+        ir_func->max_reg = -1;
 
     builder.enterFunc(func_def);
     IRBlock* block = NEW_BLOCK();
@@ -251,17 +249,17 @@ void FuncDeclStmt::genIRCode()
             {
                 func_def->arg_types.push_back(dtype);
 
-                ++max_reg;
-                block->insertAlloc(dtype, max_reg);
-                block->insertStore(dtype, i, getRegOperand(max_reg));
+                ++ir_func->max_reg;
+                block->insertAlloc(dtype, ir_func->max_reg);
+                block->insertStore(dtype, i, getRegOperand(ir_func->max_reg));
 
-                irgen_table.symTab->addSymbol(pdefNode.entry, max_reg);
-                irgen_table.regMap[max_reg] = val;
+                irgen_table.symTab->addSymbol(pdefNode.entry, ir_func->max_reg);
+                irgen_table.regMap[ir_func->max_reg] = val;
                 func_def->arg_regs.push_back(getRegOperand(func_def->arg_regs.size()));
             }
 
             // cerr << "In func " << entry->getName() << " add param " << pdefNode.entry->getName() << " at reg "
-            //   << max_reg << endl;
+            //   << ir_func->max_reg << endl;
         }
     }
 
@@ -269,9 +267,9 @@ void FuncDeclStmt::genIRCode()
 
     block->insertUncondBranch(1);
 
-    block          = NEW_BLOCK();
-    block->comment = "Func end at line " + to_string(line_num);
-    cur_label      = max_label;
+    block              = NEW_BLOCK();
+    block->comment     = "Func end at line " + to_string(line_num);
+    ir_func->cur_label = ir_func->max_label;
 
     for (auto& [idx, block] : builder.function_block_map[func_def])
     {
@@ -301,7 +299,7 @@ void FuncDeclStmt::genIRCode()
 
 void ReturnStmt::genIRCode()
 {
-    IRBlock* block = builder.getBlock(cur_func, cur_label);
+    IRBlock* block = builder.getBlock(cur_func, ir_func->cur_label);
 
     if (ret_type == voidType)
     {
@@ -310,10 +308,10 @@ void ReturnStmt::genIRCode()
     }
 
     expr->genIRCode();
-    block = builder.getBlock(cur_func, cur_label);
+    block = builder.getBlock(cur_func, ir_func->cur_label);
 
-    block->insertTypeConvert(expr->attr.val.type->getKind(), ret_type->getKind(), max_reg);
-    block->insertRetReg(TYPE2LLVM(ret_type->getKind()), max_reg);
+    block->insertTypeConvert(expr->attr.val.type->getKind(), ret_type->getKind(), ir_func->max_reg);
+    block->insertRetReg(TYPE2LLVM(ret_type->getKind()), ir_func->max_reg);
 }
 
 void WhileStmt::genIRCode()
@@ -324,34 +322,34 @@ void WhileStmt::genIRCode()
     body_block->comment = "While body at line " + to_string(line_num);
     IRBlock* end_block  = NEW_BLOCK();
     end_block->comment  = "While end at line " + to_string(line_num);
-    IRBlock* block      = builder.getBlock(cur_func, cur_label);
+    IRBlock* block      = builder.getBlock(cur_func, ir_func->cur_label);
 
-    int start_label_bak = loop_start_label;
-    int end_label_bak   = loop_end_label;
+    int start_label_bak = ir_func->loop_start_label;
+    int end_label_bak   = ir_func->loop_end_label;
 
-    loop_start_label = cond_block->block_id;
-    loop_end_label   = end_block->block_id;
+    ir_func->loop_start_label = cond_block->block_id;
+    ir_func->loop_end_label   = end_block->block_id;
 
     block->insertUncondBranch(cond_block->block_id);
-    cur_label = cond_block->block_id;
+    ir_func->cur_label = cond_block->block_id;
 
     condition->true_label  = body_block->block_id;
     condition->false_label = end_block->block_id;
     condition->genIRCode();
 
-    block = builder.getBlock(cur_func, cur_label);
-    block->insertTypeConvert(condition->attr.val.type->getKind(), TypeKind::Bool, max_reg);
-    block->insertCondBranch(max_reg, body_block->block_id, end_block->block_id);
+    block = builder.getBlock(cur_func, ir_func->cur_label);
+    block->insertTypeConvert(condition->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
+    block->insertCondBranch(ir_func->max_reg, body_block->block_id, end_block->block_id);
 
-    cur_label = body_block->block_id;
+    ir_func->cur_label = body_block->block_id;
     if (body) body->genIRCode();
-    block = builder.getBlock(cur_func, cur_label);
+    block = builder.getBlock(cur_func, ir_func->cur_label);
     block->insertUncondBranch(cond_block->block_id);
 
-    cur_label = end_block->block_id;
+    ir_func->cur_label = end_block->block_id;
 
-    loop_start_label = start_label_bak;
-    loop_end_label   = end_label_bak;
+    ir_func->loop_start_label = start_label_bak;
+    ir_func->loop_end_label   = end_label_bak;
 }
 
 void IfStmt::genIRCode()
@@ -367,41 +365,41 @@ void IfStmt::genIRCode()
     condition->false_label = else_block->block_id;
     condition->genIRCode();
 
-    IRBlock* block = builder.getBlock(cur_func, cur_label);
-    block->insertTypeConvert(condition->attr.val.type->getKind(), TypeKind::Bool, max_reg);
-    block->insertCondBranch(max_reg, then_block->block_id, else_block->block_id);
+    IRBlock* block = builder.getBlock(cur_func, ir_func->cur_label);
+    block->insertTypeConvert(condition->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
+    block->insertCondBranch(ir_func->max_reg, then_block->block_id, else_block->block_id);
 
-    cur_label = then_block->block_id;
+    ir_func->cur_label = then_block->block_id;
     if (thenBody) thenBody->genIRCode();
-    block = builder.getBlock(cur_func, cur_label);
+    block = builder.getBlock(cur_func, ir_func->cur_label);
     block->insertUncondBranch(end_block->block_id);
 
-    cur_label = else_block->block_id;
+    ir_func->cur_label = else_block->block_id;
     if (elseBody) elseBody->genIRCode();
-    block = builder.getBlock(cur_func, cur_label);
+    block = builder.getBlock(cur_func, ir_func->cur_label);
     block->insertUncondBranch(end_block->block_id);
 
-    cur_label = end_block->block_id;
+    ir_func->cur_label = end_block->block_id;
 }
 
 void ForStmt::genIRCode() { cerr << "ForStmt genIRCode not implemented" << endl; }
 
 void BreakStmt::genIRCode()
 {
-    IRBlock* block = builder.getBlock(cur_func, cur_label);
-    block->insertUncondBranch(loop_end_label);
+    IRBlock* block = builder.getBlock(cur_func, ir_func->cur_label);
+    block->insertUncondBranch(ir_func->loop_end_label);
 
-    block          = NEW_BLOCK();
-    block->comment = "Break at line " + to_string(line_num);
-    cur_label      = block->block_id;
+    block              = NEW_BLOCK();
+    block->comment     = "Break at line " + to_string(line_num);
+    ir_func->cur_label = block->block_id;
 }
 
 void ContinueStmt::genIRCode()
 {
-    IRBlock* block = builder.getBlock(cur_func, cur_label);
-    block->insertUncondBranch(loop_start_label);
+    IRBlock* block = builder.getBlock(cur_func, ir_func->cur_label);
+    block->insertUncondBranch(ir_func->loop_start_label);
 
-    block          = NEW_BLOCK();
-    block->comment = "Continue at line " + to_string(line_num);
-    cur_label      = block->block_id;
+    block              = NEW_BLOCK();
+    block->comment     = "Continue at line " + to_string(line_num);
+    ir_func->cur_label = block->block_id;
 }

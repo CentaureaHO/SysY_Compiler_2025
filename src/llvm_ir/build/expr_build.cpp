@@ -3,6 +3,7 @@
 #include <ast/helper.h>
 #include <llvm_ir/ir_builder.h>
 #include <llvm_ir/build/type_trans.h>
+#include <llvm_ir/function.h>
 #include <ast/expression.h>
 #include <common/type/symtab/semantic_table.h>
 #include <iostream>
@@ -12,28 +13,22 @@ using namespace LLVMIR;
 
 using DT = DataType;
 
-#define NEW_BLOCK() builder.createBlock(cur_func, ++max_label)
+#define NEW_BLOCK() builder.createBlock(cur_func, ++ir_func->max_label)
 
 extern SemanticTable::Table* semTable;
 
-extern IRTable irgen_table;
-extern IR      builder;
+extern IRTable     irgen_table;
+extern IR          builder;
+extern IRFunction* ir_func;
 
 extern FuncDefInst* cur_func;
 extern Type*        ret_type;
-
-extern int cur_label;
-extern int loop_start_label;  // continue;
-extern int loop_end_label;    // break;
-
-extern int max_label;
-extern int max_reg;
 
 void ExprNode::genIRCode() { cerr << "ExprNode genIRCode not implemented" << endl; }
 
 void LeftValueExpr::genIRCode()
 {
-    IRBlock*         block = builder.getBlock(cur_func, cur_label);
+    IRBlock*         block = builder.getBlock(cur_func, ir_func->cur_label);
     vector<Operand*> idxs;
     // VarAttribute     val   = semTable->glbSymMap[entry];
     VarAttribute* val;
@@ -44,8 +39,8 @@ void LeftValueExpr::genIRCode()
         for (auto dim : *dims)
         {
             dim->genIRCode();
-            block->insertTypeConvert(dim->attr.val.type->getKind(), TypeKind::Int, max_reg);
-            idxs.push_back(getRegOperand(max_reg));
+            block->insertTypeConvert(dim->attr.val.type->getKind(), TypeKind::Int, ir_func->max_reg);
+            idxs.push_back(getRegOperand(ir_func->max_reg));
         }
 
         arr_flag = !idxs.empty();
@@ -67,7 +62,7 @@ void LeftValueExpr::genIRCode()
         if (it != irgen_table.formalArrTab.end()) param_arr_flag = true;
     }
 
-    // cerr << "Current max_reg is " << max_reg << endl;
+    // cerr << "Current ir_func->max_reg is " << ir_func->max_reg << endl;
 
     DT dtype = TYPE2LLVM(val->type->getKind());
 
@@ -75,33 +70,33 @@ void LeftValueExpr::genIRCode()
     {
         if (!param_arr_flag) idxs.insert(idxs.begin(), new ImmeI32Operand(0));
 
-        block->insertGEP_I32(dtype, val_ptr, val->dims, idxs, ++max_reg);
-        val_ptr = getRegOperand(max_reg);
+        block->insertGEP_I32(dtype, val_ptr, val->dims, idxs, ++ir_func->max_reg);
+        val_ptr = getRegOperand(ir_func->max_reg);
     }
 
-    if (!isLval && attr.val.type->getKind() != TypeKind::Ptr) block->insertLoad(dtype, val_ptr, ++max_reg);
+    if (!isLval && attr.val.type->getKind() != TypeKind::Ptr) block->insertLoad(dtype, val_ptr, ++ir_func->max_reg);
 
     lv_ptr = val_ptr;
 }
 
 void ConstExpr::genIRCode()
 {
-    IRBlock* block = builder.getBlock(cur_func, cur_label);
+    IRBlock* block = builder.getBlock(cur_func, ir_func->cur_label);
 
-    ++max_reg;
+    ++ir_func->max_reg;
     switch (type)
     {
         case 1:
         case 2:
         {
             int val = TO_INT(value);
-            block->insertArithmeticI32_ImmeAll(IROpCode::ADD, val, 0, max_reg);
+            block->insertArithmeticI32_ImmeAll(IROpCode::ADD, val, 0, ir_func->max_reg);
             break;
         }
         case 3:
         {
             float val = TO_FLOAT(value);
-            block->insertArithmeticF32_ImmeAll(IROpCode::FADD, val, 0, max_reg);
+            block->insertArithmeticF32_ImmeAll(IROpCode::FADD, val, 0, ir_func->max_reg);
             break;
         }
         default: assert(false);
@@ -110,13 +105,13 @@ void ConstExpr::genIRCode()
 
 void UnaryExpr::genIRCode()
 {
-    IRBlock* block = builder.getBlock(cur_func, cur_label);
+    IRBlock* block = builder.getBlock(cur_func, ir_func->cur_label);
     IR_GenUnary(val, op, block);
 }
 
 void BinaryExpr::genIRCode_Assign()
 {
-    IRBlock* block = builder.getBlock(cur_func, cur_label);
+    IRBlock* block = builder.getBlock(cur_func, ir_func->cur_label);
 
     lhs->genIRCode();
     rhs->genIRCode();
@@ -126,9 +121,9 @@ void BinaryExpr::genIRCode_Assign()
 
     DT dtype = TYPE2LLVM(lval->attr.val.type->getKind());
 
-    block->insertTypeConvert(rhs->attr.val.type->getKind(), lval->attr.val.type->getKind(), max_reg);
+    block->insertTypeConvert(rhs->attr.val.type->getKind(), lval->attr.val.type->getKind(), ir_func->max_reg);
 
-    block->insertStore(dtype, getRegOperand(max_reg), lval->lv_ptr);
+    block->insertStore(dtype, getRegOperand(ir_func->max_reg), lval->lv_ptr);
 }
 
 /*
@@ -178,15 +173,15 @@ void BinaryExpr::genIRCode_LogicalAnd()
     rhs->false_label = false_label;
 
     lhs->genIRCode();
-    IRBlock* block = builder.getBlock(cur_func, cur_label);
-    block->insertTypeConvert(lhs->attr.val.type->getKind(), TypeKind::Bool, max_reg);
-    block->insertCondBranch(max_reg, lhs->true_label, lhs->false_label);
+    IRBlock* block = builder.getBlock(cur_func, ir_func->cur_label);
+    block->insertTypeConvert(lhs->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
+    block->insertCondBranch(ir_func->max_reg, lhs->true_label, lhs->false_label);
 
-    cur_label = lhs->true_label;
+    ir_func->cur_label = lhs->true_label;
     rhs->genIRCode();
-    block = builder.getBlock(cur_func, cur_label);
-    block->insertTypeConvert(rhs->attr.val.type->getKind(), TypeKind::Bool, max_reg);
-    // block->insertCondBranch(max_reg, rhs->true_label, rhs->false_label);
+    block = builder.getBlock(cur_func, ir_func->cur_label);
+    block->insertTypeConvert(rhs->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
+    // block->insertCondBranch(ir_func->max_reg, rhs->true_label, rhs->false_label);
 }
 
 /*
@@ -234,14 +229,14 @@ void BinaryExpr::genIRCode_LogicalOr()
     rhs->false_label = false_label;
 
     lhs->genIRCode();
-    IRBlock* block = builder.getBlock(cur_func, cur_label);
-    block->insertTypeConvert(lhs->attr.val.type->getKind(), TypeKind::Bool, max_reg);
-    block->insertCondBranch(max_reg, lhs->true_label, lhs->false_label);
+    IRBlock* block = builder.getBlock(cur_func, ir_func->cur_label);
+    block->insertTypeConvert(lhs->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
+    block->insertCondBranch(ir_func->max_reg, lhs->true_label, lhs->false_label);
 
-    cur_label = right_eval_block->block_id;
+    ir_func->cur_label = right_eval_block->block_id;
     rhs->genIRCode();
-    block = builder.getBlock(cur_func, cur_label);
-    block->insertTypeConvert(rhs->attr.val.type->getKind(), TypeKind::Bool, max_reg);
+    block = builder.getBlock(cur_func, ir_func->cur_label);
+    block->insertTypeConvert(rhs->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
 }
 
 void BinaryExpr::genIRCode()
@@ -262,13 +257,13 @@ void BinaryExpr::genIRCode()
         return;
     }
 
-    IRBlock* block = builder.getBlock(cur_func, cur_label);
+    IRBlock* block = builder.getBlock(cur_func, ir_func->cur_label);
     IR_GenBinary(lhs, rhs, op, block);
 }
 
 void FuncCallExpr::genIRCode()
 {
-    IRBlock* block = builder.getBlock(cur_func, cur_label);
+    IRBlock* block = builder.getBlock(cur_func, ir_func->cur_label);
 
     FuncDeclStmt* func_decl = semTable->funcDeclMap[entry];
     Type*         ret_type  = func_decl->returnType;
@@ -279,7 +274,7 @@ void FuncCallExpr::genIRCode()
         if (ret_type == voidType)
             block->insertCallVoidNoargs(dtype, entry->getName());
         else
-            block->insertCallNoargs(dtype, entry->getName(), ++max_reg);
+            block->insertCallNoargs(dtype, entry->getName(), ++ir_func->max_reg);
         return;
     }
 
@@ -300,12 +295,12 @@ void FuncCallExpr::genIRCode()
         DT param_dtype = TYPE2LLVM(param_kind);
 
         args_vec[i]->genIRCode();
-        block->insertTypeConvert(args_vec[i]->attr.val.type->getKind(), param_kind, max_reg);
-        llvm_args.push_back({param_dtype, getRegOperand(max_reg)});
+        block->insertTypeConvert(args_vec[i]->attr.val.type->getKind(), param_kind, ir_func->max_reg);
+        llvm_args.push_back({param_dtype, getRegOperand(ir_func->max_reg)});
     }
 
     if (ret_type == voidType)
         block->insertCallVoid(dtype, entry->getName(), llvm_args);
     else
-        block->insertCall(dtype, entry->getName(), llvm_args, ++max_reg);
+        block->insertCall(dtype, entry->getName(), llvm_args, ++ir_func->max_reg);
 }
