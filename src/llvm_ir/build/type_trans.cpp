@@ -367,6 +367,17 @@ void IR_GenBinary(ExprNode* lhs, ExprNode* rhs, OpCode op, IRBlock* block)
             }
             break;
         }
+        case TypeKind::LL:
+        {
+              switch (rhs->attr.val.type->getKind())
+            {
+                case TypeKind::Bool: IR_BinaryInt_Bool(lhs, rhs, op, block); break;
+                case TypeKind::Int: IR_BinaryInt_Int(lhs, rhs, op, block); break;
+                case TypeKind::Float: IR_BinaryInt_Float(lhs, rhs, op, block); break;
+                default: assert(false); break;
+            }
+            break;
+        }
         default: assert(false); break;
     }
 }

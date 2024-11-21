@@ -94,7 +94,7 @@ void ConstExpr::genIRCode()
         case 1:
         case 2:
         {
-            int val = TO_INT(value);
+            int  val = TO_INT(value);
             block->insertArithmeticI32_ImmeAll(IROpCode::ADD, val, 0, max_reg);
             break;
         }
