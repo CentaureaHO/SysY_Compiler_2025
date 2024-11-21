@@ -36,9 +36,9 @@ void ASTree::handleGlobalVarDecl(VarDeclStmt* decls)
         else if (!rval)
             decl_inst = new GlbvarDefInst(dtype, lval->entry->getName(), nullptr);
         else if (dtype == DT::I32)
-            decl_inst = new GlbvarDefInst(dtype, lval->entry->getName(), new ImmeI32Operand(TO_INT(val.initVals[0])));
+            decl_inst = new GlbvarDefInst(dtype, lval->entry->getName(), getImmeI32Operand(TO_INT(val.initVals[0])));
         else if (dtype == DT::F32)
-            decl_inst = new GlbvarDefInst(dtype, lval->entry->getName(), new ImmeF32Operand(TO_FLOAT(val.initVals[0])));
+            decl_inst = new GlbvarDefInst(dtype, lval->entry->getName(), getImmeF32Operand(TO_FLOAT(val.initVals[0])));
         else
             decl_inst = new GlbvarDefInst(dtype, lval->entry->getName(), nullptr);
 

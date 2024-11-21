@@ -66,7 +66,7 @@ void LeftValueExpr::genIRCode()
 
     if (arr_flag || attr.val.type->getKind() == TypeKind::Ptr)
     {
-        if (!param_arr_flag) idxs.insert(idxs.begin(), new ImmeI32Operand(0));
+        if (!param_arr_flag) idxs.insert(idxs.begin(), getImmeI32Operand(0));
 
         block->insertGEP_I32(dtype, val_ptr, val->dims, idxs, ++ir_func->max_reg);
         val_ptr = getRegOperand(ir_func->max_reg);

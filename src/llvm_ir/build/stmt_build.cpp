@@ -85,9 +85,9 @@ void RecursiveArrayInitIR(IRBlock* block, const std::vector<int> dims, int array
                 getRegOperand(addr_reg),
                 dims);
 
-            gep->idxs.emplace_back(new ImmeI32Operand(0));
+            gep->idxs.emplace_back(getImmeI32Operand(0));
             std::vector<int> indexes = GetIndexes(dims, pos);
-            for (int idx : indexes) gep->idxs.emplace_back(new ImmeI32Operand(idx));
+            for (int idx : indexes) gep->idxs.emplace_back(getImmeI32Operand(idx));
 
             block->insts.push_back(gep);
             block->insertStore(TYPE2LLVM(baseType->getKind()), getRegOperand(val_reg), getRegOperand(addr_reg));
@@ -141,9 +141,9 @@ void VarDeclStmt::genIRCode()
                 "llvm.memset.p0.i32",
                 {
                     {DT::PTR, getRegOperand(reg)},
-                    {DT::I8, new ImmeI32Operand(0)},
-                    {DT::I32, new ImmeI32Operand(dim_size * sizeof(int))},
-                    {DT::I1, new ImmeI32Operand(1)},
+                    {DT::I8, getImmeI32Operand(0)},
+                    {DT::I32, getImmeI32Operand(dim_size * sizeof(int))},
+                    {DT::I1, getImmeI32Operand(1)},
                 },
                 nullptr));
 
