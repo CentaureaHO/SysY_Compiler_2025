@@ -19,7 +19,11 @@ extern IRTable     irgen_table;
 extern IR          builder;
 extern IRFunction* ir_func;
 
-void ExprNode::genIRCode() { cerr << "ExprNode genIRCode not implemented" << endl; }
+void ExprNode::genIRCode()
+{
+    cerr << "Base ExprNode genIRCode should not be called, occurred at line " << line_num << endl;
+    assert(false);
+}
 
 void LeftValueExpr::genIRCode()
 {

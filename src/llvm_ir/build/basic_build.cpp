@@ -24,10 +24,10 @@ void ASTree::handleGlobalVarDecl(VarDeclStmt* decls)
 {
     for (auto& def : *decls->defs)
     {
-        LeftValueExpr* lval  = static_cast<LeftValueExpr*>(def->lval);
-        InitNode*      rval  = def->rval;
-        VarAttribute   val   = semTable->glbSymMap[lval->entry];
-        DT             dtype = TYPE2LLVM(val.type->getKind());
+        LeftValueExpr*      lval  = static_cast<LeftValueExpr*>(def->lval);
+        InitNode*           rval  = def->rval;
+        const VarAttribute& val   = semTable->glbSymMap[lval->entry];
+        DT                  dtype = TYPE2LLVM(val.type->getKind());
 
         Instruction* decl_inst = nullptr;
 

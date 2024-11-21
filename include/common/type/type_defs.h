@@ -224,4 +224,6 @@ float safe_cast_to_float(const std::variant<int, long long, float, double, bool,
 #define TO_LL(x) std::visit(safe_cast_to_ll, x)
 #define TO_FLOAT(x) std::visit(safe_cast_to_float, x)
 
+#define IF_IS_POLY(p, T) (dynamic_cast<T*>(p) != nullptr)
+
 #endif
