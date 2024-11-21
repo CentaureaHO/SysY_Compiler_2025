@@ -50,7 +50,8 @@
     X(CALL, NONE, 26)          \
     X(SITOFP, NONE, 27)        \
     X(GLOBAL_VAR, NONE, 28)    \
-    X(GLOBAL_STR, NONE, 29)
+    X(GLOBAL_STR, NONE, 29)    \
+    X(FPEXT, NONE, 30)
 
 #define IR_ICMP    \
     X(EQ, eq, 1)   \

@@ -302,6 +302,17 @@ namespace LLVMIR
 
         virtual void printIR(std::ostream& s);
     };
+
+    class FPExtInst : public Instruction
+    {
+      public:
+        Operand* src;
+        Operand* dest;
+
+        FPExtInst(Operand* s, Operand* d);
+
+        virtual void printIR(std::ostream& s) override;
+    };
 }  // namespace LLVMIR
 
 std::ostream& operator<<(std::ostream& s, LLVMIR::Operand* op);

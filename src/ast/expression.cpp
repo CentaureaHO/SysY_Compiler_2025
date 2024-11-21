@@ -35,6 +35,8 @@ LeftValueExpr::~LeftValueExpr()
     }
 }
 
+void LeftValueExpr::printTypeOnErr() { cerr << "LeftValueExpr " << entry->getName() << endl; }
+
 void LeftValueExpr::printAST(ostream* oss, const string& prefix, bool isLast)
 {
     *oss << getFirstPrefix(prefix, isLast) << "LeftValueExpr " << entry->getName();
@@ -60,6 +62,8 @@ ConstExpr::ConstExpr(bool val) : value(val), type(5) {}
 ConstExpr::ConstExpr(shared_ptr<string> val) : value(val), type(6) {}
 ConstExpr::~ConstExpr() {}
 
+void ConstExpr::printTypeOnErr() { cerr << "ConstExpr" << endl; }
+
 void ConstExpr::printAST(std::ostream* oss, const string& prefix, bool isLast)
 {
     *oss << getFirstPrefix(prefix, isLast) << "Const ";
@@ -84,6 +88,8 @@ UnaryExpr::~UnaryExpr()
     val = nullptr;
 }
 
+void UnaryExpr::printTypeOnErr() { cerr << "UnaryExpr " << getOpStr(op) << endl; }
+
 void UnaryExpr::printAST(std::ostream* oss, const string& prefix, bool isLast)
 {
     *oss << getFirstPrefix(prefix, isLast) << "UnaryExpr " << getOpStr(op) << '\n';
@@ -101,6 +107,8 @@ BinaryExpr::~BinaryExpr()
     lhs = nullptr;
     rhs = nullptr;
 }
+
+void BinaryExpr::printTypeOnErr() { cerr << "BinaryExpr " << getOpStr(op) << endl; }
 
 void BinaryExpr::printAST(std::ostream* oss, const string& prefix, bool isLast)
 {
@@ -125,6 +133,8 @@ FuncCallExpr::~FuncCallExpr()
         args = nullptr;
     }
 }
+
+void FuncCallExpr::printTypeOnErr() { cerr << "FuncCallExpr " << entry->getName() << endl; }
 
 void FuncCallExpr::printAST(std::ostream* oss, const string& prefix, bool isLast)
 {

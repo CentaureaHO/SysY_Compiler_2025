@@ -25,7 +25,9 @@ class ExprNode : public Node
     ExprNode(int line_num = -1, bool isConst = false);
     virtual ~ExprNode();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    virtual void printTypeOnErr() = 0;
+
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
     void genIRCode() override;
 
@@ -47,7 +49,9 @@ class LeftValueExpr : public ExprNode
         Symbol::Entry* entry = nullptr, std::vector<ExprNode*>* dims = nullptr, int scope = -1, bool isL = false);
     ~LeftValueExpr();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    virtual void printTypeOnErr() override;
+
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
     void genIRCode() override;
 };
@@ -71,7 +75,9 @@ class ConstExpr : public ExprNode
     ConstExpr(std::shared_ptr<std::string> val);
     ~ConstExpr();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    virtual void printTypeOnErr() override;
+
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
     void genIRCode() override;
 };
@@ -89,7 +95,9 @@ class UnaryExpr : public ExprNode
     UnaryExpr(OpCode op = OpCode::PlaceHolder, ExprNode* val = nullptr);
     ~UnaryExpr();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    virtual void printTypeOnErr() override;
+
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
     void genIRCode() override;
 };
@@ -108,7 +116,9 @@ class BinaryExpr : public ExprNode
     BinaryExpr(OpCode op = OpCode::PlaceHolder, ExprNode* lhs = nullptr, ExprNode* rhs = nullptr);
     ~BinaryExpr();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    virtual void printTypeOnErr() override;
+
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
 
     void genIRCode() override;
@@ -127,7 +137,9 @@ class FuncCallExpr : public ExprNode
     FuncCallExpr(Symbol::Entry* entry = nullptr, std::vector<ExprNode*>* args = nullptr);
     ~FuncCallExpr();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    virtual void printTypeOnErr() override;
+
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
     void genIRCode() override;
 };

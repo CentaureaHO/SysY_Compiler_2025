@@ -3,6 +3,7 @@
 #include <ast/helper.h>
 #include <common/type/type_defs.h>
 #include <common/type/symtab/semantic_table.h>
+#include <common/array/indexing.h>
 using namespace std;
 using namespace SemanticTable;
 
@@ -16,20 +17,6 @@ Type* curFuncRetType = voidType;
 namespace
 {
     size_t loop_counts = 0;
-
-    int getMindimStep(VarAttribute& val, int relativePos, int dimsIdx, int& max_subBlock_size)
-    {
-        int min_dim_step = 1;
-        int blockSz      = 1;
-        for (size_t i = dimsIdx + 1; i < val.dims.size(); ++i) { blockSz *= val.dims[i]; }
-        while (relativePos % blockSz != 0)
-        {
-            min_dim_step++;
-            blockSz /= val.dims[dimsIdx + min_dim_step - 1];
-        }
-        max_subBlock_size = blockSz;
-        return min_dim_step;
-    }
 
     void arrayInit(InitMulti* in, VarAttribute& val, int begPos, int endPos, int dimsIdx)
     {
@@ -70,7 +57,7 @@ namespace
 
             // 为InitMulti
             int max_subBlock_sz = 0;
-            int min_dim_step    = getMindimStep(val, pos - begPos, dimsIdx, max_subBlock_sz);
+            int min_dim_step    = FindMinStepForPosition(val.dims, pos - begPos, dimsIdx, max_subBlock_sz);
             arrayInit(im, val, pos, pos + max_subBlock_sz - 1, dimsIdx + min_dim_step);
             pos += max_subBlock_sz;
         }
@@ -171,111 +158,94 @@ void ExprStmt::typeCheck()
     for (auto& expr : *exprs) expr->typeCheck();
 }
 
-void VarDeclStmt::typeCheck()
+bool VarDeclStmt::isRedefinedGlobal(LeftValueExpr* lval)
 {
-    if (inGlb)
+    if (semTable->glbSymMap.find(lval->entry) != semTable->glbSymMap.end())
     {
-        for (auto& def : *defs)
-        {
-            LeftValueExpr* lval = static_cast<LeftValueExpr*>(def->lval);
-            InitNode*      rval = def->rval;
+        semanticErrMsgs.push_back("Error: Redefinition of global variable " + lval->entry->getName() + " at line " +
+                                  to_string(attr.line_num));
+        return true;
+    }
+    return false;
+}
+bool VarDeclStmt::isRedefinedLocal(LeftValueExpr* lval)
+{
+    auto& curTable = semTable->symTable.currentScope->symbolMap;
 
-            auto it = semTable->glbSymMap.find(lval->entry);
-            if (it != semTable->glbSymMap.end())
-            {
-                semanticErrMsgs.push_back("Error: Redefinition of global variable " + lval->entry->getName() +
-                                          " at line " + to_string(attr.line_num));
-                continue;
-            }
-
-            VarAttribute val;
-            val.isConst = isConst;
-            val.type    = baseType;
-            val.scope   = semTable->symTable.currentScope->scopeLevel;
-            // cout << "var name: " << lval->entry->getName() << " at scope " << val.scope << endl;
-
-            if (lval->dims)
-            {
-                vector<ExprNode*>& dims = *lval->dims;
-                for (auto& dim : dims)
-                {
-                    dim->typeCheck();
-                    if (dim->attr.val.type != intType)
-                        semanticErrMsgs.push_back(
-                            "Error: Array dimension is not an integer at line " + to_string(attr.line_num));
-                    if (!dim->attr.val.isConst)
-                        semanticErrMsgs.push_back(
-                            "Error: Array dimension is not a constant at line " + to_string(attr.line_num));
-                    val.dims.push_back(TO_INT(dim->attr.val.value));
-                }
-            }
-
-            if (rval)
-            {
-                rval->typeCheck();
-                if (baseType == intType)
-                    fillIntInitials(rval, val);
-                else if (baseType == floatType)
-                    fillFloatInitials(rval, val);
-            }
-
-            semTable->glbSymMap[lval->entry] = val;
-        }
-        return;
+    if (curTable.find(lval->entry) != curTable.end())
+    {
+        semanticErrMsgs.push_back(
+            "Error: Redefinition of variable " + lval->entry->getName() + " at line " + to_string(attr.line_num));
+        return true;
     }
 
+    if (semTable->symTable.getSymbolScope(lval->entry) == 1)
+    {
+        semanticErrMsgs.push_back(
+            "Error: Redefinition with parameter " + lval->entry->getName() + " at line " + to_string(attr.line_num));
+        return true;
+    }
+
+    return false;
+}
+bool VarDeclStmt::checkArrayDimensions(LeftValueExpr* lval, VarAttribute& val)
+{
+    vector<ExprNode*>& dims = *lval->dims;
+
+    for (auto& dim : dims)
+    {
+        dim->typeCheck();
+        if (dim->attr.val.type != intType)
+        {
+            semanticErrMsgs.push_back("Error: Array dimension is not an integer at line " + to_string(attr.line_num));
+            return false;
+        }
+        if (!dim->attr.val.isConst)
+        {
+            semanticErrMsgs.push_back("Error: Array dimension is not a constant at line " + to_string(attr.line_num));
+            return false;
+        }
+        val.dims.push_back(TO_INT(dim->attr.val.value));
+    }
+
+    return true;
+}
+void VarDeclStmt::fillInitialValues(InitNode* rval, VarAttribute& val)
+{
+    if (baseType == intType)
+        fillIntInitials(rval, val);
+    else if (baseType == floatType)
+        fillFloatInitials(rval, val);
+}
+void VarDeclStmt::typeCheck()
+{
     for (auto& def : *defs)
     {
         LeftValueExpr* lval = static_cast<LeftValueExpr*>(def->lval);
         InitNode*      rval = def->rval;
 
-        auto& curTable = semTable->symTable.currentScope->symbolMap;
-        auto  it       = curTable.find(lval->entry);
-        if (it != curTable.end())
-        {
-            semanticErrMsgs.push_back(
-                "Error: Redefinition of variable " + lval->entry->getName() + " at line " + to_string(attr.line_num));
+        if (inGlb && isRedefinedGlobal(lval))
             continue;
-        }
-
-        if (semTable->symTable.getSymbolScope(lval->entry) == 1)
-        {
-            semanticErrMsgs.push_back("Error: Redefinition with parameter " + lval->entry->getName() + " at line " +
-                                      to_string(attr.line_num));
-        }
+        else if (!inGlb && isRedefinedLocal(lval))
+            continue;
 
         VarAttribute val;
         val.isConst = isConst;
         val.type    = baseType;
         val.scope   = semTable->symTable.currentScope->scopeLevel;
-        // cout << "var name: " << lval->entry->getName() << " at scope " << val.scope << endl;
 
-        if (lval->dims)
-        {
-            vector<ExprNode*>& dims = *lval->dims;
-            for (auto& dim : dims)
-            {
-                dim->typeCheck();
-                if (dim->attr.val.type != intType)
-                    semanticErrMsgs.push_back(
-                        "Error: Array dimension is not an integer at line " + to_string(attr.line_num));
-                if (!dim->attr.val.isConst)
-                    semanticErrMsgs.push_back(
-                        "Error: Array dimension is not a constant at line " + to_string(attr.line_num));
-                val.dims.push_back(TO_INT(dim->attr.val.value));
-            }
-        }
+        if (lval->dims && !checkArrayDimensions(lval, val)) continue;
 
         if (rval)
         {
             rval->typeCheck();
-            if (baseType == intType)
-                fillIntInitials(rval, val);
-            else if (baseType == floatType)
-                fillFloatInitials(rval, val);
+            fillInitialValues(rval, val);
         }
 
-        curTable[lval->entry] = val;
+        if (inGlb)
+            semTable->glbSymMap[lval->entry] = val;
+        else
+            semTable->symTable.currentScope->symbolMap[lval->entry] = val;
     }
 }
 
@@ -295,8 +265,11 @@ void BlockStmt::typeCheck()
     semTable->symTable.exitScope();
 }
 
-bool funcWithReturn  = false;
-bool funcDeclareOnly = false;
+namespace
+{
+    bool funcWithReturn  = false;
+    bool funcDeclareOnly = false;
+}  // namespace
 
 void FuncDeclStmt::typeCheck()
 {
@@ -325,6 +298,7 @@ void FuncDeclStmt::typeCheck()
         body->typeCheck();
     else
         funcDeclareOnly = true;
+
     if (!funcDeclareOnly && !funcWithReturn && returnType != voidType)
         semanticErrMsgs.push_back("Error: Function without return statement at line " + to_string(attr.line_num));
 

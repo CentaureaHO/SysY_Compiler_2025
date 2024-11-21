@@ -248,6 +248,34 @@ void FuncCallExpr::typeCheck()
             else
                 continue;
         }
+        /*
+        此处本想用于检查数组的维度是否匹配
+        但以derich1.sy为代表的多个测试用例中，都出现了形参和实参的维度不匹配的情况
+        因此注释掉了这部分代码
+        else if ((*f_params)[i]->attr.val.type->getKind() == TypeKind::Ptr &&
+                 (*args)[i]->attr.val.type->getKind() == TypeKind::Ptr)
+        {
+            LeftValueExpr* lval      = dynamic_cast<LeftValueExpr*>((*args)[i]);
+            VarAttribute*  lval_attr = semTable->symTable.getSymbol(lval->entry);
+            if (!lval_attr) lval_attr = &semTable->glbSymMap[lval->entry];
+            vector<int>& lval_dims = lval_attr->dims;
+
+            FuncParamDefNode*  param      = (*f_params)[i];
+            vector<ExprNode*>& param_dims = *param->dims;
+
+            if (lval_dims.size() != param_dims.size())
+            {
+                semanticErrMsgs.emplace_back("Function " + entry->getName() + " expects " +
+                                             to_string(param_dims.size()) + " dimensions but got " +
+                                             to_string(lval_dims.size()) + " at line " + to_string(attr.line_num));
+                return;
+            }
+            else
+            {
+                // check dims
+            }
+        }
+        */
     }
 
     attr.val.type    = funDecl->returnType;

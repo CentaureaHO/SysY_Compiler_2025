@@ -25,7 +25,7 @@ IRBlock::~IRBlock()
 
 void IRBlock::printIR(ostream& s)
 {
-    s << "L" << block_id << ":  ;" << comment << "\n";
+    s << "Block" << block_id << ":  ;" << comment << "\n";
     for (auto& inst : insts)
     {
         s << "\t";

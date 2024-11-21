@@ -4,9 +4,12 @@
 #include <vector>
 #include <common/type/symtab/symbol_table.h>
 #include <ast/basic_node.h>
+#include <ast/helper.h>
+#include <ast/expression.h>
 
 class DefNode;
 class FuncParamDefNode;
+class InitNode;
 
 class StmtNode : public Node
 {
@@ -14,7 +17,7 @@ class StmtNode : public Node
     StmtNode(int line_num = -1);
     virtual ~StmtNode();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
     void genIRCode() override;
 };
@@ -28,7 +31,7 @@ class ExprStmt : public StmtNode
     ExprStmt(std::vector<ExprNode*>* exprs = nullptr);
     ~ExprStmt();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
     void genIRCode() override;
 };
@@ -44,7 +47,12 @@ class VarDeclStmt : public StmtNode
     VarDeclStmt(Type* bt = voidType, std::vector<DefNode*>* defs = nullptr, bool isConst = false);
     ~VarDeclStmt();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
+
+    bool isRedefinedGlobal(LeftValueExpr* lval);
+    bool isRedefinedLocal(LeftValueExpr* lval);
+    bool checkArrayDimensions(LeftValueExpr* lval, VarAttribute& val);
+    void fillInitialValues(InitNode* rval, VarAttribute& val);
     void typeCheck() override;
     void genIRCode() override;
 };
@@ -58,7 +66,7 @@ class BlockStmt : public StmtNode
     BlockStmt(std::vector<StmtNode*>* stmts = nullptr);
     ~BlockStmt();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
     void genIRCode() override;
 };
@@ -76,7 +84,7 @@ class FuncDeclStmt : public StmtNode
         std::vector<FuncParamDefNode*>* params = nullptr, StmtNode* body = nullptr);
     ~FuncDeclStmt();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
     void genIRCode() override;
 };
@@ -90,7 +98,7 @@ class ReturnStmt : public StmtNode
     ReturnStmt(ExprNode* expr = nullptr);
     ~ReturnStmt();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
     void genIRCode() override;
 };
@@ -105,7 +113,7 @@ class WhileStmt : public StmtNode
     WhileStmt(ExprNode* condition = nullptr, StmtNode* body = nullptr);
     ~WhileStmt();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
     void genIRCode() override;
 };
@@ -121,7 +129,7 @@ class IfStmt : public StmtNode
     IfStmt(ExprNode* condition = nullptr, StmtNode* thenBody = nullptr, StmtNode* elseBody = nullptr);
     ~IfStmt();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
     void genIRCode() override;
 };
@@ -139,7 +147,7 @@ class ForStmt : public StmtNode
         StmtNode* init = nullptr, ExprNode* condition = nullptr, StmtNode* update = nullptr, StmtNode* body = nullptr);
     ~ForStmt();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
     void genIRCode() override;
 };
@@ -150,7 +158,7 @@ class BreakStmt : public StmtNode
     BreakStmt();
     ~BreakStmt();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
     void genIRCode() override;
 };
@@ -161,7 +169,7 @@ class ContinueStmt : public StmtNode
     ContinueStmt();
     ~ContinueStmt();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
     void genIRCode() override;
 };

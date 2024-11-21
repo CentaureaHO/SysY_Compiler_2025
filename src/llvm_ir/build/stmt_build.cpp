@@ -5,8 +5,10 @@
 #include <llvm_ir/function.h>
 #include <llvm_ir/build/type_trans.h>
 #include <common/type/symtab/semantic_table.h>
+#include <common/array/indexing.h>
 #include <iostream>
 #include <assert.h>
+#include <algorithm>
 using namespace std;
 using namespace LLVMIR;
 
@@ -35,32 +37,6 @@ void ExprStmt::genIRCode()
 
     for (auto expr : *exprs)
         if (expr) expr->genIRCode();
-}
-
-int FindMinDimStepIR(const std::vector<int>& dims, int relativePos, int dimsIdx, int& max_subBlock_sz)
-{
-    int min_dim_step = 1;
-    int blockSz      = 1;
-    for (size_t i = dimsIdx + 1; i < dims.size(); ++i) { blockSz *= dims[i]; }
-    while (relativePos % blockSz != 0)
-    {
-        min_dim_step++;
-        blockSz /= dims[dimsIdx + min_dim_step - 1];
-    }
-    max_subBlock_sz = blockSz;
-    return min_dim_step;
-}
-
-std::vector<int> GetIndexes(std::vector<int> dims, int absoluteIndex)
-{
-    std::vector<int> ret;
-    for (std::vector<int>::reverse_iterator it = dims.rbegin(); it != dims.rend(); ++it)
-    {
-        int dim = *it;
-        ret.insert(ret.begin(), absoluteIndex % dim);
-        absoluteIndex /= dim;
-    }
-    return ret;
 }
 
 void RecursiveArrayInitIR(IRBlock* block, const std::vector<int> dims, int arrayaddr_reg_no, InitNode* init,
@@ -93,7 +69,8 @@ void RecursiveArrayInitIR(IRBlock* block, const std::vector<int> dims, int array
                 dims);
 
             gep->idxs.emplace_back(getImmeI32Operand(0));
-            std::vector<int> indexes = GetIndexes(dims, pos);
+            std::vector<int> indexes;
+            LinearToMultiIndex(dims, pos, indexes);
             for (int idx : indexes) gep->idxs.emplace_back(getImmeI32Operand(idx));
 
             block->insts.push_back(gep);
@@ -105,7 +82,7 @@ void RecursiveArrayInitIR(IRBlock* block, const std::vector<int> dims, int array
 
         // 数组
         int max_subBlock_sz = 0;
-        int min_dim_step    = FindMinDimStepIR(dims, pos - beginPos, dimsIdx, max_subBlock_sz);
+        int min_dim_step    = FindMinStepForPosition(dims, pos - beginPos, dimsIdx, max_subBlock_sz);
         RecursiveArrayInitIR(
             block, dims, arrayaddr_reg_no, iv, pos, pos + max_subBlock_sz - 1, dimsIdx + min_dim_step, baseType);
         pos += max_subBlock_sz;

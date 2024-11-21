@@ -85,8 +85,8 @@ void ConstExpr::genIRCode()
     ++ir_func->max_reg;
     switch (type)
     {
-        case 1:
-        case 2:
+        case 1:  // int
+        case 2:  // long long，目前直接作为int处理
         {
             int val = TO_INT(value);
             block->insertArithmeticI32_ImmeAll(IROpCode::ADD, val, 0, ir_func->max_reg);

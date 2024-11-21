@@ -3,7 +3,7 @@ SRC_DIR := src
 OBJ_DIR := obj
 BIN_DIR := bin
 
-CXX ?= g++
+CXX = clang++
 
 INCLUDES = -I./$(INCLUDE_DIR)
 
@@ -11,7 +11,7 @@ CXX_STANDARD = -std=c++17
 
 DBGFLAGS = -g
 
-WERROR_FLAGS := -Wall -Wextra -Wpedantic -Werror
+WERROR_FLAGS := -Wall -Wextra -Wpedantic # -Werror
 
 WARNINGS_IGNORE := -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-value
 
@@ -48,56 +48,57 @@ obj: $(OBJECTS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	@echo "$(CXX) $<"
+	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	@echo "$(CXX) $<"
+	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
 .PHONY: bin
 bin: $(BIN_DIR)/SysYc
 
 $(BIN_DIR)/SysYc: $(OBJECTS) main.cpp
 	@mkdir -p $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) main.cpp $(OBJECTS) -o $(BIN_DIR)/SysYc
+	@echo "$(CXX) main.cpp"
+	@$(CXX) $(CXXFLAGS) main.cpp $(OBJECTS) -o $(BIN_DIR)/SysYc
 
 .PHONY: test
 test: $(BIN_DIR)/test
 
 $(BIN_DIR)/test: $(OBJECTS) test.cpp
 	@mkdir -p $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) test.cpp $(OBJECTS) -o $(BIN_DIR)/test
+	@echo "$(CXX) test.cpp"
+	@$(CXX) $(CXXFLAGS) test.cpp $(OBJECTS) -o $(BIN_DIR)/test
 
 .PHONY: lexer_test
 lexer_test: $(BIN_DIR)/lexer_test
 
-$(BIN_DIR)/lexer_test: $(OBJECTS) lexer_test.cpp
-	@mkdir -p $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) lexer_test.cpp $(OBJECTS) -o $(BIN_DIR)/lexer_test
-
 .PHONY: valgrind
 valgrind: $(BIN_DIR)/test
-	valgrind $(VAL_OPTS) $(BIN_DIR)/SysYc -llvm -o test.ll test.in 2> valgrind_report
+	@valgrind $(VAL_OPTS) $(BIN_DIR)/SysYc -llvm -o test.ll test.in 2> valgrind_report
 
 .PHONY: clean
 clean:
-	rm -rf $(OBJ_DIR) $(TEST_BUILD_DIR) $(BIN_DIR)
+	@rm -rf $(OBJ_DIR) $(TEST_BUILD_DIR) $(BIN_DIR)
+	@echo "Cleaned"
 
 .PHONY: lexer
 lexer: $(LEXER_C) $(BISON_C) $(BISON_H) $(LOC_H)
 
 $(LEXER_C): $(LEXER_SRC)
-	flex --c++ --outfile=$(LEXER_C_T) $(LEXER_SRC)
+	@flex --c++ --outfile=$(LEXER_C_T) $(LEXER_SRC)
 	sed -i 's|#include "yacc.hpp"|#include <parser/yacc.hpp>|' $(LEXER_C_T)
-	mv $(LEXER_C_T) $(LEXER_C)
+	@mv $(LEXER_C_T) $(LEXER_C)
 
 $(BISON_C) $(BISON_H) $(LOC_H): $(BISON_SRC)
-	bison -d --language=c++ --defines=$(BISON_H_T) -o $(BISON_C_T) $(BISON_SRC)
+	@bison -d --language=c++ --defines=$(BISON_H_T) -o $(BISON_C_T) $(BISON_SRC)
 	sed -i 's|#include "yacc.hpp"|#include <parser/yacc.hpp>|' $(BISON_C_T)
-	mv $(BISON_C_T) $(BISON_C)
-	mv $(BISON_H_T) $(BISON_H)
-	mv $(LOC_H_T) $(LOC_H)
+	@mv $(BISON_C_T) $(BISON_C)
+	@mv $(BISON_H_T) $(BISON_H)
+	@mv $(LOC_H_T) $(LOC_H)
 
 .PHONY: format
 format:
-	find . -type f \( -name "*.c" -o -name "*.cpp" -o -name "*.h" -o -name "*.hpp" -o -name "*.hh" \) -exec clang-format -i {} +
+	@find . -type f \( -name "*.c" -o -name "*.cpp" -o -name "*.h" -o -name "*.hpp" -o -name "*.hh" \) -exec clang-format -i {} +

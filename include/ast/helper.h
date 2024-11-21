@@ -11,7 +11,7 @@ class HelperNode : public Node
     HelperNode(int line_num = -1);
     virtual ~HelperNode();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
     void genIRCode() override;
 };
@@ -22,7 +22,7 @@ class InitNode : public HelperNode  // 初始化类型的节点
     InitNode(int line_num = -1);
     virtual ~InitNode();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
 };
 
@@ -35,7 +35,7 @@ class InitSingle : public InitNode  // 单一表达式的初始化节点
     InitSingle(ExprNode* expr);
     ~InitSingle();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
 };
 
@@ -48,7 +48,7 @@ class InitMulti : public InitNode
     InitMulti(std::vector<InitNode*>* es);
     ~InitMulti();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
 
     int getSize();
@@ -64,7 +64,7 @@ class DefNode : public HelperNode
     DefNode(ExprNode* lval, InitNode* rval);
     ~DefNode();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
 };
 
@@ -79,7 +79,7 @@ class FuncParamDefNode : public HelperNode
     FuncParamDefNode(Type* type, Symbol::Entry* entry, std::vector<ExprNode*>* dims = nullptr);
     ~FuncParamDefNode();
 
-    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true);
+    void printAST(std::ostream* oss, const std::string& prefix = "", bool isLast = true) override;
     void typeCheck() override;
 };
 

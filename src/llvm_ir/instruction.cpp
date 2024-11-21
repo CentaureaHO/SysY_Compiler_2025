@@ -6,38 +6,28 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <numeric>
+#include <stack>
+#include <algorithm>
+#include <cstring>
+#include <bit>
 using namespace std;
 using namespace LLVMIR;
 
 using DT = DataType;
 using OT = OperandType;
 
-long long float2DoubleBits(float f)
-{
-    unsigned int rawFloatByte;
-    std::memcpy(&rawFloatByte, &f, sizeof(float));
-    unsigned long long signBit = rawFloatByte >> 31;
-    unsigned long long expBits = (rawFloatByte >> 23) & ((1 << 8) - 1);
-    unsigned long long part1   = rawFloatByte & ((1 << 23) - 1);
-
-    unsigned long long out_signBit                 = signBit << 63;
-    unsigned long long out_sigBits                 = part1 << 29;
-    unsigned long long expBits_highestBit          = (expBits & (1 << 7)) << 3;
-    unsigned long long expBits_lowerBit            = (expBits & ((1 << 7) - 1));
-    unsigned long long expBits_lowerBit_highestBit = expBits_lowerBit & (1 << 6);
-    unsigned long long expBits_lowerBit_ext = (expBits_lowerBit_highestBit) | (expBits_lowerBit_highestBit << 1) |
-                                              (expBits_lowerBit_highestBit << 2) | (expBits_lowerBit_highestBit << 3);
-    unsigned long long expBits_full     = expBits_highestBit | expBits_lowerBit | expBits_lowerBit_ext;
-    unsigned long long out_expBits      = expBits_full << 52;
-    unsigned long long out_rawFloatByte = out_signBit | out_expBits | out_sigBits;
-
-    return out_rawFloatByte;
-}
+#define FLOAT_TO_DOUBLE_BITS(f)                            \
+    ([](float value) {                                     \
+        double             d = static_cast<double>(value); \
+        unsigned long long rawDoubleBytes;                 \
+        std::memcpy(&rawDoubleBytes, &d, sizeof(double));  \
+        return static_cast<long long>(rawDoubleBytes);     \
+    }(f))
 
 Operand::Operand(OperandType t) : type(t) {}
 
 RegOperand::RegOperand(int num) : Operand(OT::REG), reg_num(num) {}
-string RegOperand::getName() { return "%r" + to_string(reg_num); }
+string RegOperand::getName() { return "%reg_" + to_string(reg_num); }
 
 ImmeI32Operand::ImmeI32Operand(int v) : Operand(OT::IMMEI32), value(v) {}
 string ImmeI32Operand::getName() { return to_string(value); }
@@ -46,12 +36,12 @@ ImmeF32Operand::ImmeF32Operand(float v) : Operand(OT::IMMEF32), value(v) {}
 string ImmeF32Operand::getName()
 {
     stringstream ss;
-    ss << "0x" << hex << float2DoubleBits(value);
+    ss << "0x" << hex << FLOAT_TO_DOUBLE_BITS(value);
     return ss.str();
 }
 
 LabelOperand::LabelOperand(int num) : Operand(OT::LABEL), label_num(num) {}
-string LabelOperand::getName() { return "%L" + to_string(label_num); }
+string LabelOperand::getName() { return "%Block" + to_string(label_num); }
 
 GlobalOperand::GlobalOperand(string name) : Operand(OT::GLOBAL), global_name(name) {}
 string GlobalOperand::getName() { return "@" + global_name; }
@@ -72,7 +62,7 @@ ArithmeticInst::ArithmeticInst(IROpCode op, DataType t, Operand* l, Operand* r, 
 {}
 void ArithmeticInst::printIR(ostream& s)
 {
-    s << res << " = " << opcode << " " << type << " " << lhs << "," << rhs << "\n";
+    s << res << " = " << opcode << " " << type << " " << lhs << ", " << rhs << "\n";
 }
 
 IcmpInst::IcmpInst(DataType t, IcmpCond c, Operand* l, Operand* r, Operand* res)
@@ -80,7 +70,7 @@ IcmpInst::IcmpInst(DataType t, IcmpCond c, Operand* l, Operand* r, Operand* res)
 {}
 void IcmpInst::printIR(ostream& s)
 {
-    s << res << " = icmp " << cond << " " << type << " " << lhs << "," << rhs << "\n";
+    s << res << " = icmp " << cond << " " << type << " " << lhs << ", " << rhs << "\n";
 }
 
 FcmpInst::FcmpInst(DataType t, FcmpCond c, Operand* l, Operand* r, Operand* res)
@@ -88,7 +78,7 @@ FcmpInst::FcmpInst(DataType t, FcmpCond c, Operand* l, Operand* r, Operand* res)
 {}
 void FcmpInst::printIR(ostream& s)
 {
-    s << res << " = fcmp " << cond << " " << type << " " << lhs << "," << rhs << "\n";
+    s << res << " = fcmp " << cond << " " << type << " " << lhs << ", " << rhs << "\n";
 }
 
 AllocInst::AllocInst(DataType t, Operand* r, vector<int> d) : Instruction(IROpCode::ALLOCA), type(t), res(r), dims(d) {}
@@ -122,67 +112,54 @@ GlbvarDefInst::GlbvarDefInst(DataType t, string n, Operand* v)
 GlbvarDefInst::GlbvarDefInst(DataType t, string n, VarAttribute a)
     : Instruction(IROpCode::GLOBAL_VAR), type(t), name(n), arr_init(a)
 {}
-void recursive_init(ostream& s, DataType type, VarAttribute& v, int dimDph, int beginPos, int endPos)
+namespace
 {
-    if (dimDph == 0)
+    void glb_arr_init(ostream& s, DataType type, VarAttribute& v, int dimDph, int beginPos, int endPos)
     {
-        bool all_zero = true;
-        if (v.type == intType || v.type == llType || v.type == boolType)
+        if (dimDph == 0)
         {
-            for (auto& val : v.initVals)
-                if (TO_INT(val) != 0)
-                {
-                    all_zero = false;
-                    break;
-                }
-        }
-        else
-        {
-            for (auto& val : v.initVals)
-                if (TO_FLOAT(val) != 0)
-                {
-                    all_zero = false;
-                    break;
-                }
+            bool all_zero = std::all_of(v.initVals.begin(), v.initVals.end(), [&](auto& val) {
+                return (v.type == intType || v.type == llType || v.type == boolType) ? TO_INT(val) == 0
+                                                                                     : TO_FLOAT(val) == 0;
+            });
+
+            if (all_zero)
+            {
+                for (int dim : v.dims) s << "[" << dim << " x ";
+                s << type << string(v.dims.size(), ']') << " zeroinitializer";
+                return;
+            }
         }
 
-        if (all_zero)
+        if (beginPos == endPos)
         {
-            for (int dim : v.dims) s << "[" << dim << " x ";
-            s << type << string(v.dims.size(), ']') << " zeroinitializer";
-
+            switch (type)
+            {
+                case DT::I1:
+                case DT::I32:
+                case DT::I64: s << type << " " << TO_INT(v.initVals[beginPos]); break;
+                case DT::F32:
+                    s << type << " 0x" << hex << FLOAT_TO_DOUBLE_BITS(TO_FLOAT(v.initVals[beginPos])) << dec;
+                    break;
+                default: assert(false);
+            }
             return;
         }
+
+        for (size_t i = dimDph; i < v.dims.size(); ++i) s << "[" << v.dims[i] << " x ";
+        s << type << string(v.dims.size() - dimDph, ']') << " [";
+
+        int step = std::accumulate(v.dims.begin() + dimDph + 1, v.dims.end(), 1, std::multiplies<int>());
+
+        for (int i = 0; i < v.dims[dimDph]; ++i)
+        {
+            if (i != 0) s << ",";
+            glb_arr_init(s, type, v, dimDph + 1, beginPos + i * step, beginPos + (i + 1) * step - 1);
+        }
+
+        s << "]";
     }
-    if (beginPos == endPos)
-    {
-        if (type == DT::I32)
-            s << type << " " << TO_INT(v.initVals[beginPos]);
-        else if (type == DT::I64)
-            s << type << " " << TO_LL(v.initVals[beginPos]);
-        else if (type == DT::I1)
-            s << type << " " << TO_INT(v.initVals[beginPos]);
-        else if (type == DT::F32)
-            s << type << " 0x" << hex << float2DoubleBits(TO_FLOAT(v.initVals[beginPos])) << dec;
-
-        return;
-    }
-
-    for (size_t i = dimDph; i < v.dims.size(); ++i) s << "[" << v.dims[i] << " x ";
-
-    s << type << string(v.dims.size() - dimDph, ']') << " [";
-
-    int step = 1;
-    for (size_t i = dimDph + 1; i < v.dims.size(); ++i) step *= v.dims[i];
-
-    for (int i = 0; i < v.dims[dimDph]; ++i)
-    {
-        recursive_init(s, type, v, dimDph + 1, beginPos + i * step, beginPos + (i + 1) * step - 1);
-        if (i != v.dims[dimDph] - 1) s << ",";
-    }
-
-    s << "]";
-}
+}  // namespace
 void GlbvarDefInst::printIR(ostream& s)
 {
     s << "@" << name << " = global ";
@@ -201,7 +178,7 @@ void GlbvarDefInst::printIR(ostream& s)
     int step = 1;
     for (int& dim : arr_init.dims) step *= dim;
 
-    recursive_init(s, type, arr_init, 0, 0, step - 1);
+    glb_arr_init(s, type, arr_init, 0, 0, step - 1);
 
     s << "\n";
 }
@@ -223,7 +200,7 @@ void CallInst::printIR(ostream& s)
     {
         s << it->first << " " << it->second;
         ++cp;
-        if (cp != args.end()) s << ",";
+        if (cp != args.end()) s << ", ";
     }
     s << ")\n";
 }
@@ -267,7 +244,7 @@ void FuncDeclareInst::printIR(ostream& s)
     {
         s << *it;
         ++cp;
-        if (cp != arg_types.end()) s << ",";
+        if (cp != arg_types.end()) s << ", ";
     }
     s << ")\n";
 }
@@ -284,7 +261,7 @@ void FuncDefInst::printIR(ostream& s)
     for (size_t i = 0; i < arg_num; ++i)
     {
         s << arg_types[i] << " " << arg_regs[i];
-        if (i != arg_num - 1) s << ",";
+        if (i != arg_num - 1) s << ", ";
     }
 
     s << ")\n";
@@ -300,6 +277,15 @@ ZextInst::ZextInst(DataType f, DataType t, Operand* s, Operand* d)
     : Instruction(IROpCode::ZEXT), from(f), to(t), src(s), dest(d)
 {}
 void ZextInst::printIR(ostream& s) { s << dest << " = zext " << from << " " << src << " to " << to << "\n"; }
+
+FPExtInst::FPExtInst(Operand* s, Operand* d) : Instruction(IROpCode::FPEXT), src(s), dest(d) {}
+void FPExtInst::printIR(ostream& s)
+{
+    s << dest << " = fpext float"
+      << " " << src << " to "
+      << "double"
+      << "\n";
+}
 
 ostream& operator<<(std::ostream& s, LLVMIR::Operand* op)
 {
