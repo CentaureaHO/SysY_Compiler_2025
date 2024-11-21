@@ -16,10 +16,7 @@ namespace LLVMIR
         FuncDefInst* func_def;
 
       public:
-        std::vector<IRBlock*>       blocks;
-        Symbol::RegTable            symTab;
-        std::map<int, VarAttribute> regMap;
-        std::set<int>               formalArrTab;
+        std::vector<IRBlock*> blocks;
 
         int cur_label;
         int max_label;
@@ -31,9 +28,10 @@ namespace LLVMIR
 
       public:
         IRFunction(Type* rt, FuncDefInst* fd);
+        ~IRFunction();
 
-        inline IRBlock* createBlock();
-        inline IRBlock* getBlock(int label);
+        IRBlock* createBlock();
+        IRBlock* getBlock(int label);
     };
 }  // namespace LLVMIR
 

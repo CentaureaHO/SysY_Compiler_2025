@@ -13,20 +13,17 @@ using namespace LLVMIR;
 
 using DT = DataType;
 
-#define NEW_BLOCK() builder.createBlock(cur_func, ++ir_func->max_label)
+#define NEW_BLOCK() builder.createBlock()
 
 extern IRTable     irgen_table;
 extern IR          builder;
 extern IRFunction* ir_func;
 
-extern FuncDefInst* cur_func;
-extern Type*        ret_type;
-
 void ExprNode::genIRCode() { cerr << "ExprNode genIRCode not implemented" << endl; }
 
 void LeftValueExpr::genIRCode()
 {
-    IRBlock*         block = builder.getBlock(cur_func, ir_func->cur_label);
+    IRBlock*         block = builder.getBlock(ir_func->cur_label);
     vector<Operand*> idxs;
     // VarAttribute     val   = semTable->glbSymMap[entry];
     VarAttribute* val;
@@ -79,7 +76,7 @@ void LeftValueExpr::genIRCode()
 
 void ConstExpr::genIRCode()
 {
-    IRBlock* block = builder.getBlock(cur_func, ir_func->cur_label);
+    IRBlock* block = builder.getBlock(ir_func->cur_label);
 
     ++ir_func->max_reg;
     switch (type)
@@ -103,13 +100,13 @@ void ConstExpr::genIRCode()
 
 void UnaryExpr::genIRCode()
 {
-    IRBlock* block = builder.getBlock(cur_func, ir_func->cur_label);
+    IRBlock* block = builder.getBlock(ir_func->cur_label);
     IR_GenUnary(val, op, block);
 }
 
 void BinaryExpr::genIRCode_Assign()
 {
-    IRBlock* block = builder.getBlock(cur_func, ir_func->cur_label);
+    IRBlock* block = builder.getBlock(ir_func->cur_label);
 
     lhs->genIRCode();
     rhs->genIRCode();
@@ -171,13 +168,13 @@ void BinaryExpr::genIRCode_LogicalAnd()
     rhs->false_label = false_label;
 
     lhs->genIRCode();
-    IRBlock* block = builder.getBlock(cur_func, ir_func->cur_label);
+    IRBlock* block = builder.getBlock(ir_func->cur_label);
     block->insertTypeConvert(lhs->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
     block->insertCondBranch(ir_func->max_reg, lhs->true_label, lhs->false_label);
 
     ir_func->cur_label = lhs->true_label;
     rhs->genIRCode();
-    block = builder.getBlock(cur_func, ir_func->cur_label);
+    block = builder.getBlock(ir_func->cur_label);
     block->insertTypeConvert(rhs->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
     // block->insertCondBranch(ir_func->max_reg, rhs->true_label, rhs->false_label);
 }
@@ -227,13 +224,13 @@ void BinaryExpr::genIRCode_LogicalOr()
     rhs->false_label = false_label;
 
     lhs->genIRCode();
-    IRBlock* block = builder.getBlock(cur_func, ir_func->cur_label);
+    IRBlock* block = builder.getBlock(ir_func->cur_label);
     block->insertTypeConvert(lhs->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
     block->insertCondBranch(ir_func->max_reg, lhs->true_label, lhs->false_label);
 
     ir_func->cur_label = right_eval_block->block_id;
     rhs->genIRCode();
-    block = builder.getBlock(cur_func, ir_func->cur_label);
+    block = builder.getBlock(ir_func->cur_label);
     block->insertTypeConvert(rhs->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
 }
 
@@ -255,13 +252,13 @@ void BinaryExpr::genIRCode()
         return;
     }
 
-    IRBlock* block = builder.getBlock(cur_func, ir_func->cur_label);
+    IRBlock* block = builder.getBlock(ir_func->cur_label);
     IR_GenBinary(lhs, rhs, op, block);
 }
 
 void FuncCallExpr::genIRCode()
 {
-    IRBlock* block = builder.getBlock(cur_func, ir_func->cur_label);
+    IRBlock* block = builder.getBlock(ir_func->cur_label);
 
     FuncDeclStmt* func_decl = semTable->funcDeclMap[entry];
     Type*         ret_type  = func_decl->returnType;

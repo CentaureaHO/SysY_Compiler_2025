@@ -18,9 +18,6 @@ extern IRTable     irgen_table;
 extern IR          builder;
 extern IRFunction* ir_func;
 
-extern FuncDefInst* cur_func;
-extern Type*        ret_type;
-
 vector<DT> type2LLVM_vec = {
     DT::VOID,    // Type::Void
     DT::I32,     // Type::Int

@@ -5,6 +5,7 @@
 #include <map>
 #include <llvm_ir/instruction.h>
 #include <llvm_ir/block.h>
+#include <llvm_ir/function.h>
 
 namespace Symbol
 {
@@ -26,19 +27,23 @@ namespace LLVMIR
     class IR
     {
       public:
-        std::vector<Instruction*>                       global_def;
-        std::vector<Instruction*>                       function_declare;
-        std::map<FuncDefInst*, std::map<int, IRBlock*>> function_block_map;
+        std::vector<Instruction*> global_def;
+        std::vector<Instruction*> function_declare;
+        std::vector<IRFunction*>  functions;
+        // std::map<FuncDefInst*, std::map<int, IRBlock*>> function_block_map;
 
+        IRFunction* cur_func;
+
+      public:
         IR();
         ~IR();
 
         void registerLibraryFunctions();
 
-        void enterFunc(FuncDefInst* func);
+        void enterFunc(IRFunction* func);
 
-        IRBlock* createBlock(FuncDefInst* func, int label);
-        IRBlock* getBlock(FuncDefInst* func, int label);
+        IRBlock* createBlock();
+        IRBlock* getBlock(int label);
 
         void printIR(std::ostream& s);
     };

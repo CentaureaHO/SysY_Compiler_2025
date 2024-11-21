@@ -9,7 +9,7 @@ using DT = DataType;
 
 IRTable::IRTable() : symTab(nullptr), regMap({}), formalArrTab({}) {}
 
-IR::IR() : global_def({}), function_declare({}), function_block_map({}) {}
+IR::IR() : global_def({}), function_declare({}), functions({}), cur_func(nullptr) {}
 IR::~IR()
 {
     for (auto& inst : global_def)
@@ -22,6 +22,12 @@ IR::~IR()
         delete inst;
         inst = nullptr;
     }
+    for (auto& func : functions)
+    {
+        delete func;
+        func = nullptr;
+    }
+    /*
     for (auto it = function_block_map.begin(); it != function_block_map.end(); ++it)
     {
         FuncDefInst* func   = it->first;
@@ -34,6 +40,7 @@ IR::~IR()
             block = nullptr;
         }
     }
+    */
 }
 
 void IR::registerLibraryFunctions()
@@ -78,15 +85,14 @@ void IR::registerLibraryFunctions()
     registered = true;
 }
 
-void IR::enterFunc(FuncDefInst* func) { function_block_map[func] = {}; }
-
-IRBlock* IR::createBlock(FuncDefInst* func, int label)
+void IR::enterFunc(IRFunction* func)
 {
-    auto block                      = new IRBlock(label);
-    function_block_map[func][label] = block;
-    return block;
+    cur_func = func;
+    functions.push_back(func);
 }
-IRBlock* IR::getBlock(FuncDefInst* func, int label) { return function_block_map[func][label]; }
+
+IRBlock* IR::createBlock() { return cur_func->createBlock(); }
+IRBlock* IR::getBlock(int label) { return cur_func->getBlock(label); }
 
 void IR::printIR(ostream& s)
 {
@@ -98,15 +104,14 @@ void IR::printIR(ostream& s)
 
     s << "\n";
 
-    for (auto it = function_block_map.begin(); it != function_block_map.end(); ++it)
+    for (auto& func : functions)
     {
-        auto& [func, blocks] = *it;
-        func->printIR(s);
+        func->func_def->printIR(s);
 
         s << "{\n";
-        for (auto& [label, block] : blocks) block->printIR(s);
+        for (auto& block : func->blocks) block->printIR(s);
         s << "}\n";
 
-        if (next(it) != function_block_map.end()) s << "\n";
+        if (func != functions.back()) s << "\n";
     }
 }

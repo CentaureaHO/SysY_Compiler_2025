@@ -10,7 +10,4 @@ using namespace LLVMIR;
 extern IRTable irgen_table;
 extern IR      builder;
 
-extern FuncDefInst* cur_func;
-extern Type*        ret_type;
-
 void HelperNode::genIRCode() { cerr << "HelperNode genIRCode not implemented" << endl; }

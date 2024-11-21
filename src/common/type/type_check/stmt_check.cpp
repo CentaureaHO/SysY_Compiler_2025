@@ -55,7 +55,7 @@ namespace
                 if (val.type == intType)
                 {
                     val.initVals[pos] = TO_INT(attr.val.value);
-                    cout << "Set " << pos << " to " << TO_INT(attr.val.value) << endl;
+                    // cout << "Set " << pos << " to " << TO_INT(attr.val.value) << endl;
                 }
                 else if (val.type == llType)
                     val.initVals[pos] = TO_LL(attr.val.value);
