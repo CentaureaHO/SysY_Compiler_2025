@@ -11,8 +11,6 @@ using namespace LLVMIR;
 
 using DT = DataType;
 
-extern SemanticTable::Table* semTable;
-
 extern IRTable     irgen_table;
 extern IR          builder;
 extern IRFunction* ir_func;

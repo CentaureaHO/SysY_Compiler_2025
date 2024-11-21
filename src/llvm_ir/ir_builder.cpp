@@ -12,7 +12,6 @@ IRTable::IRTable() : symTab(nullptr), regMap({}), formalArrTab({}) {}
 IR::IR() : global_def({}), function_declare({}), function_block_map({}) {}
 IR::~IR()
 {
-    /*
     for (auto& inst : global_def)
     {
         delete inst;
@@ -23,7 +22,18 @@ IR::~IR()
         delete inst;
         inst = nullptr;
     }
-    */
+    for (auto it = function_block_map.begin(); it != function_block_map.end(); ++it)
+    {
+        FuncDefInst* func   = it->first;
+        auto&        blocks = it->second;
+        delete func;
+        func = nullptr;
+        for (auto& [label, block] : blocks)
+        {
+            delete block;
+            block = nullptr;
+        }
+    }
 }
 
 void IR::registerLibraryFunctions()

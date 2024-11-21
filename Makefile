@@ -77,7 +77,7 @@ $(BIN_DIR)/lexer_test: $(OBJECTS) lexer_test.cpp
 
 .PHONY: valgrind
 valgrind: $(BIN_DIR)/test
-	valgrind $(VAL_OPTS) $(BIN_DIR)/test 2> valgrind_report
+	valgrind $(VAL_OPTS) $(BIN_DIR)/SysYc -llvm -o test.ll test.in 2> valgrind_report
 
 .PHONY: clean
 clean:

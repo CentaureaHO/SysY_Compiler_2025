@@ -128,4 +128,20 @@ void Table::reg_funcs()
     for (auto& [_, decl] : funcDeclMap) { decl->typeCheck(); }
 }
 
+namespace
+{
+    class Cleaner
+    {
+      public:
+        ~Cleaner()
+        {
+            if (semTable)
+            {
+                delete semTable;
+                semTable = nullptr;
+            }
+        }
+    } cleaner;
+}  // namespace
+
 Table* semTable = nullptr;

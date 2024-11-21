@@ -14,7 +14,14 @@ using FC = FcmpCond;
 extern IRFunction* ir_func;
 
 IRBlock::IRBlock(int id) : comment(""), block_id(id), insts({}) {}
-IRBlock::~IRBlock() {}
+IRBlock::~IRBlock()
+{
+    for (auto& inst : insts)
+    {
+        delete inst;
+        inst = nullptr;
+    }
+}
 
 void IRBlock::printIR(ostream& s)
 {
@@ -53,25 +60,25 @@ void IRBlock::insertArithmeticF32(IROpCode op, int lhs_reg, int rhs_reg, int res
 void IRBlock::insertArithmeticI32_ImmeLeft(IROpCode op, int lhs_val, int rhs_reg, int res_reg)
 {
     insts.emplace_back(
-        new ArithmeticInst(op, DT::I32, new ImmeI32Operand(lhs_val), getRegOperand(rhs_reg), getRegOperand(res_reg)));
+        new ArithmeticInst(op, DT::I32, getImmeI32Operand(lhs_val), getRegOperand(rhs_reg), getRegOperand(res_reg)));
 }
 
 void IRBlock::insertArithmeticF32_ImmeLeft(IROpCode op, float lhs_val, int rhs_reg, int res_reg)
 {
     insts.emplace_back(
-        new ArithmeticInst(op, DT::F32, new ImmeF32Operand(lhs_val), getRegOperand(rhs_reg), getRegOperand(res_reg)));
+        new ArithmeticInst(op, DT::F32, getImmeF32Operand(lhs_val), getRegOperand(rhs_reg), getRegOperand(res_reg)));
 }
 
 void IRBlock::insertArithmeticI32_ImmeAll(IROpCode op, int lhs_val, int rhs_val, int res_reg)
 {
     insts.emplace_back(new ArithmeticInst(
-        op, DT::I32, new ImmeI32Operand(lhs_val), new ImmeI32Operand(rhs_val), getRegOperand(res_reg)));
+        op, DT::I32, getImmeI32Operand(lhs_val), getImmeI32Operand(rhs_val), getRegOperand(res_reg)));
 }
 
 void IRBlock::insertArithmeticF32_ImmeAll(IROpCode op, float lhs_val, float rhs_val, int res_reg)
 {
     insts.emplace_back(new ArithmeticInst(
-        op, DT::F32, new ImmeF32Operand(lhs_val), new ImmeF32Operand(rhs_val), getRegOperand(res_reg)));
+        op, DT::F32, getImmeF32Operand(lhs_val), getImmeF32Operand(rhs_val), getRegOperand(res_reg)));
 }
 
 void IRBlock::insertIcmp(IcmpCond cond, int lhs_reg, int rhs_reg, int res_reg)
@@ -89,13 +96,13 @@ void IRBlock::insertFcmp(FcmpCond cond, int lhs_reg, int rhs_reg, int res_reg)
 void IRBlock::insertIcmp_ImmeRight(IcmpCond cond, int lhs_reg, int rhs_val, int res_reg)
 {
     insts.emplace_back(
-        new IcmpInst(DT::I32, cond, getRegOperand(lhs_reg), new ImmeI32Operand(rhs_val), getRegOperand(res_reg)));
+        new IcmpInst(DT::I32, cond, getRegOperand(lhs_reg), getImmeI32Operand(rhs_val), getRegOperand(res_reg)));
 }
 
 void IRBlock::insertFcmp_ImmeRight(FcmpCond cond, int lhs_reg, float rhs_val, int res_reg)
 {
     insts.emplace_back(
-        new FcmpInst(DT::F32, cond, getRegOperand(lhs_reg), new ImmeF32Operand(rhs_val), getRegOperand(res_reg)));
+        new FcmpInst(DT::F32, cond, getRegOperand(lhs_reg), getImmeF32Operand(rhs_val), getRegOperand(res_reg)));
 }
 
 void IRBlock::insertFP2SI(int src_reg, int dest_reg)
@@ -146,9 +153,9 @@ void IRBlock::insertCallVoidNoargs(DataType t, std::string func_name)
 
 void IRBlock::insertRetReg(DataType t, int reg) { insts.emplace_back(new RetInst(t, getRegOperand(reg))); }
 
-void IRBlock::insertRetImmI32(DataType t, int val) { insts.emplace_back(new RetInst(t, new ImmeI32Operand(val))); }
+void IRBlock::insertRetImmI32(DataType t, int val) { insts.emplace_back(new RetInst(t, getImmeI32Operand(val))); }
 
-void IRBlock::insertRetImmF32(DataType t, float val) { insts.emplace_back(new RetInst(t, new ImmeF32Operand(val))); }
+void IRBlock::insertRetImmF32(DataType t, float val) { insts.emplace_back(new RetInst(t, getImmeF32Operand(val))); }
 
 void IRBlock::insertRetVoid() { insts.emplace_back(new RetInst(DT::VOID, nullptr)); }
 

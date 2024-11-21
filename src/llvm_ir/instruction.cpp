@@ -2,55 +2,15 @@
 #include <cassert>
 #include <sstream>
 #include <map>
+#include <cstring>
 #include <unordered_map>
+#include <unordered_set>
 #include <numeric>
 using namespace std;
 using namespace LLVMIR;
 
 using DT = DataType;
 using OT = OperandType;
-
-static unordered_map<int, RegOperand*> RegOperandMap;
-static map<int, LabelOperand*>         LabelOperandMap;
-static map<string, GlobalOperand*>     GlobalOperandMap;
-
-RegOperand* getRegOperand(int num)
-{
-    auto it = RegOperandMap.find(num);
-    if (it == RegOperandMap.end())
-    {
-        RegOperand* op     = new RegOperand(num);
-        RegOperandMap[num] = op;
-        return op;
-    }
-    return it->second;
-}
-
-LabelOperand* getLabelOperand(int num)
-{
-    auto it = LabelOperandMap.find(num);
-    if (it == LabelOperandMap.end())
-    {
-        LabelOperand* op     = new LabelOperand(num);
-        LabelOperandMap[num] = op;
-        return op;
-    }
-    return it->second;
-}
-
-GlobalOperand* getGlobalOperand(string name)
-{
-    auto it = GlobalOperandMap.find(name);
-    if (it == GlobalOperandMap.end())
-    {
-        GlobalOperand* op      = new GlobalOperand(name);
-        GlobalOperandMap[name] = op;
-        return op;
-    }
-    return it->second;
-}
-
-#include <cstring>
 
 long long float2DoubleBits(float f)
 {
@@ -345,4 +305,116 @@ ostream& operator<<(std::ostream& s, LLVMIR::Operand* op)
 {
     s << op->getName();
     return s;
+}
+
+namespace
+{
+    unordered_map<int, ImmeI32Operand*>   ImmeI32OperandMap;
+    unordered_map<float, ImmeF32Operand*> ImmeF32OperandMap;
+    unordered_map<int, RegOperand*>       RegOperandMap;
+    map<int, LabelOperand*>               LabelOperandMap;
+    map<string, GlobalOperand*>           GlobalOperandMap;
+
+    class Cleaner
+    {
+      public:
+        Cleaner() {}
+        ~Cleaner()
+        {
+            for (auto& [_, op] : ImmeI32OperandMap)
+            {
+                // if (!op) continue;
+                delete op;
+                op = nullptr;
+            }
+            for (auto& [_, op] : ImmeF32OperandMap)
+            {
+                // if (!op) continue;
+                delete op;
+                op = nullptr;
+            }
+            for (auto& [_, op] : RegOperandMap)
+            {
+                // if (!op) continue;
+                delete op;
+                op = nullptr;
+            }
+            for (auto& [_, op] : LabelOperandMap)
+            {
+                // if (!op) continue;
+                delete op;
+                op = nullptr;
+            }
+            for (auto& [_, op] : GlobalOperandMap)
+            {
+                // if (!op) continue;
+                delete op;
+                op = nullptr;
+            }
+
+            RegOperandMap.clear();
+            LabelOperandMap.clear();
+            GlobalOperandMap.clear();
+        }
+    } cleaner;
+}  // namespace
+
+ImmeI32Operand* getImmeI32Operand(int num)
+{
+    auto it = ImmeI32OperandMap.find(num);
+    if (it == ImmeI32OperandMap.end())
+    {
+        ImmeI32Operand* op     = new ImmeI32Operand(num);
+        ImmeI32OperandMap[num] = op;
+        return op;
+    }
+    return it->second;
+}
+
+ImmeF32Operand* getImmeF32Operand(float num)
+{
+    auto it = ImmeF32OperandMap.find(num);
+    if (it == ImmeF32OperandMap.end())
+    {
+        ImmeF32Operand* op     = new ImmeF32Operand(num);
+        ImmeF32OperandMap[num] = op;
+        return op;
+    }
+    return it->second;
+}
+
+RegOperand* getRegOperand(int num)
+{
+    auto it = RegOperandMap.find(num);
+    if (it == RegOperandMap.end())
+    {
+        RegOperand* op     = new RegOperand(num);
+        RegOperandMap[num] = op;
+        return op;
+    }
+    return it->second;
+}
+
+LabelOperand* getLabelOperand(int num)
+{
+    auto it = LabelOperandMap.find(num);
+    if (it == LabelOperandMap.end())
+    {
+        LabelOperand* op     = new LabelOperand(num);
+        LabelOperandMap[num] = op;
+        return op;
+    }
+    return it->second;
+}
+
+GlobalOperand* getGlobalOperand(string name)
+{
+    auto it = GlobalOperandMap.find(name);
+    if (it == GlobalOperandMap.end())
+    {
+        GlobalOperand* op      = new GlobalOperand(name);
+        GlobalOperandMap[name] = op;
+        return op;
+    }
+    return it->second;
 }

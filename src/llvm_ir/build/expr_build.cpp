@@ -15,8 +15,6 @@ using DT = DataType;
 
 #define NEW_BLOCK() builder.createBlock(cur_func, ++ir_func->max_label)
 
-extern SemanticTable::Table* semTable;
-
 extern IRTable     irgen_table;
 extern IR          builder;
 extern IRFunction* ir_func;

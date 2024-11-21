@@ -11,6 +11,8 @@
 #define IS_BR(inst) (inst->opcode == LLVMIR::IROpCode::BR_COND || inst->opcode == LLVMIR::IROpCode::BR_UNCOND)
 #define IS_RET(inst) (inst->opcode == LLVMIR::IROpCode::RET)
 
+// Inst不需要管理其操作数内存，统一交由Inst/Cleaner管理
+
 namespace LLVMIR
 {
     class Operand
@@ -19,6 +21,7 @@ namespace LLVMIR
         OperandType type;
 
         Operand(OperandType t = OperandType::UNKNOWN);
+        virtual ~Operand() = default;
 
         virtual std::string getName() = 0;
     };
@@ -29,6 +32,7 @@ namespace LLVMIR
         int reg_num;
 
         RegOperand(int num);
+        virtual ~RegOperand() = default;
 
         virtual std::string getName();
     };
@@ -39,6 +43,7 @@ namespace LLVMIR
         int value;
 
         ImmeI32Operand(int v);
+        virtual ~ImmeI32Operand() = default;
 
         virtual std::string getName();
     };
@@ -49,6 +54,7 @@ namespace LLVMIR
         float value;
 
         ImmeF32Operand(float v);
+        virtual ~ImmeF32Operand() = default;
 
         virtual std::string getName();
     };
@@ -59,6 +65,7 @@ namespace LLVMIR
         int label_num;
 
         LabelOperand(int num);
+        virtual ~LabelOperand() = default;
 
         virtual std::string getName();
     };
@@ -69,6 +76,7 @@ namespace LLVMIR
         std::string global_name;
 
         GlobalOperand(std::string name);
+        virtual ~GlobalOperand() = default;
 
         virtual std::string getName();
     };
@@ -298,8 +306,10 @@ namespace LLVMIR
 
 std::ostream& operator<<(std::ostream& s, LLVMIR::Operand* op);
 
-LLVMIR::RegOperand*    getRegOperand(int num);
-LLVMIR::LabelOperand*  getLabelOperand(int num);
-LLVMIR::GlobalOperand* getGlobalOperand(std::string name);
+LLVMIR::ImmeI32Operand* getImmeI32Operand(int num);
+LLVMIR::ImmeF32Operand* getImmeF32Operand(float num);
+LLVMIR::RegOperand*     getRegOperand(int num);
+LLVMIR::LabelOperand*   getLabelOperand(int num);
+LLVMIR::GlobalOperand*  getGlobalOperand(std::string name);
 
 #endif

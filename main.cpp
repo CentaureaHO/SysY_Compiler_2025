@@ -19,10 +19,10 @@ using namespace Yacc;
 using namespace Symbol;
 using namespace LLVMIR;
 
-extern vector<string>        semanticErrMsgs;
-extern SemanticTable::Table* semTable;
-extern IR                    builder;
-size_t                       errCnt = 0;
+extern vector<string> semanticErrMsgs;
+
+extern IR builder;
+size_t    errCnt = 0;
 
 string truncateString(const string& str, size_t width)
 {

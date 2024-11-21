@@ -11,8 +11,6 @@ using namespace LLVMIR;
 
 using DT = DataType;
 
-extern SemanticTable::Table* semTable;
-
 Symbol::RegTable regTable;
 
 IRTable     irgen_table;

@@ -7,8 +7,6 @@
 using namespace std;
 using namespace LLVMIR;
 
-extern SemanticTable::Table* semTable;
-
 extern IRTable irgen_table;
 extern IR      builder;
 
