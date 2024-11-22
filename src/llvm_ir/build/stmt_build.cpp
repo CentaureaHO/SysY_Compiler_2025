@@ -69,8 +69,8 @@ void RecursiveArrayInitIR(IRBlock* block, const std::vector<int> dims, int array
                 dims);
 
             gep->idxs.emplace_back(getImmeI32Operand(0));
-            std::vector<int> indexes;
-            LinearToMultiIndex(dims, pos, indexes);
+            std::deque<int> indexes;
+            LINEAR_TO_MULTI_INDEX(dims, pos, indexes);
             for (int idx : indexes) gep->idxs.emplace_back(getImmeI32Operand(idx));
 
             block->insts.push_back(gep);
@@ -120,7 +120,7 @@ void VarDeclStmt::genIRCode()
             declare_block->insertAllocArray(dtype, val.dims, reg);
             irgen_table.regMap[reg] = val;
 
-            declare_block->insts.emplace_back(new CallInst(DT::VOID,
+            block->insts.emplace_back(new CallInst(DT::VOID,  // 修改，使用时再初始化
                 "llvm.memset.p0.i32",
                 {
                     {DT::PTR, getRegOperand(reg)},
@@ -161,13 +161,9 @@ void VarDeclStmt::genIRCode()
 
 void BlockStmt::genIRCode()
 {
+    if (!stmts) return;
     irgen_table.symTab->enterScope();
-
-    if (stmts)
-    {
-        for (auto& stmt : *stmts) stmt->genIRCode();
-    }
-
+    for (auto& stmt : *stmts) stmt->genIRCode();
     irgen_table.symTab->exitScope();
 }
 
@@ -220,13 +216,13 @@ void FuncDeclStmt::genIRCode()
         }
     }
 
+    IRBlock* body_block = NEW_BLOCK();
+    body_block->comment = "Func body at line " + to_string(line_num);
+    ir_func->cur_label  = ir_func->max_label;
+
     if (body) body->genIRCode();
 
     block->insertUncondBranch(1);
-
-    block              = NEW_BLOCK();
-    block->comment     = "Func end at line " + to_string(line_num);
-    ir_func->cur_label = ir_func->max_label;
 
     for (auto& block : builder.cur_func->blocks)
     {
@@ -350,7 +346,65 @@ void IfStmt::genIRCode()
     ir_func->cur_label = end_block->block_id;
 }
 
-void ForStmt::genIRCode() { cerr << "ForStmt genIRCode not implemented" << endl; }
+void ForStmt::genIRCode()
+{
+    int start_label_bak = ir_func->loop_start_label;
+    int end_label_bak   = ir_func->loop_end_label;
+
+    IRBlock* init_block = builder.getBlock(ir_func->cur_label);
+    init_block->comment = "For init at line " + to_string(line_num);
+    IRBlock* cond_block = NEW_BLOCK();
+    cond_block->comment = "For condition at line " + to_string(line_num);
+    IRBlock* body_block = nullptr;
+    if (body)
+    {
+        body_block          = NEW_BLOCK();
+        body_block->comment = "For body at line " + to_string(line_num);
+    }
+    IRBlock* update_block = NEW_BLOCK();
+    update_block->comment = "For update at line " + to_string(line_num);
+    IRBlock* end_block    = NEW_BLOCK();
+    end_block->comment    = "For end at line " + to_string(line_num);
+
+    ir_func->loop_start_label = update_block->block_id;
+    ir_func->loop_end_label   = end_block->block_id;
+
+    if (init) init->genIRCode();
+    init_block->insertUncondBranch(cond_block->block_id);
+
+    ir_func->cur_label = cond_block->block_id;
+    if (condition)
+    {
+        condition->true_label  = body_block ? body_block->block_id : update_block->block_id;
+        condition->false_label = end_block->block_id;
+        condition->genIRCode();
+
+        IRBlock* block = builder.getBlock(ir_func->cur_label);
+        block->insertTypeConvert(condition->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
+        block->insertCondBranch(
+            ir_func->max_reg, body_block ? body_block->block_id : update_block->block_id, end_block->block_id);
+    }
+    else
+        cond_block->insertUncondBranch(body_block ? body_block->block_id : update_block->block_id);
+
+    if (body)
+    {
+        ir_func->cur_label = body_block->block_id;
+        body->genIRCode();
+        IRBlock* block = builder.getBlock(ir_func->cur_label);
+        block->insertUncondBranch(update_block->block_id);
+    }
+
+    ir_func->cur_label = update_block->block_id;
+    if (update) update->genIRCode();
+    IRBlock* block = builder.getBlock(ir_func->cur_label);
+    block->insertUncondBranch(cond_block->block_id);
+
+    ir_func->cur_label = end_block->block_id;
+
+    ir_func->loop_start_label = start_label_bak;
+    ir_func->loop_end_label   = end_label_bak;
+}
 
 void BreakStmt::genIRCode()
 {

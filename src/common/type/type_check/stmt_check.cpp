@@ -299,7 +299,7 @@ void FuncDeclStmt::typeCheck()
     else
         funcDeclareOnly = true;
 
-    if (!funcDeclareOnly && !funcWithReturn && returnType != voidType)
+    if (!funcDeclareOnly && !funcWithReturn && returnType != voidType && entry->getName() != "main")
         semanticErrMsgs.push_back("Error: Function without return statement at line " + to_string(attr.line_num));
 
     semTable->symTable.exitScope();

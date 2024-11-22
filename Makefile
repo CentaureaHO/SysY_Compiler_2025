@@ -48,12 +48,12 @@ obj: $(OBJECTS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(dir $@)
-	@echo "$(CXX) $<"
+	@echo "$(CXX) $< -> $@"
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
-	@echo "$(CXX) $<"
+	@echo "$(CXX) $< -> $@"
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
 .PHONY: bin
@@ -61,7 +61,7 @@ bin: $(BIN_DIR)/SysYc
 
 $(BIN_DIR)/SysYc: $(OBJECTS) main.cpp
 	@mkdir -p $(BIN_DIR)
-	@echo "$(CXX) main.cpp"
+	@echo "$(CXX) main.cpp -> $(BIN_DIR)/SysYc"
 	@$(CXX) $(CXXFLAGS) main.cpp $(OBJECTS) -o $(BIN_DIR)/SysYc
 
 .PHONY: test
@@ -69,11 +69,8 @@ test: $(BIN_DIR)/test
 
 $(BIN_DIR)/test: $(OBJECTS) test.cpp
 	@mkdir -p $(BIN_DIR)
-	@echo "$(CXX) test.cpp"
+	@echo "$(CXX) test.cpp -> $(BIN_DIR)/test"
 	@$(CXX) $(CXXFLAGS) test.cpp $(OBJECTS) -o $(BIN_DIR)/test
-
-.PHONY: lexer_test
-lexer_test: $(BIN_DIR)/lexer_test
 
 .PHONY: valgrind
 valgrind: $(BIN_DIR)/test
