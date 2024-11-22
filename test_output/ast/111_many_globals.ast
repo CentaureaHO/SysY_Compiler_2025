@@ -1,0 +1,585 @@
+ASTree
+|-- VarDecl, BaseType: Int, line: 3
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a0
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 4
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a1
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 5
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a2
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 6
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a3
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 7
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a4
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 8
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a5
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 9
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a6
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 10
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a7
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 11
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a8
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 12
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a9
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 13
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a10
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 14
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a11
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 15
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a12
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 16
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a13
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 17
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a14
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 18
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a15
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 19
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a16
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 20
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a17
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 21
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a18
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 22
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a19
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 23
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a20
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 24
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a21
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 25
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a22
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 26
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a23
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 27
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a24
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 28
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a25
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 29
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a26
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 30
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a27
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 31
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a28
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 32
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a29
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 33
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a30
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 34
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a31
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 36
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a32
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 37
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a33
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 38
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a34
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 39
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a35
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 40
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a36
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 41
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a37
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 42
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a38
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 43
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a39
+|       `-- Init: no initializer
+|-- FuncDecl @Name: testParam8 -> @RetType: Int, line: 45
+|   |-- Params:
+|   |   |-- Int a0
+|   |   |-- Int a1
+|   |   |-- Int a2
+|   |   |-- Int a3
+|   |   |-- Int a4
+|   |   |-- Int a5
+|   |   |-- Int a6
+|   |   `-- Int a7
+|   `-- Body:
+|       `-- BlockStmt, line: 46
+|           `-- ReturnStmt, line: 47
+|               `-- BinaryExpr Add
+|                   |-- BinaryExpr Add
+|                   |   |-- BinaryExpr Add
+|                   |   |   |-- BinaryExpr Add
+|                   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |-- LeftValueExpr a0
+|                   |   |   |   |   |   |   `-- LeftValueExpr a1
+|                   |   |   |   |   |   `-- LeftValueExpr a2
+|                   |   |   |   |   `-- LeftValueExpr a3
+|                   |   |   |   `-- LeftValueExpr a4
+|                   |   |   `-- LeftValueExpr a5
+|                   |   `-- LeftValueExpr a6
+|                   `-- LeftValueExpr a7
+|-- FuncDecl @Name: testParam16 -> @RetType: Int, line: 50
+|   |-- Params:
+|   |   |-- Int a0
+|   |   |-- Int a1
+|   |   |-- Int a2
+|   |   |-- Int a3
+|   |   |-- Int a4
+|   |   |-- Int a5
+|   |   |-- Int a6
+|   |   |-- Int a7
+|   |   |-- Int a8
+|   |   |-- Int a9
+|   |   |-- Int a10
+|   |   |-- Int a11
+|   |   |-- Int a12
+|   |   |-- Int a13
+|   |   |-- Int a14
+|   |   `-- Int a15
+|   `-- Body:
+|       `-- BlockStmt, line: 53
+|           `-- ReturnStmt, line: 54
+|               `-- BinaryExpr Add
+|                   |-- BinaryExpr Add
+|                   |   |-- BinaryExpr Add
+|                   |   |   |-- BinaryExpr Add
+|                   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |-- BinaryExpr Sub
+|                   |   |   |   |   |   |   |   |   |-- BinaryExpr Sub
+|                   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Sub
+|                   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Sub
+|                   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Sub
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |-- LeftValueExpr a0
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a1
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a2
+|                   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a3
+|                   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a4
+|                   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a5
+|                   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a6
+|                   |   |   |   |   |   |   |   |   `-- LeftValueExpr a7
+|                   |   |   |   |   |   |   |   `-- LeftValueExpr a8
+|                   |   |   |   |   |   |   `-- LeftValueExpr a9
+|                   |   |   |   |   |   `-- LeftValueExpr a10
+|                   |   |   |   |   `-- LeftValueExpr a11
+|                   |   |   |   `-- LeftValueExpr a12
+|                   |   |   `-- LeftValueExpr a13
+|                   |   `-- LeftValueExpr a14
+|                   `-- LeftValueExpr a15
+|-- FuncDecl @Name: testParam32 -> @RetType: Int, line: 58
+|   |-- Params:
+|   |   |-- Int a0
+|   |   |-- Int a1
+|   |   |-- Int a2
+|   |   |-- Int a3
+|   |   |-- Int a4
+|   |   |-- Int a5
+|   |   |-- Int a6
+|   |   |-- Int a7
+|   |   |-- Int a8
+|   |   |-- Int a9
+|   |   |-- Int a10
+|   |   |-- Int a11
+|   |   |-- Int a12
+|   |   |-- Int a13
+|   |   |-- Int a14
+|   |   |-- Int a15
+|   |   |-- Int a16
+|   |   |-- Int a17
+|   |   |-- Int a18
+|   |   |-- Int a19
+|   |   |-- Int a20
+|   |   |-- Int a21
+|   |   |-- Int a22
+|   |   |-- Int a23
+|   |   |-- Int a24
+|   |   |-- Int a25
+|   |   |-- Int a26
+|   |   |-- Int a27
+|   |   |-- Int a28
+|   |   |-- Int a29
+|   |   |-- Int a30
+|   |   `-- Int a31
+|   `-- Body:
+|       `-- BlockStmt, line: 65
+|           `-- ReturnStmt, line: 66
+|               `-- BinaryExpr Add
+|                   |-- BinaryExpr Add
+|                   |   |-- BinaryExpr Add
+|                   |   |   |-- BinaryExpr Add
+|                   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |   |-- BinaryExpr Sub
+|                   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Sub
+|                   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Sub
+|                   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Sub
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Sub
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |-- BinaryExpr Add
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |-- LeftValueExpr a0
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a1
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a2
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a3
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a4
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a5
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a6
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a7
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a8
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a9
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a10
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a11
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a12
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a13
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a14
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a15
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a16
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a17
+|                   |   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a18
+|                   |   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a19
+|                   |   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a20
+|                   |   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a21
+|                   |   |   |   |   |   |   |   |   |   `-- LeftValueExpr a22
+|                   |   |   |   |   |   |   |   |   `-- LeftValueExpr a23
+|                   |   |   |   |   |   |   |   `-- LeftValueExpr a24
+|                   |   |   |   |   |   |   `-- LeftValueExpr a25
+|                   |   |   |   |   |   `-- LeftValueExpr a26
+|                   |   |   |   |   `-- LeftValueExpr a27
+|                   |   |   |   `-- LeftValueExpr a28
+|                   |   |   `-- LeftValueExpr a29
+|                   |   `-- LeftValueExpr a30
+|                   `-- LeftValueExpr a31
+`-- FuncDecl @Name: main -> @RetType: Int, line: 72
+    |-- Params:
+    |       None
+    `-- Body:
+        `-- BlockStmt, line: 72
+            |-- ExprStmt line: 73
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a0
+            |       `-- Const Int: 0
+            |-- ExprStmt line: 74
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a1
+            |       `-- Const Int: 1
+            |-- ExprStmt line: 75
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a2
+            |       `-- Const Int: 2
+            |-- ExprStmt line: 76
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a3
+            |       `-- Const Int: 3
+            |-- ExprStmt line: 77
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a4
+            |       `-- Const Int: 4
+            |-- ExprStmt line: 78
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a5
+            |       `-- Const Int: 5
+            |-- ExprStmt line: 79
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a6
+            |       `-- Const Int: 6
+            |-- ExprStmt line: 80
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a7
+            |       `-- Const Int: 7
+            |-- ExprStmt line: 81
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a8
+            |       `-- Const Int: 8
+            |-- ExprStmt line: 82
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a9
+            |       `-- Const Int: 9
+            |-- ExprStmt line: 83
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a10
+            |       `-- Const Int: 0
+            |-- ExprStmt line: 84
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a11
+            |       `-- Const Int: 1
+            |-- ExprStmt line: 85
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a12
+            |       `-- Const Int: 2
+            |-- ExprStmt line: 86
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a13
+            |       `-- Const Int: 3
+            |-- ExprStmt line: 87
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a14
+            |       `-- Const Int: 4
+            |-- ExprStmt line: 88
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a15
+            |       `-- Const Int: 5
+            |-- ExprStmt line: 89
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a16
+            |       `-- Const Int: 6
+            |-- ExprStmt line: 90
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a17
+            |       `-- Const Int: 7
+            |-- ExprStmt line: 91
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a18
+            |       `-- Const Int: 8
+            |-- ExprStmt line: 92
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a19
+            |       `-- Const Int: 9
+            |-- ExprStmt line: 93
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a20
+            |       `-- Const Int: 0
+            |-- ExprStmt line: 94
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a21
+            |       `-- Const Int: 1
+            |-- ExprStmt line: 95
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a22
+            |       `-- Const Int: 2
+            |-- ExprStmt line: 96
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a23
+            |       `-- Const Int: 3
+            |-- ExprStmt line: 97
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a24
+            |       `-- Const Int: 4
+            |-- ExprStmt line: 98
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a25
+            |       `-- Const Int: 5
+            |-- ExprStmt line: 99
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a26
+            |       `-- Const Int: 6
+            |-- ExprStmt line: 100
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a27
+            |       `-- Const Int: 7
+            |-- ExprStmt line: 101
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a28
+            |       `-- Const Int: 8
+            |-- ExprStmt line: 102
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a29
+            |       `-- Const Int: 9
+            |-- ExprStmt line: 103
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a30
+            |       `-- Const Int: 0
+            |-- ExprStmt line: 104
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a31
+            |       `-- Const Int: 1
+            |-- ExprStmt line: 106
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a32
+            |       `-- Const Int: 4
+            |-- ExprStmt line: 107
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a33
+            |       `-- Const Int: 5
+            |-- ExprStmt line: 108
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a34
+            |       `-- Const Int: 6
+            |-- ExprStmt line: 109
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a35
+            |       `-- Const Int: 7
+            |-- ExprStmt line: 110
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a36
+            |       `-- Const Int: 8
+            |-- ExprStmt line: 111
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a37
+            |       `-- Const Int: 9
+            |-- ExprStmt line: 112
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a38
+            |       `-- Const Int: 0
+            |-- ExprStmt line: 113
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a39
+            |       `-- Const Int: 1
+            |-- ExprStmt line: 115
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a0
+            |       `-- FuncCallExpr testParam8
+            |           |-- Arg0 = LeftValueExpr a0
+            |           |-- Arg1 = LeftValueExpr a1
+            |           |-- Arg2 = LeftValueExpr a2
+            |           |-- Arg3 = LeftValueExpr a3
+            |           |-- Arg4 = LeftValueExpr a4
+            |           |-- Arg5 = LeftValueExpr a5
+            |           |-- Arg6 = LeftValueExpr a6
+            |           `-- Arg7 = LeftValueExpr a7
+            |-- ExprStmt line: 116
+            |   `-- FuncCallExpr putint
+            |       `-- Arg0 = LeftValueExpr a0
+            |-- ExprStmt line: 117
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a0
+            |       `-- FuncCallExpr testParam16
+            |           |-- Arg0 = LeftValueExpr a32
+            |           |-- Arg1 = LeftValueExpr a33
+            |           |-- Arg2 = LeftValueExpr a34
+            |           |-- Arg3 = LeftValueExpr a35
+            |           |-- Arg4 = LeftValueExpr a36
+            |           |-- Arg5 = LeftValueExpr a37
+            |           |-- Arg6 = LeftValueExpr a38
+            |           |-- Arg7 = LeftValueExpr a39
+            |           |-- Arg8 = LeftValueExpr a8
+            |           |-- Arg9 = LeftValueExpr a9
+            |           |-- Arg10 = LeftValueExpr a10
+            |           |-- Arg11 = LeftValueExpr a11
+            |           |-- Arg12 = LeftValueExpr a12
+            |           |-- Arg13 = LeftValueExpr a13
+            |           |-- Arg14 = LeftValueExpr a14
+            |           `-- Arg15 = LeftValueExpr a15
+            |-- ExprStmt line: 121
+            |   `-- FuncCallExpr putint
+            |       `-- Arg0 = LeftValueExpr a0
+            |-- ExprStmt line: 122
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a0
+            |       `-- FuncCallExpr testParam32
+            |           |-- Arg0 = LeftValueExpr a0
+            |           |-- Arg1 = LeftValueExpr a1
+            |           |-- Arg2 = LeftValueExpr a2
+            |           |-- Arg3 = LeftValueExpr a3
+            |           |-- Arg4 = LeftValueExpr a4
+            |           |-- Arg5 = LeftValueExpr a5
+            |           |-- Arg6 = LeftValueExpr a6
+            |           |-- Arg7 = LeftValueExpr a7
+            |           |-- Arg8 = LeftValueExpr a8
+            |           |-- Arg9 = LeftValueExpr a9
+            |           |-- Arg10 = LeftValueExpr a10
+            |           |-- Arg11 = LeftValueExpr a11
+            |           |-- Arg12 = LeftValueExpr a12
+            |           |-- Arg13 = LeftValueExpr a13
+            |           |-- Arg14 = LeftValueExpr a14
+            |           |-- Arg15 = LeftValueExpr a15
+            |           |-- Arg16 = LeftValueExpr a16
+            |           |-- Arg17 = LeftValueExpr a17
+            |           |-- Arg18 = LeftValueExpr a18
+            |           |-- Arg19 = LeftValueExpr a19
+            |           |-- Arg20 = LeftValueExpr a20
+            |           |-- Arg21 = LeftValueExpr a21
+            |           |-- Arg22 = LeftValueExpr a22
+            |           |-- Arg23 = LeftValueExpr a23
+            |           |-- Arg24 = LeftValueExpr a24
+            |           |-- Arg25 = LeftValueExpr a25
+            |           |-- Arg26 = LeftValueExpr a26
+            |           |-- Arg27 = LeftValueExpr a27
+            |           |-- Arg28 = LeftValueExpr a28
+            |           |-- Arg29 = LeftValueExpr a29
+            |           |-- Arg30 = LeftValueExpr a30
+            |           `-- Arg31 = LeftValueExpr a31
+            |-- ExprStmt line: 130
+            |   `-- FuncCallExpr putint
+            |       `-- Arg0 = LeftValueExpr a0
+            `-- ReturnStmt, line: 131
+                `-- Const Int: 0

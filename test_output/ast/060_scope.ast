@@ -1,0 +1,97 @@
+ASTree
+|-- VarDecl, BaseType: Int, line: 1
+|   `-- DefNode
+|       `-- Var: LeftValueExpr a
+|       `-- Init: InitSingle
+|           `-- Const Int: 7
+|-- FuncDecl @Name: func -> @RetType: Int, line: 3
+|   |-- Params:
+|   |       None
+|   `-- Body:
+|       `-- BlockStmt, line: 3
+|           |-- VarDecl, BaseType: Int, line: 4
+|           |   `-- DefNode
+|           |       `-- Var: LeftValueExpr b
+|           |       `-- Init: InitSingle
+|           |           `-- LeftValueExpr a
+|           |-- VarDecl, BaseType: Int, line: 5
+|           |   `-- DefNode
+|           |       `-- Var: LeftValueExpr a
+|           |       `-- Init: InitSingle
+|           |           `-- Const Int: 1
+|           `-- IfStmt, line: 6
+|               |-- Condition:
+|               |   `-- BinaryExpr Eq
+|               |       |-- LeftValueExpr a
+|               |       `-- LeftValueExpr b
+|               |-- Thenbody:
+|               |   `-- BlockStmt, line: 6
+|               |       |-- ExprStmt line: 7
+|               |       |   `-- BinaryExpr Assign
+|               |       |       |-- LeftValueExpr a
+|               |       |       `-- BinaryExpr Add
+|               |       |           |-- LeftValueExpr a
+|               |       |           `-- Const Int: 1
+|               |       `-- ReturnStmt, line: 8
+|               |           `-- Const Int: 1
+|               `-- Elsebody:
+|                   `-- ReturnStmt, line: 11
+|                       `-- Const Int: 0
+`-- FuncDecl @Name: main -> @RetType: Int, line: 14
+    |-- Params:
+    |       None
+    `-- Body:
+        `-- BlockStmt, line: 14
+            |-- VarDecl, BaseType: Int, line: 15
+            |   `-- DefNode
+            |       `-- Var: LeftValueExpr result
+            |       `-- Init: InitSingle
+            |           `-- Const Int: 0
+            |-- VarDecl, BaseType: Int, line: 16
+            |   `-- DefNode
+            |       `-- Var: LeftValueExpr i
+            |       `-- Init: InitSingle
+            |           `-- Const Int: 0
+            |-- WhileStmt, line: 17
+            |   |-- Cond:
+            |   |   `-- BinaryExpr Lt
+            |   |       |-- LeftValueExpr i
+            |   |       `-- Const Int: 100
+            |   `-- Body:
+            |       `-- BlockStmt, line: 17
+            |           |-- IfStmt, line: 18
+            |           |   |-- Condition:
+            |           |   |   `-- BinaryExpr Eq
+            |           |   |       |-- FuncCallExpr func
+            |           |   |       |   `-- No args
+            |           |   |       `-- Const Int: 1
+            |           |   |-- Thenbody:
+            |           |   |   `-- ExprStmt line: 19
+            |           |   |       `-- BinaryExpr Assign
+            |           |   |           |-- LeftValueExpr result
+            |           |   |           `-- BinaryExpr Add
+            |           |   |               |-- LeftValueExpr result
+            |           |   |               `-- Const Int: 1
+            |           |   `-- Elsebody:
+            |           |       `-- None
+            |           `-- ExprStmt line: 20
+            |               `-- BinaryExpr Assign
+            |                   |-- LeftValueExpr i
+            |                   `-- BinaryExpr Add
+            |                       |-- LeftValueExpr i
+            |                       `-- Const Int: 1
+            |-- IfStmt, line: 22
+            |   |-- Condition:
+            |   |   `-- BinaryExpr Lt
+            |   |       |-- LeftValueExpr result
+            |   |       `-- Const Int: 100
+            |   |-- Thenbody:
+            |   |   `-- ExprStmt line: 23
+            |   |       `-- FuncCallExpr putint
+            |   |           `-- Arg0 = Const Int: 1
+            |   `-- Elsebody:
+            |       `-- ExprStmt line: 25
+            |           `-- FuncCallExpr putint
+            |               `-- Arg0 = Const Int: 0
+            `-- ReturnStmt, line: 26
+                `-- Const Int: 0

@@ -1,0 +1,55 @@
+ASTree
+`-- FuncDecl @Name: main -> @RetType: Int, line: 1
+    |-- Params:
+    |       None
+    `-- Body:
+        `-- BlockStmt, line: 2
+            |-- VarDecl, BaseType: Int, line: 3
+            |   `-- DefNode
+            |       `-- Var: LeftValueExpr x
+            |       `-- Init: InitSingle
+            |           `-- BinaryExpr Add
+            |               |-- FuncCallExpr getint
+            |               |   `-- No args
+            |               `-- FuncCallExpr getint
+            |                   `-- No args
+            |-- VarDecl, BaseType: Int, line: 4
+            |   `-- DefNode
+            |       `-- Var: LeftValueExpr y
+            |       `-- Init: InitSingle
+            |           `-- BinaryExpr Add
+            |               |-- FuncCallExpr getch
+            |               |   `-- No args
+            |               `-- FuncCallExpr getint
+            |                   `-- No args
+            |-- IfStmt, line: 5
+            |   |-- Condition:
+            |   |   `-- BinaryExpr Add
+            |   |       |-- LeftValueExpr x
+            |   |       `-- LeftValueExpr y
+            |   |-- Thenbody:
+            |   |   `-- BlockStmt, line: 5
+            |   |       `-- ReturnStmt, line: 6
+            |   |           `-- Const Int: 3
+            |   `-- Elsebody:
+            |       `-- IfStmt, line: 7
+            |           |-- Condition:
+            |           |   `-- FuncCallExpr getint
+            |           |       `-- No args
+            |           |-- Thenbody:
+            |           |   `-- BlockStmt, line: 7
+            |           |       `-- ReturnStmt, line: 8
+            |           |           `-- Const Int: 5
+            |           `-- Elsebody:
+            |               `-- IfStmt, line: 9
+            |                   |-- Condition:
+            |                   |   `-- FuncCallExpr putch
+            |                   |       `-- Arg0 = Const Int: 32
+            |                   |-- Thenbody:
+            |                   |   `-- BlockStmt, line: 9
+            |                   |       `-- ReturnStmt, line: 10
+            |                   |           `-- Const Int: 10
+            |                   `-- Elsebody:
+            |                       `-- None
+            `-- ReturnStmt, line: 12
+                `-- Const Int: 25

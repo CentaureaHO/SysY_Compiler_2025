@@ -1,0 +1,239 @@
+ASTree
+|-- VarDecl, BaseType: Int, line: 1
+|   |-- DefNode
+|   |   `-- Var: LeftValueExpr t[Dim0][Dim1]
+|   |       |-- Dim0 = Const Int: 1005
+|   |       `-- Dim1 = Const Int: 2
+|   |   `-- Init: InitMulti
+|   |       `-- InitSingle
+|   |           `-- Const Int: 0
+|   `-- DefNode
+|       `-- Var: LeftValueExpr dp[Dim0][Dim1]
+|           |-- Dim0 = Const Int: 1005
+|           `-- Dim1 = Const Int: 35
+|       `-- Init: InitMulti
+|           `-- InitSingle
+|               `-- Const Int: 0
+`-- FuncDecl @Name: main -> @RetType: Int, line: 2
+    |-- Params:
+    |       None
+    `-- Body:
+        `-- BlockStmt, line: 3
+            |-- VarDecl, BaseType: Int, line: 4
+            |   |-- DefNode
+            |   |   |-- Var: LeftValueExpr T
+            |   |   `-- Init: no initializer
+            |   |-- DefNode
+            |   |   |-- Var: LeftValueExpr W
+            |   |   `-- Init: no initializer
+            |   |-- DefNode
+            |   |   |-- Var: LeftValueExpr x
+            |   |   `-- Init: no initializer
+            |   |-- DefNode
+            |   |   |-- Var: LeftValueExpr i
+            |   |   `-- Init: no initializer
+            |   `-- DefNode
+            |       |-- Var: LeftValueExpr j
+            |       `-- Init: no initializer
+            |-- ExprStmt line: 5
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr T
+            |       `-- FuncCallExpr getint
+            |           `-- No args
+            |-- ExprStmt line: 6
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr W
+            |       `-- FuncCallExpr getint
+            |           `-- No args
+            |-- ExprStmt line: 7
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr i
+            |       `-- Const Int: 1
+            |-- WhileStmt, line: 8
+            |   |-- Cond:
+            |   |   `-- BinaryExpr Le
+            |   |       |-- LeftValueExpr i
+            |   |       `-- LeftValueExpr T
+            |   `-- Body:
+            |       `-- BlockStmt, line: 8
+            |           |-- ExprStmt line: 9
+            |           |   `-- BinaryExpr Assign
+            |           |       |-- LeftValueExpr x
+            |           |       `-- FuncCallExpr getint
+            |           |           `-- No args
+            |           |-- ExprStmt line: 10
+            |           |   `-- BinaryExpr Assign
+            |           |       |-- LeftValueExpr t[Dim0][Dim1]
+            |           |       |   |-- Dim0 = LeftValueExpr i
+            |           |       |   `-- Dim1 = BinaryExpr Mod
+            |           |       |       |-- LeftValueExpr x
+            |           |       |       `-- Const Int: 2
+            |           |       `-- Const Int: 1
+            |           |-- ExprStmt line: 11
+            |           |   `-- BinaryExpr Assign
+            |           |       |-- LeftValueExpr dp[Dim0][Dim1]
+            |           |       |   |-- Dim0 = LeftValueExpr i
+            |           |       |   `-- Dim1 = Const Int: 0
+            |           |       `-- BinaryExpr Add
+            |           |           |-- LeftValueExpr dp[Dim0][Dim1]
+            |           |           |   |-- Dim0 = BinaryExpr Sub
+            |           |           |   |   Dim0 = |-- LeftValueExpr i
+            |           |           |   |   Dim0 = `-- Const Int: 1
+            |           |           |   `-- Dim1 = Const Int: 0
+            |           |           `-- LeftValueExpr t[Dim0][Dim1]
+            |           |               |-- Dim0 = LeftValueExpr i
+            |           |               `-- Dim1 = Const Int: 1
+            |           `-- ExprStmt line: 12
+            |               `-- BinaryExpr Assign
+            |                   |-- LeftValueExpr i
+            |                   `-- BinaryExpr Add
+            |                       |-- LeftValueExpr i
+            |                       `-- Const Int: 1
+            |-- ExprStmt line: 15
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr i
+            |       `-- Const Int: 1
+            |-- WhileStmt, line: 16
+            |   |-- Cond:
+            |   |   `-- BinaryExpr Le
+            |   |       |-- LeftValueExpr i
+            |   |       `-- LeftValueExpr T
+            |   `-- Body:
+            |       `-- BlockStmt, line: 16
+            |           |-- ExprStmt line: 17
+            |           |   `-- BinaryExpr Assign
+            |           |       |-- LeftValueExpr j
+            |           |       `-- Const Int: 1
+            |           |-- WhileStmt, line: 18
+            |           |   |-- Cond:
+            |           |   |   `-- BinaryExpr Le
+            |           |   |       |-- LeftValueExpr j
+            |           |   |       `-- LeftValueExpr W
+            |           |   `-- Body:
+            |           |       `-- BlockStmt, line: 18
+            |           |           |-- IfStmt, line: 19
+            |           |           |   |-- Condition:
+            |           |           |   |   `-- BinaryExpr Gt
+            |           |           |   |       |-- BinaryExpr Add
+            |           |           |   |       |   |-- LeftValueExpr dp[Dim0][Dim1]
+            |           |           |   |       |   |   |-- Dim0 = BinaryExpr Sub
+            |           |           |   |       |   |   |   Dim0 = |-- LeftValueExpr i
+            |           |           |   |       |   |   |   Dim0 = `-- Const Int: 1
+            |           |           |   |       |   |   `-- Dim1 = LeftValueExpr j
+            |           |           |   |       |   `-- LeftValueExpr t[Dim0][Dim1]
+            |           |           |   |       |       |-- Dim0 = LeftValueExpr i
+            |           |           |   |       |       `-- Dim1 = BinaryExpr Mod
+            |           |           |   |       |           |-- BinaryExpr Add
+            |           |           |   |       |           |   |-- LeftValueExpr j
+            |           |           |   |       |           |   `-- Const Int: 1
+            |           |           |   |       |           `-- Const Int: 2
+            |           |           |   |       `-- BinaryExpr Add
+            |           |           |   |           |-- LeftValueExpr dp[Dim0][Dim1]
+            |           |           |   |           |   |-- Dim0 = BinaryExpr Sub
+            |           |           |   |           |   |   Dim0 = |-- LeftValueExpr i
+            |           |           |   |           |   |   Dim0 = `-- Const Int: 1
+            |           |           |   |           |   `-- Dim1 = BinaryExpr Sub
+            |           |           |   |           |       |-- LeftValueExpr j
+            |           |           |   |           |       `-- Const Int: 1
+            |           |           |   |           `-- LeftValueExpr t[Dim0][Dim1]
+            |           |           |   |               |-- Dim0 = LeftValueExpr i
+            |           |           |   |               `-- Dim1 = BinaryExpr Mod
+            |           |           |   |                   |-- BinaryExpr Add
+            |           |           |   |                   |   |-- LeftValueExpr j
+            |           |           |   |                   |   `-- Const Int: 1
+            |           |           |   |                   `-- Const Int: 2
+            |           |           |   |-- Thenbody:
+            |           |           |   |   `-- BlockStmt, line: 19
+            |           |           |   |       `-- ExprStmt line: 20
+            |           |           |   |           `-- BinaryExpr Assign
+            |           |           |   |               |-- LeftValueExpr dp[Dim0][Dim1]
+            |           |           |   |               |   |-- Dim0 = LeftValueExpr i
+            |           |           |   |               |   `-- Dim1 = LeftValueExpr j
+            |           |           |   |               `-- BinaryExpr Add
+            |           |           |   |                   |-- LeftValueExpr dp[Dim0][Dim1]
+            |           |           |   |                   |   |-- Dim0 = BinaryExpr Sub
+            |           |           |   |                   |   |   Dim0 = |-- LeftValueExpr i
+            |           |           |   |                   |   |   Dim0 = `-- Const Int: 1
+            |           |           |   |                   |   `-- Dim1 = LeftValueExpr j
+            |           |           |   |                   `-- LeftValueExpr t[Dim0][Dim1]
+            |           |           |   |                       |-- Dim0 = LeftValueExpr i
+            |           |           |   |                       `-- Dim1 = BinaryExpr Mod
+            |           |           |   |                           |-- BinaryExpr Add
+            |           |           |   |                           |   |-- LeftValueExpr j
+            |           |           |   |                           |   `-- Const Int: 1
+            |           |           |   |                           `-- Const Int: 2
+            |           |           |   `-- Elsebody:
+            |           |           |       `-- BlockStmt, line: 22
+            |           |           |           `-- ExprStmt line: 23
+            |           |           |               `-- BinaryExpr Assign
+            |           |           |                   |-- LeftValueExpr dp[Dim0][Dim1]
+            |           |           |                   |   |-- Dim0 = LeftValueExpr i
+            |           |           |                   |   `-- Dim1 = LeftValueExpr j
+            |           |           |                   `-- BinaryExpr Add
+            |           |           |                       |-- LeftValueExpr dp[Dim0][Dim1]
+            |           |           |                       |   |-- Dim0 = BinaryExpr Sub
+            |           |           |                       |   |   Dim0 = |-- LeftValueExpr i
+            |           |           |                       |   |   Dim0 = `-- Const Int: 1
+            |           |           |                       |   `-- Dim1 = BinaryExpr Sub
+            |           |           |                       |       |-- LeftValueExpr j
+            |           |           |                       |       `-- Const Int: 1
+            |           |           |                       `-- LeftValueExpr t[Dim0][Dim1]
+            |           |           |                           |-- Dim0 = LeftValueExpr i
+            |           |           |                           `-- Dim1 = BinaryExpr Mod
+            |           |           |                               |-- BinaryExpr Add
+            |           |           |                               |   |-- LeftValueExpr j
+            |           |           |                               |   `-- Const Int: 1
+            |           |           |                               `-- Const Int: 2
+            |           |           `-- ExprStmt line: 25
+            |           |               `-- BinaryExpr Assign
+            |           |                   |-- LeftValueExpr j
+            |           |                   `-- BinaryExpr Add
+            |           |                       |-- LeftValueExpr j
+            |           |                       `-- Const Int: 1
+            |           `-- ExprStmt line: 27
+            |               `-- BinaryExpr Assign
+            |                   |-- LeftValueExpr i
+            |                   `-- BinaryExpr Add
+            |                       |-- LeftValueExpr i
+            |                       `-- Const Int: 1
+            |-- VarDecl, BaseType: Int, line: 30
+            |   `-- DefNode
+            |       `-- Var: LeftValueExpr res
+            |       `-- Init: InitSingle
+            |           `-- Const Int: 0
+            |-- ExprStmt line: 31
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr j
+            |       `-- Const Int: 0
+            |-- WhileStmt, line: 32
+            |   |-- Cond:
+            |   |   `-- BinaryExpr Le
+            |   |       |-- LeftValueExpr j
+            |   |       `-- LeftValueExpr W
+            |   `-- Body:
+            |       `-- BlockStmt, line: 32
+            |           |-- IfStmt, line: 33
+            |           |   |-- Condition:
+            |           |   |   `-- BinaryExpr Lt
+            |           |   |       |-- LeftValueExpr res
+            |           |   |       `-- LeftValueExpr dp[Dim0][Dim1]
+            |           |   |           |-- Dim0 = LeftValueExpr T
+            |           |   |           `-- Dim1 = LeftValueExpr j
+            |           |   |-- Thenbody:
+            |           |   |   `-- BlockStmt, line: 33
+            |           |   |       `-- ExprStmt line: 34
+            |           |   |           `-- BinaryExpr Assign
+            |           |   |               |-- LeftValueExpr res
+            |           |   |               `-- LeftValueExpr dp[Dim0][Dim1]
+            |           |   |                   |-- Dim0 = LeftValueExpr T
+            |           |   |                   `-- Dim1 = LeftValueExpr j
+            |           |   `-- Elsebody:
+            |           |       `-- None
+            |           `-- ExprStmt line: 36
+            |               `-- BinaryExpr Assign
+            |                   |-- LeftValueExpr j
+            |                   `-- BinaryExpr Add
+            |                       |-- LeftValueExpr j
+            |                       `-- Const Int: 1
+            `-- ReturnStmt, line: 39
+                `-- LeftValueExpr res

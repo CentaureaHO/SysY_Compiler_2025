@@ -1,0 +1,273 @@
+ASTree
+|-- FuncDecl @Name: quick_read -> @RetType: Int, line: 1
+|   |-- Params:
+|   |       None
+|   `-- Body:
+|       `-- BlockStmt, line: 1
+|           |-- VarDecl, BaseType: Int, line: 2
+|           |   `-- DefNode
+|           |       `-- Var: LeftValueExpr ch
+|           |       `-- Init: InitSingle
+|           |           `-- FuncCallExpr getch
+|           |               `-- No args
+|           |-- VarDecl, BaseType: Int, line: 2
+|           |   |-- DefNode
+|           |   |   `-- Var: LeftValueExpr x
+|           |   |   `-- Init: InitSingle
+|           |   |       `-- Const Int: 0
+|           |   `-- DefNode
+|           |       `-- Var: LeftValueExpr f
+|           |       `-- Init: InitSingle
+|           |           `-- Const Int: 0
+|           |-- WhileStmt, line: 3
+|           |   |-- Cond:
+|           |   |   `-- BinaryExpr Or
+|           |   |       |-- BinaryExpr Lt
+|           |   |       |   |-- LeftValueExpr ch
+|           |   |       |   `-- Const Int: 48
+|           |   |       `-- BinaryExpr Gt
+|           |   |           |-- LeftValueExpr ch
+|           |   |           `-- Const Int: 57
+|           |   `-- Body:
+|           |       `-- BlockStmt, line: 3
+|           |           |-- IfStmt, line: 4
+|           |           |   |-- Condition:
+|           |           |   |   `-- BinaryExpr Eq
+|           |           |   |       |-- LeftValueExpr ch
+|           |           |   |       `-- Const Int: 45
+|           |           |   |-- Thenbody:
+|           |           |   |   `-- ExprStmt line: 4
+|           |           |   |       `-- BinaryExpr Assign
+|           |           |   |           |-- LeftValueExpr f
+|           |           |   |           `-- Const Int: 1
+|           |           |   `-- Elsebody:
+|           |           |       `-- None
+|           |           `-- ExprStmt line: 5
+|           |               `-- BinaryExpr Assign
+|           |                   |-- LeftValueExpr ch
+|           |                   `-- FuncCallExpr getch
+|           |                       `-- No args
+|           |-- WhileStmt, line: 7
+|           |   |-- Cond:
+|           |   |   `-- BinaryExpr And
+|           |   |       |-- BinaryExpr Ge
+|           |   |       |   |-- LeftValueExpr ch
+|           |   |       |   `-- Const Int: 48
+|           |   |       `-- BinaryExpr Le
+|           |   |           |-- LeftValueExpr ch
+|           |   |           `-- Const Int: 57
+|           |   `-- Body:
+|           |       `-- BlockStmt, line: 7
+|           |           |-- ExprStmt line: 8
+|           |           |   `-- BinaryExpr Assign
+|           |           |       |-- LeftValueExpr x
+|           |           |       `-- BinaryExpr Sub
+|           |           |           |-- BinaryExpr Add
+|           |           |           |   |-- BinaryExpr Mul
+|           |           |           |   |   |-- LeftValueExpr x
+|           |           |           |   |   `-- Const Int: 10
+|           |           |           |   `-- LeftValueExpr ch
+|           |           |           `-- Const Int: 48
+|           |           `-- ExprStmt line: 9
+|           |               `-- BinaryExpr Assign
+|           |                   |-- LeftValueExpr ch
+|           |                   `-- FuncCallExpr getch
+|           |                       `-- No args
+|           `-- IfStmt, line: 11
+|               |-- Condition:
+|               |   `-- LeftValueExpr f
+|               |-- Thenbody:
+|               |   `-- ReturnStmt, line: 11
+|               |       `-- UnaryExpr Sub
+|               |           `-- LeftValueExpr x
+|               `-- Elsebody:
+|                   `-- ReturnStmt, line: 12
+|                       `-- LeftValueExpr x
+|-- VarDecl, BaseType: Int, line: 14
+|   |-- DefNode
+|   |   |-- Var: LeftValueExpr n
+|   |   `-- Init: no initializer
+|   |-- DefNode
+|   |   |-- Var: LeftValueExpr m
+|   |   `-- Init: no initializer
+|   `-- DefNode
+|       |-- Var: LeftValueExpr fa[Dim0]
+|       |   Var: `-- Dim0 = Const Int: 100005
+|       `-- Init: no initializer
+|-- FuncDecl @Name: init -> @RetType: Void, line: 15
+|   |-- Params:
+|   |       None
+|   `-- Body:
+|       `-- BlockStmt, line: 15
+|           |-- VarDecl, BaseType: Int, line: 16
+|           |   `-- DefNode
+|           |       `-- Var: LeftValueExpr i
+|           |       `-- Init: InitSingle
+|           |           `-- Const Int: 1
+|           `-- WhileStmt, line: 17
+|               |-- Cond:
+|               |   `-- BinaryExpr Le
+|               |       |-- LeftValueExpr i
+|               |       `-- LeftValueExpr n
+|               `-- Body:
+|                   `-- BlockStmt, line: 17
+|                       |-- ExprStmt line: 18
+|                       |   `-- BinaryExpr Assign
+|                       |       |-- LeftValueExpr fa[Dim0]
+|                       |       |   `-- Dim0 = LeftValueExpr i
+|                       |       `-- LeftValueExpr i
+|                       `-- ExprStmt line: 19
+|                           `-- BinaryExpr Assign
+|                               |-- LeftValueExpr i
+|                               `-- BinaryExpr Add
+|                                   |-- LeftValueExpr i
+|                                   `-- Const Int: 1
+|-- FuncDecl @Name: find -> @RetType: Int, line: 22
+|   |-- Params:
+|   |   `-- Int x
+|   `-- Body:
+|       `-- BlockStmt, line: 22
+|           `-- IfStmt, line: 23
+|               |-- Condition:
+|               |   `-- BinaryExpr Eq
+|               |       |-- LeftValueExpr fa[Dim0]
+|               |       |   `-- Dim0 = LeftValueExpr x
+|               |       `-- LeftValueExpr x
+|               |-- Thenbody:
+|               |   `-- ReturnStmt, line: 23
+|               |       `-- LeftValueExpr x
+|               `-- Elsebody:
+|                   `-- BlockStmt, line: 24
+|                       |-- VarDecl, BaseType: Int, line: 25
+|                       |   `-- DefNode
+|                       |       `-- Var: LeftValueExpr pa
+|                       |       `-- Init: InitSingle
+|                       |           `-- FuncCallExpr find
+|                       |               `-- Arg0 = LeftValueExpr fa[Dim0]
+|                       |                   `-- Dim0 = LeftValueExpr x
+|                       |-- ExprStmt line: 26
+|                       |   `-- BinaryExpr Assign
+|                       |       |-- LeftValueExpr fa[Dim0]
+|                       |       |   `-- Dim0 = LeftValueExpr x
+|                       |       `-- LeftValueExpr pa
+|                       `-- ReturnStmt, line: 27
+|                           `-- LeftValueExpr pa
+|-- FuncDecl @Name: same -> @RetType: Int, line: 30
+|   |-- Params:
+|   |   |-- Int x
+|   |   `-- Int y
+|   `-- Body:
+|       `-- BlockStmt, line: 30
+|           |-- IfStmt, line: 31
+|           |   |-- Condition:
+|           |   |   `-- BinaryExpr Eq
+|           |   |       |-- FuncCallExpr find
+|           |   |       |   `-- Arg0 = LeftValueExpr x
+|           |   |       `-- FuncCallExpr find
+|           |   |           `-- Arg0 = LeftValueExpr y
+|           |   |-- Thenbody:
+|           |   |   `-- ReturnStmt, line: 31
+|           |   |       `-- Const Int: 1
+|           |   `-- Elsebody:
+|           |       `-- None
+|           `-- ReturnStmt, line: 32
+|               `-- Const Int: 0
+`-- FuncDecl @Name: main -> @RetType: Int, line: 34
+    |-- Params:
+    |       None
+    `-- Body:
+        `-- BlockStmt, line: 34
+            |-- ExprStmt line: 35
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr n
+            |       `-- FuncCallExpr quick_read
+            |           `-- No args
+            |-- ExprStmt line: 35
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr m
+            |       `-- FuncCallExpr quick_read
+            |           `-- No args
+            |-- ExprStmt line: 36
+            |   `-- FuncCallExpr init
+            |       `-- No args
+            |-- WhileStmt, line: 37
+            |   |-- Cond:
+            |   |   `-- LeftValueExpr m
+            |   `-- Body:
+            |       `-- BlockStmt, line: 37
+            |           |-- VarDecl, BaseType: Int, line: 38
+            |           |   `-- DefNode
+            |           |       `-- Var: LeftValueExpr ch
+            |           |       `-- Init: InitSingle
+            |           |           `-- FuncCallExpr getch
+            |           |               `-- No args
+            |           |-- WhileStmt, line: 39
+            |           |   |-- Cond:
+            |           |   |   `-- BinaryExpr And
+            |           |   |       |-- BinaryExpr Neq
+            |           |   |       |   |-- LeftValueExpr ch
+            |           |   |       |   `-- Const Int: 81
+            |           |   |       `-- BinaryExpr Neq
+            |           |   |           |-- LeftValueExpr ch
+            |           |   |           `-- Const Int: 85
+            |           |   `-- Body:
+            |           |       `-- BlockStmt, line: 39
+            |           |           `-- ExprStmt line: 40
+            |           |               `-- BinaryExpr Assign
+            |           |                   |-- LeftValueExpr ch
+            |           |                   `-- FuncCallExpr getch
+            |           |                       `-- No args
+            |           |-- IfStmt, line: 42
+            |           |   |-- Condition:
+            |           |   |   `-- BinaryExpr Eq
+            |           |   |       |-- LeftValueExpr ch
+            |           |   |       `-- Const Int: 81
+            |           |   |-- Thenbody:
+            |           |   |   `-- BlockStmt, line: 42
+            |           |   |       |-- VarDecl, BaseType: Int, line: 43
+            |           |   |       |   |-- DefNode
+            |           |   |       |   |   `-- Var: LeftValueExpr x
+            |           |   |       |   |   `-- Init: InitSingle
+            |           |   |       |   |       `-- FuncCallExpr quick_read
+            |           |   |       |   |           `-- No args
+            |           |   |       |   `-- DefNode
+            |           |   |       |       `-- Var: LeftValueExpr y
+            |           |   |       |       `-- Init: InitSingle
+            |           |   |       |           `-- FuncCallExpr quick_read
+            |           |   |       |               `-- No args
+            |           |   |       |-- ExprStmt line: 44
+            |           |   |       |   `-- FuncCallExpr putint
+            |           |   |       |       `-- Arg0 = FuncCallExpr same
+            |           |   |       |           |-- Arg0 = LeftValueExpr x
+            |           |   |       |           `-- Arg1 = LeftValueExpr y
+            |           |   |       `-- ExprStmt line: 45
+            |           |   |           `-- FuncCallExpr putch
+            |           |   |               `-- Arg0 = Const Int: 10
+            |           |   `-- Elsebody:
+            |           |       `-- BlockStmt, line: 46
+            |           |           |-- VarDecl, BaseType: Int, line: 47
+            |           |           |   |-- DefNode
+            |           |           |   |   `-- Var: LeftValueExpr x
+            |           |           |   |   `-- Init: InitSingle
+            |           |           |   |       `-- FuncCallExpr find
+            |           |           |   |           `-- Arg0 = FuncCallExpr quick_read
+            |           |           |   |               `-- No args
+            |           |           |   `-- DefNode
+            |           |           |       `-- Var: LeftValueExpr y
+            |           |           |       `-- Init: InitSingle
+            |           |           |           `-- FuncCallExpr find
+            |           |           |               `-- Arg0 = FuncCallExpr quick_read
+            |           |           |                   `-- No args
+            |           |           `-- ExprStmt line: 48
+            |           |               `-- BinaryExpr Assign
+            |           |                   |-- LeftValueExpr fa[Dim0]
+            |           |                   |   `-- Dim0 = LeftValueExpr x
+            |           |                   `-- LeftValueExpr y
+            |           `-- ExprStmt line: 50
+            |               `-- BinaryExpr Assign
+            |                   |-- LeftValueExpr m
+            |                   `-- BinaryExpr Sub
+            |                       |-- LeftValueExpr m
+            |                       `-- Const Int: 1
+            `-- ReturnStmt, line: 52
+                `-- Const Int: 0

@@ -1,0 +1,530 @@
+ASTree
+|-- VarDecl, BaseType: const Int, line: 1
+|   |-- DefNode
+|   |   `-- Var: LeftValueExpr TOKEN_NUM
+|   |   `-- Init: InitSingle
+|   |       `-- Const Int: 0
+|   `-- DefNode
+|       `-- Var: LeftValueExpr TOKEN_OTHER
+|       `-- Init: InitSingle
+|           `-- Const Int: 1
+|-- VarDecl, BaseType: Int, line: 2
+|   |-- DefNode
+|   |   `-- Var: LeftValueExpr last_char
+|   |   `-- Init: InitSingle
+|   |       `-- Const Int: 32
+|   |-- DefNode
+|   |   |-- Var: LeftValueExpr num
+|   |   `-- Init: no initializer
+|   `-- DefNode
+|       |-- Var: LeftValueExpr other
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 3
+|   `-- DefNode
+|       |-- Var: LeftValueExpr cur_token
+|       `-- Init: no initializer
+|-- FuncDecl @Name: next_char -> @RetType: Int, line: 5
+|   |-- Params:
+|   |       None
+|   `-- Body:
+|       `-- BlockStmt, line: 5
+|           |-- ExprStmt line: 6
+|           |   `-- BinaryExpr Assign
+|           |       |-- LeftValueExpr last_char
+|           |       `-- FuncCallExpr getch
+|           |           `-- No args
+|           `-- ReturnStmt, line: 7
+|               `-- LeftValueExpr last_char
+|-- FuncDecl @Name: is_space -> @RetType: Int, line: 10
+|   |-- Params:
+|   |   `-- Int c
+|   `-- Body:
+|       `-- BlockStmt, line: 10
+|           `-- IfStmt, line: 11
+|               |-- Condition:
+|               |   `-- BinaryExpr Or
+|               |       |-- BinaryExpr Eq
+|               |       |   |-- LeftValueExpr c
+|               |       |   `-- Const Int: 32
+|               |       `-- BinaryExpr Eq
+|               |           |-- LeftValueExpr c
+|               |           `-- Const Int: 10
+|               |-- Thenbody:
+|               |   `-- BlockStmt, line: 11
+|               |       `-- ReturnStmt, line: 12
+|               |           `-- Const Int: 1
+|               `-- Elsebody:
+|                   `-- BlockStmt, line: 14
+|                       `-- ReturnStmt, line: 15
+|                           `-- Const Int: 0
+|-- FuncDecl @Name: is_num -> @RetType: Int, line: 19
+|   |-- Params:
+|   |   `-- Int c
+|   `-- Body:
+|       `-- BlockStmt, line: 19
+|           `-- IfStmt, line: 20
+|               |-- Condition:
+|               |   `-- BinaryExpr And
+|               |       |-- BinaryExpr Ge
+|               |       |   |-- LeftValueExpr c
+|               |       |   `-- Const Int: 48
+|               |       `-- BinaryExpr Le
+|               |           |-- LeftValueExpr c
+|               |           `-- Const Int: 57
+|               |-- Thenbody:
+|               |   `-- BlockStmt, line: 20
+|               |       `-- ReturnStmt, line: 21
+|               |           `-- Const Int: 1
+|               `-- Elsebody:
+|                   `-- BlockStmt, line: 23
+|                       `-- ReturnStmt, line: 24
+|                           `-- Const Int: 0
+|-- FuncDecl @Name: next_token -> @RetType: Int, line: 28
+|   |-- Params:
+|   |       None
+|   `-- Body:
+|       `-- BlockStmt, line: 28
+|           |-- WhileStmt, line: 29
+|           |   |-- Cond:
+|           |   |   `-- FuncCallExpr is_space
+|           |   |       `-- Arg0 = LeftValueExpr last_char
+|           |   `-- Body:
+|           |       `-- ExprStmt line: 29
+|           |           `-- FuncCallExpr next_char
+|           |               `-- No args
+|           |-- IfStmt, line: 30
+|           |   |-- Condition:
+|           |   |   `-- FuncCallExpr is_num
+|           |   |       `-- Arg0 = LeftValueExpr last_char
+|           |   |-- Thenbody:
+|           |   |   `-- BlockStmt, line: 30
+|           |   |       |-- ExprStmt line: 31
+|           |   |       |   `-- BinaryExpr Assign
+|           |   |       |       |-- LeftValueExpr num
+|           |   |       |       `-- BinaryExpr Sub
+|           |   |       |           |-- LeftValueExpr last_char
+|           |   |       |           `-- Const Int: 48
+|           |   |       |-- WhileStmt, line: 32
+|           |   |       |   |-- Cond:
+|           |   |       |   |   `-- FuncCallExpr is_num
+|           |   |       |   |       `-- Arg0 = FuncCallExpr next_char
+|           |   |       |   |           `-- No args
+|           |   |       |   `-- Body:
+|           |   |       |       `-- BlockStmt, line: 32
+|           |   |       |           `-- ExprStmt line: 33
+|           |   |       |               `-- BinaryExpr Assign
+|           |   |       |                   |-- LeftValueExpr num
+|           |   |       |                   `-- BinaryExpr Sub
+|           |   |       |                       |-- BinaryExpr Add
+|           |   |       |                       |   |-- BinaryExpr Mul
+|           |   |       |                       |   |   |-- LeftValueExpr num
+|           |   |       |                       |   |   `-- Const Int: 10
+|           |   |       |                       |   `-- LeftValueExpr last_char
+|           |   |       |                       `-- Const Int: 48
+|           |   |       `-- ExprStmt line: 35
+|           |   |           `-- BinaryExpr Assign
+|           |   |               |-- LeftValueExpr cur_token
+|           |   |               `-- LeftValueExpr TOKEN_NUM
+|           |   `-- Elsebody:
+|           |       `-- BlockStmt, line: 37
+|           |           |-- ExprStmt line: 38
+|           |           |   `-- BinaryExpr Assign
+|           |           |       |-- LeftValueExpr other
+|           |           |       `-- LeftValueExpr last_char
+|           |           |-- ExprStmt line: 39
+|           |           |   `-- FuncCallExpr next_char
+|           |           |       `-- No args
+|           |           `-- ExprStmt line: 40
+|           |               `-- BinaryExpr Assign
+|           |                   |-- LeftValueExpr cur_token
+|           |                   `-- LeftValueExpr TOKEN_OTHER
+|           `-- ReturnStmt, line: 42
+|               `-- LeftValueExpr cur_token
+|-- FuncDecl @Name: panic -> @RetType: Int, line: 45
+|   |-- Params:
+|   |       None
+|   `-- Body:
+|       `-- BlockStmt, line: 45
+|           |-- ExprStmt line: 46
+|           |   `-- FuncCallExpr putch
+|           |       `-- Arg0 = Const Int: 112
+|           |-- ExprStmt line: 47
+|           |   `-- FuncCallExpr putch
+|           |       `-- Arg0 = Const Int: 97
+|           |-- ExprStmt line: 48
+|           |   `-- FuncCallExpr putch
+|           |       `-- Arg0 = Const Int: 110
+|           |-- ExprStmt line: 49
+|           |   `-- FuncCallExpr putch
+|           |       `-- Arg0 = Const Int: 105
+|           |-- ExprStmt line: 50
+|           |   `-- FuncCallExpr putch
+|           |       `-- Arg0 = Const Int: 99
+|           |-- ExprStmt line: 51
+|           |   `-- FuncCallExpr putch
+|           |       `-- Arg0 = Const Int: 33
+|           |-- ExprStmt line: 52
+|           |   `-- FuncCallExpr putch
+|           |       `-- Arg0 = Const Int: 10
+|           `-- ReturnStmt, line: 53
+|               `-- UnaryExpr Sub
+|                   `-- Const Int: 1
+|-- FuncDecl @Name: get_op_prec -> @RetType: Int, line: 56
+|   |-- Params:
+|   |   `-- Int op
+|   `-- Body:
+|       `-- BlockStmt, line: 56
+|           |-- IfStmt, line: 58
+|           |   |-- Condition:
+|           |   |   `-- BinaryExpr Or
+|           |   |       |-- BinaryExpr Eq
+|           |   |       |   |-- LeftValueExpr op
+|           |   |       |   `-- Const Int: 43
+|           |   |       `-- BinaryExpr Eq
+|           |   |           |-- LeftValueExpr op
+|           |   |           `-- Const Int: 45
+|           |   |-- Thenbody:
+|           |   |   `-- ReturnStmt, line: 58
+|           |   |       `-- Const Int: 10
+|           |   `-- Elsebody:
+|           |       `-- None
+|           |-- IfStmt, line: 60
+|           |   |-- Condition:
+|           |   |   `-- BinaryExpr Or
+|           |   |       |-- BinaryExpr Or
+|           |   |       |   |-- BinaryExpr Eq
+|           |   |       |   |   |-- LeftValueExpr op
+|           |   |       |   |   `-- Const Int: 42
+|           |   |       |   `-- BinaryExpr Eq
+|           |   |       |       |-- LeftValueExpr op
+|           |   |       |       `-- Const Int: 47
+|           |   |       `-- BinaryExpr Eq
+|           |   |           |-- LeftValueExpr op
+|           |   |           `-- Const Int: 37
+|           |   |-- Thenbody:
+|           |   |   `-- ReturnStmt, line: 60
+|           |   |       `-- Const Int: 20
+|           |   `-- Elsebody:
+|           |       `-- None
+|           `-- ReturnStmt, line: 62
+|               `-- Const Int: 0
+|-- FuncDecl @Name: stack_push -> @RetType: Void, line: 65
+|   |-- Params:
+|   |   |-- Int s[Dim0]
+|   |   |   `-- Dim0 = Const Int: -1
+|   |   `-- Int v
+|   `-- Body:
+|       `-- BlockStmt, line: 65
+|           |-- ExprStmt line: 66
+|           |   `-- BinaryExpr Assign
+|           |       |-- LeftValueExpr s[Dim0]
+|           |       |   `-- Dim0 = Const Int: 0
+|           |       `-- BinaryExpr Add
+|           |           |-- LeftValueExpr s[Dim0]
+|           |           |   `-- Dim0 = Const Int: 0
+|           |           `-- Const Int: 1
+|           `-- ExprStmt line: 67
+|               `-- BinaryExpr Assign
+|                   |-- LeftValueExpr s[Dim0]
+|                   |   `-- Dim0 = LeftValueExpr s[Dim0]
+|                   |       `-- Dim0 = Const Int: 0
+|                   `-- LeftValueExpr v
+|-- FuncDecl @Name: stack_pop -> @RetType: Int, line: 70
+|   |-- Params:
+|   |   `-- Int s[Dim0]
+|   |   |   `-- Dim0 = Const Int: -1
+|   `-- Body:
+|       `-- BlockStmt, line: 70
+|           |-- VarDecl, BaseType: Int, line: 71
+|           |   `-- DefNode
+|           |       `-- Var: LeftValueExpr last
+|           |       `-- Init: InitSingle
+|           |           `-- LeftValueExpr s[Dim0]
+|           |               `-- Dim0 = LeftValueExpr s[Dim0]
+|           |                   `-- Dim0 = Const Int: 0
+|           |-- ExprStmt line: 72
+|           |   `-- BinaryExpr Assign
+|           |       |-- LeftValueExpr s[Dim0]
+|           |       |   `-- Dim0 = Const Int: 0
+|           |       `-- BinaryExpr Sub
+|           |           |-- LeftValueExpr s[Dim0]
+|           |           |   `-- Dim0 = Const Int: 0
+|           |           `-- Const Int: 1
+|           `-- ReturnStmt, line: 73
+|               `-- LeftValueExpr last
+|-- FuncDecl @Name: stack_peek -> @RetType: Int, line: 76
+|   |-- Params:
+|   |   `-- Int s[Dim0]
+|   |   |   `-- Dim0 = Const Int: -1
+|   `-- Body:
+|       `-- BlockStmt, line: 76
+|           `-- ReturnStmt, line: 77
+|               `-- LeftValueExpr s[Dim0]
+|                   `-- Dim0 = LeftValueExpr s[Dim0]
+|                       `-- Dim0 = Const Int: 0
+|-- FuncDecl @Name: stack_size -> @RetType: Int, line: 80
+|   |-- Params:
+|   |   `-- Int s[Dim0]
+|   |   |   `-- Dim0 = Const Int: -1
+|   `-- Body:
+|       `-- BlockStmt, line: 80
+|           `-- ReturnStmt, line: 81
+|               `-- LeftValueExpr s[Dim0]
+|                   `-- Dim0 = Const Int: 0
+|-- FuncDecl @Name: eval_op -> @RetType: Int, line: 84
+|   |-- Params:
+|   |   |-- Int op
+|   |   |-- Int lhs
+|   |   `-- Int rhs
+|   `-- Body:
+|       `-- BlockStmt, line: 84
+|           |-- IfStmt, line: 86
+|           |   |-- Condition:
+|           |   |   `-- BinaryExpr Eq
+|           |   |       |-- LeftValueExpr op
+|           |   |       `-- Const Int: 43
+|           |   |-- Thenbody:
+|           |   |   `-- ReturnStmt, line: 86
+|           |   |       `-- BinaryExpr Add
+|           |   |           |-- LeftValueExpr lhs
+|           |   |           `-- LeftValueExpr rhs
+|           |   `-- Elsebody:
+|           |       `-- None
+|           |-- IfStmt, line: 88
+|           |   |-- Condition:
+|           |   |   `-- BinaryExpr Eq
+|           |   |       |-- LeftValueExpr op
+|           |   |       `-- Const Int: 45
+|           |   |-- Thenbody:
+|           |   |   `-- ReturnStmt, line: 88
+|           |   |       `-- BinaryExpr Sub
+|           |   |           |-- LeftValueExpr lhs
+|           |   |           `-- LeftValueExpr rhs
+|           |   `-- Elsebody:
+|           |       `-- None
+|           |-- IfStmt, line: 90
+|           |   |-- Condition:
+|           |   |   `-- BinaryExpr Eq
+|           |   |       |-- LeftValueExpr op
+|           |   |       `-- Const Int: 42
+|           |   |-- Thenbody:
+|           |   |   `-- ReturnStmt, line: 90
+|           |   |       `-- BinaryExpr Mul
+|           |   |           |-- LeftValueExpr lhs
+|           |   |           `-- LeftValueExpr rhs
+|           |   `-- Elsebody:
+|           |       `-- None
+|           |-- IfStmt, line: 92
+|           |   |-- Condition:
+|           |   |   `-- BinaryExpr Eq
+|           |   |       |-- LeftValueExpr op
+|           |   |       `-- Const Int: 47
+|           |   |-- Thenbody:
+|           |   |   `-- ReturnStmt, line: 92
+|           |   |       `-- BinaryExpr Div
+|           |   |           |-- LeftValueExpr lhs
+|           |   |           `-- LeftValueExpr rhs
+|           |   `-- Elsebody:
+|           |       `-- None
+|           |-- IfStmt, line: 94
+|           |   |-- Condition:
+|           |   |   `-- BinaryExpr Eq
+|           |   |       |-- LeftValueExpr op
+|           |   |       `-- Const Int: 37
+|           |   |-- Thenbody:
+|           |   |   `-- ReturnStmt, line: 94
+|           |   |       `-- BinaryExpr Mod
+|           |   |           |-- LeftValueExpr lhs
+|           |   |           `-- LeftValueExpr rhs
+|           |   `-- Elsebody:
+|           |       `-- None
+|           `-- ReturnStmt, line: 96
+|               `-- Const Int: 0
+|-- FuncDecl @Name: eval -> @RetType: Int, line: 99
+|   |-- Params:
+|   |       None
+|   `-- Body:
+|       `-- BlockStmt, line: 99
+|           |-- VarDecl, BaseType: Int, line: 100
+|           |   |-- DefNode
+|           |   |   `-- Var: LeftValueExpr oprs[Dim0]
+|           |   |       `-- Dim0 = Const Int: 256
+|           |   |   `-- Init: InitMulti
+|           |   `-- DefNode
+|           |       `-- Var: LeftValueExpr ops[Dim0]
+|           |           `-- Dim0 = Const Int: 256
+|           |       `-- Init: InitMulti
+|           |-- IfStmt, line: 102
+|           |   |-- Condition:
+|           |   |   `-- BinaryExpr Neq
+|           |   |       |-- LeftValueExpr cur_token
+|           |   |       `-- LeftValueExpr TOKEN_NUM
+|           |   |-- Thenbody:
+|           |   |   `-- ReturnStmt, line: 102
+|           |   |       `-- FuncCallExpr panic
+|           |   |           `-- No args
+|           |   `-- Elsebody:
+|           |       `-- None
+|           |-- ExprStmt line: 103
+|           |   `-- FuncCallExpr stack_push
+|           |       |-- Arg0 = LeftValueExpr oprs
+|           |       `-- Arg1 = LeftValueExpr num
+|           |-- ExprStmt line: 104
+|           |   `-- FuncCallExpr next_token
+|           |       `-- No args
+|           |-- WhileStmt, line: 106
+|           |   |-- Cond:
+|           |   |   `-- BinaryExpr Eq
+|           |   |       |-- LeftValueExpr cur_token
+|           |   |       `-- LeftValueExpr TOKEN_OTHER
+|           |   `-- Body:
+|           |       `-- BlockStmt, line: 106
+|           |           |-- VarDecl, BaseType: Int, line: 108
+|           |           |   `-- DefNode
+|           |           |       `-- Var: LeftValueExpr op
+|           |           |       `-- Init: InitSingle
+|           |           |           `-- LeftValueExpr other
+|           |           |-- IfStmt, line: 109
+|           |           |   |-- Condition:
+|           |           |   |   `-- UnaryExpr Not
+|           |           |   |       `-- FuncCallExpr get_op_prec
+|           |           |   |           `-- Arg0 = LeftValueExpr op
+|           |           |   |-- Thenbody:
+|           |           |   |   `-- BreakStmt, line: 109
+|           |           |   `-- Elsebody:
+|           |           |       `-- None
+|           |           |-- ExprStmt line: 110
+|           |           |   `-- FuncCallExpr next_token
+|           |           |       `-- No args
+|           |           |-- WhileStmt, line: 112
+|           |           |   |-- Cond:
+|           |           |   |   `-- BinaryExpr And
+|           |           |   |       |-- FuncCallExpr stack_size
+|           |           |   |       |   `-- Arg0 = LeftValueExpr ops
+|           |           |   |       `-- BinaryExpr Ge
+|           |           |   |           |-- FuncCallExpr get_op_prec
+|           |           |   |           |   `-- Arg0 = FuncCallExpr stack_peek
+|           |           |   |           |       `-- Arg0 = LeftValueExpr ops
+|           |           |   |           `-- FuncCallExpr get_op_prec
+|           |           |   |               `-- Arg0 = LeftValueExpr op
+|           |           |   `-- Body:
+|           |           |       `-- BlockStmt, line: 112
+|           |           |           |-- VarDecl, BaseType: Int, line: 114
+|           |           |           |   `-- DefNode
+|           |           |           |       `-- Var: LeftValueExpr cur_op
+|           |           |           |       `-- Init: InitSingle
+|           |           |           |           `-- FuncCallExpr stack_pop
+|           |           |           |               `-- Arg0 = LeftValueExpr ops
+|           |           |           |-- VarDecl, BaseType: Int, line: 115
+|           |           |           |   |-- DefNode
+|           |           |           |   |   `-- Var: LeftValueExpr rhs
+|           |           |           |   |   `-- Init: InitSingle
+|           |           |           |   |       `-- FuncCallExpr stack_pop
+|           |           |           |   |           `-- Arg0 = LeftValueExpr oprs
+|           |           |           |   `-- DefNode
+|           |           |           |       `-- Var: LeftValueExpr lhs
+|           |           |           |       `-- Init: InitSingle
+|           |           |           |           `-- FuncCallExpr stack_pop
+|           |           |           |               `-- Arg0 = LeftValueExpr oprs
+|           |           |           `-- ExprStmt line: 116
+|           |           |               `-- FuncCallExpr stack_push
+|           |           |                   |-- Arg0 = LeftValueExpr oprs
+|           |           |                   `-- Arg1 = FuncCallExpr eval_op
+|           |           |                       |-- Arg0 = LeftValueExpr cur_op
+|           |           |                       |-- Arg1 = LeftValueExpr lhs
+|           |           |                       `-- Arg2 = LeftValueExpr rhs
+|           |           |-- ExprStmt line: 118
+|           |           |   `-- FuncCallExpr stack_push
+|           |           |       |-- Arg0 = LeftValueExpr ops
+|           |           |       `-- Arg1 = LeftValueExpr op
+|           |           |-- IfStmt, line: 120
+|           |           |   |-- Condition:
+|           |           |   |   `-- BinaryExpr Neq
+|           |           |   |       |-- LeftValueExpr cur_token
+|           |           |   |       `-- LeftValueExpr TOKEN_NUM
+|           |           |   |-- Thenbody:
+|           |           |   |   `-- ReturnStmt, line: 120
+|           |           |   |       `-- FuncCallExpr panic
+|           |           |   |           `-- No args
+|           |           |   `-- Elsebody:
+|           |           |       `-- None
+|           |           |-- ExprStmt line: 121
+|           |           |   `-- FuncCallExpr stack_push
+|           |           |       |-- Arg0 = LeftValueExpr oprs
+|           |           |       `-- Arg1 = LeftValueExpr num
+|           |           `-- ExprStmt line: 122
+|           |               `-- FuncCallExpr next_token
+|           |                   `-- No args
+|           |-- ExprStmt line: 125
+|           |   `-- FuncCallExpr next_token
+|           |       `-- No args
+|           |-- WhileStmt, line: 127
+|           |   |-- Cond:
+|           |   |   `-- FuncCallExpr stack_size
+|           |   |       `-- Arg0 = LeftValueExpr ops
+|           |   `-- Body:
+|           |       `-- BlockStmt, line: 127
+|           |           |-- VarDecl, BaseType: Int, line: 128
+|           |           |   `-- DefNode
+|           |           |       `-- Var: LeftValueExpr cur_op
+|           |           |       `-- Init: InitSingle
+|           |           |           `-- FuncCallExpr stack_pop
+|           |           |               `-- Arg0 = LeftValueExpr ops
+|           |           |-- VarDecl, BaseType: Int, line: 129
+|           |           |   |-- DefNode
+|           |           |   |   `-- Var: LeftValueExpr rhs
+|           |           |   |   `-- Init: InitSingle
+|           |           |   |       `-- FuncCallExpr stack_pop
+|           |           |   |           `-- Arg0 = LeftValueExpr oprs
+|           |           |   `-- DefNode
+|           |           |       `-- Var: LeftValueExpr lhs
+|           |           |       `-- Init: InitSingle
+|           |           |           `-- FuncCallExpr stack_pop
+|           |           |               `-- Arg0 = LeftValueExpr oprs
+|           |           `-- ExprStmt line: 130
+|           |               `-- FuncCallExpr stack_push
+|           |                   |-- Arg0 = LeftValueExpr oprs
+|           |                   `-- Arg1 = FuncCallExpr eval_op
+|           |                       |-- Arg0 = LeftValueExpr cur_op
+|           |                       |-- Arg1 = LeftValueExpr lhs
+|           |                       `-- Arg2 = LeftValueExpr rhs
+|           `-- ReturnStmt, line: 132
+|               `-- FuncCallExpr stack_peek
+|                   `-- Arg0 = LeftValueExpr oprs
+`-- FuncDecl @Name: main -> @RetType: Int, line: 135
+    |-- Params:
+    |       None
+    `-- Body:
+        `-- BlockStmt, line: 135
+            |-- VarDecl, BaseType: Int, line: 136
+            |   `-- DefNode
+            |       `-- Var: LeftValueExpr count
+            |       `-- Init: InitSingle
+            |           `-- FuncCallExpr getint
+            |               `-- No args
+            |-- ExprStmt line: 137
+            |   `-- FuncCallExpr getch
+            |       `-- No args
+            |-- ExprStmt line: 138
+            |   `-- FuncCallExpr next_token
+            |       `-- No args
+            |-- WhileStmt, line: 139
+            |   |-- Cond:
+            |   |   `-- LeftValueExpr count
+            |   `-- Body:
+            |       `-- BlockStmt, line: 139
+            |           |-- ExprStmt line: 140
+            |           |   `-- FuncCallExpr putint
+            |           |       `-- Arg0 = FuncCallExpr eval
+            |           |           `-- No args
+            |           |-- ExprStmt line: 141
+            |           |   `-- FuncCallExpr putch
+            |           |       `-- Arg0 = Const Int: 10
+            |           `-- ExprStmt line: 142
+            |               `-- BinaryExpr Assign
+            |                   |-- LeftValueExpr count
+            |                   `-- BinaryExpr Sub
+            |                       |-- LeftValueExpr count
+            |                       `-- Const Int: 1
+            `-- ReturnStmt, line: 144
+                `-- Const Int: 0

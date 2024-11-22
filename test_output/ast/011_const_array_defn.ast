@@ -1,0 +1,24 @@
+ASTree
+|-- VarDecl, BaseType: const Int, line: 1
+|   `-- DefNode
+|       `-- Var: LeftValueExpr a[Dim0]
+|           `-- Dim0 = Const Int: 5
+|       `-- Init: InitMulti
+|           |-- InitSingle
+|           |   `-- Const Int: 0
+|           |-- InitSingle
+|           |   `-- Const Int: 1
+|           |-- InitSingle
+|           |   `-- Const Int: 2
+|           |-- InitSingle
+|           |   `-- Const Int: 3
+|           `-- InitSingle
+|               `-- Const Int: 4
+`-- FuncDecl @Name: main -> @RetType: Int, line: 3
+    |-- Params:
+    |       None
+    `-- Body:
+        `-- BlockStmt, line: 3
+            `-- ReturnStmt, line: 4
+                `-- LeftValueExpr a[Dim0]
+                    `-- Dim0 = Const Int: 4

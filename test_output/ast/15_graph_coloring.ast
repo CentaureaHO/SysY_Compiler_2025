@@ -1,0 +1,321 @@
+ASTree
+|-- VarDecl, BaseType: const Int, line: 1
+|   `-- DefNode
+|       `-- Var: LeftValueExpr V
+|       `-- Init: InitSingle
+|           `-- Const Int: 4
+|-- VarDecl, BaseType: const Int, line: 2
+|   `-- DefNode
+|       `-- Var: LeftValueExpr space
+|       `-- Init: InitSingle
+|           `-- Const Int: 32
+|-- VarDecl, BaseType: const Int, line: 3
+|   `-- DefNode
+|       `-- Var: LeftValueExpr LF
+|       `-- Init: InitSingle
+|           `-- Const Int: 10
+|-- FuncDecl @Name: printSolution -> @RetType: Void, line: 5
+|   |-- Params:
+|   |   `-- Int color[Dim0]
+|   |   |   `-- Dim0 = Const Int: -1
+|   `-- Body:
+|       `-- BlockStmt, line: 5
+|           |-- VarDecl, BaseType: Int, line: 6
+|           |   `-- DefNode
+|           |       `-- Var: LeftValueExpr i
+|           |       `-- Init: InitSingle
+|           |           `-- Const Int: 0
+|           |-- WhileStmt, line: 7
+|           |   |-- Cond:
+|           |   |   `-- BinaryExpr Lt
+|           |   |       |-- LeftValueExpr i
+|           |   |       `-- LeftValueExpr V
+|           |   `-- Body:
+|           |       `-- BlockStmt, line: 7
+|           |           |-- ExprStmt line: 8
+|           |           |   `-- FuncCallExpr putint
+|           |           |       `-- Arg0 = LeftValueExpr color[Dim0]
+|           |           |           `-- Dim0 = LeftValueExpr i
+|           |           |-- ExprStmt line: 9
+|           |           |   `-- FuncCallExpr putch
+|           |           |       `-- Arg0 = LeftValueExpr space
+|           |           `-- ExprStmt line: 10
+|           |               `-- BinaryExpr Assign
+|           |                   |-- LeftValueExpr i
+|           |                   `-- BinaryExpr Add
+|           |                       |-- LeftValueExpr i
+|           |                       `-- Const Int: 1
+|           `-- ExprStmt line: 12
+|               `-- FuncCallExpr putch
+|                   `-- Arg0 = LeftValueExpr LF
+|-- FuncDecl @Name: printMessage -> @RetType: Void, line: 15
+|   |-- Params:
+|   |       None
+|   `-- Body:
+|       `-- BlockStmt, line: 15
+|           |-- ExprStmt line: 16
+|           |   `-- FuncCallExpr putch
+|           |       `-- Arg0 = Const Int: 78
+|           |-- ExprStmt line: 16
+|           |   `-- FuncCallExpr putch
+|           |       `-- Arg0 = Const Int: 111
+|           |-- ExprStmt line: 16
+|           |   `-- FuncCallExpr putch
+|           |       `-- Arg0 = Const Int: 116
+|           |-- ExprStmt line: 17
+|           |   `-- FuncCallExpr putch
+|           |       `-- Arg0 = LeftValueExpr space
+|           |-- ExprStmt line: 18
+|           |   `-- FuncCallExpr putch
+|           |       `-- Arg0 = Const Int: 101
+|           |-- ExprStmt line: 18
+|           |   `-- FuncCallExpr putch
+|           |       `-- Arg0 = Const Int: 120
+|           |-- ExprStmt line: 18
+|           |   `-- FuncCallExpr putch
+|           |       `-- Arg0 = Const Int: 105
+|           |-- ExprStmt line: 18
+|           |   `-- FuncCallExpr putch
+|           |       `-- Arg0 = Const Int: 115
+|           `-- ExprStmt line: 18
+|               `-- FuncCallExpr putch
+|                   `-- Arg0 = Const Int: 116
+|-- FuncDecl @Name: isSafe -> @RetType: Int, line: 21
+|   |-- Params:
+|   |   |-- Int graph[Dim0][Dim1]
+|   |   |   |-- Dim0 = Const Int: -1
+|   |   |   `-- Dim1 = LeftValueExpr V
+|   |   `-- Int color[Dim0]
+|   |   |   `-- Dim0 = Const Int: -1
+|   `-- Body:
+|       `-- BlockStmt, line: 21
+|           |-- VarDecl, BaseType: Int, line: 22
+|           |   `-- DefNode
+|           |       `-- Var: LeftValueExpr i
+|           |       `-- Init: InitSingle
+|           |           `-- Const Int: 0
+|           |-- WhileStmt, line: 23
+|           |   |-- Cond:
+|           |   |   `-- BinaryExpr Lt
+|           |   |       |-- LeftValueExpr i
+|           |   |       `-- LeftValueExpr V
+|           |   `-- Body:
+|           |       `-- BlockStmt, line: 23
+|           |           |-- VarDecl, BaseType: Int, line: 24
+|           |           |   `-- DefNode
+|           |           |       `-- Var: LeftValueExpr j
+|           |           |       `-- Init: InitSingle
+|           |           |           `-- BinaryExpr Add
+|           |           |               |-- LeftValueExpr i
+|           |           |               `-- Const Int: 1
+|           |           |-- WhileStmt, line: 25
+|           |           |   |-- Cond:
+|           |           |   |   `-- BinaryExpr Lt
+|           |           |   |       |-- LeftValueExpr j
+|           |           |   |       `-- LeftValueExpr V
+|           |           |   `-- Body:
+|           |           |       `-- BlockStmt, line: 25
+|           |           |           |-- IfStmt, line: 26
+|           |           |           |   |-- Condition:
+|           |           |           |   |   `-- BinaryExpr And
+|           |           |           |   |       |-- LeftValueExpr graph[Dim0][Dim1]
+|           |           |           |   |       |   |-- Dim0 = LeftValueExpr i
+|           |           |           |   |       |   `-- Dim1 = LeftValueExpr j
+|           |           |           |   |       `-- BinaryExpr Eq
+|           |           |           |   |           |-- LeftValueExpr color[Dim0]
+|           |           |           |   |           |   `-- Dim0 = LeftValueExpr j
+|           |           |           |   |           `-- LeftValueExpr color[Dim0]
+|           |           |           |   |               `-- Dim0 = LeftValueExpr i
+|           |           |           |   |-- Thenbody:
+|           |           |           |   |   `-- ReturnStmt, line: 27
+|           |           |           |   |       `-- Const Int: 0
+|           |           |           |   `-- Elsebody:
+|           |           |           |       `-- None
+|           |           |           `-- ExprStmt line: 28
+|           |           |               `-- BinaryExpr Assign
+|           |           |                   |-- LeftValueExpr j
+|           |           |                   `-- BinaryExpr Add
+|           |           |                       |-- LeftValueExpr j
+|           |           |                       `-- Const Int: 1
+|           |           `-- ExprStmt line: 30
+|           |               `-- BinaryExpr Assign
+|           |                   |-- LeftValueExpr i
+|           |                   `-- BinaryExpr Add
+|           |                       |-- LeftValueExpr i
+|           |                       `-- Const Int: 1
+|           `-- ReturnStmt, line: 32
+|               `-- Const Int: 1
+|-- FuncDecl @Name: graphColoring -> @RetType: Int, line: 35
+|   |-- Params:
+|   |   |-- Int graph[Dim0][Dim1]
+|   |   |   |-- Dim0 = Const Int: -1
+|   |   |   `-- Dim1 = LeftValueExpr V
+|   |   |-- Int m
+|   |   |-- Int i
+|   |   `-- Int color[Dim0]
+|   |   |   `-- Dim0 = Const Int: -1
+|   `-- Body:
+|       `-- BlockStmt, line: 35
+|           |-- IfStmt, line: 36
+|           |   |-- Condition:
+|           |   |   `-- BinaryExpr Eq
+|           |   |       |-- LeftValueExpr i
+|           |   |       `-- LeftValueExpr V
+|           |   |-- Thenbody:
+|           |   |   `-- BlockStmt, line: 36
+|           |   |       |-- IfStmt, line: 37
+|           |   |       |   |-- Condition:
+|           |   |       |   |   `-- FuncCallExpr isSafe
+|           |   |       |   |       |-- Arg0 = LeftValueExpr graph
+|           |   |       |   |       `-- Arg1 = LeftValueExpr color
+|           |   |       |   |-- Thenbody:
+|           |   |       |   |   `-- BlockStmt, line: 37
+|           |   |       |   |       |-- ExprStmt line: 38
+|           |   |       |   |       |   `-- FuncCallExpr printSolution
+|           |   |       |   |       |       `-- Arg0 = LeftValueExpr color
+|           |   |       |   |       `-- ReturnStmt, line: 39
+|           |   |       |   |           `-- Const Int: 1
+|           |   |       |   `-- Elsebody:
+|           |   |       |       `-- None
+|           |   |       `-- ReturnStmt, line: 41
+|           |   |           `-- Const Int: 0
+|           |   `-- Elsebody:
+|           |       `-- None
+|           |-- VarDecl, BaseType: Int, line: 43
+|           |   `-- DefNode
+|           |       `-- Var: LeftValueExpr j
+|           |       `-- Init: InitSingle
+|           |           `-- Const Int: 1
+|           |-- WhileStmt, line: 44
+|           |   |-- Cond:
+|           |   |   `-- BinaryExpr Le
+|           |   |       |-- LeftValueExpr j
+|           |   |       `-- LeftValueExpr m
+|           |   `-- Body:
+|           |       `-- BlockStmt, line: 44
+|           |           |-- ExprStmt line: 45
+|           |           |   `-- BinaryExpr Assign
+|           |           |       |-- LeftValueExpr color[Dim0]
+|           |           |       |   `-- Dim0 = LeftValueExpr i
+|           |           |       `-- LeftValueExpr j
+|           |           |-- IfStmt, line: 46
+|           |           |   |-- Condition:
+|           |           |   |   `-- FuncCallExpr graphColoring
+|           |           |   |       |-- Arg0 = LeftValueExpr graph
+|           |           |   |       |-- Arg1 = LeftValueExpr m
+|           |           |   |       |-- Arg2 = BinaryExpr Add
+|           |           |   |       |   Arg2 = |-- LeftValueExpr i
+|           |           |   |       |   Arg2 = `-- Const Int: 1
+|           |           |   |       `-- Arg3 = LeftValueExpr color
+|           |           |   |-- Thenbody:
+|           |           |   |   `-- ReturnStmt, line: 47
+|           |           |   |       `-- Const Int: 1
+|           |           |   `-- Elsebody:
+|           |           |       `-- None
+|           |           |-- ExprStmt line: 48
+|           |           |   `-- BinaryExpr Assign
+|           |           |       |-- LeftValueExpr color[Dim0]
+|           |           |       |   `-- Dim0 = LeftValueExpr i
+|           |           |       `-- Const Int: 0
+|           |           `-- ExprStmt line: 49
+|           |               `-- BinaryExpr Assign
+|           |                   |-- LeftValueExpr j
+|           |                   `-- BinaryExpr Add
+|           |                       |-- LeftValueExpr j
+|           |                       `-- Const Int: 1
+|           `-- ReturnStmt, line: 51
+|               `-- Const Int: 0
+`-- FuncDecl @Name: main -> @RetType: Int, line: 54
+    |-- Params:
+    |       None
+    `-- Body:
+        `-- BlockStmt, line: 54
+            |-- VarDecl, BaseType: Int, line: 55
+            |   |-- DefNode
+            |   |   `-- Var: LeftValueExpr graph[Dim0][Dim1]
+            |   |       |-- Dim0 = LeftValueExpr V
+            |   |       `-- Dim1 = LeftValueExpr V
+            |   |   `-- Init: InitMulti
+            |   |       |-- InitMulti
+            |   |       |   |-- InitSingle
+            |   |       |   |   `-- Const Int: 0
+            |   |       |   |-- InitSingle
+            |   |       |   |   `-- Const Int: 1
+            |   |       |   |-- InitSingle
+            |   |       |   |   `-- Const Int: 1
+            |   |       |   `-- InitSingle
+            |   |       |       `-- Const Int: 1
+            |   |       |-- InitMulti
+            |   |       |   |-- InitSingle
+            |   |       |   |   `-- Const Int: 1
+            |   |       |   |-- InitSingle
+            |   |       |   |   `-- Const Int: 0
+            |   |       |   |-- InitSingle
+            |   |       |   |   `-- Const Int: 1
+            |   |       |   `-- InitSingle
+            |   |       |       `-- Const Int: 0
+            |   |       |-- InitMulti
+            |   |       |   |-- InitSingle
+            |   |       |   |   `-- Const Int: 1
+            |   |       |   |-- InitSingle
+            |   |       |   |   `-- Const Int: 1
+            |   |       |   |-- InitSingle
+            |   |       |   |   `-- Const Int: 0
+            |   |       |   `-- InitSingle
+            |   |       |       `-- Const Int: 1
+            |   |       `-- InitMulti
+            |   |           |-- InitSingle
+            |   |           |   `-- Const Int: 1
+            |   |           |-- InitSingle
+            |   |           |   `-- Const Int: 0
+            |   |           |-- InitSingle
+            |   |           |   `-- Const Int: 1
+            |   |           `-- InitSingle
+            |   |               `-- Const Int: 0
+            |   `-- DefNode
+            |       `-- Var: LeftValueExpr m
+            |       `-- Init: InitSingle
+            |           `-- Const Int: 3
+            |-- VarDecl, BaseType: Int, line: 61
+            |   |-- DefNode
+            |   |   |-- Var: LeftValueExpr color[Dim0]
+            |   |   |   Var: `-- Dim0 = LeftValueExpr V
+            |   |   `-- Init: no initializer
+            |   `-- DefNode
+            |       `-- Var: LeftValueExpr i
+            |       `-- Init: InitSingle
+            |           `-- Const Int: 0
+            |-- WhileStmt, line: 62
+            |   |-- Cond:
+            |   |   `-- BinaryExpr Lt
+            |   |       |-- LeftValueExpr i
+            |   |       `-- LeftValueExpr V
+            |   `-- Body:
+            |       `-- BlockStmt, line: 62
+            |           |-- ExprStmt line: 63
+            |           |   `-- BinaryExpr Assign
+            |           |       |-- LeftValueExpr color[Dim0]
+            |           |       |   `-- Dim0 = LeftValueExpr i
+            |           |       `-- Const Int: 0
+            |           `-- ExprStmt line: 64
+            |               `-- BinaryExpr Assign
+            |                   |-- LeftValueExpr i
+            |                   `-- BinaryExpr Add
+            |                       |-- LeftValueExpr i
+            |                       `-- Const Int: 1
+            |-- IfStmt, line: 66
+            |   |-- Condition:
+            |   |   `-- UnaryExpr Not
+            |   |       `-- FuncCallExpr graphColoring
+            |   |           |-- Arg0 = LeftValueExpr graph
+            |   |           |-- Arg1 = LeftValueExpr m
+            |   |           |-- Arg2 = Const Int: 0
+            |   |           `-- Arg3 = LeftValueExpr color
+            |   |-- Thenbody:
+            |   |   `-- ExprStmt line: 67
+            |   |       `-- FuncCallExpr printMessage
+            |   |           `-- No args
+            |   `-- Elsebody:
+            |       `-- None
+            `-- ReturnStmt, line: 68
+                `-- Const Int: 0

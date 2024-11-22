@@ -1,0 +1,84 @@
+ASTree
+|-- VarDecl, BaseType: Int, line: 1
+|   `-- DefNode
+|       `-- Var: LeftValueExpr a
+|       `-- Init: InitSingle
+|           `-- Const Int: 1
+|-- VarDecl, BaseType: Int, line: 2
+|   `-- DefNode
+|       `-- Var: LeftValueExpr b
+|       `-- Init: InitSingle
+|           `-- Const Int: 0
+|-- VarDecl, BaseType: Int, line: 3
+|   `-- DefNode
+|       `-- Var: LeftValueExpr c
+|       `-- Init: InitSingle
+|           `-- Const Int: 1
+|-- VarDecl, BaseType: Int, line: 4
+|   `-- DefNode
+|       `-- Var: LeftValueExpr d
+|       `-- Init: InitSingle
+|           `-- Const Int: 2
+|-- VarDecl, BaseType: Int, line: 5
+|   `-- DefNode
+|       `-- Var: LeftValueExpr e
+|       `-- Init: InitSingle
+|           `-- Const Int: 4
+`-- FuncDecl @Name: main -> @RetType: Int, line: 6
+    |-- Params:
+    |       None
+    `-- Body:
+        `-- BlockStmt, line: 7
+            |-- VarDecl, BaseType: Int, line: 8
+            |   `-- DefNode
+            |       `-- Var: LeftValueExpr flag
+            |       `-- Init: InitSingle
+            |           `-- Const Int: 0
+            |-- IfStmt, line: 9
+            |   |-- Condition:
+            |   |   `-- BinaryExpr Or
+            |   |       |-- BinaryExpr And
+            |   |       |   |-- BinaryExpr Eq
+            |   |       |   |   |-- BinaryExpr Div
+            |   |       |   |   |   |-- BinaryExpr Mul
+            |   |       |   |   |   |   |-- LeftValueExpr a
+            |   |       |   |   |   |   `-- LeftValueExpr b
+            |   |       |   |   |   `-- LeftValueExpr c
+            |   |       |   |   `-- BinaryExpr Add
+            |   |       |   |       |-- LeftValueExpr e
+            |   |       |   |       `-- LeftValueExpr d
+            |   |       |   `-- BinaryExpr Le
+            |   |       |       |-- BinaryExpr Add
+            |   |       |       |   |-- BinaryExpr Mul
+            |   |       |       |   |   |-- LeftValueExpr a
+            |   |       |       |   |   `-- BinaryExpr Add
+            |   |       |       |   |       |-- LeftValueExpr a
+            |   |       |       |   |       `-- LeftValueExpr b
+            |   |       |       |   `-- LeftValueExpr c
+            |   |       |       `-- BinaryExpr Add
+            |   |       |           |-- LeftValueExpr d
+            |   |       |           `-- LeftValueExpr e
+            |   |       `-- BinaryExpr Eq
+            |   |           |-- BinaryExpr Sub
+            |   |           |   |-- LeftValueExpr a
+            |   |           |   `-- BinaryExpr Mul
+            |   |           |       |-- LeftValueExpr b
+            |   |           |       `-- LeftValueExpr c
+            |   |           `-- BinaryExpr Sub
+            |   |               |-- LeftValueExpr d
+            |   |               `-- BinaryExpr Div
+            |   |                   |-- LeftValueExpr a
+            |   |                   `-- LeftValueExpr c
+            |   |-- Thenbody:
+            |   |   `-- BlockStmt, line: 10
+            |   |       `-- ExprStmt line: 11
+            |   |           `-- BinaryExpr Assign
+            |   |               |-- LeftValueExpr flag
+            |   |               `-- Const Int: 1
+            |   `-- Elsebody:
+            |       `-- None
+            |-- ExprStmt line: 13
+            |   `-- FuncCallExpr putint
+            |       `-- Arg0 = LeftValueExpr flag
+            `-- ReturnStmt, line: 14
+                `-- LeftValueExpr flag

@@ -1,0 +1,95 @@
+ASTree
+|-- VarDecl, BaseType: Int, line: 1
+|   `-- DefNode
+|       |-- Var: LeftValueExpr a[Dim0]
+|       |   Var: `-- Dim0 = Const Int: 4096
+|       `-- Init: no initializer
+|-- FuncDecl @Name: f1 -> @RetType: Int, line: 3
+|   |-- Params:
+|   |   `-- Int b[Dim0]
+|   |   |   `-- Dim0 = Const Int: -1
+|   `-- Body:
+|       `-- BlockStmt, line: 4
+|           |-- ExprStmt line: 5
+|           |   `-- BinaryExpr Assign
+|           |       |-- LeftValueExpr a[Dim0]
+|           |       |   `-- Dim0 = Const Int: 5
+|           |       `-- Const Int: 4000
+|           |-- ExprStmt line: 6
+|           |   `-- BinaryExpr Assign
+|           |       |-- LeftValueExpr a[Dim0]
+|           |       |   `-- Dim0 = Const Int: 4000
+|           |       `-- Const Int: 3
+|           |-- ExprStmt line: 7
+|           |   `-- BinaryExpr Assign
+|           |       |-- LeftValueExpr a[Dim0]
+|           |       |   `-- Dim0 = Const Int: 4095
+|           |       `-- Const Int: 7
+|           |-- ExprStmt line: 8
+|           |   `-- BinaryExpr Assign
+|           |       |-- LeftValueExpr b[Dim0]
+|           |       |   `-- Dim0 = LeftValueExpr a[Dim0]
+|           |       |       `-- Dim0 = Const Int: 4095
+|           |       `-- BinaryExpr Add
+|           |           |-- LeftValueExpr a[Dim0]
+|           |           |   `-- Dim0 = Const Int: 2216
+|           |           `-- Const Int: 9
+|           `-- ReturnStmt, line: 9
+|               `-- LeftValueExpr a[Dim0]
+|                   `-- Dim0 = LeftValueExpr a[Dim0]
+|                       `-- Dim0 = Const Int: 5
+`-- FuncDecl @Name: main -> @RetType: Int, line: 12
+    |-- Params:
+    |       None
+    `-- Body:
+        `-- BlockStmt, line: 13
+            |-- VarDecl, BaseType: Int, line: 14
+            |   `-- DefNode
+            |       `-- Var: LeftValueExpr b[Dim0][Dim1]
+            |           |-- Dim0 = Const Int: 4
+            |           `-- Dim1 = Const Int: 1024
+            |       `-- Init: InitMulti
+            |           |-- InitMulti
+            |           |-- InitMulti
+            |           |   `-- InitSingle
+            |           |       `-- Const Int: 1
+            |           |-- InitMulti
+            |           |   |-- InitSingle
+            |           |   |   `-- Const Int: 2
+            |           |   `-- InitSingle
+            |           |       `-- Const Int: 3
+            |           `-- InitMulti
+            |               |-- InitSingle
+            |               |   `-- Const Int: 4
+            |               |-- InitSingle
+            |               |   `-- Const Int: 5
+            |               `-- InitSingle
+            |                   `-- Const Int: 6
+            |-- VarDecl, BaseType: Int, line: 15
+            |   `-- DefNode
+            |       `-- Var: LeftValueExpr c[Dim0][Dim1]
+            |           |-- Dim0 = Const Int: 1024
+            |           `-- Dim1 = Const Int: 4
+            |       `-- Init: InitMulti
+            |           |-- InitMulti
+            |           |   |-- InitSingle
+            |           |   |   `-- Const Int: 1
+            |           |   `-- InitSingle
+            |           |       `-- Const Int: 2
+            |           `-- InitMulti
+            |               |-- InitSingle
+            |               |   `-- Const Int: 3
+            |               `-- InitSingle
+            |                   `-- Const Int: 4
+            |-- ExprStmt line: 16
+            |   `-- FuncCallExpr putint
+            |       `-- Arg0 = FuncCallExpr f1
+            |           `-- Arg0 = LeftValueExpr c[Dim0]
+            |               `-- Dim0 = Const Int: 0
+            |-- ExprStmt line: 17
+            |   `-- FuncCallExpr putch
+            |       `-- Arg0 = Const Int: 10
+            `-- ReturnStmt, line: 18
+                `-- LeftValueExpr c[Dim0][Dim1]
+                    |-- Dim0 = Const Int: 2
+                    `-- Dim1 = Const Int: 0

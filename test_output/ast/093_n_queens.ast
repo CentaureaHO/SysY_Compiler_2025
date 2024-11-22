@@ -1,0 +1,220 @@
+ASTree
+|-- VarDecl, BaseType: Int, line: 1
+|   |-- DefNode
+|   |   |-- Var: LeftValueExpr ans[Dim0]
+|   |   |   Var: `-- Dim0 = Const Int: 50
+|   |   `-- Init: no initializer
+|   |-- DefNode
+|   |   `-- Var: LeftValueExpr sum
+|   |   `-- Init: InitSingle
+|   |       `-- Const Int: 0
+|   `-- DefNode
+|       |-- Var: LeftValueExpr n
+|       `-- Init: no initializer
+|-- VarDecl, BaseType: Int, line: 3
+|   |-- DefNode
+|   |   |-- Var: LeftValueExpr row[Dim0]
+|   |   |   Var: `-- Dim0 = Const Int: 50
+|   |   `-- Init: no initializer
+|   |-- DefNode
+|   |   |-- Var: LeftValueExpr line1[Dim0]
+|   |   |   Var: `-- Dim0 = Const Int: 50
+|   |   `-- Init: no initializer
+|   `-- DefNode
+|       |-- Var: LeftValueExpr line2[Dim0]
+|       |   Var: `-- Dim0 = Const Int: 100
+|       `-- Init: no initializer
+|-- FuncDecl @Name: printans -> @RetType: Void, line: 5
+|   |-- Params:
+|   |       None
+|   `-- Body:
+|       `-- BlockStmt, line: 6
+|           |-- ExprStmt line: 7
+|           |   `-- BinaryExpr Assign
+|           |       |-- LeftValueExpr sum
+|           |       `-- BinaryExpr Add
+|           |           |-- LeftValueExpr sum
+|           |           `-- Const Int: 1
+|           |-- VarDecl, BaseType: Int, line: 8
+|           |   `-- DefNode
+|           |       `-- Var: LeftValueExpr i
+|           |       `-- Init: InitSingle
+|           |           `-- Const Int: 1
+|           `-- WhileStmt, line: 9
+|               |-- Cond:
+|               |   `-- BinaryExpr Le
+|               |       |-- LeftValueExpr i
+|               |       `-- LeftValueExpr n
+|               `-- Body:
+|                   `-- BlockStmt, line: 9
+|                       |-- ExprStmt line: 10
+|                       |   `-- FuncCallExpr putint
+|                       |       `-- Arg0 = LeftValueExpr ans[Dim0]
+|                       |           `-- Dim0 = LeftValueExpr i
+|                       |-- IfStmt, line: 11
+|                       |   |-- Condition:
+|                       |   |   `-- BinaryExpr Eq
+|                       |   |       |-- LeftValueExpr i
+|                       |   |       `-- LeftValueExpr n
+|                       |   |-- Thenbody:
+|                       |   |   `-- BlockStmt, line: 11
+|                       |   |       |-- ExprStmt line: 12
+|                       |   |       |   `-- FuncCallExpr putch
+|                       |   |       |       `-- Arg0 = Const Int: 10
+|                       |   |       `-- ReturnStmt, line: 13
+|                       |   |           `-- No return value
+|                       |   `-- Elsebody:
+|                       |       `-- ExprStmt line: 15
+|                       |           `-- FuncCallExpr putch
+|                       |               `-- Arg0 = Const Int: 32
+|                       `-- ExprStmt line: 16
+|                           `-- BinaryExpr Assign
+|                               |-- LeftValueExpr i
+|                               `-- BinaryExpr Add
+|                                   |-- LeftValueExpr i
+|                                   `-- Const Int: 1
+|-- FuncDecl @Name: f -> @RetType: Void, line: 20
+|   |-- Params:
+|   |   `-- Int step
+|   `-- Body:
+|       `-- BlockStmt, line: 21
+|           |-- VarDecl, BaseType: Int, line: 22
+|           |   `-- DefNode
+|           |       `-- Var: LeftValueExpr i
+|           |       `-- Init: InitSingle
+|           |           `-- Const Int: 1
+|           `-- WhileStmt, line: 23
+|               |-- Cond:
+|               |   `-- BinaryExpr Le
+|               |       |-- LeftValueExpr i
+|               |       `-- LeftValueExpr n
+|               `-- Body:
+|                   `-- BlockStmt, line: 23
+|                       |-- IfStmt, line: 24
+|                       |   |-- Condition:
+|                       |   |   `-- BinaryExpr And
+|                       |   |       |-- BinaryExpr And
+|                       |   |       |   |-- BinaryExpr Neq
+|                       |   |       |   |   |-- LeftValueExpr row[Dim0]
+|                       |   |       |   |   |   `-- Dim0 = LeftValueExpr i
+|                       |   |       |   |   `-- Const Int: 1
+|                       |   |       |   `-- BinaryExpr Eq
+|                       |   |       |       |-- LeftValueExpr line1[Dim0]
+|                       |   |       |       |   `-- Dim0 = BinaryExpr Add
+|                       |   |       |       |       |-- LeftValueExpr step
+|                       |   |       |       |       `-- LeftValueExpr i
+|                       |   |       |       `-- Const Int: 0
+|                       |   |       `-- UnaryExpr Not
+|                       |   |           `-- LeftValueExpr line2[Dim0]
+|                       |   |               `-- Dim0 = BinaryExpr Sub
+|                       |   |                   |-- BinaryExpr Add
+|                       |   |                   |   |-- LeftValueExpr n
+|                       |   |                   |   `-- LeftValueExpr step
+|                       |   |                   `-- LeftValueExpr i
+|                       |   |-- Thenbody:
+|                       |   |   `-- BlockStmt, line: 24
+|                       |   |       |-- ExprStmt line: 25
+|                       |   |       |   `-- BinaryExpr Assign
+|                       |   |       |       |-- LeftValueExpr ans[Dim0]
+|                       |   |       |       |   `-- Dim0 = LeftValueExpr step
+|                       |   |       |       `-- LeftValueExpr i
+|                       |   |       |-- IfStmt, line: 26
+|                       |   |       |   |-- Condition:
+|                       |   |       |   |   `-- BinaryExpr Eq
+|                       |   |       |   |       |-- LeftValueExpr step
+|                       |   |       |   |       `-- LeftValueExpr n
+|                       |   |       |   |-- Thenbody:
+|                       |   |       |   |   `-- ExprStmt line: 27
+|                       |   |       |   |       `-- FuncCallExpr printans
+|                       |   |       |   |           `-- No args
+|                       |   |       |   `-- Elsebody:
+|                       |   |       |       `-- None
+|                       |   |       |-- ExprStmt line: 28
+|                       |   |       |   `-- BinaryExpr Assign
+|                       |   |       |       |-- LeftValueExpr row[Dim0]
+|                       |   |       |       |   `-- Dim0 = LeftValueExpr i
+|                       |   |       |       `-- Const Int: 1
+|                       |   |       |-- ExprStmt line: 29
+|                       |   |       |   `-- BinaryExpr Assign
+|                       |   |       |       |-- LeftValueExpr line1[Dim0]
+|                       |   |       |       |   `-- Dim0 = BinaryExpr Add
+|                       |   |       |       |       |-- LeftValueExpr step
+|                       |   |       |       |       `-- LeftValueExpr i
+|                       |   |       |       `-- Const Int: 1
+|                       |   |       |-- ExprStmt line: 30
+|                       |   |       |   `-- BinaryExpr Assign
+|                       |   |       |       |-- LeftValueExpr line2[Dim0]
+|                       |   |       |       |   `-- Dim0 = BinaryExpr Sub
+|                       |   |       |       |       |-- BinaryExpr Add
+|                       |   |       |       |       |   |-- LeftValueExpr n
+|                       |   |       |       |       |   `-- LeftValueExpr step
+|                       |   |       |       |       `-- LeftValueExpr i
+|                       |   |       |       `-- Const Int: 1
+|                       |   |       |-- ExprStmt line: 31
+|                       |   |       |   `-- FuncCallExpr f
+|                       |   |       |       `-- Arg0 = BinaryExpr Add
+|                       |   |       |           |-- LeftValueExpr step
+|                       |   |       |           `-- Const Int: 1
+|                       |   |       |-- ExprStmt line: 32
+|                       |   |       |   `-- BinaryExpr Assign
+|                       |   |       |       |-- LeftValueExpr row[Dim0]
+|                       |   |       |       |   `-- Dim0 = LeftValueExpr i
+|                       |   |       |       `-- Const Int: 0
+|                       |   |       |-- ExprStmt line: 33
+|                       |   |       |   `-- BinaryExpr Assign
+|                       |   |       |       |-- LeftValueExpr line1[Dim0]
+|                       |   |       |       |   `-- Dim0 = BinaryExpr Add
+|                       |   |       |       |       |-- LeftValueExpr step
+|                       |   |       |       |       `-- LeftValueExpr i
+|                       |   |       |       `-- Const Int: 0
+|                       |   |       `-- ExprStmt line: 34
+|                       |   |           `-- BinaryExpr Assign
+|                       |   |               |-- LeftValueExpr line2[Dim0]
+|                       |   |               |   `-- Dim0 = BinaryExpr Sub
+|                       |   |               |       |-- BinaryExpr Add
+|                       |   |               |       |   |-- LeftValueExpr n
+|                       |   |               |       |   `-- LeftValueExpr step
+|                       |   |               |       `-- LeftValueExpr i
+|                       |   |               `-- Const Int: 0
+|                       |   `-- Elsebody:
+|                       |       `-- None
+|                       `-- ExprStmt line: 36
+|                           `-- BinaryExpr Assign
+|                               |-- LeftValueExpr i
+|                               `-- BinaryExpr Add
+|                                   |-- LeftValueExpr i
+|                                   `-- Const Int: 1
+`-- FuncDecl @Name: main -> @RetType: Int, line: 40
+    |-- Params:
+    |       None
+    `-- Body:
+        `-- BlockStmt, line: 41
+            |-- VarDecl, BaseType: Int, line: 42
+            |   `-- DefNode
+            |       `-- Var: LeftValueExpr N
+            |       `-- Init: InitSingle
+            |           `-- FuncCallExpr getint
+            |               `-- No args
+            |-- WhileStmt, line: 43
+            |   |-- Cond:
+            |   |   `-- BinaryExpr Gt
+            |   |       |-- LeftValueExpr N
+            |   |       `-- Const Int: 0
+            |   `-- Body:
+            |       `-- BlockStmt, line: 43
+            |           |-- ExprStmt line: 44
+            |           |   `-- BinaryExpr Assign
+            |           |       |-- LeftValueExpr n
+            |           |       `-- FuncCallExpr getint
+            |           |           `-- No args
+            |           |-- ExprStmt line: 45
+            |           |   `-- FuncCallExpr f
+            |           |       `-- Arg0 = Const Int: 1
+            |           `-- ExprStmt line: 46
+            |               `-- BinaryExpr Assign
+            |                   |-- LeftValueExpr N
+            |                   `-- BinaryExpr Sub
+            |                       |-- LeftValueExpr N
+            |                       `-- Const Int: 1
+            `-- ReturnStmt, line: 48
+                `-- LeftValueExpr sum

@@ -1,0 +1,132 @@
+ASTree
+`-- FuncDecl @Name: main -> @RetType: Int, line: 1
+    |-- Params:
+    |       None
+    `-- Body:
+        `-- BlockStmt, line: 1
+            |-- VarDecl, BaseType: Int, line: 2
+            |   `-- DefNode
+            |       `-- Var: LeftValueExpr a[Dim0][Dim1]
+            |           |-- Dim0 = Const Int: 5
+            |           `-- Dim1 = Const Int: 5
+            |       `-- Init: InitMulti
+            |           |-- InitSingle
+            |           |   `-- Const Int: 1
+            |           |-- InitSingle
+            |           |   `-- Const Int: 1
+            |           |-- InitSingle
+            |           |   `-- Const Int: 1
+            |           |-- InitSingle
+            |           |   `-- Const Int: 1
+            |           |-- InitSingle
+            |           |   `-- Const Int: 1
+            |           |-- InitSingle
+            |           |   `-- Const Int: 2
+            |           |-- InitSingle
+            |           |   `-- Const Int: 2
+            |           |-- InitSingle
+            |           |   `-- Const Int: 2
+            |           |-- InitSingle
+            |           |   `-- Const Int: 2
+            |           |-- InitSingle
+            |           |   `-- Const Int: 2
+            |           |-- InitSingle
+            |           |   `-- Const Int: 3
+            |           |-- InitSingle
+            |           |   `-- Const Int: 3
+            |           |-- InitSingle
+            |           |   `-- Const Int: 3
+            |           |-- InitSingle
+            |           |   `-- Const Int: 3
+            |           |-- InitSingle
+            |           |   `-- Const Int: 3
+            |           |-- InitSingle
+            |           |   `-- Const Int: 4
+            |           |-- InitSingle
+            |           |   `-- Const Int: 4
+            |           |-- InitSingle
+            |           |   `-- Const Int: 4
+            |           |-- InitSingle
+            |           |   `-- Const Int: 4
+            |           |-- InitSingle
+            |           |   `-- Const Int: 4
+            |           |-- InitSingle
+            |           |   `-- Const Int: 5
+            |           |-- InitSingle
+            |           |   `-- Const Int: 5
+            |           |-- InitSingle
+            |           |   `-- Const Int: 5
+            |           |-- InitSingle
+            |           |   `-- Const Int: 5
+            |           `-- InitSingle
+            |               `-- Const Int: 5
+            |-- VarDecl, BaseType: Int, line: 3
+            |   |-- DefNode
+            |   |   |-- Var: LeftValueExpr m
+            |   |   `-- Init: no initializer
+            |   |-- DefNode
+            |   |   |-- Var: LeftValueExpr n
+            |   |   `-- Init: no initializer
+            |   |-- DefNode
+            |   |   |-- Var: LeftValueExpr i
+            |   |   `-- Init: no initializer
+            |   `-- DefNode
+            |       |-- Var: LeftValueExpr j
+            |       `-- Init: no initializer
+            |-- ExprStmt line: 4
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr m
+            |       `-- Const Int: 2
+            |-- ExprStmt line: 5
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr n
+            |       `-- Const Int: 3
+            |-- ExprStmt line: 6
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr j
+            |       `-- Const Int: 0
+            |-- WhileStmt, line: 7
+            |   |-- Cond:
+            |   |   `-- BinaryExpr Lt
+            |   |       |-- LeftValueExpr j
+            |   |       `-- Const Int: 5
+            |   `-- Body:
+            |       `-- BlockStmt, line: 7
+            |           |-- ExprStmt line: 8
+            |           |   `-- BinaryExpr Assign
+            |           |       |-- LeftValueExpr i
+            |           |       `-- LeftValueExpr a[Dim0][Dim1]
+            |           |           |-- Dim0 = BinaryExpr Sub
+            |           |           |   Dim0 = |-- LeftValueExpr m
+            |           |           |   Dim0 = `-- Const Int: 1
+            |           |           `-- Dim1 = LeftValueExpr j
+            |           |-- ExprStmt line: 9
+            |           |   `-- BinaryExpr Assign
+            |           |       |-- LeftValueExpr a[Dim0][Dim1]
+            |           |       |   |-- Dim0 = BinaryExpr Sub
+            |           |       |   |   Dim0 = |-- LeftValueExpr m
+            |           |       |   |   Dim0 = `-- Const Int: 1
+            |           |       |   `-- Dim1 = LeftValueExpr j
+            |           |       `-- LeftValueExpr a[Dim0][Dim1]
+            |           |           |-- Dim0 = BinaryExpr Sub
+            |           |           |   Dim0 = |-- LeftValueExpr n
+            |           |           |   Dim0 = `-- Const Int: 1
+            |           |           `-- Dim1 = LeftValueExpr j
+            |           |-- ExprStmt line: 10
+            |           |   `-- BinaryExpr Assign
+            |           |       |-- LeftValueExpr a[Dim0][Dim1]
+            |           |       |   |-- Dim0 = BinaryExpr Sub
+            |           |       |   |   Dim0 = |-- LeftValueExpr n
+            |           |       |   |   Dim0 = `-- Const Int: 1
+            |           |       |   `-- Dim1 = LeftValueExpr j
+            |           |       `-- LeftValueExpr i
+            |           `-- ExprStmt line: 11
+            |               `-- BinaryExpr Assign
+            |                   |-- LeftValueExpr j
+            |                   `-- BinaryExpr Add
+            |                       |-- LeftValueExpr j
+            |                       `-- Const Int: 1
+            `-- ReturnStmt, line: 13
+                `-- LeftValueExpr a[Dim0][Dim1]
+                    |-- Dim0 = Const Int: 2
+                    `-- Dim1 = Const Int: 0

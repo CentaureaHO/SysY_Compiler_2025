@@ -1,0 +1,349 @@
+ASTree
+|-- VarDecl, BaseType: Int, line: 1
+|   `-- DefNode
+|       `-- Var: LeftValueExpr __HELLO[Dim0]
+|           `-- Dim0 = Const Int: 100
+|       `-- Init: InitMulti
+|           |-- InitSingle
+|           |   `-- Const Int: 87
+|           |-- InitSingle
+|           |   `-- Const Int: 101
+|           |-- InitSingle
+|           |   `-- Const Int: 108
+|           |-- InitSingle
+|           |   `-- Const Int: 99
+|           |-- InitSingle
+|           |   `-- Const Int: 111
+|           |-- InitSingle
+|           |   `-- Const Int: 109
+|           |-- InitSingle
+|           |   `-- Const Int: 101
+|           |-- InitSingle
+|           |   `-- Const Int: 32
+|           |-- InitSingle
+|           |   `-- Const Int: 116
+|           |-- InitSingle
+|           |   `-- Const Int: 111
+|           |-- InitSingle
+|           |   `-- Const Int: 32
+|           |-- InitSingle
+|           |   `-- Const Int: 116
+|           |-- InitSingle
+|           |   `-- Const Int: 104
+|           |-- InitSingle
+|           |   `-- Const Int: 101
+|           |-- InitSingle
+|           |   `-- Const Int: 32
+|           |-- InitSingle
+|           |   `-- Const Int: 74
+|           |-- InitSingle
+|           |   `-- Const Int: 97
+|           |-- InitSingle
+|           |   `-- Const Int: 112
+|           |-- InitSingle
+|           |   `-- Const Int: 97
+|           |-- InitSingle
+|           |   `-- Const Int: 114
+|           |-- InitSingle
+|           |   `-- Const Int: 105
+|           |-- InitSingle
+|           |   `-- Const Int: 32
+|           |-- InitSingle
+|           |   `-- Const Int: 80
+|           |-- InitSingle
+|           |   `-- Const Int: 97
+|           |-- InitSingle
+|           |   `-- Const Int: 114
+|           |-- InitSingle
+|           |   `-- Const Int: 107
+|           |-- InitSingle
+|           |   `-- Const Int: 33
+|           `-- InitSingle
+|               `-- Const Int: 10
+|-- VarDecl, BaseType: Int, line: 23
+|   `-- DefNode
+|       `-- Var: LeftValueExpr N4__mE___[Dim0][Dim1]
+|           |-- Dim0 = Const Int: 6
+|           `-- Dim1 = Const Int: 50
+|       `-- Init: InitMulti
+|           |-- InitMulti
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 83
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 97
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 97
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 98
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 97
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 114
+|           |   `-- InitSingle
+|           |       `-- Const Int: 117
+|           |-- InitMulti
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 75
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 97
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 98
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 97
+|           |   `-- InitSingle
+|           |       `-- Const Int: 110
+|           |-- InitMulti
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 72
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 97
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 115
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 104
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 105
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 98
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 105
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 114
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 111
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 107
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 111
+|           |   `-- InitSingle
+|           |       `-- Const Int: 117
+|           |-- InitMulti
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 65
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 114
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 97
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 105
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 103
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 117
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 109
+|           |   `-- InitSingle
+|           |       `-- Const Int: 97
+|           |-- InitMulti
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 72
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 117
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 110
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 98
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 111
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 114
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 117
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 116
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 111
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 32
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 80
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 101
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 110
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 103
+|           |   |-- InitSingle
+|           |   |   `-- Const Int: 105
+|           |   `-- InitSingle
+|           |       `-- Const Int: 110
+|           `-- InitMulti
+|               |-- InitSingle
+|               |   `-- Const Int: 84
+|               |-- InitSingle
+|               |   `-- Const Int: 97
+|               |-- InitSingle
+|               |   `-- Const Int: 105
+|               |-- InitSingle
+|               |   `-- Const Int: 114
+|               |-- InitSingle
+|               |   `-- Const Int: 105
+|               |-- InitSingle
+|               |   `-- Const Int: 107
+|               |-- InitSingle
+|               |   `-- Const Int: 117
+|               |-- InitSingle
+|               |   `-- Const Int: 32
+|               |-- InitSingle
+|               |   `-- Const Int: 79
+|               |-- InitSingle
+|               |   `-- Const Int: 111
+|               |-- InitSingle
+|               |   `-- Const Int: 107
+|               |-- InitSingle
+|               |   `-- Const Int: 97
+|               |-- InitSingle
+|               |   `-- Const Int: 109
+|               `-- InitSingle
+|                   `-- Const Int: 105
+|-- VarDecl, BaseType: Int, line: 84
+|   `-- DefNode
+|       `-- Var: LeftValueExpr saY_HeI10_To[Dim0]
+|           `-- Dim0 = Const Int: 40
+|       `-- Init: InitMulti
+|           |-- InitSingle
+|           |   `-- Const Int: 32
+|           |-- InitSingle
+|           |   `-- Const Int: 115
+|           |-- InitSingle
+|           |   `-- Const Int: 97
+|           |-- InitSingle
+|           |   `-- Const Int: 121
+|           |-- InitSingle
+|           |   `-- Const Int: 115
+|           |-- InitSingle
+|           |   `-- Const Int: 32
+|           |-- InitSingle
+|           |   `-- Const Int: 104
+|           |-- InitSingle
+|           |   `-- Const Int: 101
+|           |-- InitSingle
+|           |   `-- Const Int: 108
+|           |-- InitSingle
+|           |   `-- Const Int: 108
+|           |-- InitSingle
+|           |   `-- Const Int: 111
+|           |-- InitSingle
+|           |   `-- Const Int: 32
+|           |-- InitSingle
+|           |   `-- Const Int: 116
+|           |-- InitSingle
+|           |   `-- Const Int: 111
+|           `-- InitSingle
+|               `-- Const Int: 32
+|-- VarDecl, BaseType: Int, line: 100
+|   `-- DefNode
+|       `-- Var: LeftValueExpr RET[Dim0]
+|           `-- Dim0 = Const Int: 5
+|       `-- Init: InitMulti
+|           `-- InitSingle
+|               `-- Const Int: 10
+|-- FuncDecl @Name: putstr -> @RetType: Int, line: 103
+|   |-- Params:
+|   |   `-- Int str[Dim0]
+|   |   |   `-- Dim0 = Const Int: -1
+|   `-- Body:
+|       `-- BlockStmt, line: 104
+|           |-- VarDecl, BaseType: Int, line: 105
+|           |   `-- DefNode
+|           |       |-- Var: LeftValueExpr iNd__1X
+|           |       `-- Init: no initializer
+|           |-- ExprStmt line: 107
+|           |   `-- BinaryExpr Assign
+|           |       |-- LeftValueExpr iNd__1X
+|           |       `-- Const Int: 0
+|           |-- WhileStmt, line: 107
+|           |   |-- Cond:
+|           |   |   `-- LeftValueExpr str[Dim0]
+|           |   |       `-- Dim0 = LeftValueExpr iNd__1X
+|           |   `-- Body:
+|           |       `-- BlockStmt, line: 109
+|           |           |-- ExprStmt line: 111
+|           |           |   `-- FuncCallExpr putch
+|           |           |       `-- Arg0 = LeftValueExpr str[Dim0]
+|           |           |           `-- Dim0 = LeftValueExpr iNd__1X
+|           |           `-- ExprStmt line: 115
+|           |               `-- BinaryExpr Assign
+|           |                   |-- LeftValueExpr iNd__1X
+|           |                   `-- BinaryExpr Add
+|           |                       |-- LeftValueExpr iNd__1X
+|           |                       `-- Const Int: 1
+|           `-- ReturnStmt, line: 121
+|               `-- LeftValueExpr iNd__1X
+`-- FuncDecl @Name: main -> @RetType: Int, line: 122
+    |-- Params:
+    |       None
+    `-- Body:
+        `-- BlockStmt, line: 122
+            |-- ExprStmt line: 123
+            |   `-- FuncCallExpr putstr
+            |       `-- Arg0 = LeftValueExpr __HELLO
+            |-- VarDecl, BaseType: Int, line: 124
+            |   `-- DefNode
+            |       `-- Var: LeftValueExpr i
+            |       `-- Init: InitSingle
+            |           `-- Const Int: 0
+            |-- WhileStmt, line: 130
+            |   |-- Cond:
+            |   |   `-- Const Int: 1
+            |   `-- Body:
+            |       `-- BlockStmt, line: 132
+            |           |-- VarDecl, BaseType: Int, line: 134
+            |           |   `-- DefNode
+            |           |       `-- Var: LeftValueExpr _
+            |           |       `-- Init: InitSingle
+            |           |           `-- BinaryExpr Div
+            |           |               |-- LeftValueExpr i
+            |           |               `-- Const Int: 6
+            |           |-- VarDecl, BaseType: Int, line: 139
+            |           |   `-- DefNode
+            |           |       `-- Var: LeftValueExpr __
+            |           |       `-- Init: InitSingle
+            |           |           `-- BinaryExpr Mod
+            |           |               |-- LeftValueExpr i
+            |           |               `-- Const Int: 6
+            |           |-- IfStmt, line: 145
+            |           |   |-- Condition:
+            |           |   |   `-- BinaryExpr Neq
+            |           |   |       |-- LeftValueExpr _
+            |           |   |       `-- LeftValueExpr __
+            |           |   |-- Thenbody:
+            |           |   |   `-- BlockStmt, line: 154
+            |           |   |       |-- ExprStmt line: 154
+            |           |   |       |   `-- FuncCallExpr putstr
+            |           |   |       |       `-- Arg0 = LeftValueExpr N4__mE___[Dim0]
+            |           |   |       |           `-- Dim0 = LeftValueExpr _
+            |           |   |       |-- ExprStmt line: 160
+            |           |   |       |   `-- FuncCallExpr putstr
+            |           |   |       |       `-- Arg0 = LeftValueExpr saY_HeI10_To
+            |           |   |       |-- ExprStmt line: 162
+            |           |   |       |   `-- FuncCallExpr putstr
+            |           |   |       |       `-- Arg0 = LeftValueExpr N4__mE___[Dim0]
+            |           |   |       |           `-- Dim0 = LeftValueExpr __
+            |           |   |       `-- ExprStmt line: 172
+            |           |   |           `-- FuncCallExpr putstr
+            |           |   |               `-- Arg0 = LeftValueExpr RET
+            |           |   `-- Elsebody:
+            |           |       `-- None
+            |           |-- ExprStmt line: 181
+            |           |   `-- BinaryExpr Assign
+            |           |       |-- LeftValueExpr i
+            |           |       `-- BinaryExpr Mod
+            |           |           |-- BinaryExpr Add
+            |           |           |   |-- BinaryExpr Mul
+            |           |           |   |   |-- LeftValueExpr i
+            |           |           |   |   `-- Const Int: 17
+            |           |           |   `-- Const Int: 23
+            |           |           `-- Const Int: 32
+            |           `-- IfStmt, line: 196
+            |               |-- Condition:
+            |               |   `-- BinaryExpr Eq
+            |               |       |-- LeftValueExpr i
+            |               |       `-- Const Int: 0
+            |               |-- Thenbody:
+            |               |   `-- BlockStmt, line: 198
+            |               |       `-- BreakStmt, line: 198
+            |               `-- Elsebody:
+            |                   `-- None
+            `-- ReturnStmt, line: 201
+                `-- Const Int: 0

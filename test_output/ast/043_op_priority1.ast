@@ -1,0 +1,43 @@
+ASTree
+`-- FuncDecl @Name: main -> @RetType: Int, line: 2
+    |-- Params:
+    |       None
+    `-- Body:
+        `-- BlockStmt, line: 2
+            |-- VarDecl, BaseType: Int, line: 3
+            |   |-- DefNode
+            |   |   |-- Var: LeftValueExpr a
+            |   |   `-- Init: no initializer
+            |   |-- DefNode
+            |   |   |-- Var: LeftValueExpr b
+            |   |   `-- Init: no initializer
+            |   |-- DefNode
+            |   |   |-- Var: LeftValueExpr c
+            |   |   `-- Init: no initializer
+            |   `-- DefNode
+            |       |-- Var: LeftValueExpr d
+            |       `-- Init: no initializer
+            |-- ExprStmt line: 4
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a
+            |       `-- Const Int: 10
+            |-- ExprStmt line: 5
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr b
+            |       `-- Const Int: 4
+            |-- ExprStmt line: 6
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr c
+            |       `-- Const Int: 2
+            |-- ExprStmt line: 7
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr d
+            |       `-- Const Int: 2
+            `-- ReturnStmt, line: 8
+                `-- BinaryExpr Sub
+                    |-- BinaryExpr Add
+                    |   |-- LeftValueExpr c
+                    |   `-- BinaryExpr Mul
+                    |       |-- LeftValueExpr a
+                    |       `-- LeftValueExpr b
+                    `-- LeftValueExpr d

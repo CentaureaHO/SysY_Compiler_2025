@@ -1,6 +1,5 @@
 bin/
 obj/
-test_output/
 test.*
 !test.py
 valgrind_report

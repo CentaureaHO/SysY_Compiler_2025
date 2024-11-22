@@ -1,0 +1,51 @@
+ASTree
+|-- FuncDecl @Name: f -> @RetType: Int, line: 1
+|   |-- Params:
+|   |   |-- Int a
+|   |   `-- Int b
+|   `-- Body:
+|       `-- BlockStmt, line: 1
+|           `-- ReturnStmt, line: 2
+|               `-- BinaryExpr Mul
+|                   |-- LeftValueExpr a
+|                   `-- LeftValueExpr b
+|-- FuncDecl @Name: g -> @RetType: Int, line: 5
+|   |-- Params:
+|   |   |-- Int a
+|   |   `-- Int b
+|   `-- Body:
+|       `-- BlockStmt, line: 5
+|           `-- ReturnStmt, line: 6
+|               `-- BinaryExpr Mod
+|                   |-- LeftValueExpr a
+|                   `-- LeftValueExpr b
+|-- FuncDecl @Name: h -> @RetType: Int, line: 9
+|   |-- Params:
+|   |   |-- Int a
+|   |   `-- Int b
+|   `-- Body:
+|       `-- BlockStmt, line: 9
+|           `-- ReturnStmt, line: 10
+|               `-- FuncCallExpr f
+|                   |-- Arg0 = FuncCallExpr f
+|                   |   Arg0 = |-- Arg0 = Const Int: 2
+|                   |   Arg0 = `-- Arg1 = FuncCallExpr g
+|                   |   Arg0 =     |-- Arg0 = LeftValueExpr a
+|                   |   Arg0 =     `-- Arg1 = LeftValueExpr b
+|                   `-- Arg1 = FuncCallExpr g
+|                       |-- Arg0 = FuncCallExpr f
+|                       |   Arg0 = |-- Arg0 = LeftValueExpr a
+|                       |   Arg0 = `-- Arg1 = LeftValueExpr b
+|                       `-- Arg1 = Const Int: 4
+`-- FuncDecl @Name: main -> @RetType: Int, line: 13
+    |-- Params:
+    |       None
+    `-- Body:
+        `-- BlockStmt, line: 13
+            |-- ExprStmt line: 14
+            |   `-- FuncCallExpr putint
+            |       `-- Arg0 = FuncCallExpr h
+            |           |-- Arg0 = Const Int: 11
+            |           `-- Arg1 = Const Int: 3
+            `-- ReturnStmt, line: 15
+                `-- Const Int: 0

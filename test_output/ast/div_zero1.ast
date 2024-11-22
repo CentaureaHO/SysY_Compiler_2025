@@ -1,0 +1,60 @@
+ASTree
+|-- VarDecl, BaseType: const Int, line: 1
+|   `-- DefNode
+|       `-- Var: LeftValueExpr a
+|       `-- Init: InitSingle
+|           `-- Const Int: 13
+|-- VarDecl, BaseType: const Int, line: 2
+|   `-- DefNode
+|       `-- Var: LeftValueExpr d
+|       `-- Init: InitSingle
+|           `-- Const Int: 7
+|-- VarDecl, BaseType: const Int, line: 3
+|   `-- DefNode
+|       `-- Var: LeftValueExpr e
+|       `-- Init: InitSingle
+|           `-- Const Int: 6
+`-- FuncDecl @Name: main -> @RetType: Int, line: 4
+    |-- Params:
+    |       None
+    `-- Body:
+        `-- BlockStmt, line: 5
+            |-- VarDecl, BaseType: const Int, line: 6
+            |   `-- DefNode
+            |       `-- Var: LeftValueExpr t
+            |       `-- Init: InitSingle
+            |           `-- BinaryExpr Mul
+            |               |-- LeftValueExpr a
+            |               `-- LeftValueExpr a
+            |-- VarDecl, BaseType: const Int, line: 7
+            |   `-- DefNode
+            |       `-- Var: LeftValueExpr f
+            |       `-- Init: InitSingle
+            |           `-- BinaryExpr Div
+            |               |-- BinaryExpr Mul
+            |               |   |-- LeftValueExpr d
+            |               |   `-- LeftValueExpr d
+            |               `-- Const Int: 3
+            |-- VarDecl, BaseType: const Int, line: 8
+            |   `-- DefNode
+            |       `-- Var: LeftValueExpr h
+            |       `-- Init: InitSingle
+            |           `-- BinaryExpr Mod
+            |               |-- BinaryExpr Mul
+            |               |   |-- BinaryExpr Mul
+            |               |   |   |-- LeftValueExpr e
+            |               |   |   `-- LeftValueExpr e
+            |               |   `-- LeftValueExpr e
+            |               `-- Const Int: 120
+            `-- ReturnStmt, line: 9
+                `-- BinaryExpr Div
+                    |-- Const Int: 5
+                    `-- BinaryExpr Mod
+                        |-- BinaryExpr Sub
+                        |   |-- BinaryExpr Sub
+                        |   |   |-- LeftValueExpr t
+                        |   |   `-- BinaryExpr Mul
+                        |   |       |-- Const Int: 3
+                        |   |       `-- LeftValueExpr f
+                        |   `-- LeftValueExpr h
+                        `-- Const Int: 25

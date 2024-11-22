@@ -1,0 +1,18 @@
+ASTree
+`-- FuncDecl @Name: main -> @RetType: Int, line: 2
+    |-- Params:
+    |       None
+    `-- Body:
+        `-- BlockStmt, line: 2
+            |-- VarDecl, BaseType: Int, line: 3
+            |   `-- DefNode
+            |       |-- Var: LeftValueExpr a
+            |       `-- Init: no initializer
+            |-- ExprStmt line: 4
+            |   `-- BinaryExpr Assign
+            |       |-- LeftValueExpr a
+            |       `-- Const Int: 10
+            `-- ReturnStmt, line: 5
+                `-- BinaryExpr Sub
+                    |-- LeftValueExpr a
+                    `-- Const Int: 2

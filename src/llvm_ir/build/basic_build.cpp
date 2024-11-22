@@ -17,9 +17,6 @@ IRTable     irgen_table;
 IR          builder;
 IRFunction* ir_func = nullptr;
 
-FuncDefInst* cur_func = nullptr;
-Type*        ret_type = nullptr;
-
 void ASTree::handleGlobalVarDecl(VarDeclStmt* decls)
 {
     for (auto& def : *decls->defs)
