@@ -1,8 +1,0 @@
-ASTree
-`-- FuncDecl @Name: main -> @RetType: Int, line: 3
-    |-- Params:
-    |       None
-    `-- Body:
-        `-- BlockStmt, line: 3
-            `-- ReturnStmt, line: 8
-                `-- Const Int: 3
