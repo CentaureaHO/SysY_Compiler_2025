@@ -25,6 +25,23 @@
         }                                                          \
     }
 
-int FindMinStepForPosition(const std::vector<int>& dims, int relativePos, int dimsIdx, int& max_subBlock_sz);
+/*
+    @ref: https://github.com/yuhuifishash/SysY
+
+    该函数用于在多维数组中确定当前线性索引所在的位置，
+    计算需要深入的维度数（返回值），以及当前可以处理的最大子块大小（max_subBlock_sz）。
+
+    参数：
+    - dims：表示数组的各个维度大小的整数向量
+    - linear_index：当前处理的元素在数组中的线性索引，即展开为一维数组时的位置
+    - dimsIdx：当前处理的维度索引
+    - max_subBlock_sz：用于返回在当前维度下可以处理的最大子块大小
+                        例如，对于int a[5][4][3]
+                        第一维度可以处理的最大子块大小即为4*3=12
+
+    返回值：
+    - min_dim_step：需要深入的维度数，即从当前维度开始，需要再深入多少个维度才能正确匹配初始化列表的嵌套层次
+*/
+int FindMinStepForPosition(const std::vector<int>& dims, int linear_index, int dimsIdx, int& max_subBlock_sz);
 
 #endif
