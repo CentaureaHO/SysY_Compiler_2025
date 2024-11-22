@@ -43,6 +43,14 @@
 
 #define SIZE_T(x) static_cast<size_t>(x)
 
+#define FLOAT_TO_DOUBLE_BITS(f)                            \
+    ([](float value) {                                     \
+        double             d = static_cast<double>(value); \
+        unsigned long long dbytes;                         \
+        std::memcpy(&dbytes, &d, sizeof(double));          \
+        return static_cast<long long>(dbytes);             \
+    }(f))
+
 enum class TypeKind
 {
 #define X(name, type, id) name = id,

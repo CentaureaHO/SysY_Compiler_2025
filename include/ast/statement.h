@@ -10,6 +10,7 @@
 class DefNode;
 class FuncParamDefNode;
 class InitNode;
+class InitMulti;
 
 class StmtNode : public Node
 {
@@ -52,7 +53,9 @@ class VarDeclStmt : public StmtNode
     bool isRedefinedGlobal(LeftValueExpr* lval);
     bool isRedefinedLocal(LeftValueExpr* lval);
     bool checkArrayDimensions(LeftValueExpr* lval, VarAttribute& val);
-    void fillInitialValues(InitNode* rval, VarAttribute& val);
+    void arrayInit(InitMulti* in, VarAttribute& val, int begPos, int endPos, int dimsIdx, LeftValueExpr* lval);
+    void fillInitials(InitNode* initVals, VarAttribute& var, LeftValueExpr* lval);
+
     void typeCheck() override;
     void genIRCode() override;
 };

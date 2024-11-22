@@ -16,14 +16,6 @@ using namespace LLVMIR;
 using DT = DataType;
 using OT = OperandType;
 
-#define FLOAT_TO_DOUBLE_BITS(f)                            \
-    ([](float value) {                                     \
-        double             d = static_cast<double>(value); \
-        unsigned long long rawDoubleBytes;                 \
-        std::memcpy(&rawDoubleBytes, &d, sizeof(double));  \
-        return static_cast<long long>(rawDoubleBytes);     \
-    }(f))
-
 Operand::Operand(OperandType t) : type(t) {}
 
 RegOperand::RegOperand(int num) : Operand(OT::REG), reg_num(num) {}

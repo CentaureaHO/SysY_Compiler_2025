@@ -16,139 +16,9 @@ Type* curFuncRetType = voidType;
 
 namespace
 {
-    size_t loop_counts = 0;
-
-    void arrayInit(InitMulti* in, VarAttribute& val, int begPos, int endPos, int dimsIdx)
-    {
-        if (!in) return;
-        int pos = begPos;
-
-        if (!in->exprs) return;
-        for (auto& expr : *in->exprs)
-        {
-            InitMulti* im = dynamic_cast<InitMulti*>(expr);
-
-            if (im == nullptr)  // 为InitSingle
-            {
-                NodeAttribute& attr = expr->attr;
-
-                if (attr.val.type == voidType)
-                {
-                    semanticErrMsgs.push_back(
-                        "Error: Initialization with void type expression at line " + to_string(attr.line_num));
-                    return;
-                }
-
-                if (val.type == intType)
-                {
-                    val.initVals[pos] = TO_INT(attr.val.value);
-                    // cout << "Set " << pos << " to " << TO_INT(attr.val.value) << endl;
-                }
-                else if (val.type == llType)
-                    val.initVals[pos] = TO_LL(attr.val.value);
-                else if (val.type == floatType)
-                    val.initVals[pos] = TO_FLOAT(attr.val.value);
-                else
-                    semanticErrMsgs.push_back("Error: Invalid initialization at line " + to_string(attr.line_num));
-
-                ++pos;
-                continue;
-            }
-
-            // 为InitMulti
-            int max_subBlock_sz = 0;
-            int min_dim_step    = FindMinStepForPosition(val.dims, pos - begPos, dimsIdx, max_subBlock_sz);
-            arrayInit(im, val, pos, pos + max_subBlock_sz - 1, dimsIdx + min_dim_step);
-            pos += max_subBlock_sz;
-        }
-    }
-
-    void fillIntInitials(InitNode* initVals, VarAttribute& var)
-    {
-        var.type        = intType;
-        size_t arr_size = 1;
-        for (auto& dim : var.dims) arr_size *= dim;
-        var.initVals.resize(arr_size, 0);
-
-        if (var.dims.empty())  // 非数组
-        {
-            InitSingle* is = dynamic_cast<InitSingle*>(initVals);
-            if (!is)
-            {
-                semanticErrMsgs.push_back(
-                    "Error: Invalid initialization at line " + to_string(initVals->attr.line_num));
-                return;
-            }
-
-            if (is->attr.val.type == voidType)
-            {
-                semanticErrMsgs.push_back(
-                    "Error: Initialization with void type expression at line " + to_string(initVals->attr.line_num));
-                return;
-            }
-            else if (is->attr.val.type == intType || is->attr.val.type == llType || is->attr.val.type == floatType ||
-                     is->attr.val.type == boolType)
-                var.initVals[0] = TO_INT(is->attr.val.value);
-            else
-                semanticErrMsgs.push_back(
-                    "Error: Invalid initialization at line " + to_string(initVals->attr.line_num));
-
-            return;
-        }
-
-        InitMulti* im = dynamic_cast<InitMulti*>(initVals);
-        if (!im)
-        {
-            semanticErrMsgs.push_back("Error: Invalid initialization at line " + to_string(initVals->attr.line_num));
-            return;
-        }
-
-        arrayInit(im, var, 0, arr_size - 1, 0);
-    }
-
-    void fillFloatInitials(InitNode* initVals, VarAttribute& var)
-    {
-        var.type        = floatType;
-        size_t arr_size = 1;
-        for (auto& dim : var.dims) arr_size *= dim;
-        var.initVals.resize(arr_size, static_cast<float>(0));
-
-        if (var.dims.empty())  // 非数组
-        {
-            var.initVals[0] = static_cast<float>(0.0);
-            InitSingle* is  = dynamic_cast<InitSingle*>(initVals);
-            if (!is)
-            {
-                semanticErrMsgs.push_back(
-                    "Error: Invalid initialization at line " + to_string(initVals->attr.line_num));
-                return;
-            }
-
-            if (is->attr.val.type == voidType)
-            {
-                semanticErrMsgs.push_back(
-                    "Error: Initialization with void type expression at line " + to_string(initVals->attr.line_num));
-                return;
-            }
-            else if (is->attr.val.type == intType || is->attr.val.type == llType || is->attr.val.type == floatType ||
-                     is->attr.val.type == boolType)
-                var.initVals[0] = TO_FLOAT(is->attr.val.value);
-            else
-                semanticErrMsgs.push_back(
-                    "Error: Invalid initialization at line " + to_string(initVals->attr.line_num));
-
-            return;
-        }
-
-        InitMulti* im = dynamic_cast<InitMulti*>(initVals);
-        if (!im)
-        {
-            semanticErrMsgs.push_back("Error: Invalid initialization at line " + to_string(initVals->attr.line_num));
-            return;
-        }
-
-        arrayInit(im, var, 0, arr_size - 1, 0);
-    }
+    size_t loop_counts     = 0;
+    bool   funcWithReturn  = false;
+    bool   funcDeclareOnly = false;
 }  // namespace
 
 void StmtNode::typeCheck() {}
@@ -210,12 +80,133 @@ bool VarDeclStmt::checkArrayDimensions(LeftValueExpr* lval, VarAttribute& val)
 
     return true;
 }
-void VarDeclStmt::fillInitialValues(InitNode* rval, VarAttribute& val)
+void VarDeclStmt::arrayInit(InitMulti* in, VarAttribute& val, int begPos, int endPos, int dimsIdx, LeftValueExpr* lval)
 {
-    if (baseType == intType)
-        fillIntInitials(rval, val);
-    else if (baseType == floatType)
-        fillFloatInitials(rval, val);
+    if (!in) return;
+    int pos = begPos;
+
+    if (!in->exprs) return;
+    for (auto& expr : *in->exprs)
+    {
+        if (pos > endPos)
+        {
+            semanticErrMsgs.push_back("Error: Too many initializers for variable '" + lval->entry->getName() +
+                                      "' at line " + std::to_string(expr->attr.line_num));
+            return;
+        }
+
+        InitMulti* im = dynamic_cast<InitMulti*>(expr);
+
+        if (im == nullptr)  // InitSingle
+        {
+            NodeAttribute& attr = expr->attr;
+
+            if (attr.val.type == voidType)
+            {
+                semanticErrMsgs.push_back("Error: Initialization with void type expression for variable '" +
+                                          lval->entry->getName() + "' at line " + std::to_string(attr.line_num));
+                return;
+            }
+
+            if (val.type == intType)
+                val.initVals[pos] = TO_INT(attr.val.value);
+            else if (val.type == floatType)
+                val.initVals[pos] = TO_FLOAT(attr.val.value);
+            else
+            {
+                semanticErrMsgs.push_back("Error: Unsupported variable type for variable '" + lval->entry->getName() +
+                                          "' at line " + std::to_string(attr.line_num));
+                return;
+            }
+
+            ++pos;
+            continue;
+        }
+
+        // InitMulti
+        int max_subBlock_sz = 0;
+        int min_dim_step    = FindMinStepForPosition(val.dims, pos - begPos, dimsIdx, max_subBlock_sz);
+
+        int sub_begPos = pos;
+        int sub_endPos = pos + max_subBlock_sz - 1;
+
+        if (sub_endPos > endPos)
+        {
+            semanticErrMsgs.push_back("Error: Too many initializers for variable '" + lval->entry->getName() +
+                                      "' at line " + std::to_string(expr->attr.line_num));
+            return;
+        }
+
+        im->attr.line_num = in->attr.line_num;
+        arrayInit(im, val, sub_begPos, sub_endPos, dimsIdx + min_dim_step, lval);
+
+        pos = sub_endPos + 1;
+    }
+}
+void VarDeclStmt::fillInitials(InitNode* initVals, VarAttribute& var, LeftValueExpr* lval)
+{
+    size_t arr_size = 1;
+    for (auto& dim : var.dims) arr_size *= dim;
+    var.initVals.resize(arr_size);
+
+    if (var.type == intType)
+        std::fill(var.initVals.begin(), var.initVals.end(), 0);
+    else if (var.type == floatType)
+        std::fill(var.initVals.begin(), var.initVals.end(), 0.0f);
+    else
+    {
+        semanticErrMsgs.push_back("Error: Unsupported variable type for variable '" + lval->entry->getName() +
+                                  "' at line " + std::to_string(initVals->attr.line_num));
+        return;
+    }
+
+    if (var.dims.empty())
+    {
+        InitSingle* is = dynamic_cast<InitSingle*>(initVals);
+        if (!is)
+        {
+            semanticErrMsgs.push_back("Error: Invalid initialization for variable '" + lval->entry->getName() +
+                                      "' at line " + std::to_string(initVals->attr.line_num));
+            return;
+        }
+
+        if (is->attr.val.type == voidType)
+        {
+            semanticErrMsgs.push_back("Error: Initialization with void type expression for variable '" +
+                                      lval->entry->getName() + "' at line " + std::to_string(initVals->attr.line_num));
+            return;
+        }
+        else if (is->attr.val.type == intType || is->attr.val.type == llType || is->attr.val.type == floatType ||
+                 is->attr.val.type == boolType)
+        {
+            if (var.type == intType || var.type == boolType || var.type == llType)
+                var.initVals[0] = TO_INT(is->attr.val.value);
+            else if (var.type == floatType)
+                var.initVals[0] = TO_FLOAT(is->attr.val.value);
+            else
+            {
+                semanticErrMsgs.push_back("Error: Unsupported variable type for variable '" + lval->entry->getName() +
+                                          "' at line " + std::to_string(initVals->attr.line_num));
+                return;
+            }
+        }
+        else
+        {
+            semanticErrMsgs.push_back("Error: Invalid initialization for variable '" + lval->entry->getName() +
+                                      "' at line " + std::to_string(initVals->attr.line_num));
+        }
+        return;
+    }
+
+    InitMulti* im = dynamic_cast<InitMulti*>(initVals);
+    if (!im)
+    {
+        semanticErrMsgs.push_back("Error: Invalid initialization for variable '" + lval->entry->getName() +
+                                  "' at line " + std::to_string(initVals->attr.line_num));
+        return;
+    }
+
+    arrayInit(im, var, 0, arr_size - 1, 0, lval);
 }
 void VarDeclStmt::typeCheck()
 {
@@ -239,7 +230,7 @@ void VarDeclStmt::typeCheck()
         if (rval)
         {
             rval->typeCheck();
-            fillInitialValues(rval, val);
+            fillInitials(rval, val, lval);
         }
 
         if (inGlb)
@@ -264,12 +255,6 @@ void BlockStmt::typeCheck()
 
     semTable->symTable.exitScope();
 }
-
-namespace
-{
-    bool funcWithReturn  = false;
-    bool funcDeclareOnly = false;
-}  // namespace
 
 void FuncDeclStmt::typeCheck()
 {

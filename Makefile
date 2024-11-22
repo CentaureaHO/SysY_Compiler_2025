@@ -3,7 +3,7 @@ SRC_DIR := src
 OBJ_DIR := obj
 BIN_DIR := bin
 
-CXX = clang++
+CXX ?= clang++
 
 INCLUDES = -I./$(INCLUDE_DIR)
 
