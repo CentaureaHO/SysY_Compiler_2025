@@ -142,6 +142,7 @@ void VarDeclStmt::genIRCode()
             {
                 InitSingle* init = static_cast<InitSingle*>(def->rval);
                 init->expr->genIRCode();
+                block = builder.getBlock(ir_func->cur_label);
                 block->insertTypeConvert(init->expr->attr.val.type->getKind(), baseType->getKind(), ir_func->max_reg);
             }
             else if (dtype == DT::I32)

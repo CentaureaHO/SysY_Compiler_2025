@@ -313,6 +313,18 @@ namespace LLVMIR
 
         virtual void printIR(std::ostream& s) override;
     };
+
+    class PhiInst : public Instruction
+    {
+      public:
+        DataType                                   type;
+        Operand*                                   res;
+        std::vector<std::pair<Operand*, Operand*>> vals_for_labels;
+
+        PhiInst(DataType t, Operand* r, const std::vector<std::pair<Operand*, Operand*>>* vfl = nullptr);
+
+        virtual void printIR(std::ostream& s);
+    };
 }  // namespace LLVMIR
 
 std::ostream& operator<<(std::ostream& s, LLVMIR::Operand* op);

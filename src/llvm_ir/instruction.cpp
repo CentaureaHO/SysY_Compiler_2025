@@ -279,6 +279,25 @@ void FPExtInst::printIR(ostream& s)
       << "\n";
 }
 
+PhiInst::PhiInst(DataType t, Operand* r, const std::vector<std::pair<Operand*, Operand*>>* vfl)
+    : Instruction(IROpCode::PHI), type(t), res(r), vals_for_labels({})
+{
+    if (vfl) vals_for_labels = *vfl;
+}
+void PhiInst::printIR(ostream& s)
+{
+    s << res << " = phi " << type << " ";
+    auto it = vals_for_labels.begin();
+    auto cp = it;
+    for (; it != vals_for_labels.end(); ++it)
+    {
+        s << "[ " << it->first << ", " << it->second << " ]";
+        ++cp;
+        if (cp != vals_for_labels.end()) s << ", ";
+    }
+    s << "\n";
+}
+
 ostream& operator<<(std::ostream& s, LLVMIR::Operand* op)
 {
     s << op->getName();
