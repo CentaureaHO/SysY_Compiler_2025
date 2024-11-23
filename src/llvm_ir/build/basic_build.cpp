@@ -13,9 +13,10 @@ using DT = DataType;
 
 Symbol::RegTable regTable;
 
-IRTable     irgen_table;
-IR          builder;
-IRFunction* ir_func = nullptr;
+IRTable                       irgen_table;
+IR                            builder;
+IRFunction*                   ir_func = nullptr;
+set<pair<Operand*, Operand*>> phi_list;
 
 void ASTree::handleGlobalVarDecl(VarDeclStmt* decls)
 {

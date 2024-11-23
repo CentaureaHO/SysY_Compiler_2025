@@ -14,9 +14,10 @@ using namespace LLVMIR;
 
 using DT = DataType;
 
-extern IRTable     irgen_table;
-extern IR          builder;
-extern IRFunction* ir_func;
+extern IRTable                       irgen_table;
+extern IR                            builder;
+extern IRFunction*                   ir_func;
+extern set<pair<Operand*, Operand*>> phi_list;
 
 #define NEW_BLOCK() builder.createBlock()
 #define IRGEN_TAB_CLEAR()                 \

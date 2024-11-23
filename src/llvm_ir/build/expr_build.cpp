@@ -8,6 +8,7 @@
 #include <common/type/symtab/semantic_table.h>
 #include <iostream>
 #include <cassert>
+#include <set>
 using namespace std;
 using namespace LLVMIR;
 
@@ -15,9 +16,10 @@ using DT = DataType;
 
 #define NEW_BLOCK() builder.createBlock()
 
-extern IRTable     irgen_table;
-extern IR          builder;
-extern IRFunction* ir_func;
+extern IRTable                       irgen_table;
+extern IR                            builder;
+extern IRFunction*                   ir_func;
+extern set<pair<Operand*, Operand*>> phi_list;
 
 void ExprNode::genIRCode()
 {
@@ -163,59 +165,28 @@ Logical AND Short Circuit Evaluation:
 */
 void BinaryExpr::genIRCode_LogicalAnd()
 {
-    if (true_label != -1)
-    {
-        IRBlock* right_eval_block = NEW_BLOCK();
-        right_eval_block->comment = "And opertor at line " + to_string(line_num);
-
-        lhs->true_label  = right_eval_block->block_id;
-        lhs->false_label = false_label;
-
-        rhs->true_label  = true_label;
-        rhs->false_label = false_label;
-
-        lhs->genIRCode();
-        IRBlock* block = builder.getBlock(ir_func->cur_label);
-        block->insertTypeConvert(lhs->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
-        block->insertCondBranch(ir_func->max_reg, lhs->true_label, lhs->false_label);
-
-        ir_func->cur_label = lhs->true_label;
-        rhs->genIRCode();
-        block = builder.getBlock(ir_func->cur_label);
-        block->insertTypeConvert(rhs->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
-
-        return;
-    }
-
-    IRBlock* cur_block        = builder.getBlock(ir_func->cur_label);  // 当前块，计算做操作数
-    IRBlock* right_eval_block = NEW_BLOCK();                           // 右操作数计算块
-    right_eval_block->comment = "And short circuit for right operand at line " + to_string(line_num);
-    IRBlock* then_block       = NEW_BLOCK();  // 计算结束后的块
-    then_block->comment       = "And calculate end at line " + to_string(line_num);
+    IRBlock* right_eval_block = NEW_BLOCK();
+    right_eval_block->comment = "And opertor at line " + to_string(line_num);
 
     lhs->true_label  = right_eval_block->block_id;
-    lhs->false_label = then_block->block_id;
+    lhs->false_label = false_label;
 
-    // rhs->true_label  = then_block->block_id;
-    // rhs->false_label = false_label;
-    // 改为无条件跳转
+    rhs->true_label  = true_label;
+    rhs->false_label = false_label;
 
     lhs->genIRCode();
-    cur_block->insertTypeConvert(lhs->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
-    Operand* lhs_val = getRegOperand(ir_func->max_reg);  // I1
-    cur_block->insertCondBranch(ir_func->max_reg, lhs->true_label, lhs->false_label);
+    IRBlock* block = builder.getBlock(ir_func->cur_label);
+    block->insertTypeConvert(lhs->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
+    phi_list.emplace(getRegOperand(ir_func->max_reg), getLabelOperand(block->block_id));
+    block->insertCondBranch(ir_func->max_reg, lhs->true_label, lhs->false_label);
 
-    ir_func->cur_label = right_eval_block->block_id;
+    ir_func->cur_label = lhs->true_label;
     rhs->genIRCode();
-    right_eval_block->insertTypeConvert(rhs->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
-    Operand* rhs_val = getRegOperand(ir_func->max_reg);  // I1
-    right_eval_block->insertUncondBranch(then_block->block_id);
+    block = builder.getBlock(ir_func->cur_label);
+    block->insertTypeConvert(rhs->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
+    phi_list.emplace(getRegOperand(ir_func->max_reg), getLabelOperand(block->block_id));
 
-    ir_func->cur_label = then_block->block_id;
-    PhiInst* phi_inst  = new PhiInst(DT::I1, getRegOperand(++ir_func->max_reg));
-    phi_inst->vals_for_labels.emplace_back(lhs_val, getLabelOperand(cur_block->block_id));
-    phi_inst->vals_for_labels.emplace_back(rhs_val, getLabelOperand(right_eval_block->block_id));
-    then_block->insts.push_back(phi_inst);
+    return;
 }
 
 /*
@@ -253,59 +224,79 @@ Logical OR Short Circuit Evaluation:
 */
 void BinaryExpr::genIRCode_LogicalOr()
 {
-    if (true_label != -1)
-    {
-        IRBlock* right_eval_block = NEW_BLOCK();
-        right_eval_block->comment = "Or opertor at line " + to_string(line_num);
+    IRBlock* right_eval_block = NEW_BLOCK();
+    right_eval_block->comment = "Or opertor at line " + to_string(line_num);
 
-        lhs->true_label  = true_label;
-        lhs->false_label = right_eval_block->block_id;
-
-        rhs->true_label  = true_label;
-        rhs->false_label = false_label;
-
-        lhs->genIRCode();
-        IRBlock* block = builder.getBlock(ir_func->cur_label);
-        block->insertTypeConvert(lhs->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
-        block->insertCondBranch(ir_func->max_reg, lhs->true_label, lhs->false_label);
-
-        ir_func->cur_label = right_eval_block->block_id;
-        rhs->genIRCode();
-        block = builder.getBlock(ir_func->cur_label);
-        block->insertTypeConvert(rhs->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
-
-        return;
-    }
-
-    IRBlock* cur_block        = builder.getBlock(ir_func->cur_label);  // 当前块，计算做操作数
-    IRBlock* right_eval_block = NEW_BLOCK();                           // 右操作数计算块
-    right_eval_block->comment = "Or short circuit for right operand at line " + to_string(line_num);
-    IRBlock* then_block       = NEW_BLOCK();  // 计算结束后的块
-    then_block->comment       = "Or calculate end at line " + to_string(line_num);
-
-    lhs->true_label  = then_block->block_id;
+    lhs->true_label  = true_label;
     lhs->false_label = right_eval_block->block_id;
 
-    // rhs->true_label  = then_block->block_id;
-    // rhs->false_label = false_label;
-    // 改为无条件跳转
+    rhs->true_label  = true_label;
+    rhs->false_label = false_label;
 
     lhs->genIRCode();
-    cur_block->insertTypeConvert(lhs->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
-    Operand* lhs_val = getRegOperand(ir_func->max_reg);  // I1
-    cur_block->insertCondBranch(ir_func->max_reg, lhs->true_label, lhs->false_label);
+    IRBlock* block = builder.getBlock(ir_func->cur_label);
+    block->insertTypeConvert(lhs->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
+    phi_list.emplace(getRegOperand(ir_func->max_reg), getLabelOperand(block->block_id));
+    block->insertCondBranch(ir_func->max_reg, lhs->true_label, lhs->false_label);
 
     ir_func->cur_label = right_eval_block->block_id;
     rhs->genIRCode();
-    right_eval_block->insertTypeConvert(rhs->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
-    Operand* rhs_val = getRegOperand(ir_func->max_reg);  // I1
-    right_eval_block->insertUncondBranch(then_block->block_id);
+    block = builder.getBlock(ir_func->cur_label);
+    block->insertTypeConvert(rhs->attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
+    phi_list.emplace(getRegOperand(ir_func->max_reg), getLabelOperand(block->block_id));
 
-    ir_func->cur_label = then_block->block_id;
-    PhiInst* phi_inst  = new PhiInst(DT::I1, getRegOperand(++ir_func->max_reg));
-    phi_inst->vals_for_labels.emplace_back(lhs_val, getLabelOperand(cur_block->block_id));
-    phi_inst->vals_for_labels.emplace_back(rhs_val, getLabelOperand(right_eval_block->block_id));
-    then_block->insts.push_back(phi_inst);
+    return;
+}
+
+void BinaryExpr::genIRCode_LogicalRVal()
+{
+    phi_list.clear();
+
+    IRBlock* gather_block = NEW_BLOCK();
+    gather_block->comment = "Gather block for logical operator at line " + to_string(line_num);
+    true_label            = gather_block->block_id;
+    false_label           = gather_block->block_id;
+
+    genIRCode();
+
+    IRBlock* block = builder.getBlock(ir_func->cur_label);
+    block->insertUncondBranch(gather_block->block_id);
+
+    ir_func->cur_label = gather_block->block_id;
+    // gather_block->insertTypeConvert(attr.val.type->getKind(), TypeKind::Bool, ir_func->max_reg);
+    vector<pair<Operand*, Operand*>> phi_list_vec;
+
+    for (auto& [op, label] : phi_list)
+    {
+        LabelOperand* block_label = dynamic_cast<LabelOperand*>(label);
+
+        IRBlock* block = builder.getBlock(block_label->label_num);
+
+        if (BranchCondInst* branch = dynamic_cast<BranchCondInst*>(block->insts.back()))
+        {
+            LabelOperand* true_target  = dynamic_cast<LabelOperand*>(branch->true_label);
+            LabelOperand* false_target = dynamic_cast<LabelOperand*>(branch->false_label);
+
+            bool could_reach_here = false;
+
+            if (true_target->label_num == gather_block->block_id)
+                could_reach_here = true;
+            else if (false_target->label_num == gather_block->block_id)
+                could_reach_here = true;
+
+            if (could_reach_here) phi_list_vec.push_back({op, label});
+        }
+        else if (BranchUncondInst* branch = dynamic_cast<BranchUncondInst*>(block->insts.back()))
+        {
+            LabelOperand* target = dynamic_cast<LabelOperand*>(branch->target_label);
+
+            if (target->label_num == gather_block->block_id) phi_list_vec.push_back({op, label});
+        }
+    }
+
+    RegOperand* res = getRegOperand(++ir_func->max_reg);
+    PhiInst*    phi = new PhiInst(DT::I1, res, &phi_list_vec);
+    gather_block->insts.push_back(phi);
 }
 
 void BinaryExpr::genIRCode()
@@ -317,12 +308,18 @@ void BinaryExpr::genIRCode()
     }
     else if (op == OpCode::And)
     {
-        genIRCode_LogicalAnd();
+        if (true_label == -1)
+            genIRCode_LogicalRVal();
+        else
+            genIRCode_LogicalAnd();
         return;
     }
     else if (op == OpCode::Or)
     {
-        genIRCode_LogicalOr();
+        if (true_label == -1)
+            genIRCode_LogicalRVal();
+        else
+            genIRCode_LogicalOr();
         return;
     }
 

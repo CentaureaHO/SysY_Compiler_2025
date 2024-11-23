@@ -124,6 +124,7 @@ class BinaryExpr : public ExprNode
     void genIRCode() override;
     void genIRCode_LogicalAnd();
     void genIRCode_LogicalOr();
+    void genIRCode_LogicalRVal();
     void genIRCode_Assign();
 };
 
