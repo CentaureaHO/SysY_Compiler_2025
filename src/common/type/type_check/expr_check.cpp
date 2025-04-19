@@ -99,33 +99,39 @@ void LeftValueExpr::typeCheck()
 void ConstExpr::typeCheck()
 {
     attr.val.isConst = true;
-    switch (type)
+    switch (value.type)
     {
-        case 1:
-            attr.val.type  = intType;
-            attr.val.value = TO_INT(value);
+        case VarValue::Type::Int:
+            attr.val.type          = intType;
+            attr.val.value.type    = VarValue::Type::Int;
+            attr.val.value.int_val = TO_INT(value);
             // printf("ConstExpr: int %d\n", TO_INT(attr.val.value));
             break;
-        case 2:
-            attr.val.type  = llType;
-            attr.val.value = TO_LL(value);
+        case VarValue::Type::LL:
+            attr.val.type         = llType;
+            attr.val.value.type   = VarValue::Type::LL;
+            attr.val.value.ll_val = TO_LL(value);
             // printf("ConstExpr: ll %lld\n", TO_LL(attr.val.value));
             break;
-        case 3:
-            attr.val.type  = floatType;
-            attr.val.value = TO_FLOAT(value);
+        case VarValue::Type::Float:
+            attr.val.type            = floatType;
+            attr.val.value.type      = VarValue::Type::Float;
+            attr.val.value.float_val = TO_FLOAT(value);
             break;
-        case 4:
-            attr.val.type  = doubleType;
-            attr.val.value = get<double>(value);
+        case VarValue::Type::Double:
+            attr.val.type             = doubleType;
+            attr.val.value.type       = VarValue::Type::Double;
+            attr.val.value.double_val = TO_DOUBLE(value);
             break;
-        case 5:
-            attr.val.type  = boolType;
-            attr.val.value = TO_BOOL(value);
+        case VarValue::Type::Bool:
+            attr.val.type           = boolType;
+            attr.val.value.type     = VarValue::Type::Bool;
+            attr.val.value.bool_val = TO_BOOL(value);
             break;
-        case 6:
-            attr.val.type  = strType;
-            attr.val.value = get<shared_ptr<string>>(value);
+        case VarValue::Type::Str:
+            attr.val.type          = strType;
+            attr.val.value.type    = VarValue::Type::Str;
+            attr.val.value.str_ptr = value.str_ptr;
             break;
         default: break;
     }

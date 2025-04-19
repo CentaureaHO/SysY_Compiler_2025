@@ -171,7 +171,7 @@ ConstValue::ConstValue(long long val) : type(llType), value(val), isConst(false)
 ConstValue::ConstValue(float val) : type(floatType), value(val), isConst(false) {}
 ConstValue::ConstValue(double val) : type(doubleType), value(val), isConst(false) {}
 ConstValue::ConstValue(bool val) : type(boolType), value(val), isConst(false) {}
-ConstValue::ConstValue(shared_ptr<string> val) : type(strType), value(val), isConst(false) {}
+ConstValue::ConstValue(shared_ptr<string> val) : type(strType), value(&val), isConst(false) {}
 
 /* Definition of ConstValue: tail */
 /* Definition of VarAttribute: head */
@@ -189,55 +189,3 @@ OpCode&     NodeAttribute::getOp() { return op; }
 ConstValue& NodeAttribute::getVal() { return val; }
 
 /* Definition of NodeAttribute: tail */
-
-bool safe_cast_to_bool(const std::variant<int, long long, float, double, bool, std::shared_ptr<std::string>>& value)
-{
-    return std::visit(
-        [](auto&& value) -> bool {
-            using T = std::decay_t<decltype(value)>;
-            if constexpr (std::is_arithmetic_v<T>)
-                return static_cast<bool>(value);
-            else
-                throw std::bad_variant_access();
-        },
-        value);
-}
-
-int safe_cast_to_int(const std::variant<int, long long, float, double, bool, std::shared_ptr<std::string>>& value)
-{
-    return std::visit(
-        [](auto&& value) -> int {
-            using T = std::decay_t<decltype(value)>;
-            if constexpr (std::is_arithmetic_v<T>)
-                return static_cast<int>(value);
-            else
-                throw std::bad_variant_access();
-        },
-        value);
-}
-
-long long safe_cast_to_ll(const std::variant<int, long long, float, double, bool, std::shared_ptr<std::string>>& value)
-{
-    return std::visit(
-        [](auto&& value) -> long long {
-            using T = std::decay_t<decltype(value)>;
-            if constexpr (std::is_arithmetic_v<T>)
-                return static_cast<long long>(value);
-            else
-                throw std::bad_variant_access();
-        },
-        value);
-}
-
-float safe_cast_to_float(const std::variant<int, long long, float, double, bool, std::shared_ptr<std::string>>& value)
-{
-    return std::visit(
-        [](auto&& value) -> float {
-            using T = std::decay_t<decltype(value)>;
-            if constexpr (std::is_arithmetic_v<T>)
-                return static_cast<float>(value);
-            else
-                throw std::bad_variant_access();
-        },
-        value);
-}

@@ -85,18 +85,23 @@ void ConstExpr::genIRCode()
     IRBlock* block = builder.getBlock(ir_func->cur_label);
 
     ++ir_func->max_reg;
-    switch (type)
+    switch (value.type)
     {
-        case 1:  // int
-        case 2:  // long long，目前直接作为int处理
+        case VarValue::Type::Int:
         {
-            int val = TO_INT(value);
+            int val = value.int_val;
             block->insertArithmeticI32_ImmeAll(IROpCode::ADD, val, 0, ir_func->max_reg);
             break;
         }
-        case 3:
+        case VarValue::Type::LL:  // long long，目前直接作为int处理
         {
-            float val = TO_FLOAT(value);
+            int val = value.ll_val;
+            block->insertArithmeticI32_ImmeAll(IROpCode::ADD, val, 0, ir_func->max_reg);
+            break;
+        }
+        case VarValue::Type::Float:
+        {
+            float val = value.float_val;
             block->insertArithmeticF32_ImmeAll(IROpCode::FADD, val, 0, ir_func->max_reg);
             break;
         }

@@ -53,13 +53,13 @@ void LeftValueExpr::printAST(ostream* oss, const string& prefix, bool isLast)
 }
 
 /* Definition of ConstExpr */
-ConstExpr::ConstExpr() : value(0), type(0) {}
-ConstExpr::ConstExpr(int val) : value(val), type(1) {}
-ConstExpr::ConstExpr(long long val) : value(val), type(2) {}
-ConstExpr::ConstExpr(float val) : value(val), type(3) {}
-ConstExpr::ConstExpr(double val) : value(val), type(4) {}
-ConstExpr::ConstExpr(bool val) : value(val), type(5) {}
-ConstExpr::ConstExpr(shared_ptr<string> val) : value(val), type(6) {}
+ConstExpr::ConstExpr() : value() {}
+ConstExpr::ConstExpr(int val) : value(val) {}
+ConstExpr::ConstExpr(long long val) : value(val) {}
+ConstExpr::ConstExpr(float val) : value(val) {}
+ConstExpr::ConstExpr(double val) : value(val) {}
+ConstExpr::ConstExpr(bool val) : value(val) {}
+ConstExpr::ConstExpr(shared_ptr<string> val) : value(&val) {}
 ConstExpr::~ConstExpr() {}
 
 void ConstExpr::printTypeOnErr() { cerr << "ConstExpr" << endl; }
@@ -67,14 +67,14 @@ void ConstExpr::printTypeOnErr() { cerr << "ConstExpr" << endl; }
 void ConstExpr::printAST(std::ostream* oss, const string& prefix, bool isLast)
 {
     *oss << getFirstPrefix(prefix, isLast) << "Const ";
-    switch (type)
+    switch (value.type)
     {
-        case 1: *oss << "Int: " << get<int>(value); break;
-        case 2: *oss << "LL: " << get<long long>(value); break;
-        case 3: *oss << "Float: " << get<float>(value); break;
-        case 4: *oss << "Double: " << get<double>(value); break;
-        case 5: *oss << "Bool: " << get<bool>(value); break;
-        case 6: *oss << "String: " << *get<shared_ptr<string>>(value); break;
+        case VarValue::Type::Int: *oss << "Int: " << value.int_val; break;
+        case VarValue::Type::LL: *oss << "LL: " << value.ll_val; break;
+        case VarValue::Type::Float: *oss << "Float: " << value.float_val; break;
+        case VarValue::Type::Double: *oss << "Double: " << value.double_val; break;
+        case VarValue::Type::Bool: *oss << "Bool: " << value.bool_val; break;
+        case VarValue::Type::Str: *oss << "String: " << **value.str_ptr; break;
         default: *oss << "Undefined"; break;
     }
     *oss << '\n';

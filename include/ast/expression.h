@@ -62,8 +62,7 @@ class LeftValueExpr : public ExprNode
 class ConstExpr : public ExprNode
 {
   public:
-    std::variant<int, long long, float, double, bool, std::shared_ptr<std::string>> value;
-    int                                                                             type;
+    VarValue value;
 
   public:
     ConstExpr();

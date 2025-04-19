@@ -80,7 +80,6 @@ $(OBJ_DIR)/utils/%.o: utils/src/%.c
 	@echo "$(CXX) $< -> $@"
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# 包含所有生成的依赖文件
 -include $(OBJECTS:.o=.d)
 
 .PHONY: bin

@@ -174,12 +174,127 @@ extern Type* doubleType;
 extern Type* boolType;
 extern Type* strType;
 
+struct VarValue
+{
+    union
+    {
+        int                           int_val;
+        long long                     ll_val;
+        float                         float_val;
+        double                        double_val;
+        bool                          bool_val;
+        std::shared_ptr<std::string>* str_ptr;
+    };
+    enum class Type
+    {
+        Int,
+        LL,
+        Float,
+        Double,
+        Bool,
+        Str
+    } type;
+
+    VarValue() : int_val(0), type(Type::Int) {}
+    VarValue(int val) : int_val(val), type(Type::Int) {}
+    VarValue(long long val) : ll_val(val), type(Type::LL) {}
+    VarValue(float val) : float_val(val), type(Type::Float) {}
+    VarValue(double val) : double_val(val), type(Type::Double) {}
+    VarValue(bool val) : bool_val(val), type(Type::Bool) {}
+    VarValue(std::shared_ptr<std::string>* val) : str_ptr(val), type(Type::Str) {}
+    VarValue(const VarValue& other) : type(other.type)
+    {
+        switch (type)
+        {
+            case Type::Int: int_val = other.int_val; break;
+            case Type::LL: ll_val = other.ll_val; break;
+            case Type::Float: float_val = other.float_val; break;
+            case Type::Double: double_val = other.double_val; break;
+            case Type::Bool: bool_val = other.bool_val; break;
+            case Type::Str: str_ptr = new std::shared_ptr<std::string>(*other.str_ptr); break;
+        }
+    }
+};
+
+#include <cassert>
+
+inline int cast_to_int(const VarValue& var)
+{
+    switch (var.type)
+    {
+        case VarValue::Type::Int: return var.int_val;
+        case VarValue::Type::LL: return static_cast<int>(var.ll_val);
+        case VarValue::Type::Float: return static_cast<int>(var.float_val);
+        case VarValue::Type::Double: return static_cast<int>(var.double_val);
+        case VarValue::Type::Bool: return static_cast<int>(var.bool_val);
+        default: assert(false); return 0;
+    }
+}
+
+inline long long cast_to_ll(const VarValue& var)
+{
+    switch (var.type)
+    {
+        case VarValue::Type::Int: return static_cast<long long>(var.int_val);
+        case VarValue::Type::LL: return var.ll_val;
+        case VarValue::Type::Float: return static_cast<long long>(var.float_val);
+        case VarValue::Type::Double: return static_cast<long long>(var.double_val);
+        case VarValue::Type::Bool: return static_cast<long long>(var.bool_val);
+        default: assert(false); return 0;
+    }
+}
+
+inline bool cast_to_bool(const VarValue& var)
+{
+    switch (var.type)
+    {
+        case VarValue::Type::Int: return static_cast<bool>(var.int_val);
+        case VarValue::Type::LL: return static_cast<bool>(var.ll_val);
+        case VarValue::Type::Float: return static_cast<bool>(var.float_val);
+        case VarValue::Type::Double: return static_cast<bool>(var.double_val);
+        case VarValue::Type::Bool: return var.bool_val;
+        default: assert(false); return false;
+    }
+}
+
+inline double cast_to_double(const VarValue& var)
+{
+    switch (var.type)
+    {
+        case VarValue::Type::Int: return static_cast<double>(var.int_val);
+        case VarValue::Type::LL: return static_cast<double>(var.ll_val);
+        case VarValue::Type::Float: return static_cast<double>(var.float_val);
+        case VarValue::Type::Double: return var.double_val;
+        case VarValue::Type::Bool: return static_cast<double>(var.bool_val);
+        default: assert(false); return 0.0;
+    }
+}
+
+inline float cast_to_float(const VarValue& var)
+{
+    switch (var.type)
+    {
+        case VarValue::Type::Int: return static_cast<float>(var.int_val);
+        case VarValue::Type::LL: return static_cast<float>(var.ll_val);
+        case VarValue::Type::Float: return var.float_val;
+        case VarValue::Type::Double: return static_cast<float>(var.double_val);
+        case VarValue::Type::Bool: return static_cast<float>(var.bool_val);
+        default: assert(false); return 0.0f;
+    }
+}
+
+#define TO_INT(x) cast_to_int(x)
+#define TO_FLOAT(x) cast_to_float(x)
+#define TO_LL(x) cast_to_ll(x)
+#define TO_BOOL(x) cast_to_bool(x)
+#define TO_DOUBLE(x) cast_to_double(x)
+
 class ConstValue
 {
   public:
-    Type*                                                                           type;
-    std::variant<int, long long, float, double, bool, std::shared_ptr<std::string>> value;
-    bool                                                                            isConst;
+    Type*    type;
+    VarValue value;
+    bool     isConst;
 
   public:
     ConstValue();
@@ -198,8 +313,8 @@ class VarAttribute
     bool  isConst;
     int   scope;
 
-    std::vector<int>                                 dims;
-    std::vector<std::variant<int, long long, float>> initVals;
+    std::vector<int>      dims;
+    std::vector<VarValue> initVals;
 
   public:
     VarAttribute(Type* type = voidType, bool isConst = false);
@@ -221,16 +336,6 @@ class NodeAttribute
     OpCode&     getOp();
     ConstValue& getVal();
 };
-
-bool safe_cast_to_bool(const std::variant<int, long long, float, double, bool, std::shared_ptr<std::string>>& value);
-int  safe_cast_to_int(const std::variant<int, long long, float, double, bool, std::shared_ptr<std::string>>& value);
-long long safe_cast_to_ll(const std::variant<int, long long, float, double, bool, std::shared_ptr<std::string>>& value);
-float safe_cast_to_float(const std::variant<int, long long, float, double, bool, std::shared_ptr<std::string>>& value);
-
-#define TO_BOOL(x) std::visit(safe_cast_to_bool, x)
-#define TO_INT(x) std::visit(safe_cast_to_int, x)
-#define TO_LL(x) std::visit(safe_cast_to_ll, x)
-#define TO_FLOAT(x) std::visit(safe_cast_to_float, x)
 
 #define IF_IS_POLY(p, T) (dynamic_cast<T*>(p) != nullptr)
 

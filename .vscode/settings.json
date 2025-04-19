@@ -101,6 +101,7 @@
         "condition_variable": "cpp",
         "print": "cpp",
         "memory_resource": "cpp",
-        "format": "cpp"
+        "format": "cpp",
+        "semaphore": "cpp"
     }
 }
