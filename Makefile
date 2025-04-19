@@ -15,7 +15,7 @@ WERROR_FLAGS := -Wall -Wextra -Wpedantic
 
 WARNINGS_IGNORE := -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-value
 
-CXXFLAGS = $(CXX_STANDARD) $(INCLUDES) $(WERROR_FLAGS) $(DBGFLAGS) $(WARNINGS_IGNORE) -O3
+CXXFLAGS = $(CXX_STANDARD) $(INCLUDES) $(WERROR_FLAGS) $(DBGFLAGS) $(WARNINGS_IGNORE) -O3 -MMD -MP
 
 SOURCES :=
 $(foreach dir,$(SRC_DIR),$(eval SOURCES += $(shell find $(dir) -name '*.cpp' -o -name '*.c')))
@@ -79,6 +79,9 @@ $(OBJ_DIR)/utils/%.o: utils/src/%.c
 	@mkdir -p $(dir $@)
 	@echo "$(CXX) $< -> $@"
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# 包含所有生成的依赖文件
+-include $(OBJECTS:.o=.d)
 
 .PHONY: bin
 bin: $(BIN_DIR)/SysYc
