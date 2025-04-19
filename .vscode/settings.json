@@ -96,6 +96,11 @@
         "iostream": "cpp",
         "__functional_03": "cpp",
         "charconv": "cpp",
-        "forward_list": "cpp"
+        "forward_list": "cpp",
+        "cwctype": "cpp",
+        "condition_variable": "cpp",
+        "print": "cpp",
+        "memory_resource": "cpp",
+        "format": "cpp"
     }
 }

@@ -1,42 +1,46 @@
-INCLUDE_DIR := include
-SRC_DIR := src
+INC_DIR := include optimize utils/include
+SRC_DIR := src optimize utils/src
 OBJ_DIR := obj
 BIN_DIR := bin
 
 CXX ?= clang++
 
-INCLUDES = -I./$(INCLUDE_DIR)
+INCLUDES = $(addprefix -I, $(INC_DIR))
 
 CXX_STANDARD = -std=c++17
 
 DBGFLAGS = -g
 
-WERROR_FLAGS := -Wall -Wextra -Wpedantic # -Werror
+WERROR_FLAGS := -Wall -Wextra -Wpedantic
 
 WARNINGS_IGNORE := -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-value
 
 CXXFLAGS = $(CXX_STANDARD) $(INCLUDES) $(WERROR_FLAGS) $(DBGFLAGS) $(WARNINGS_IGNORE) -O3
 
-SOURCES := $(shell find $(SRC_DIR) -name '*.cpp' -o -name '*.c')
+SOURCES :=
+$(foreach dir,$(SRC_DIR),$(eval SOURCES += $(shell find $(dir) -name '*.cpp' -o -name '*.c')))
 
-OBJECTS := $(patsubst $(SRC_DIR)/%, $(OBJ_DIR)/%, $(SOURCES:.cpp=.o))
-OBJECTS := $(patsubst $(SRC_DIR)/%, $(OBJ_DIR)/%, $(OBJECTS:.c=.o))
+OBJECTS := $(SOURCES:.cpp=.o)
+OBJECTS := $(OBJECTS:.c=.o)
+OBJECTS := $(patsubst src/%,$(OBJ_DIR)/%,$(OBJECTS))
+OBJECTS := $(patsubst optimize/%,$(OBJ_DIR)/optimize/%,$(OBJECTS))
+OBJECTS := $(patsubst utils/src/%,$(OBJ_DIR)/utils/%,$(OBJECTS))
 
 TEST_SRC_DIR := testcase/source
 TEST_BUILD_DIR := testcase/build
 
 LEXER_SRC := parser/lexer.l
 LEXER_C_T := parser/lexer.cpp
-LEXER_C := $(SRC_DIR)/parser/lexer.cpp
+LEXER_C := src/parser/lexer.cpp
 
 BISON_SRC := parser/yacc.y
 BISON_C_T := parser/yacc.cpp
-BISON_C := $(SRC_DIR)/parser/yacc.cpp
+BISON_C := src/parser/yacc.cpp
 BISON_H_T := parser/yacc.hpp
-BISON_H := $(INCLUDE_DIR)/parser/yacc.hpp
+BISON_H := include/parser/yacc.hpp
 
 LOC_H_T := parser/location.hh
-LOC_H := $(INCLUDE_DIR)/parser/location.hh
+LOC_H := include/parser/location.hh
 
 VAL_OPTS := --leak-check=full --track-origins=yes -s
 
@@ -46,12 +50,32 @@ all: obj bin
 .PHONY: obj
 obj: $(OBJECTS)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+$(OBJ_DIR)/%.o: src/%.cpp
 	@mkdir -p $(dir $@)
 	@echo "$(CXX) $< -> $@"
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+$(OBJ_DIR)/optimize/%.o: optimize/%.cpp
+	@mkdir -p $(dir $@)
+	@echo "$(CXX) $< -> $@"
+	@$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/utils/%.o: utils/src/%.cpp
+	@mkdir -p $(dir $@)
+	@echo "$(CXX) $< -> $@"
+	@$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/%.o: src/%.c
+	@mkdir -p $(dir $@)
+	@echo "$(CXX) $< -> $@"
+	@$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/optimize/%.o: optimize/%.c
+	@mkdir -p $(dir $@)
+	@echo "$(CXX) $< -> $@"
+	@$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/utils/%.o: utils/src/%.c
 	@mkdir -p $(dir $@)
 	@echo "$(CXX) $< -> $@"
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
@@ -62,7 +86,7 @@ bin: $(BIN_DIR)/SysYc
 $(BIN_DIR)/SysYc: $(OBJECTS) main.cpp
 	@mkdir -p $(BIN_DIR)
 	@echo "$(CXX) main.cpp -> $(BIN_DIR)/SysYc"
-	@$(CXX) $(CXXFLAGS) main.cpp $(OBJECTS) -o $(BIN_DIR)/SysYc
+	@$(CXX) $(CXXFLAGS) main.cpp $(OBJECTS) -o $(BIN_DIR)/SysYc $(INCLUDES)
 
 .PHONY: test
 test: $(BIN_DIR)/test

@@ -30,45 +30,77 @@ string truncateString(const string& str, size_t width)
     return str;
 }
 
-#define file_in 4
-#define step_tag 1
-#define o_tag 2
-#define file_out 3
-#define optimize_tag 5
-
 int main(int argc, char** argv)
 {
-    if (argc < 4)
+    string   inputFile     = "";
+    string   outputFile    = "a.out";
+    string   step          = "-llvm";
+    int      optimizeLevel = 0;
+    ostream* outStream     = &cout;
+    ofstream outFile;
+
+    for (int i = 1; i < argc; i++)
     {
-        std::cerr << "Usage: " << argv[0] << "<step> <output file> <input file> <optimize>" << std::endl;
-        return 0;
+        string arg = argv[i];
+
+        if (arg == "-lexer" || arg == "-parser" || arg == "-llvm" || arg == "-S") { step = arg; }
+        else if (arg == "-o")
+        {
+            if (i + 1 < argc)
+                outputFile = argv[++i];
+            else
+            {
+                cerr << "Error: -o option requires a filename" << endl;
+                return 1;
+            }
+        }
+        else if (arg == "-O" || arg == "-O1") { optimizeLevel = 1; }
+        else if (arg == "-O0") { optimizeLevel = 0; }
+        else if (arg == "-O2") { optimizeLevel = 2; }
+        else if (arg == "-O3") { optimizeLevel = 3; }
+        else if (arg[0] != '-') { inputFile = arg; }
+        else
+        {
+            cerr << "Unknown option: " << arg << endl;
+            return 1;
+        }
     }
 
-    cout << "File_in: " << argv[file_in] << endl;
-    cout << "Step: " << argv[step_tag] << endl;
-    cout << "Output: " << argv[file_out] << endl;
-    cout << "Optimize: " << argv[optimize_tag] << endl;
+    if (inputFile.empty())
+    {
+        cerr << "Error: No input file specified" << endl;
+        cerr << "Usage: " << argv[0] << " [-lexer|-parser|-llvm|-S] [-o output_file] input_file [-O]" << endl;
+        return 1;
+    }
 
-    ifstream in(argv[file_in]);
+    if (!outputFile.empty())
+    {
+        outFile.open(outputFile);
+        if (!outFile)
+        {
+            cerr << "Cannot open output file " << outputFile << endl;
+            return 1;
+        }
+        outStream = &outFile;
+    }
+
+    cout << "Input file: " << inputFile << endl;
+    cout << "Step: " << step << endl;
+    cout << "Output: " << (outputFile.empty() ? "standard output" : outputFile) << endl;
+    cout << "Optimize level: " << optimizeLevel << endl;
+
+    ifstream in(inputFile);
     if (!in)
     {
-        std::cerr << "Cannot open input file " << argv[file_in] << std::endl;
+        cerr << "Cannot open input file " << inputFile << endl;
+        if (outFile.is_open()) outFile.close();
         return 1;
     }
     istream* inStream = &in;
 
-    ofstream out(argv[file_out]);
-    if (!out)
-    {
-        std::cerr << "Cannot open output file " << argv[file_out] << std::endl;
-        if (in.is_open()) in.close();
-        return 1;
-    }
-    ostream* outStream = &out;
-
     Driver driver(inStream, outStream);
 
-    if (strcmp(argv[step_tag], "-lexer") == 0)
+    if (step == "-lexer")
     {
         driver.lexical_parse();
         auto tokens = driver.getTokens();
@@ -106,7 +138,7 @@ int main(int argc, char** argv)
         }
 
         if (in.is_open()) in.close();
-        if (out.is_open()) out.close();
+        if (outFile.is_open()) outFile.close();
 
         return 0;
     }
@@ -116,16 +148,16 @@ int main(int argc, char** argv)
     {
         *outStream << errCnt << " errors found during parsing, exiting..." << endl;
         if (in.is_open()) in.close();
-        if (out.is_open()) out.close();
+        if (outFile.is_open()) outFile.close();
 
         return 2;
     }
 
-    if (strcmp(argv[step_tag], "-parser") == 0)
+    if (step == "-parser")
     {
         if (ast) { ast->printAST(outStream); }
         if (in.is_open()) in.close();
-        if (out.is_open()) out.close();
+        if (outFile.is_open()) outFile.close();
         return 0;
     }
 
@@ -142,7 +174,7 @@ int main(int argc, char** argv)
         cout << "\n\nExiting..." << endl;
 
         if (in.is_open()) in.close();
-        if (out.is_open()) out.close();
+        if (outFile.is_open()) outFile.close();
 
         if (semTable)
         {
@@ -154,16 +186,16 @@ int main(int argc, char** argv)
 
     ast->genIRCode();
 
-    if (strcmp(argv[step_tag], "-llvm") == 0)
+    if (step == "-llvm")
     {
-        builder.printIR(out);
+        builder.printIR(outFile);
         if (in.is_open()) in.close();
-        if (out.is_open()) out.close();
+        if (outFile.is_open()) outFile.close();
         return 0;
     }
 
     if (in.is_open()) in.close();
-    if (out.is_open()) out.close();
+    if (outFile.is_open()) outFile.close();
     if (semTable)
     {
         delete semTable;
