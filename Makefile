@@ -125,3 +125,11 @@ $(BISON_C) $(BISON_H) $(LOC_H): $(BISON_SRC)
 .PHONY: format
 format:
 	@find . -type f \( -name "*.c" -o -name "*.cpp" -o -name "*.h" -o -name "*.hpp" -o -name "*.hh" \) -exec clang-format -i {} +
+
+.PHONY: test_flexlexer
+test_flexlexer:
+	@echo '#include <parser/FlexLexer.h>\nint main() { return 0; }' > test_flex.cpp
+	@$(CXX) $(CXXFLAGS) -E test_flex.cpp > test_flex_output
+	@echo "Using FlexLexer.h from:"
+	@grep FlexLexer.h test_flex_output | head -1 | sed 's/.*"\(.*\)".*/\1/'
+	@rm -f test_flex.cpp test_flex_output test_flex.d
