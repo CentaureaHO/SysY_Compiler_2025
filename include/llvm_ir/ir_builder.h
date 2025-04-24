@@ -21,6 +21,8 @@
 #include <llvm_ir/instruction.h>
 #include <llvm_ir/block.h>
 #include <llvm_ir/function.h>
+#include "cfg.h"
+#include "dom_analyzer.h"
 
 namespace Symbol
 {
@@ -48,6 +50,9 @@ namespace LLVMIR
 
         IRFunction* cur_func;
 
+        std::map<FuncDefInst*,CFG*> cfg;//代码优化 分析pass 构建CFG
+        std::map<CFG*,Cele::Algo::DomAnalyzer*> DomTrees;////代码优化 分析pass 构建支配树
+        
       public:
         IR();
         ~IR();
@@ -60,6 +65,8 @@ namespace LLVMIR
         IRBlock* getBlock(int label);
 
         void printIR(std::ostream& s);
+
+        //void BuildCFG();//代码优化 分析pass 构建CFG 放在这里好像有点不对，该放到优化的分析pass里
     };
 }  // namespace LLVMIR
 

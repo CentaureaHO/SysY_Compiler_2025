@@ -102,6 +102,20 @@
         "print": "cpp",
         "memory_resource": "cpp",
         "format": "cpp",
-        "semaphore": "cpp"
+        "semaphore": "cpp",
+        "cfenv": "cpp",
+        "cinttypes": "cpp",
+        "codecvt": "cpp",
+        "complex": "cpp",
+        "coroutine": "cpp",
+        "csetjmp": "cpp",
+        "csignal": "cpp",
+        "cuchar": "cpp",
+        "numeric": "cpp",
+        "future": "cpp",
+        "latch": "cpp",
+        "scoped_allocator": "cpp",
+        "shared_mutex": "cpp",
+        "syncstream": "cpp"
     }
 }

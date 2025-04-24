@@ -9,6 +9,9 @@
 #include <common/type/symtab/semantic_table.h>
 #include <llvm_ir/ir_builder.h>
 
+#include "llvm/make_cfg.h"
+#include "llvm/make_domtree.h"
+
 #define STR_PW 30
 #define INT_PW 8
 #define MIN_GAP 5
@@ -185,6 +188,14 @@ int main(int argc, char** argv)
     }
 
     ast->genIRCode();
+    //添加优化
+    if(optimizeLevel){
+        //构建CFG
+        MakeCFGPass makecfg(&builder);
+        makecfg.Execute();
+        MakeDomTreePass makedom(&builder);
+        makedom.Execute();
+    }
 
     if (step == "-llvm")
     {

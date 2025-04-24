@@ -129,6 +129,7 @@ parser.add_argument('step', default="llvm")
 args = parser.parse_args()
 
 input_folder = args.input_folder
+print(input_folder)
 output_folder = args.output_folder
 step = args.step
 opt_arg = ""
