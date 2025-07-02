@@ -3,10 +3,10 @@
 
 #include "llvm/pass.h"
 
-
-class MakeDomTreePass :public Pass{
-public:
-    MakeDomTreePass(LLVMIR::IR* ir): Pass(ir){}
+class MakeDomTreePass : public Pass
+{
+  public:
+    MakeDomTreePass(LLVMIR::IR* ir) : Pass(ir) {}
     void Execute();
 };
 

@@ -116,6 +116,7 @@
         "latch": "cpp",
         "scoped_allocator": "cpp",
         "shared_mutex": "cpp",
-        "syncstream": "cpp"
+        "syncstream": "cpp",
+        "span_ext": "cpp"
     }
 }

@@ -5,3 +5,5 @@ test_output/*/*
 test.*
 !test.py
 valgrind_report
+.cache
+compile_commands.json

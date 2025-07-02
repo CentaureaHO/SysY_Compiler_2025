@@ -214,6 +214,27 @@ struct VarValue
             case Type::Str: str_ptr = new std::shared_ptr<std::string>(*other.str_ptr); break;
         }
     }
+
+    VarValue& operator=(const VarValue& other)
+    {
+        if (this == &other) return *this;
+
+        type = other.type;
+        switch (type)
+        {
+            case Type::Int: int_val = other.int_val; break;
+            case Type::LL: ll_val = other.ll_val; break;
+            case Type::Float: float_val = other.float_val; break;
+            case Type::Double: double_val = other.double_val; break;
+            case Type::Bool: bool_val = other.bool_val; break;
+            case Type::Str:
+                delete str_ptr;     // Free the old pointer
+                str_ptr = nullptr;  // Initialize to nullptr
+                str_ptr = new std::shared_ptr<std::string>(*other.str_ptr);
+                break;
+        }
+        return *this;
+    }
 };
 
 #include <cassert>

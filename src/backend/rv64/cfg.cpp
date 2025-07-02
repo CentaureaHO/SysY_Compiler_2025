@@ -1,0 +1,46 @@
+#include <backend/rv64/cfg.h>
+#include <algorithm>
+using namespace Backend::RV64;
+using namespace std;
+
+CFG::CFG() : max_label(0), entry_block(nullptr), ret_block(nullptr) {}
+
+void CFG::addNewBlock(int id, Block* b)
+{
+    blocks[id] = b;
+    if (id > max_label) max_label = id;
+
+    while (graph.size() <= (size_t)id) graph.push_back({});
+    while (inv_graph.size() <= (size_t)id) inv_graph.push_back({});
+}
+
+void CFG::makeEdge(int from, int to)
+{
+    assert(blocks.find(from) != blocks.end());
+    assert(blocks.find(to) != blocks.end());
+    assert(blocks[from] != nullptr);
+    assert(blocks[to] != nullptr);
+
+    graph[from].push_back(blocks[to]);
+    inv_graph[to].push_back(blocks[from]);
+}
+
+void CFG::removeEdge(int from, int to)
+{
+    assert(blocks.find(from) != blocks.end());
+    assert(blocks.find(to) != blocks.end());
+    assert(blocks[from] != nullptr);
+    assert(blocks[to] != nullptr);
+
+    auto it = find(graph[from].begin(), graph[from].end(), blocks[to]);
+    if (it != graph[from].end())
+        graph[from].erase(it);
+    else
+        assert(false);
+
+    it = find(inv_graph[to].begin(), inv_graph[to].end(), blocks[from]);
+    if (it != inv_graph[to].end())
+        inv_graph[to].erase(it);
+    else
+        assert(false);
+}

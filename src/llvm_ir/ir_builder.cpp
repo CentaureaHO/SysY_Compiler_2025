@@ -116,10 +116,10 @@ void IR::printIR(ostream& s)
     }
 }
 
-//代码优化 分析pass 构建CFG 为当前IR中的每一个函数创建CFG 并维护函数def到CFG的映射
-// void IR::BuildCFG(){
-// //std::map<FuncDefInst*,CFG*> cfg;
-//     for(auto func:functions){
+// 代码优化 分析pass 构建CFG 为当前IR中的每一个函数创建CFG 并维护函数def到CFG的映射
+//  void IR::BuildCFG(){
+//  //std::map<FuncDefInst*,CFG*> cfg;
+//      for(auto func:functions){
 
 //         CFG* new_cfg= new CFG;
 //         cfg[func->func_def]=new_cfg;

@@ -3,10 +3,10 @@
 
 #include "llvm/pass.h"
 
-
-class MakeCFGPass :public Pass{
-public:
-    MakeCFGPass(LLVMIR::IR* ir): Pass(ir){}
+class MakeCFGPass : public Pass
+{
+  public:
+    MakeCFGPass(LLVMIR::IR* ir) : Pass(ir) {}
     void Execute();
 };
 

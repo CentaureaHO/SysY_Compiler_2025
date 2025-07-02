@@ -13,6 +13,6 @@ int FindMinStepForPosition(const vector<int>& dims, int linear_index, int dimsId
         ++min_dim_step;
         max_subBlock_sz /= dims[dimsIdx + min_dim_step - 1];
     }
-    cerr << "min_dim_step: " << min_dim_step << ", max_subBlock_sz: " << max_subBlock_sz << endl;
+    // cerr << "min_dim_step: " << min_dim_step << ", max_subBlock_sz: " << max_subBlock_sz << endl;
     return min_dim_step;
 }
