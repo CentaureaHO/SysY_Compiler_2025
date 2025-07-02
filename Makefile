@@ -83,12 +83,11 @@ $(OBJ_DIR)/utils/%.o: utils/src/%.c
 -include $(OBJECTS:.o=.d)
 
 .PHONY: bin
-bin: $(BIN_DIR)/compiler
+bin: compiler
 
-$(BIN_DIR)/compiler: $(OBJECTS) main.cpp
-	@mkdir -p $(BIN_DIR)
-	@echo "$(CXX) main.cpp -> $(BIN_DIR)/compiler"
-	@$(CXX) $(CXXFLAGS) main.cpp $(OBJECTS) -o $(BIN_DIR)/compiler $(INCLUDES)
+compiler: $(OBJECTS) main.cpp
+	@echo "$(CXX) main.cpp -> compiler"
+	@$(CXX) $(CXXFLAGS) main.cpp $(OBJECTS) -o compiler $(INCLUDES)
 
 .PHONY: test
 test: $(BIN_DIR)/test
@@ -100,7 +99,8 @@ $(BIN_DIR)/test: $(OBJECTS) test.cpp
 
 .PHONY: valgrind
 valgrind: $(BIN_DIR)/test
-	@valgrind $(VAL_OPTS) $(BIN_DIR)/compiler -llvm -o test.ll test.in 2> valgrind_report
+	@mkdir -p $(BIN_DIR)
+	@valgrind $(VAL_OPTS) compiler -llvm -o test.ll test.in 2> valgrind_report
 
 .PHONY: clean
 clean:
