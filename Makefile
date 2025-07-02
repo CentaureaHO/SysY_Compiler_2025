@@ -83,11 +83,11 @@ $(OBJ_DIR)/utils/%.o: utils/src/%.c
 -include $(OBJECTS:.o=.d)
 
 .PHONY: bin
-bin: compiler
+bin: $(BIN_DIR)/compiler
 
-compiler: $(OBJECTS) main.cpp
-	@echo "$(CXX) main.cpp -> compiler"
-	@$(CXX) $(CXXFLAGS) main.cpp $(OBJECTS) -o compiler $(INCLUDES)
+$(BIN_DIR)/compiler: $(OBJECTS) main.cpp
+	@echo "$(CXX) main.cpp -> $(BIN_DIR)/compiler"
+	@$(CXX) $(CXXFLAGS) main.cpp $(OBJECTS) -o $(BIN_DIR)/compiler $(INCLUDES)
 
 .PHONY: test
 test: $(BIN_DIR)/test
