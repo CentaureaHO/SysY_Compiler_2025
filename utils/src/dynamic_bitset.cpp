@@ -143,10 +143,29 @@ namespace Cele
         {
             if (m_num_blocks != other.m_num_blocks)
             {
+#if defined(__GNUC__) && !defined(__MINGW32__)
+                if (m_blocks) free(m_blocks);
+#else
                 delete[] m_blocks;
+#endif
 
                 m_num_blocks = other.m_num_blocks;
-                m_blocks     = m_num_blocks > 0 ? new block_type[m_num_blocks] : nullptr;
+
+                if (m_num_blocks > 0)
+                {
+#if defined(__GNUC__) && !defined(__MINGW32__)
+                    const size_t alignment = 64;
+                    void*        ptr       = nullptr;
+                    if (posix_memalign(&ptr, alignment, m_num_blocks * sizeof(block_type)) == 0)
+                        m_blocks = static_cast<block_type*>(ptr);
+                    else
+                        m_blocks = new block_type[m_num_blocks];
+#else
+                    m_blocks = new block_type[m_num_blocks];
+#endif
+                }
+                else
+                    m_blocks = nullptr;
             }
 
             m_num_bits = other.m_num_bits;
@@ -161,7 +180,12 @@ namespace Cele
     {
         if (this != &other)
         {
+            // 使用与析构函数匹配的释放方式
+#if defined(__GNUC__) && !defined(__MINGW32__)
+            if (m_blocks) free(m_blocks);
+#else
             delete[] m_blocks;
+#endif
 
             m_blocks     = other.m_blocks;
             m_num_bits   = other.m_num_bits;
@@ -314,7 +338,24 @@ namespace Cele
 
         if (new_num_blocks != m_num_blocks)
         {
-            block_type* new_blocks = new_num_blocks > 0 ? new block_type[new_num_blocks] : nullptr;
+            block_type* new_blocks = nullptr;
+
+            if (new_num_blocks > 0)
+            {
+#if defined(__GNUC__) && !defined(__MINGW32__)
+                const size_t alignment = 64;
+                void*        ptr       = nullptr;
+                if (posix_memalign(&ptr, alignment, new_num_blocks * sizeof(block_type)) == 0)
+                {
+                    new_blocks = static_cast<block_type*>(ptr);
+                    std::memset(new_blocks, 0, new_num_blocks * sizeof(block_type));
+                }
+                else
+                    new_blocks = new block_type[new_num_blocks]();
+#else
+                new_blocks = new block_type[new_num_blocks]();
+#endif
+            }
 
             size_t copy_blocks = std::min(m_num_blocks, new_num_blocks);
             if (copy_blocks > 0) std::memcpy(new_blocks, m_blocks, copy_blocks * sizeof(block_type));
@@ -324,7 +365,12 @@ namespace Cele
             else if (new_num_blocks > m_num_blocks)
                 std::fill(new_blocks + m_num_blocks, new_blocks + new_num_blocks, block_type(0));
 
+                // 使用与析构函数匹配的释放方式
+#if defined(__GNUC__) && !defined(__MINGW32__)
+            if (m_blocks) free(m_blocks);
+#else
             delete[] m_blocks;
+#endif
             m_blocks     = new_blocks;
             m_num_blocks = new_num_blocks;
         }

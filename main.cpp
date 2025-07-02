@@ -8,6 +8,7 @@
 #include <common/type/symtab/symbol_table.h>
 #include <common/type/symtab/semantic_table.h>
 #include <llvm_ir/ir_builder.h>
+#include <backend/factory.h>
 
 #include "llvm/make_cfg.h"
 #include "llvm/make_domtree.h"
@@ -188,9 +189,10 @@ int main(int argc, char** argv)
     }
 
     ast->genIRCode();
-    //添加优化
-    if(optimizeLevel){
-        //构建CFG
+    // 添加优化
+    if (optimizeLevel)
+    {
+        // 构建CFG
         MakeCFGPass makecfg(&builder);
         makecfg.Execute();
         MakeDomTreePass makedom(&builder);
@@ -203,6 +205,14 @@ int main(int argc, char** argv)
         if (in.is_open()) in.close();
         if (outFile.is_open()) outFile.close();
         return 0;
+    }
+
+    // RISCV backend processing for -S step
+    if (step == "-S")
+    {
+        auto backend =
+            Backend::Factory::createBackend(Backend::Factory::TargetArch::RV64, &builder, *outStream, optimizeLevel);
+        backend->run();
     }
 
     if (in.is_open()) in.close();
