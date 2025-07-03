@@ -1,4 +1,4 @@
-#include <backend/rv64/cfg.h>
+#include <backend/rv64/rv64_cfg.h>
 #include <algorithm>
 using namespace Backend::RV64;
 using namespace std;

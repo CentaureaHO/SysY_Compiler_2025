@@ -1,9 +1,9 @@
 #ifndef __BACKEND_RV64_REG_ASSIGN_H__
 #define __BACKEND_RV64_REG_ASSIGN_H__
 
-#include "./cfg.h"
-#include "function.h"
-#include "block.h"
+#include "rv64_cfg.h"
+#include "rv64_function.h"
+#include "rv64_block.h"
 #include <dynamic_bitset.h>
 #include <bitset>
 #include <functional>

@@ -1,7 +1,7 @@
 #ifndef __BACKEND_RV64_CFG_H__
 #define __BACKEND_RV64_CFG_H__
 
-#include "block.h"
+#include "rv64_block.h"
 #include <unordered_map>
 #include <map>
 #include <vector>

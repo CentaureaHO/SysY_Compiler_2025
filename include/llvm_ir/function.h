@@ -2,7 +2,7 @@
 #define __LLVMIR_FUNCTION_H__
 
 #include <llvm_ir/defs.h>
-#include <llvm_ir/block.h>
+#include <llvm_ir/ir_block.h>
 #include <llvm_ir/instruction.h>
 #include <common/type/symtab/semantic_table.h>
 #include <vector>

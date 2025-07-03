@@ -1,5 +1,5 @@
 #include <cassert>
-#include <llvm_ir/block.h>
+#include <llvm_ir/ir_block.h>
 #include <llvm_ir/build/type_trans.h>
 #include <llvm_ir/function.h>
 #include <map>

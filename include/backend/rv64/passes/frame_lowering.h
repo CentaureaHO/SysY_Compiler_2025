@@ -2,7 +2,7 @@
 #define __BACKEND_RV64_PASSES_FRAME_LOWERING_H__
 
 #include "../../base_pass.h"
-#include "../function.h"
+#include "../rv64_function.h"
 #include <vector>
 
 namespace Backend::RV64::Passes

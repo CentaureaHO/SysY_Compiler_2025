@@ -19,7 +19,7 @@
 #include <vector>
 #include <map>
 #include <llvm_ir/instruction.h>
-#include <llvm_ir/block.h>
+#include <llvm_ir/ir_block.h>
 #include <llvm_ir/function.h>
 #include "cfg.h"
 #include "dom_analyzer.h"

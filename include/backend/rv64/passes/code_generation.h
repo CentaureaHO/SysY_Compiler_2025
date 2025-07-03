@@ -2,8 +2,8 @@
 #define __BACKEND_RV64_PASSES_CODE_GENERATION_H__
 
 #include "../../base_pass.h"
-#include "../function.h"
-#include "../defs.h"
+#include "../rv64_function.h"
+#include "../rv64_defs.h"
 #include <memory>
 #include <iostream>
 #include <vector>

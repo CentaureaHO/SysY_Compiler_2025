@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <llvm_ir/ir_builder.h>
-#include "function.h"
+#include "rv64_function.h"
 
 namespace Backend::RV64
 {

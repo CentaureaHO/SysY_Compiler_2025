@@ -1,7 +1,7 @@
 #include <backend/rv64/pipeline.h>
 #include <backend/base_pass.h>
 #include <backend/rv64/pass_set_generator.h>
-#include <backend/rv64/function.h>
+#include <backend/rv64/rv64_function.h>
 #include <memory>
 
 namespace Backend::RV64

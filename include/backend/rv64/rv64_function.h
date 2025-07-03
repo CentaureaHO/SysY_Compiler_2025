@@ -1,14 +1,15 @@
 #ifndef __BACKEND_RV64_FUNCTION_H__
 #define __BACKEND_RV64_FUNCTION_H__
 
-#include "defs.h"
-#include "cfg.h"
+#include "rv64_defs.h"
+#include "rv64_cfg.h"
 #include <string>
 #include <vector>
 
 namespace Backend::RV64
 {
     class Unit;
+    class Block;
 
     class Function
     {

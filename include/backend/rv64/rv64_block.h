@@ -1,7 +1,7 @@
 #ifndef __BACKEND_RV64_BLOCK_H__
 #define __BACKEND_RV64_BLOCK_H__
 
-#include "defs.h"
+#include "rv64_defs.h"
 #include "insts.h"
 #include <deque>
 #include <list>

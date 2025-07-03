@@ -5,7 +5,7 @@
 #include <common/type/type_defs.h>
 #include <llvm_ir/defs.h>
 #include <ast/expression.h>
-#include <llvm_ir/block.h>
+#include <llvm_ir/ir_block.h>
 
 #define TYPE2LLVM(x) type2LLVM_vec[static_cast<int>(x)]
 

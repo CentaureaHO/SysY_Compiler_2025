@@ -1,7 +1,7 @@
 #ifndef __BACKEND_RV64_INSTS_H__
 #define __BACKEND_RV64_INSTS_H__
 
-#include "defs.h"
+#include "rv64_defs.h"
 
 namespace Backend::RV64
 {
