@@ -1,2 +1,2 @@
-llc -march=riscv64 -mattr=+m,+a,+f,+d,+c -relocation-model=pic test.ll -o test.s
-riscv64-linux-gnu-gcc -static -march=rv64imafdc -mabi=lp64d test.s -o test.bin -L./library -lsysy_riscv -lm 
+clang test.ll -c -o test.o -w
+clang -static test.o -L./lib -lsysy_x86 -o test.bin
