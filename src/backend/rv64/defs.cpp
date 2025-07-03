@@ -56,10 +56,10 @@ string ImmeF64Operand::to_string() { return std::to_string(val); }
 
 Instruction::Instruction(InstType it) : inst_type(it) {}
 
-RV64Label::RV64Label() : is_data_addr(false), is_hi(false), jmp_label(0), seq_label(0) {}
-RV64Label::RV64Label(string n, bool hi) : name(n), is_data_addr(true), jmp_label(0), seq_label(0), is_hi(hi) {}
-RV64Label::RV64Label(int jmp, int seq) : is_data_addr(false), is_hi(false), jmp_label(jmp), seq_label(seq) {}
-RV64Label::RV64Label(int jmp) : is_data_addr(false), is_hi(false), jmp_label(jmp), seq_label(0) {}
+RV64Label::RV64Label(bool la) : is_data_addr(false), is_hi(false), jmp_label(0), seq_label(0), is_la(la) {}
+RV64Label::RV64Label(string n, bool hi, bool la) : name(n), is_data_addr(true), jmp_label(0), seq_label(0), is_hi(hi), is_la(la) {}
+RV64Label::RV64Label(int jmp, int seq, bool la) : is_data_addr(false), is_hi(false), jmp_label(jmp), seq_label(seq), is_la(la) {}
+RV64Label::RV64Label(int jmp, bool la) : is_data_addr(false), is_hi(false), jmp_label(jmp), seq_label(0), is_la(la) {}
 
 RV64Inst::RV64Inst() : Instruction(InstType::RV64), use_label(false), imme(0) {}
 vector<Register*> RV64Inst::getReadRegs()

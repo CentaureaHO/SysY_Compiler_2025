@@ -327,7 +327,9 @@ namespace Backend::RV64::Passes
     {
         if (l.is_data_addr)
         {
-            if (l.is_hi)
+            if (l.is_la)
+                out_ << l.name;
+            else if (l.is_hi)
                 out_ << "%hi(" << l.name << ")";
             else
                 out_ << "%lo(" << l.name << ")";

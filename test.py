@@ -91,7 +91,7 @@ def execute_asm(input,output,opt,stdin,stdout,testout):
         print("\033[93mOutPut Error on \033[0m"+input)
         return 0
         
-    result = execute(["riscv64-unknown-linux-gnu-gcc","-static","tmp.o","-L./library","-lsysy_riscv"])
+    result = execute(["riscv64-unknown-linux-gnu-gcc","-static","tmp.o","-L./lib","-lsysy_riscv","-mcmodel=medany"])
     if(result.returncode != 0):
         result = execute(["rm","-rf","tmp.o"])
         print("\033[93mLink Error on \033[0m"+input)

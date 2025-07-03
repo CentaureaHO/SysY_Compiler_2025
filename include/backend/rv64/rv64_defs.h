@@ -81,6 +81,7 @@
                               \
     X(LI, U, li)              \
     X(LUI, U, lui)            \
+    X(LA, U, la)              \
                               \
     X(SW, S, sw)              \
     X(SD, S, sd)              \
@@ -388,11 +389,12 @@ namespace Backend::RV64
         bool        is_hi;
         int         jmp_label;
         int         seq_label;
+        bool        is_la;
 
-        RV64Label();
-        RV64Label(std::string n, bool hi);
-        RV64Label(int jmp, int seq);
-        RV64Label(int jmp);
+        RV64Label(bool la = false);
+        RV64Label(std::string n, bool hi, bool la = false);
+        RV64Label(int jmp, int seq, bool la = false);
+        RV64Label(int jmp, bool la = false);
     };
 
     class RV64Inst : public Instruction

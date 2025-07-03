@@ -188,21 +188,20 @@ void Selector::convertAndAppend(LLVMIR::LoadInst* inst)
         if (inst->type == LLVMIR::DataType::I32)
         {
             Register rd = getLLVMReg(ir_regno, INT64);
-            cur_block->insts.push_back(createUInst(RV64InstType::LUI, hi, RV64Label(global_op->global_name, true)));
-            cur_block->insts.push_back(createIInst(RV64InstType::LW, rd, hi, RV64Label(global_op->global_name, false)));
+            cur_block->insts.push_back(createUInst(RV64InstType::LA, hi, RV64Label(global_op->global_name, false, true)));
+            cur_block->insts.push_back(createIInst(RV64InstType::LW, rd, hi, 0));
         }
         else if (inst->type == LLVMIR::DataType::F32)
         {
             Register rd = getLLVMReg(ir_regno, FLOAT64);
-            cur_block->insts.push_back(createUInst(RV64InstType::LUI, hi, RV64Label(global_op->global_name, true)));
-            cur_block->insts.push_back(
-                createIInst(RV64InstType::FLW, rd, hi, RV64Label(global_op->global_name, false)));
+            cur_block->insts.push_back(createUInst(RV64InstType::LA, hi, RV64Label(global_op->global_name, false, true)));
+            cur_block->insts.push_back(createIInst(RV64InstType::FLW, rd, hi, 0));
         }
         else if (inst->type == LLVMIR::DataType::PTR)
         {
             Register rd = getLLVMReg(ir_regno, INT64);
-            cur_block->insts.push_back(createUInst(RV64InstType::LUI, hi, RV64Label(global_op->global_name, true)));
-            cur_block->insts.push_back(createIInst(RV64InstType::LD, rd, hi, RV64Label(global_op->global_name, false)));
+            cur_block->insts.push_back(createUInst(RV64InstType::LA, hi, RV64Label(global_op->global_name, false, true)));
+            cur_block->insts.push_back(createIInst(RV64InstType::LD, rd, hi, 0));
         }
         else
             assert(false);
@@ -350,13 +349,11 @@ void Selector::convertAndAppend(LLVMIR::StoreInst* inst)
 
         Register hi = getReg(INT64);
 
-        cur_block->insts.push_back(createUInst(RV64InstType::LUI, hi, RV64Label(global_op->global_name, true)));
+        cur_block->insts.push_back(createUInst(RV64InstType::LA, hi, RV64Label(global_op->global_name, false, true)));
         if (inst->type == LLVMIR::DataType::I32)
-            cur_block->insts.push_back(
-                createSInst(RV64InstType::SW, val_reg, hi, RV64Label(global_op->global_name, false)));
+            cur_block->insts.push_back(createSInst(RV64InstType::SW, val_reg, hi, 0));
         else if (inst->type == LLVMIR::DataType::F32)
-            cur_block->insts.push_back(
-                createSInst(RV64InstType::FSW, val_reg, hi, RV64Label(global_op->global_name, false)));
+            cur_block->insts.push_back(createSInst(RV64InstType::FSW, val_reg, hi, 0));
         else
             assert(false);
 
@@ -1321,9 +1318,7 @@ void Selector::convertAndAppend(LLVMIR::CallInst* inst)
                     Register mid_reg = getReg(INT64);
                     string&  glb_var = ((LLVMIR::GlobalOperand*)arg_ir_op)->global_name;
 
-                    cur_block->insts.push_back(createUInst(RV64InstType::LUI, mid_reg, RV64Label(glb_var, true)));
-                    cur_block->insts.push_back(
-                        createIInst(RV64InstType::ADDI, mid_reg, mid_reg, RV64Label(glb_var, false)));
+                    cur_block->insts.push_back(createUInst(RV64InstType::LA, mid_reg, RV64Label(glb_var, false, true)));
                 }
                 else if (IS_IMMEI32(arg_ir_op))
                 {
@@ -1375,9 +1370,7 @@ void Selector::convertAndAppend(LLVMIR::CallInst* inst)
                     Register mid_reg = getReg(INT64);
                     string&  glb_var = ((LLVMIR::GlobalOperand*)arg_ir_op)->global_name;
 
-                    cur_block->insts.push_back(createUInst(RV64InstType::LUI, mid_reg, RV64Label(glb_var, true)));
-                    cur_block->insts.push_back(
-                        createIInst(RV64InstType::ADDI, mid_reg, mid_reg, RV64Label(glb_var, false)));
+                    cur_block->insts.push_back(createUInst(RV64InstType::LA, mid_reg, RV64Label(glb_var, false, true)));
                 }
                 else if (IS_IMMEF32(arg_ir_op))
                 {
@@ -1448,10 +1441,7 @@ void Selector::convertAndAppend(LLVMIR::CallInst* inst)
                     Register mid_reg = getReg(INT64);
                     string&  glb_var = ((LLVMIR::GlobalOperand*)arg_ir_op)->global_name;
 
-                    cur_block->insts.push_back(createUInst(RV64InstType::LUI, mid_reg, RV64Label(glb_var, true)));
-                    cur_block->insts.push_back(
-                        createIInst(RV64InstType::ADDI, mid_reg, mid_reg, RV64Label(glb_var, false)));
-                    cur_block->insts.push_back(createSInst(RV64InstType::SD, mid_reg, preg_sp, arg_shift));
+                    cur_block->insts.push_back(createUInst(RV64InstType::LA, mid_reg, RV64Label(glb_var, false, true)));
                 }
                 else if (IS_IMMEI32(arg_ir_op))
                 {
@@ -1461,8 +1451,6 @@ void Selector::convertAndAppend(LLVMIR::CallInst* inst)
                     cur_block->insts.push_back(createMoveInst(INT64, imme_reg, imme_val));
                     cur_block->insts.push_back(createSInst(RV64InstType::SD, imme_reg, preg_sp, arg_shift));
                 }
-                else
-                    assert(false);
 
                 arg_shift += 8;
             }
@@ -1507,10 +1495,7 @@ void Selector::convertAndAppend(LLVMIR::CallInst* inst)
                     Register mid_reg = getReg(INT64);
                     string&  glb_var = ((LLVMIR::GlobalOperand*)arg_ir_op)->global_name;
 
-                    cur_block->insts.push_back(createUInst(RV64InstType::LUI, mid_reg, RV64Label(glb_var, true)));
-                    cur_block->insts.push_back(
-                        createIInst(RV64InstType::ADDI, mid_reg, mid_reg, RV64Label(glb_var, false)));
-                    cur_block->insts.push_back(createSInst(RV64InstType::SD, mid_reg, preg_sp, arg_shift));
+                    cur_block->insts.push_back(createUInst(RV64InstType::LA, mid_reg, RV64Label(glb_var, false, true)));
                 }
                 else if (IS_IMMEF32(arg_ir_op))
                 {
@@ -1764,19 +1749,13 @@ void Selector::convertAndAppend(LLVMIR::GEPInst* inst)
             Register hi_lo_reg      = getReg(INT64);
             Register shift_full_reg = getReg(INT64);
 
-            RV64Inst* lui_inst = createUInst(
-                RV64InstType::LUI, hi_reg, RV64Label(((LLVMIR::GlobalOperand*)inst->base_ptr)->global_name, true));
-            RV64Inst* addi_inst = createIInst(RV64InstType::ADDI,
-                hi_lo_reg,
-                hi_reg,
-                RV64Label(((LLVMIR::GlobalOperand*)inst->base_ptr)->global_name, false));
+            cur_block->insts.push_back(createUInst(
+                RV64InstType::LA, hi_reg, RV64Label(((LLVMIR::GlobalOperand*)inst->base_ptr)->global_name, false, true)));
             RV64Inst* slli_inst = nullptr;
             if (!all_imme) { slli_inst = createIInst(RV64InstType::SLLI, shift_full_reg, shift_reg, 2); }
             else { shift_full_reg = shift_reg; }
-            RV64Inst* addshift_inst = createRInst(RV64InstType::ADD, res_reg, hi_lo_reg, shift_full_reg);
+            RV64Inst* addshift_inst = createRInst(RV64InstType::ADD, res_reg, hi_reg, shift_full_reg);
 
-            cur_block->insts.push_back(lui_inst);
-            cur_block->insts.push_back(addi_inst);
             if (!all_imme) cur_block->insts.push_back(slli_inst);
             cur_block->insts.push_back(addshift_inst);
         }
@@ -1785,11 +1764,8 @@ void Selector::convertAndAppend(LLVMIR::GEPInst* inst)
             Register hi_reg = getReg(INT64);
 
             cur_block->insts.push_back(createUInst(
-                RV64InstType::LUI, hi_reg, RV64Label(((LLVMIR::GlobalOperand*)inst->base_ptr)->global_name, true)));
-            cur_block->insts.push_back(createIInst(RV64InstType::ADDI,
-                res_reg,
-                hi_reg,
-                RV64Label(((LLVMIR::GlobalOperand*)inst->base_ptr)->global_name, false)));
+                RV64InstType::LA, hi_reg, RV64Label(((LLVMIR::GlobalOperand*)inst->base_ptr)->global_name, false, true)));
+            cur_block->insts.push_back(createMoveInst(INT64, res_reg, hi_reg));
         }
     }
     else
