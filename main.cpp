@@ -210,6 +210,12 @@ int main(int argc, char** argv)
     // RISCV backend processing for -S step
     if (step == "-S")
     {
+        if (!optimizeLevel)
+        {
+            MakeCFGPass makecfg(&builder);
+            makecfg.Execute();
+        }
+
         auto backend =
             Backend::Factory::createBackend(Backend::Factory::TargetArch::RV64, &builder, *outStream, optimizeLevel);
         backend->run();
