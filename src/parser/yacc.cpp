@@ -1736,63 +1736,85 @@ namespace Yacc
                         case 87:  // FUNC_CALL_EXPR: IDENT LPAREN RPAREN
 #line 540 "parser/yacc.y"
                         {
-                            Symbol::Entry* entry =
-                                Symbol::Entry::getEntry(*yystack_[2].value.as<std::shared_ptr<std::string> >());
-                            yylhs.value.as<ExprNode*>() = new FuncCallExpr(entry, nullptr);
+                            /*
+                            std::string funcName = std::string(*$1);
+                            if (funcName == "starttime" || funcName == "stoptime") funcName = "_sysy_" + funcName;
+
+                            Symbol::Entry* entry = Symbol::Entry::getEntry(funcName);
+                            $$ = new FuncCallExpr(entry, nullptr);
+                            if (entry->getName() == "starttime" || entry->getName() == "stoptime") {
+                                std::vector<ExprNode*>* args = new std::vector<ExprNode*>();
+                                args->emplace_back(new ConstExpr(static_cast<int>(@1.begin.line)));
+                                $$ = new FuncCallExpr(entry, args);
+                            }
+                            */
+                            std::string funcName = std::string(*yystack_[2].value.as<std::shared_ptr<std::string> >());
+                            if (funcName != "starttime" && funcName != "stoptime")
+                            {
+                                yylhs.value.as<ExprNode*>() =
+                                    new FuncCallExpr(Symbol::Entry::getEntry(funcName), nullptr);
+                            }
+                            else
+                            {
+                                funcName                     = "_sysy_" + funcName;
+                                std::vector<ExprNode*>* args = new std::vector<ExprNode*>();
+                                args->emplace_back(new ConstExpr(static_cast<int>(yystack_[2].location.begin.line)));
+                                yylhs.value.as<ExprNode*>() = new FuncCallExpr(Symbol::Entry::getEntry(funcName), args);
+                            }
                         }
-#line 1776 "parser/yacc.cpp"
+#line 1798 "parser/yacc.cpp"
                         break;
 
                         case 88:  // FUNC_CALL_EXPR: IDENT LPAREN EXPR_LIST RPAREN
-#line 544 "parser/yacc.y"
+#line 566 "parser/yacc.y"
                         {
                             Symbol::Entry* entry =
                                 Symbol::Entry::getEntry(*yystack_[3].value.as<std::shared_ptr<std::string> >());
                             yylhs.value.as<ExprNode*>() =
                                 new FuncCallExpr(entry, yystack_[1].value.as<std::vector<ExprNode*>*>());
                         }
-#line 1785 "parser/yacc.cpp"
+#line 1807 "parser/yacc.cpp"
                         break;
 
                         case 89:  // ARRAY_DIMESION_EXPR: LBRACKET EXPR RBRACKET
-#line 551 "parser/yacc.y"
+#line 573 "parser/yacc.y"
                         {
                             yylhs.value.as<ExprNode*>() = yystack_[1].value.as<ExprNode*>();
                         }
-#line 1793 "parser/yacc.cpp"
+#line 1815 "parser/yacc.cpp"
                         break;
 
                         case 90:  // ARRAY_DIMESION_EXPR_LIST: ARRAY_DIMESION_EXPR
-#line 557 "parser/yacc.y"
+#line 579 "parser/yacc.y"
                         {
                             yylhs.value.as<std::vector<ExprNode*>*>() = new std::vector<ExprNode*>();
                             yylhs.value.as<std::vector<ExprNode*>*>()->push_back(yystack_[0].value.as<ExprNode*>());
                         }
-#line 1802 "parser/yacc.cpp"
+#line 1824 "parser/yacc.cpp"
                         break;
 
                         case 91:  // ARRAY_DIMESION_EXPR_LIST: ARRAY_DIMESION_EXPR_LIST ARRAY_DIMESION_EXPR
-#line 561 "parser/yacc.y"
+#line 583 "parser/yacc.y"
                         {
                             yylhs.value.as<std::vector<ExprNode*>*>() = yystack_[1].value.as<std::vector<ExprNode*>*>();
                             yylhs.value.as<std::vector<ExprNode*>*>()->push_back(yystack_[0].value.as<ExprNode*>());
                         }
-#line 1811 "parser/yacc.cpp"
+#line 1833 "parser/yacc.cpp"
                         break;
 
                         case 92:  // LEFT_VAL_EXPR: IDENT
-#line 568 "parser/yacc.y"
+#line 590 "parser/yacc.y"
                         {
                             Symbol::Entry* entry =
                                 Symbol::Entry::getEntry(*yystack_[0].value.as<std::shared_ptr<std::string> >());
                             yylhs.value.as<ExprNode*>() = new LeftValueExpr(entry, nullptr, -1);
                             yylhs.value.as<ExprNode*>()->set_line(yystack_[0].location.begin.line);
                         }
-#line 1821 "parser/yacc.cpp"
+#line 1843 "parser/yacc.cpp"
                         break;
 
                         case 93:  // LEFT_VAL_EXPR: IDENT ARRAY_DIMESION_EXPR_LIST
-#line 573 "parser/yacc.y"
+#line 595 "parser/yacc.y"
                         {
                             Symbol::Entry* entry =
                                 Symbol::Entry::getEntry(*yystack_[1].value.as<std::shared_ptr<std::string> >());
@@ -1800,99 +1822,99 @@ namespace Yacc
                                 new LeftValueExpr(entry, yystack_[0].value.as<std::vector<ExprNode*>*>(), -1);
                             yylhs.value.as<ExprNode*>()->set_line(yystack_[1].location.begin.line);
                         }
-#line 1831 "parser/yacc.cpp"
+#line 1853 "parser/yacc.cpp"
                         break;
 
                         case 94:  // CONST_EXPR: INT_CONST
-#line 581 "parser/yacc.y"
+#line 603 "parser/yacc.y"
                         {
                             yylhs.value.as<ExprNode*>() = new ConstExpr(yystack_[0].value.as<int>());
                             yylhs.value.as<ExprNode*>()->setConst();
                             yylhs.value.as<ExprNode*>()->set_line(yystack_[0].location.begin.line);
                         }
-#line 1841 "parser/yacc.cpp"
+#line 1863 "parser/yacc.cpp"
                         break;
 
                         case 95:  // CONST_EXPR: LL_CONST
-#line 586 "parser/yacc.y"
+#line 608 "parser/yacc.y"
                         {
                             yylhs.value.as<ExprNode*>() = new ConstExpr(yystack_[0].value.as<long long>());
                             yylhs.value.as<ExprNode*>()->setConst();
                             yylhs.value.as<ExprNode*>()->set_line(yystack_[0].location.begin.line);
                         }
-#line 1851 "parser/yacc.cpp"
+#line 1873 "parser/yacc.cpp"
                         break;
 
                         case 96:  // CONST_EXPR: FLOAT_CONST
-#line 591 "parser/yacc.y"
+#line 613 "parser/yacc.y"
                         {
                             yylhs.value.as<ExprNode*>() = new ConstExpr(yystack_[0].value.as<float>());
                             yylhs.value.as<ExprNode*>()->setConst();
                             yylhs.value.as<ExprNode*>()->set_line(yystack_[0].location.begin.line);
                         }
-#line 1861 "parser/yacc.cpp"
+#line 1883 "parser/yacc.cpp"
                         break;
 
                         case 97:  // CONST_EXPR: STR_CONST
-#line 596 "parser/yacc.y"
+#line 618 "parser/yacc.y"
                         {
                             yylhs.value.as<ExprNode*>() =
                                 new ConstExpr(yystack_[0].value.as<std::shared_ptr<std::string> >());
                             yylhs.value.as<ExprNode*>()->setConst();
                             yylhs.value.as<ExprNode*>()->set_line(yystack_[0].location.begin.line);
                         }
-#line 1871 "parser/yacc.cpp"
+#line 1893 "parser/yacc.cpp"
                         break;
 
                         case 98:  // TYPE: INT
-#line 604 "parser/yacc.y"
+#line 626 "parser/yacc.y"
                         {
                             yylhs.value.as<Type*>() = intType;
                         }
-#line 1879 "parser/yacc.cpp"
+#line 1901 "parser/yacc.cpp"
                         break;
 
                         case 99:  // TYPE: FLOAT
-#line 607 "parser/yacc.y"
+#line 629 "parser/yacc.y"
                         {
                             yylhs.value.as<Type*>() = floatType;
                         }
-#line 1887 "parser/yacc.cpp"
+#line 1909 "parser/yacc.cpp"
                         break;
 
                         case 100:  // TYPE: VOID
-#line 610 "parser/yacc.y"
+#line 632 "parser/yacc.y"
                         {
                             yylhs.value.as<Type*>() = voidType;
                         }
-#line 1895 "parser/yacc.cpp"
+#line 1917 "parser/yacc.cpp"
                         break;
 
                         case 101:  // UNARY_OP: PLUS
-#line 616 "parser/yacc.y"
+#line 638 "parser/yacc.y"
                         {
                             yylhs.value.as<OpCode>() = OpCode::Add;
                         }
-#line 1903 "parser/yacc.cpp"
+#line 1925 "parser/yacc.cpp"
                         break;
 
                         case 102:  // UNARY_OP: MINUS
-#line 619 "parser/yacc.y"
+#line 641 "parser/yacc.y"
                         {
                             yylhs.value.as<OpCode>() = OpCode::Sub;
                         }
-#line 1911 "parser/yacc.cpp"
+#line 1933 "parser/yacc.cpp"
                         break;
 
                         case 103:  // UNARY_OP: NOT
-#line 622 "parser/yacc.y"
+#line 644 "parser/yacc.y"
                         {
                             yylhs.value.as<OpCode>() = OpCode::Not;
                         }
-#line 1919 "parser/yacc.cpp"
+#line 1941 "parser/yacc.cpp"
                         break;
 
-#line 1923 "parser/yacc.cpp"
+#line 1945 "parser/yacc.cpp"
 
                         default: break;
                     }
@@ -4093,22 +4115,22 @@ namespace Yacc
         531,
         534,
         540,
-        544,
-        551,
-        557,
-        561,
-        568,
+        566,
         573,
-        581,
-        586,
-        591,
-        596,
-        604,
-        607,
-        610,
-        616,
-        619,
-        622};
+        579,
+        583,
+        590,
+        595,
+        603,
+        608,
+        613,
+        618,
+        626,
+        629,
+        632,
+        638,
+        641,
+        644};
 
     void Parser ::yy_stack_print_() const
     {
@@ -4132,9 +4154,9 @@ namespace Yacc
 
 #line 4 "parser/yacc.y"
 }  // namespace Yacc
-#line 2572 "parser/yacc.cpp"
+#line 2594 "parser/yacc.cpp"
 
-#line 627 "parser/yacc.y"
+#line 649 "parser/yacc.y"
 
 void Yacc::Parser::error(const Yacc::location& location, const std::string& message)
 {

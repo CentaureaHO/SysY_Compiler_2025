@@ -538,8 +538,30 @@ BASIC_EXPR:
 
 FUNC_CALL_EXPR:
     IDENT LPAREN RPAREN {
-        Symbol::Entry* entry = Symbol::Entry::getEntry(*$1);
+        /*
+        std::string funcName = std::string(*$1);
+        if (funcName == "starttime" || funcName == "stoptime") funcName = "_sysy_" + funcName;
+
+        Symbol::Entry* entry = Symbol::Entry::getEntry(funcName);
         $$ = new FuncCallExpr(entry, nullptr);
+        if (entry->getName() == "starttime" || entry->getName() == "stoptime") {
+            std::vector<ExprNode*>* args = new std::vector<ExprNode*>();
+            args->emplace_back(new ConstExpr(static_cast<int>(@1.begin.line)));
+            $$ = new FuncCallExpr(entry, args);
+        }
+        */
+        std::string funcName = std::string(*$1);
+        if (funcName != "starttime" && funcName != "stoptime")
+        {
+            $$ = new FuncCallExpr(Symbol::Entry::getEntry(funcName), nullptr);
+        }
+        else
+        {
+            funcName = "_sysy_" + funcName;
+            std::vector<ExprNode*>* args = new std::vector<ExprNode*>();
+            args->emplace_back(new ConstExpr(static_cast<int>(@1.begin.line)));
+            $$ = new FuncCallExpr(Symbol::Entry::getEntry(funcName), args);
+        }
     }
     | IDENT LPAREN EXPR_LIST RPAREN {
         Symbol::Entry* entry = Symbol::Entry::getEntry(*$1);

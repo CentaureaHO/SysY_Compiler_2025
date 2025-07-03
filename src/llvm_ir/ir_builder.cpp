@@ -78,11 +78,11 @@ void IR::registerLibraryFunctions()
     // void putfarray(int n, float a[]);
     function_declare.emplace_back(new FuncDeclareInst(DT::VOID, "putfarray", {DT::I32, DT::PTR}));
 
-    // void starttime();
-    function_declare.emplace_back(new FuncDeclareInst(DT::VOID, "starttime"));
+    // void starttime(int lineno);
+    function_declare.emplace_back(new FuncDeclareInst(DT::VOID, "_sysy_starttime", {DT::I32}));
 
-    // void stoptime();
-    function_declare.emplace_back(new FuncDeclareInst(DT::VOID, "stoptime"));
+    // void stoptime(int lineno);
+    function_declare.emplace_back(new FuncDeclareInst(DT::VOID, "_sysy_stoptime", {DT::I32}));
 
     // llvm memset
     function_declare.emplace_back(

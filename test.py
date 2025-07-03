@@ -41,29 +41,27 @@ def add_returncode(file,ret):
 # 测试用例的返回值的不要为124或139，否则会导致测试程序误判
 
 def execute_ir(input,output,opt,stdin,stdout,testout):
-    result = execute(["timeout","10","./bin/SysYc","-llvm","-o",output,input,opt])
+    result = execute(["timeout","10","./bin/compiler","-llvm","-o",output,opt,input])
     if(result.returncode != 0):
         print("\033[93mCompile Error on \033[0m"+input)
         return 0
     
-    result = execute(["clang-15",output,"-c","-o","tmp.o","-w"])
+    s_output = output.replace(".ll", ".s")
+    result = execute(["llc","-march=riscv64","-mattr=+m,+a,+f,+d,+c","-relocation-model=pic",output,"-o",s_output])
     if(result.returncode != 0):
-        print("\033[93mOutPut Error on \033[0m"+input)
+        print("\033[93mLLC Error on \033[0m"+input)
         return 0
         
-    result = execute(["clang-15","-static","tmp.o","lib/libsysy_x86.a"])
-    # result = execute(["clang-15","-static","tmp.o","library/libsysy_rv.a"])
+    result = execute(["riscv64-linux-gnu-gcc","-static","-march=rv64imafdc","-mabi=lp64d",s_output,"-o","a.out","-L./library","-lsysy_riscv","-lm"])
     if(result.returncode != 0):
-        result = execute(["rm","-rf","tmp.o"])
         print("\033[93mLink Error on \033[0m"+input)
         return 0
     
-    execute(["rm","-rf","tmp.o"])
     result = 0
     if(stdin=="none"):
-        result = execute_with_stdin_out("timeout 10 ./a.out > "+testout + " 2>/dev/null")
+        result = execute_with_stdin_out("timeout 20 qemu-riscv64 ./a.out > "+testout + " 2>/dev/null")
     else:
-        result = execute_with_stdin_out("timeout 10 ./a.out < "+stdin+" > "+testout + " 2>/dev/null")
+        result = execute_with_stdin_out("timeout 20 qemu-riscv64 ./a.out < "+stdin+" > "+testout + " 2>/dev/null")
     if(result == 124):
         print("\033[93mTime Limit Exceed on \033[0m"+input)
         return 0
@@ -81,23 +79,15 @@ def execute_ir(input,output,opt,stdin,stdout,testout):
         return 0
    
 def execute_asm(input,output,opt,stdin,stdout,testout):
-    result = execute(["timeout","60","./bin/SysYc","-S","-o",output,input,opt])
+    result = execute(["timeout","60","./bin/compiler","-S","-o",output,opt,input])
     if(result.returncode != 0):
         print("\033[93mCompile Error on \033[0m"+input)
         return 0
     
-    result = execute(["riscv64-unknown-linux-gnu-gcc",output,"-c","-o","tmp.o","-w"])
+    result = execute(["riscv64-linux-gnu-gcc","-static","-march=rv64imafdc","-mabi=lp64d",output,"-o","a.out","-L./library","-lsysy_riscv","-lm"])
     if(result.returncode != 0):
-        print("\033[93mOutPut Error on \033[0m"+input)
-        return 0
-        
-    result = execute(["riscv64-unknown-linux-gnu-gcc","-static","tmp.o","lib/libsysy_rv.a"])
-    if(result.returncode != 0):
-        result = execute(["rm","-rf","tmp.o"])
         print("\033[93mLink Error on \033[0m"+input)
         return 0
-    
-    execute(["rm","-rf","tmp.o"])
     result = 0
     if(stdin=="none"):
         result = execute_with_stdin_out("timeout 20 qemu-riscv64 ./a.out > "+testout + " 2>/dev/null")
