@@ -86,6 +86,7 @@ $(OBJ_DIR)/utils/%.o: utils/src/%.c
 bin: $(BIN_DIR)/compiler
 
 $(BIN_DIR)/compiler: $(OBJECTS) main.cpp
+	@mkdir -p $(BIN_DIR)
 	@echo "$(CXX) main.cpp -> $(BIN_DIR)/compiler"
 	@$(CXX) $(CXXFLAGS) main.cpp $(OBJECTS) -o $(BIN_DIR)/compiler $(INCLUDES)
 
@@ -108,14 +109,10 @@ clean:
 	@echo "Cleaned"
 
 .PHONY: lexer
-lexer: $(LEXER_C) $(BISON_C) $(BISON_H) $(LOC_H)
-
-$(LEXER_C): $(LEXER_SRC)
+lexer:
 	@flex --c++ --outfile=$(LEXER_C_T) $(LEXER_SRC)
 	sed -i 's|#include "yacc.hpp"|#include <parser/yacc.hpp>|' $(LEXER_C_T)
 	@mv $(LEXER_C_T) $(LEXER_C)
-
-$(BISON_C) $(BISON_H) $(LOC_H): $(BISON_SRC)
 	@bison -d --language=c++ --defines=$(BISON_H_T) -o $(BISON_C_T) $(BISON_SRC)
 	sed -i 's|#include "yacc.hpp"|#include <parser/yacc.hpp>|' $(BISON_C_T)
 	@mv $(BISON_C_T) $(BISON_C)

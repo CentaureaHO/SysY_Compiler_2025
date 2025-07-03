@@ -31,6 +31,10 @@ namespace
     // void putfarray(int n, float a[]);
     static const SymEnt* putfarray = SymEnt::getEntry("putfarray");
 
+    // void starttime(), stoptime();
+    static const SymEnt* starttime = SymEnt::getEntry("starttime");
+    static const SymEnt* stoptime = SymEnt::getEntry("stoptime");
+
     // void putf(char a[], ...)
     // 暂不实现
 
@@ -110,6 +114,12 @@ Table::Table() : symTable(), glbSymMap(), funcDeclMap()
                 SymEnt::getEntry("a"),
                 new std::vector<ExprNode*>{new ConstExpr(-1)})});
 
+    // void starttime()
+    funcDeclMap[starttime] = new FuncDeclStmt(starttime, TypeSystem::getBasicType(TypeKind::Void));
+
+    // void stoptime()
+    funcDeclMap[stoptime] = new FuncDeclStmt(stoptime, TypeSystem::getBasicType(TypeKind::Void));
+
     // for (auto& [_, decl] : funcDeclMap) { decl->typeCheck(); }
 }
 
@@ -118,7 +128,7 @@ Table::~Table()
     for (auto& [_, decl] : funcDeclMap)
     {
         if (_ == getint || _ == getch || _ == getarray || _ == getfloat || _ == getfarray || _ == putint ||
-            _ == putch || _ == putarray || _ == putfloat || _ == putfarray)
+            _ == putch || _ == putarray || _ == putfloat || _ == putfarray || _ == starttime || _ == stoptime)
             delete decl;
     }
 }

@@ -8,3 +8,4 @@ valgrind_report
 .cache
 compile_commands.json
 testcase/riscv_optimizer/
+testcase/riscv_optimizer/.gitkeep
