@@ -3,7 +3,7 @@ SRC_DIR := src optimize utils/src
 OBJ_DIR := obj
 BIN_DIR := bin
 
-CXX ?= clang++
+CXX := clang++
 
 INCLUDES = $(addprefix -I, $(INC_DIR))
 

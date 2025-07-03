@@ -137,7 +137,7 @@
     }
 }
 
-[0-9]*[eE][+-]?[0-9]+ {
+[0-9]+[eE][+-]?[0-9]+ {
     try {
         return Parser::make_FLOAT_CONST(convertToFloatDec(yytext), loc);
     } catch (const std::exception& e) {

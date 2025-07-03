@@ -9,3 +9,4 @@ valgrind_report
 compile_commands.json
 testcase/riscv_optimizer/
 testcase/riscv_optimizer/.gitkeep
+a.ll
