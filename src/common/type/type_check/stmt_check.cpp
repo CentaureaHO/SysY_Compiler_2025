@@ -51,9 +51,11 @@ bool VarDeclStmt::isRedefinedLocal(LeftValueExpr* lval)
 
     if (semTable->symTable.getSymbolScope(lval->entry) == 1)
     {
+        /*
         semanticErrMsgs.push_back(
             "Error: Redefinition with parameter " + lval->entry->getName() + " at line " + to_string(attr.line_num));
         return true;
+        */
     }
 
     return false;

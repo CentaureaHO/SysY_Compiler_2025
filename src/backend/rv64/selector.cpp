@@ -188,19 +188,22 @@ void Selector::convertAndAppend(LLVMIR::LoadInst* inst)
         if (inst->type == LLVMIR::DataType::I32)
         {
             Register rd = getLLVMReg(ir_regno, INT64);
-            cur_block->insts.push_back(createUInst(RV64InstType::LA, hi, RV64Label(global_op->global_name, false, true)));
+            cur_block->insts.push_back(
+                createUInst(RV64InstType::LA, hi, RV64Label(global_op->global_name, false, true)));
             cur_block->insts.push_back(createIInst(RV64InstType::LW, rd, hi, 0));
         }
         else if (inst->type == LLVMIR::DataType::F32)
         {
             Register rd = getLLVMReg(ir_regno, FLOAT64);
-            cur_block->insts.push_back(createUInst(RV64InstType::LA, hi, RV64Label(global_op->global_name, false, true)));
+            cur_block->insts.push_back(
+                createUInst(RV64InstType::LA, hi, RV64Label(global_op->global_name, false, true)));
             cur_block->insts.push_back(createIInst(RV64InstType::FLW, rd, hi, 0));
         }
         else if (inst->type == LLVMIR::DataType::PTR)
         {
             Register rd = getLLVMReg(ir_regno, INT64);
-            cur_block->insts.push_back(createUInst(RV64InstType::LA, hi, RV64Label(global_op->global_name, false, true)));
+            cur_block->insts.push_back(
+                createUInst(RV64InstType::LA, hi, RV64Label(global_op->global_name, false, true)));
             cur_block->insts.push_back(createIInst(RV64InstType::LD, rd, hi, 0));
         }
         else
@@ -1416,7 +1419,17 @@ void Selector::convertAndAppend(LLVMIR::CallInst* inst)
                     auto it = alloc_shift_map.find(arg_reg_num);
                     if (it == alloc_shift_map.end())
                     {
-                        cur_block->insts.push_back(createSInst(RV64InstType::SD, arg_reg, preg_sp, arg_shift));
+                        if (arg_shift >= -2048 && arg_shift <= 2047)
+                        {
+                            cur_block->insts.push_back(createSInst(RV64InstType::SD, arg_reg, preg_sp, arg_shift));
+                        }
+                        else
+                        {
+                            Register num_reg = getReg(INT64);
+                            cur_block->insts.push_back(createMoveInst(INT64, num_reg, arg_shift));
+                            cur_block->insts.push_back(createRInst(RV64InstType::ADD, num_reg, preg_sp, num_reg));
+                            cur_block->insts.push_back(createSInst(RV64InstType::SD, arg_reg, num_reg, 0));
+                        }
                     }
                     else
                     {
@@ -1424,15 +1437,25 @@ void Selector::convertAndAppend(LLVMIR::CallInst* inst)
 
                         if (offset <= 2047 && offset >= -2048)
                         {
-                            cur_block->insts.push_back(
-                                createIInst(RV64InstType::SW, arg_reg, preg_sp, offset + arg_shift));
+                            if ((offset + arg_shift) >= -2048 && (offset + arg_shift) <= 2047)
+                            {
+                                cur_block->insts.push_back(
+                                    createIInst(RV64InstType::SW, arg_reg, preg_sp, offset + arg_shift));
+                            }
+                            else
+                            {
+                                Register num_reg = getReg(INT64);
+                                cur_block->insts.push_back(createMoveInst(INT64, num_reg, offset + arg_shift));
+                                cur_block->insts.push_back(createRInst(RV64InstType::ADD, num_reg, preg_sp, num_reg));
+                                cur_block->insts.push_back(createSInst(RV64InstType::SD, arg_reg, num_reg, 0));
+                            }
                         }
                         else
                         {
                             Register num_reg = getReg(INT64);
-                            cur_block->insts.push_back(createMoveInst(INT64, num_reg, offset));
+                            cur_block->insts.push_back(createMoveInst(INT64, num_reg, offset + arg_shift));
                             cur_block->insts.push_back(createRInst(RV64InstType::ADD, num_reg, preg_sp, num_reg));
-                            cur_block->insts.push_back(createSInst(RV64InstType::SD, arg_reg, num_reg, arg_shift));
+                            cur_block->insts.push_back(createSInst(RV64InstType::SD, arg_reg, num_reg, 0));
                         }
                     }
                 }
@@ -1449,7 +1472,17 @@ void Selector::convertAndAppend(LLVMIR::CallInst* inst)
                     Register imme_reg = getReg(INT64);
 
                     cur_block->insts.push_back(createMoveInst(INT64, imme_reg, imme_val));
-                    cur_block->insts.push_back(createSInst(RV64InstType::SD, imme_reg, preg_sp, arg_shift));
+                    if (arg_shift >= -2048 && arg_shift <= 2047)
+                    {
+                        cur_block->insts.push_back(createSInst(RV64InstType::SD, imme_reg, preg_sp, arg_shift));
+                    }
+                    else
+                    {
+                        Register num_reg = getReg(INT64);
+                        cur_block->insts.push_back(createMoveInst(INT64, num_reg, arg_shift));
+                        cur_block->insts.push_back(createRInst(RV64InstType::ADD, num_reg, preg_sp, num_reg));
+                        cur_block->insts.push_back(createSInst(RV64InstType::SD, imme_reg, num_reg, 0));
+                    }
                 }
 
                 arg_shift += 8;
@@ -1470,7 +1503,17 @@ void Selector::convertAndAppend(LLVMIR::CallInst* inst)
                     auto it = alloc_shift_map.find(arg_reg_num);
                     if (it == alloc_shift_map.end())
                     {
-                        cur_block->insts.push_back(createSInst(RV64InstType::FSD, arg_reg, preg_sp, arg_shift));
+                        if (arg_shift >= -2048 && arg_shift <= 2047)
+                        {
+                            cur_block->insts.push_back(createSInst(RV64InstType::FSD, arg_reg, preg_sp, arg_shift));
+                        }
+                        else
+                        {
+                            Register num_reg = getReg(INT64);
+                            cur_block->insts.push_back(createMoveInst(INT64, num_reg, arg_shift));
+                            cur_block->insts.push_back(createRInst(RV64InstType::ADD, num_reg, preg_sp, num_reg));
+                            cur_block->insts.push_back(createSInst(RV64InstType::FSD, arg_reg, num_reg, 0));
+                        }
                     }
                     else
                     {
@@ -1478,15 +1521,25 @@ void Selector::convertAndAppend(LLVMIR::CallInst* inst)
 
                         if (offset <= 2047 && offset >= -2048)
                         {
-                            cur_block->insts.push_back(
-                                createIInst(RV64InstType::FSD, arg_reg, preg_sp, offset + arg_shift));
+                            if ((offset + arg_shift) >= -2048 && (offset + arg_shift) <= 2047)
+                            {
+                                cur_block->insts.push_back(
+                                    createIInst(RV64InstType::FSD, arg_reg, preg_sp, offset + arg_shift));
+                            }
+                            else
+                            {
+                                Register num_reg = getReg(INT64);
+                                cur_block->insts.push_back(createMoveInst(INT64, num_reg, offset + arg_shift));
+                                cur_block->insts.push_back(createRInst(RV64InstType::ADD, num_reg, preg_sp, num_reg));
+                                cur_block->insts.push_back(createSInst(RV64InstType::FSD, arg_reg, num_reg, 0));
+                            }
                         }
                         else
                         {
                             Register num_reg = getReg(INT64);
-                            cur_block->insts.push_back(createMoveInst(INT64, num_reg, offset));
+                            cur_block->insts.push_back(createMoveInst(INT64, num_reg, offset + arg_shift));
                             cur_block->insts.push_back(createRInst(RV64InstType::ADD, num_reg, preg_sp, num_reg));
-                            cur_block->insts.push_back(createSInst(RV64InstType::FSD, arg_reg, num_reg, arg_shift));
+                            cur_block->insts.push_back(createSInst(RV64InstType::FSD, arg_reg, num_reg, 0));
                         }
                     }
                 }
@@ -1504,7 +1557,17 @@ void Selector::convertAndAppend(LLVMIR::CallInst* inst)
 
                     Register imme_reg = getReg(INT64);
                     cur_block->insts.push_back(createMoveInst(INT64, imme_reg, int_val));
-                    cur_block->insts.push_back(createSInst(RV64InstType::SD, imme_reg, preg_sp, arg_shift));
+                    if (arg_shift >= -2048 && arg_shift <= 2047)
+                    {
+                        cur_block->insts.push_back(createSInst(RV64InstType::SD, imme_reg, preg_sp, arg_shift));
+                    }
+                    else
+                    {
+                        Register num_reg = getReg(INT64);
+                        cur_block->insts.push_back(createMoveInst(INT64, num_reg, arg_shift));
+                        cur_block->insts.push_back(createRInst(RV64InstType::ADD, num_reg, preg_sp, num_reg));
+                        cur_block->insts.push_back(createSInst(RV64InstType::SD, imme_reg, num_reg, 0));
+                    }
                 }
 
                 arg_shift += 8;
@@ -1749,8 +1812,9 @@ void Selector::convertAndAppend(LLVMIR::GEPInst* inst)
             Register hi_lo_reg      = getReg(INT64);
             Register shift_full_reg = getReg(INT64);
 
-            cur_block->insts.push_back(createUInst(
-                RV64InstType::LA, hi_reg, RV64Label(((LLVMIR::GlobalOperand*)inst->base_ptr)->global_name, false, true)));
+            cur_block->insts.push_back(createUInst(RV64InstType::LA,
+                hi_reg,
+                RV64Label(((LLVMIR::GlobalOperand*)inst->base_ptr)->global_name, false, true)));
             RV64Inst* slli_inst = nullptr;
             if (!all_imme) { slli_inst = createIInst(RV64InstType::SLLI, shift_full_reg, shift_reg, 2); }
             else { shift_full_reg = shift_reg; }
@@ -1763,8 +1827,9 @@ void Selector::convertAndAppend(LLVMIR::GEPInst* inst)
         {
             Register hi_reg = getReg(INT64);
 
-            cur_block->insts.push_back(createUInst(
-                RV64InstType::LA, hi_reg, RV64Label(((LLVMIR::GlobalOperand*)inst->base_ptr)->global_name, false, true)));
+            cur_block->insts.push_back(createUInst(RV64InstType::LA,
+                hi_reg,
+                RV64Label(((LLVMIR::GlobalOperand*)inst->base_ptr)->global_name, false, true)));
             cur_block->insts.push_back(createMoveInst(INT64, res_reg, hi_reg));
         }
     }

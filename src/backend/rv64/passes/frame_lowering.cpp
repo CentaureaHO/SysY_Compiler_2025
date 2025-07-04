@@ -30,7 +30,17 @@ namespace Backend::RV64::Passes
                     }
                     else
                     {
-                        block->insts.push_front(createIInst(RV64InstType::LD, param, preg_fp, para_offset));
+                        if (para_offset >= -2048 && para_offset <= 2047)
+                        {
+                            block->insts.push_front(createIInst(RV64InstType::LD, param, preg_fp, para_offset));
+                        }
+                        else
+                        {
+                            Register offset_reg = func->getNewReg(INT64);
+                            block->insts.push_front(createIInst(RV64InstType::LD, param, offset_reg, 0));
+                            block->insts.push_front(createRInst(RV64InstType::ADD, offset_reg, preg_fp, offset_reg));
+                            block->insts.push_front(createMoveInst(INT64, offset_reg, para_offset));
+                        }
                         para_offset += 8;
                     }
 
@@ -42,7 +52,17 @@ namespace Backend::RV64::Passes
                         block->insts.push_front(createMoveInst(FLOAT64, param, getPhyReg(preg_fa0.reg_num + f32_cnt)));
                     else
                     {
-                        block->insts.push_front(createIInst(RV64InstType::FLD, param, preg_fp, para_offset));
+                        if (para_offset >= -2048 && para_offset <= 2047)
+                        {
+                            block->insts.push_front(createIInst(RV64InstType::FLD, param, preg_fp, para_offset));
+                        }
+                        else
+                        {
+                            Register offset_reg = func->getNewReg(INT64);
+                            block->insts.push_front(createIInst(RV64InstType::FLD, param, offset_reg, 0));
+                            block->insts.push_front(createRInst(RV64InstType::ADD, offset_reg, preg_fp, offset_reg));
+                            block->insts.push_front(createMoveInst(INT64, offset_reg, para_offset));
+                        }
                         para_offset += 8;
                     }
 
