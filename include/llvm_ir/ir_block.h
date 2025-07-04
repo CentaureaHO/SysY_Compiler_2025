@@ -25,7 +25,7 @@ namespace LLVMIR
 
       public:
         // void insertInst(Instruction* inst, bool is_back = 1);
-
+        // 怎么给这个注掉了？
       public:
         void insertLoad(DataType t, Operand* ptr, int res_reg);
         void insertStore(DataType t, int val_reg, Operand* ptr);

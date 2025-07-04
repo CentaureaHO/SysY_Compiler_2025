@@ -78,8 +78,14 @@ void CFG::BuildCFG()
         else
             iter++;
     }
-
-    // 打印CFG
+    auto blocks_temp=this->func->blocks;
+    this->func->blocks.clear();
+    for(auto& iter:blocks_temp){
+        if(visited[iter->block_id]) this->func->blocks.push_back(iter);
+    }
+    // std::cout<<"visiting condition: "<<std::endl;
+    // for(auto iter:visited) std::cout<<iter.first<<' '<<iter.second<<std::endl;
+    // // 打印CFG
     //  for(uint32_t i=0;i<G_id.size();i++){
     //      std::cout<<i<<" -> ";
     //      for(uint32_t j=0;j<G_id[i].size();j++){
@@ -87,4 +93,5 @@ void CFG::BuildCFG()
     //      }
     //      std::cout<<std::endl;
     //  }
+    //  std::cout<<"-----------------------------"<<std::endl;
 }

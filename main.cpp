@@ -12,6 +12,7 @@
 
 #include "llvm/make_cfg.h"
 #include "llvm/make_domtree.h"
+#include "llvm/mem2reg.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -197,6 +198,8 @@ int main(int argc, char** argv)
         makecfg.Execute();
         MakeDomTreePass makedom(&builder);
         makedom.Execute();
+        Mem2Reg mem2reg(&builder);
+        mem2reg.Execute();
     }
 
     if (step == "-llvm")
