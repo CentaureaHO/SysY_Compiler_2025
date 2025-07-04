@@ -113,20 +113,6 @@ namespace Backend::RV64
     class LinearScanRegisterAssigner : public BaseRegisterAssigner
     {
       public:
-        struct ActiveSeg
-        {
-            const Interval* interval;  // 指向所属 Interval
-            size_t          idx;       // interval->segs 的下标
-            int             start() const { return interval->segs[idx].start; }
-            int             end() const { return interval->segs[idx].end; }
-            bool            operator<(const ActiveSeg& rhs) const { return start() < rhs.start(); }
-        };
-
-        struct SegAllocInfo
-        {
-            bool in_mem;  // true = spill 到 mem
-            int  id;      // mem offset 或物理寄存器号
-        };
         LinearScanRegisterAssigner()          = default;
         virtual ~LinearScanRegisterAssigner() = default;
 
