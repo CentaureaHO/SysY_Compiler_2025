@@ -90,6 +90,11 @@ namespace LLVMIR
         virtual ~Instruction() = default;
 
         virtual void printIR(std::ostream& s) = 0;
+
+        virtual void Rename(std::map<int,int> &replace) = 0;
+        virtual int GetResultReg()=0;
+        virtual std::vector<int> GetUsedRegs()=0;
+        
     };
 
     class LoadInst : public Instruction
@@ -102,6 +107,11 @@ namespace LLVMIR
         LoadInst(DataType t, Operand* p, Operand* r);
 
         virtual void printIR(std::ostream& s);
+
+        virtual void Rename(std::map<int,int> &replace);
+        virtual int GetResultReg();
+        virtual std::vector<int> GetUsedRegs();
+        
     };
 
     class StoreInst : public Instruction
@@ -114,6 +124,10 @@ namespace LLVMIR
         StoreInst(DataType t, Operand* p, Operand* v);
 
         virtual void printIR(std::ostream& s);
+
+        virtual void Rename(std::map<int,int> &replace);
+        virtual int GetResultReg();
+        virtual std::vector<int> GetUsedRegs();
     };
 
     class ArithmeticInst : public Instruction
@@ -127,6 +141,10 @@ namespace LLVMIR
         ArithmeticInst(IROpCode op, DataType t, Operand* l, Operand* r, Operand* res);
 
         virtual void printIR(std::ostream& s);
+
+        virtual void Rename(std::map<int,int> &replace);
+        virtual int GetResultReg();
+        virtual std::vector<int> GetUsedRegs();
     };
 
     class IcmpInst : public Instruction
@@ -141,6 +159,10 @@ namespace LLVMIR
         IcmpInst(DataType t, IcmpCond c, Operand* l, Operand* r, Operand* res);
 
         virtual void printIR(std::ostream& s);
+
+        virtual void Rename(std::map<int,int> &replace);
+        virtual int GetResultReg();
+        virtual std::vector<int> GetUsedRegs();
     };
 
     class FcmpInst : public Instruction
@@ -155,6 +177,10 @@ namespace LLVMIR
         FcmpInst(DataType t, FcmpCond c, Operand* l, Operand* r, Operand* res);
 
         virtual void printIR(std::ostream& s);
+
+        virtual void Rename(std::map<int,int> &replace);
+        virtual int GetResultReg();
+        virtual std::vector<int> GetUsedRegs();
     };
 
     class AllocInst : public Instruction
@@ -167,6 +193,10 @@ namespace LLVMIR
         AllocInst(DataType t, Operand* r, std::vector<int> d = {});
 
         virtual void printIR(std::ostream& s);
+        
+        virtual void Rename(std::map<int,int> &replace);
+        virtual int GetResultReg();
+        virtual std::vector<int> GetUsedRegs();
     };
 
     class BranchCondInst : public Instruction
@@ -179,6 +209,10 @@ namespace LLVMIR
         BranchCondInst(Operand* c, Operand* t, Operand* f);
 
         virtual void printIR(std::ostream& s);
+
+        virtual void Rename(std::map<int,int> &replace);
+        virtual int GetResultReg();
+        virtual std::vector<int> GetUsedRegs();
     };
 
     class BranchUncondInst : public Instruction
@@ -189,6 +223,10 @@ namespace LLVMIR
         BranchUncondInst(Operand* t);
 
         virtual void printIR(std::ostream& s);
+
+        virtual void Rename(std::map<int,int> &replace);
+        virtual int GetResultReg();
+        virtual std::vector<int> GetUsedRegs();
     };
 
     class GlbvarDefInst : public Instruction
@@ -203,6 +241,10 @@ namespace LLVMIR
         GlbvarDefInst(DataType t, std::string n, VarAttribute a);
 
         virtual void printIR(std::ostream& s);
+
+        virtual void Rename(std::map<int,int> &replace);
+        virtual int GetResultReg();
+        virtual std::vector<int> GetUsedRegs();
     };
 
     class CallInst : public Instruction
@@ -217,6 +259,10 @@ namespace LLVMIR
         CallInst(DataType rt, std::string fn, std::vector<std::pair<DataType, Operand*>> a, Operand* r);
 
         virtual void printIR(std::ostream& s);
+
+        virtual void Rename(std::map<int,int> &replace);
+        virtual int GetResultReg();
+        virtual std::vector<int> GetUsedRegs();
     };
 
     class RetInst : public Instruction
@@ -228,6 +274,10 @@ namespace LLVMIR
         RetInst(DataType t, Operand* r);
 
         virtual void printIR(std::ostream& s);
+
+        virtual void Rename(std::map<int,int> &replace);
+        virtual int GetResultReg();
+        virtual std::vector<int> GetUsedRegs();
     };
 
     class GEPInst : public Instruction
@@ -244,6 +294,10 @@ namespace LLVMIR
             DataType t, DataType it, Operand* bp, Operand* r, std::vector<int> d = {}, std::vector<Operand*> is = {});
 
         virtual void printIR(std::ostream& s);
+
+        virtual void Rename(std::map<int,int> &replace);
+        virtual int GetResultReg();
+        virtual std::vector<int> GetUsedRegs();
     };
 
     class FuncDeclareInst : public Instruction
@@ -256,6 +310,10 @@ namespace LLVMIR
         FuncDeclareInst(DataType rt, std::string fn, std::vector<DataType> at = {});
 
         virtual void printIR(std::ostream& s);
+
+        virtual void Rename(std::map<int,int> &replace);
+        virtual int GetResultReg();
+        virtual std::vector<int> GetUsedRegs();
     };
 
     class FuncDefInst : public FuncDeclareInst
@@ -266,6 +324,10 @@ namespace LLVMIR
         FuncDefInst(DataType rt, std::string fn, std::vector<DataType> at = {});
 
         virtual void printIR(std::ostream& s);
+
+        virtual void Rename(std::map<int,int> &replace);
+        virtual int GetResultReg();
+        virtual std::vector<int> GetUsedRegs();
     };
 
     class SI2FPInst : public Instruction
@@ -277,6 +339,10 @@ namespace LLVMIR
         SI2FPInst(Operand* f, Operand* t);
 
         virtual void printIR(std::ostream& s);
+
+        virtual void Rename(std::map<int,int> &replace);
+        virtual int GetResultReg();
+        virtual std::vector<int> GetUsedRegs();
     };
 
     class FP2SIInst : public Instruction
@@ -288,6 +354,10 @@ namespace LLVMIR
         FP2SIInst(Operand* f, Operand* t);
 
         virtual void printIR(std::ostream& s);
+
+        virtual void Rename(std::map<int,int> &replace);
+        virtual int GetResultReg();
+        virtual std::vector<int> GetUsedRegs();
     };
 
     class ZextInst : public Instruction
@@ -301,6 +371,10 @@ namespace LLVMIR
         ZextInst(DataType f, DataType t, Operand* s, Operand* d);
 
         virtual void printIR(std::ostream& s);
+
+        virtual void Rename(std::map<int,int> &replace);
+        virtual int GetResultReg();
+        virtual std::vector<int> GetUsedRegs();
     };
 
     class FPExtInst : public Instruction
@@ -312,9 +386,13 @@ namespace LLVMIR
         FPExtInst(Operand* s, Operand* d);
 
         virtual void printIR(std::ostream& s) override;
+        
+        virtual void Rename(std::map<int,int> &replace) override;
+        virtual int GetResultReg() override;
+        virtual std::vector<int> GetUsedRegs() override;
     };
 
-    class PhiInst : public Instruction
+    class PhiInst : public Instruction// phi valsa_for_labels.first valsa_for_labels.second val在前 label在后
     {
       public:
         DataType                                   type;
@@ -324,6 +402,14 @@ namespace LLVMIR
         PhiInst(DataType t, Operand* r, const std::vector<std::pair<Operand*, Operand*>>* vfl = nullptr);
 
         virtual void printIR(std::ostream& s);
+        
+        virtual void Rename(std::map<int,int> &replace);
+        virtual int GetResultReg();
+        virtual std::vector<int> GetUsedRegs();
+
+        void Insert_into_PHI(Operand* val, Operand* label){
+          vals_for_labels.push_back(std::pair<Operand*, Operand*>(val,label));
+        }
     };
 }  // namespace LLVMIR
 
