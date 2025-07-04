@@ -13,8 +13,8 @@ Interval::Interval() : ref_cnt(0) {}
 Interval::Interval(Register r) : reg(r), ref_cnt(0) {}
 Interval::Segmant::Segmant(int s, int e) : start(s), end(e) {}
 
-bool Interval::Segmant::inside(int ins_id) { return start <= ins_id && ins_id < end; }
-bool Interval::Segmant::intersect(Interval::Segmant s)
+bool Interval::Segmant::inside(int ins_id) const { return start <= ins_id && ins_id < end; }
+bool Interval::Segmant::intersect(Interval::Segmant s) const
 {
     return inside(s.start) || inside((s.end - 1 > s.start) ? s.end - 1 : s.start) || s.inside(start) ||
            s.inside((end - 1 > start) ? end - 1 : start);
@@ -24,22 +24,46 @@ bool Interval::intersect(const Interval& i) const
 {
     if (segs.empty() || i.segs.empty()) return false;
 
-    // 快速路径：如果区间完全不重叠，直接返回
-    if (segs.back().end <= i.segs.front().start || i.segs.back().end <= segs.front().start) { return false; }
+    // 对于有多个不连续段的虚拟寄存器，使用保守的冲突检测
+    // 这确保了不连续生存区间不会错误地共享同一个物理寄存器
+    if (reg.is_virtual && segs.size() > 1) {
+        int min_start = segs.front().start;
+        int max_end = segs.back().end;
+        
+        for (const auto& seg2 : i.segs) {
+            if (seg2.start < max_end && min_start < seg2.end) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    if (i.reg.is_virtual && i.segs.size() > 1) {
+        int min_start = i.segs.front().start;
+        int max_end = i.segs.back().end;
+        
+        for (const auto& seg1 : segs) {
+            if (seg1.start < max_end && min_start < seg1.end) {
+                return true;
+            }
+        }
+        return false;
+    }
 
+    // 对于正常情况，使用精确的段间冲突检测
     auto it1 = segs.begin(), it2 = i.segs.begin();
     while (it1 != segs.end() && it2 != i.segs.end())
     {
         const Segmant& s1 = *it1;
         const Segmant& s2 = *it2;
 
-        // 内联 intersect 检查以避免函数调用开销
-        if (s1.start < s2.end && s2.start < s1.end) { return true; }
-
+        if (s1.intersect(s2)) return true;
         if (s1.end <= s2.start)
             ++it1;
-        else
+        else if (s2.end <= s1.start)
             ++it2;
+        else
+            ++it1;
     }
 
     return false;
@@ -204,6 +228,36 @@ void BaseRegisterAssigner::getInterval()
         }
     }
 
+    // 添加调试输出：显示活跃性分析结果
+    std::cerr << "=== Liveness Analysis for Function " << cur_func->name << " ===" << std::endl;
+    for (int block_id : bfs_order) {
+        Cele::dynamic_bitset in_set = liveness.GetIN(block_id);
+        Cele::dynamic_bitset out_set = liveness.GetOUT(block_id);
+        
+        std::cerr << "Block " << block_id << ":" << std::endl;
+        std::cerr << "  IN:  ";
+        for (size_t i = 0; i < MAX_REGISTERS; ++i) {
+            if (in_set.test(i)) {
+                Register reg = liveness.reverse_mapping[i];
+                if (reg.is_virtual && (reg.reg_num == 32 || reg.reg_num == 93)) {
+                    std::cerr << "v_" << reg.reg_num << " ";
+                }
+            }
+        }
+        std::cerr << std::endl;
+        
+        std::cerr << "  OUT: ";
+        for (size_t i = 0; i < MAX_REGISTERS; ++i) {
+            if (out_set.test(i)) {
+                Register reg = liveness.reverse_mapping[i];
+                if (reg.is_virtual && (reg.reg_num == 32 || reg.reg_num == 93)) {
+                    std::cerr << "v_" << reg.reg_num << " ";
+                }
+            }
+        }
+        std::cerr << std::endl;
+    }
+
     std::map<Register, int> last_def, last_use;
     for (auto it = bfs_order.rbegin(); it != bfs_order.rend(); ++it)
     {
@@ -223,13 +277,24 @@ void BaseRegisterAssigner::getInterval()
                     int in_ins_id  = block->insts.front()->ins_id - 1;
                     int out_ins_id = block->insts.back()->ins_id;
                     intervals[reg].segs.emplace_back(in_ins_id, out_ins_id);
+                    
+                    // 调试特定寄存器
+                    if (reg.is_virtual && (reg.reg_num == 32 || reg.reg_num == 93)) {
+                        std::cerr << "DEBUG: v_" << reg.reg_num << " added OUT segment [" 
+                                  << in_ins_id << "," << out_ins_id << ") in block " << id << std::endl;
+                    }
                 }
                 else
                 {
-                    int in_ins_id = 0, out_ins_id = 0;
-                    in_ins_id  = block->insts.front()->ins_id - 1;
-                    out_ins_id = block->insts.back()->ins_id;
+                    int in_ins_id  = block->insts.front()->ins_id - 1;
+                    int out_ins_id = block->insts.back()->ins_id;
                     intervals[reg].segs.emplace_back(in_ins_id, out_ins_id);
+                    
+                    // 调试特定寄存器
+                    if (reg.is_virtual && (reg.reg_num == 32 || reg.reg_num == 93)) {
+                        std::cerr << "DEBUG: v_" << reg.reg_num << " added OUT segment [" 
+                                  << in_ins_id << "," << out_ins_id << ") in block " << id << std::endl;
+                    }
                 }
                 last_use[reg] = block->insts.back()->ins_id;
             }
@@ -248,9 +313,25 @@ void BaseRegisterAssigner::getInterval()
                 {
                     last_use.erase(*reg);
                     // 由于改为vector，需要找到最前面的段来修改start
-                    if (!intervals[*reg].segs.empty()) { intervals[*reg].segs.back().start = inst->ins_id; }
+                    if (!intervals[*reg].segs.empty()) { 
+                        intervals[*reg].segs.back().start = inst->ins_id; 
+                        
+                        // 调试特定寄存器
+                        if (reg->is_virtual && (reg->reg_num == 32 || reg->reg_num == 93)) {
+                            std::cerr << "DEBUG: v_" << reg->reg_num << " DEF updated segment start to " 
+                                      << inst->ins_id << std::endl;
+                        }
+                    }
                 }
-                else { intervals[*reg].segs.emplace_back(inst->ins_id, inst->ins_id + 1); }
+                else { 
+                    intervals[*reg].segs.emplace_back(inst->ins_id, inst->ins_id + 1); 
+                    
+                    // 调试特定寄存器
+                    if (reg->is_virtual && (reg->reg_num == 32 || reg->reg_num == 93)) {
+                        std::cerr << "DEBUG: v_" << reg->reg_num << " added DEF segment [" 
+                                  << inst->ins_id << "," << (inst->ins_id + 1) << ")" << std::endl;
+                    }
+                }
 
                 intervals[*reg].ref_cnt++;
             }
@@ -259,9 +340,14 @@ void BaseRegisterAssigner::getInterval()
                 if (intervals.find(*reg) == intervals.end()) intervals[*reg] = Interval(*reg);
                 if (last_use.find(*reg) == last_use.end())
                 {
-                    int in_ins_id = 0;
-                    in_ins_id     = inst->ins_id - 1;
+                    int in_ins_id = inst->ins_id - 1;
                     intervals[*reg].segs.emplace_back(in_ins_id, inst->ins_id);
+                    
+                    // 调试特定寄存器
+                    if (reg->is_virtual && (reg->reg_num == 32 || reg->reg_num == 93)) {
+                        std::cerr << "DEBUG: v_" << reg->reg_num << " added USE segment [" 
+                                  << in_ins_id << "," << inst->ins_id << ")" << std::endl;
+                    }
                 }
                 last_use[*reg] = inst->ins_id;
 
@@ -625,13 +711,31 @@ bool LinearScanRegisterAssigner::tryAssignRegister()
 
     bool spilled = false;
 
+    // 添加调试输出：打印所有虚拟寄存器的生存区间
+    std::cerr << "=== Function " << cur_func->name << " register allocation ===" << std::endl;
     for (auto& [reg, interval] : intervals)
     {
         if (reg.is_virtual)
         {
+            // 特别关注v_32和v_93
+            if (reg.reg_num == 32 || reg.reg_num == 93) {
+                std::cerr << "DEBUG: Virtual reg v_" << reg.reg_num << " intervals: ";
+                for (auto& seg : interval.segs) {
+                    std::cerr << "[" << seg.start << "," << seg.end << ") ";
+                }
+                std::cerr << " ref_cnt=" << interval.ref_cnt << std::endl;
+            }
             unalloc_queue.push(&interval);  // 仅压入指针，避免复制
         }
         else { phy_regs.occupyReg(reg.reg_num, interval); }
+    }
+
+    // 检查v_32和v_93是否相交
+    auto it_32 = intervals.find(Register{32, INT64, true});
+    auto it_93 = intervals.find(Register{93, INT64, true});
+    if (it_32 != intervals.end() && it_93 != intervals.end()) {
+        bool intersects = it_32->second.intersect(it_93->second);
+        std::cerr << "DEBUG: v_32 and v_93 intersect: " << (intersects ? "YES" : "NO") << std::endl;
     }
 
     while (!unalloc_queue.empty())
@@ -643,6 +747,12 @@ bool LinearScanRegisterAssigner::tryAssignRegister()
 
         Register vreg       = in.reg;
         int      phy_reg_id = -1;
+
+        // 特别关注v_32和v_93的分配过程
+        bool debug_this_reg = (vreg.reg_num == 32 || vreg.reg_num == 93);
+        if (debug_this_reg) {
+            std::cerr << "DEBUG: Allocating v_" << vreg.reg_num << std::endl;
+        }
 
         // 预先检查是否为参数寄存器，避免重复遍历
         bool in_param = false;
@@ -670,6 +780,9 @@ bool LinearScanRegisterAssigner::tryAssignRegister()
             if (occupied.empty())
             {
                 phy_reg_id = reg;
+                if (debug_this_reg) {
+                    std::cerr << "DEBUG: v_" << vreg.reg_num << " assigned to phy reg " << reg << " (empty)" << std::endl;
+                }
                 break;
             }
 
@@ -679,6 +792,10 @@ bool LinearScanRegisterAssigner::tryAssignRegister()
                 if (in.intersect(oti))
                 {
                     conflict = true;
+                    if (debug_this_reg) {
+                        std::cerr << "DEBUG: v_" << vreg.reg_num << " conflicts with v_" << oti.reg.reg_num 
+                                  << " on phy reg " << reg << std::endl;
+                    }
                     break;
                 }
             }
@@ -686,6 +803,9 @@ bool LinearScanRegisterAssigner::tryAssignRegister()
             if (!conflict)
             {
                 phy_reg_id = reg;
+                if (debug_this_reg) {
+                    std::cerr << "DEBUG: v_" << vreg.reg_num << " assigned to phy reg " << reg << " (no conflict)" << std::endl;
+                }
                 break;
             }
         }
@@ -702,6 +822,9 @@ bool LinearScanRegisterAssigner::tryAssignRegister()
         int mem = phy_regs.getValidMem(in);
         phy_regs.occupyMem(mem, in.reg.data_type->getDataWidth(), in);
         regAlloc[vreg] = {true, mem};
+        if (debug_this_reg) {
+            std::cerr << "DEBUG: v_" << vreg.reg_num << " spilled to memory offset " << mem << std::endl;
+        }
     }
 
     return !spilled;

@@ -76,10 +76,14 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
                 }
             }
 
-            for (auto it = block->insts.begin(); it != block->insts.end(); ++it)
+            for (auto it = block->insts.begin(); it != block->insts.end();)
             {
                 Instruction* base_inst = *it;
-                if (base_inst->inst_type != InstType::PHI) continue;
+                if (base_inst->inst_type != InstType::PHI)
+                {
+                    ++it;
+                    continue;
+                }
 
                 it           = block->insts.erase(it);
                 PhiInst* phi = (PhiInst*)base_inst;
