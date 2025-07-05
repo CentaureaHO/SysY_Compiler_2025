@@ -52,6 +52,7 @@ namespace LLVMIR
 
         std::map<FuncDefInst*, CFG*>             cfg;       // 代码优化 分析pass 构建CFG
         std::map<CFG*, Cele::Algo::DomAnalyzer*> DomTrees;  ////代码优化 分析pass 构建支配树
+        std::map<CFG*, Cele::Algo::DomAnalyzer*> ReDomTrees;  ////代码优化 分析pass 构建反向支配树 
 
       public:
         IR();

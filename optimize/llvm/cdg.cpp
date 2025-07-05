@@ -1,4 +1,4 @@
-#include "../include/cdg.h"
+#include "cdg.h"
 #include "cfg.h"
 
 void CDGAnalyzer::Execute() { BuildCDG(); }
@@ -18,7 +18,7 @@ void CDGAnalyzer::BuildSingleCDG(CFG* C)
         // 建立CDG图
         // 对于每个id的控制边界
         // std::cout << "Id is " << id << " has: ";
-
+        auto ReDom = ir->ReDomTrees[C];
         for (auto cfg : ReDom->dom_frontier[id])
         {
             // 如果x在y的反支配树的支配边界上，那么说明x控制依赖y，即x ->  y

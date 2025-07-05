@@ -12,11 +12,14 @@
 
 // llvmIR Optimizers
 // MEM2REG
+#include "llvm/cdg.h"
 #include "llvm/make_cfg.h"
 #include "llvm/make_domtree.h"
 #include "llvm/mem2reg.h"
 // DCE
 #include "llvm/dce.h"
+// ADCE
+#include "llvm/adce.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -201,6 +204,14 @@ int main(int argc, char** argv)
         DefUseAnalysisPass defuse(&builder);
         DCEPass dce(&builder, &defuse);
         dce.Execute();
+
+        // ADCE
+        MakeDomTreePass makeredom(&builder);
+        makeredom.Execute(true);
+        CDGAnalyzer cdg(&builder);
+        cdg.Execute();
+        ADCEPass adce(&builder, &defuse, &cdg);
+        adce.Execute();
     }
 
     if (step == "-llvm")
