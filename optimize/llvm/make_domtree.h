@@ -8,6 +8,7 @@ class MakeDomTreePass : public Pass
   public:
     MakeDomTreePass(LLVMIR::IR* ir) : Pass(ir) {}
     void Execute();
+    void Execute(bool reserve);
 };
 
 #endif

@@ -1,8 +1,10 @@
+#include "llvm_ir/defs.h"
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <memory>
 #include <cstring>
+#include <ostream>
 #include <string>
 #include <parser/driver.h>
 #include <common/type/symtab/symbol_table.h>
@@ -12,11 +14,15 @@
 
 // llvmIR Optimizers
 // MEM2REG
+#include "llvm/cdg.h"
+#include "llvm/def_use.h"
 #include "llvm/make_cfg.h"
 #include "llvm/make_domtree.h"
 #include "llvm/mem2reg.h"
 // DCE
 #include "llvm/dce.h"
+// ADCE
+#include "llvm/adce.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -196,11 +202,25 @@ int main(int argc, char** argv)
         makedom.Execute();
         Mem2Reg mem2reg(&builder);
         mem2reg.Execute();
-        
         // DCE
-        DefUseAnalysisPass defuse(&builder);
-        DCEPass dce(&builder, &defuse);
+        DefUseAnalysisPass DCEDefUse(&builder);
+        DCEDefUse.Execute();
+        DCEPass dce(&builder, &DCEDefUse);
         dce.Execute();
+        // std::cout << "DCE completed" << std::endl;
+
+        // ADCE
+        MakeDomTreePass makeredom(&builder);
+        makeredom.Execute(true);
+        // std::cout << "Reversed dom tree completed" << std::endl;
+        CDGAnalyzer cdg(&builder);
+        cdg.Execute();
+        // std::cout << "CDG completed" << std::endl;
+        DefUseAnalysisPass ADCEDefUse(&builder);
+        ADCEDefUse.Execute();
+        ADCEPass adce(&builder, &ADCEDefUse, &cdg);
+        adce.Execute();
+        // std::cout << "ADCE completed" << std::endl;
     }
 
     if (step == "-llvm")

@@ -74,6 +74,9 @@ void DCEPass::DceInSingleCFG(CFG *C) {
                 continue;
             }
             new_instlist.push_back(inst);
+            // if(inst->opcode == IROpCode::PHI) {
+            //     std::cout<<"phi found in block " << id << std::endl;
+            // }
         }
         bb->insts = new_instlist;
     }
