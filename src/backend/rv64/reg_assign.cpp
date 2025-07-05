@@ -111,9 +111,11 @@ std::vector<int> AssignRecord::getValidRegs(Interval in, bool save)
             RV64_REGS
 #undef X
 
-            // remove ra from simple_res
             int ra = preg_ra.reg_num;
+            int fp = preg_fp.reg_num;
             simple_res.erase(remove(simple_res.begin(), simple_res.end(), ra), simple_res.end());
+            simple_res.erase(remove(simple_res.begin(), simple_res.end(), fp), simple_res.end());
+            save_res.erase(remove(save_res.begin(), save_res.end(), fp), save_res.end());
         }
 
         // return save_res;
@@ -232,18 +234,12 @@ void BaseRegisterAssigner::getInterval()
 
         for (size_t i = 0; i < MAX_REGISTERS; ++i)
         {
-            if (in_set.test(i))
-            {
-                Register reg = liveness.reverse_mapping[i];
-            }
+            if (in_set.test(i)) { Register reg = liveness.reverse_mapping[i]; }
         }
 
         for (size_t i = 0; i < MAX_REGISTERS; ++i)
         {
-            if (out_set.test(i))
-            {
-                Register reg = liveness.reverse_mapping[i];
-            }
+            if (out_set.test(i)) { Register reg = liveness.reverse_mapping[i]; }
         }
     }
 
@@ -290,15 +286,9 @@ void BaseRegisterAssigner::getInterval()
                 {
                     last_use.erase(*reg);
 
-                    if (!intervals[*reg].segs.empty())
-                    {
-                        intervals[*reg].segs.back().start = inst->ins_id;
-                    }
+                    if (!intervals[*reg].segs.empty()) { intervals[*reg].segs.back().start = inst->ins_id; }
                 }
-                else
-                {
-                    intervals[*reg].segs.emplace_back(inst->ins_id, inst->ins_id + 1);
-                }
+                else { intervals[*reg].segs.emplace_back(inst->ins_id, inst->ins_id + 1); }
 
                 intervals[*reg].ref_cnt++;
             }
@@ -669,10 +659,7 @@ bool LinearScanRegisterAssigner::tryAssignRegister()
 
     for (auto& [reg, interval] : intervals)
     {
-        if (reg.is_virtual)
-        {
-            unalloc_queue.push(&interval);
-        }
+        if (reg.is_virtual) { unalloc_queue.push(&interval); }
         else { phy_regs.occupyReg(reg.reg_num, interval); }
     }
 

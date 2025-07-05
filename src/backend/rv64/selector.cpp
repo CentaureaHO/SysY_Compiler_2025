@@ -463,7 +463,7 @@ void Selector::convertADD(LLVMIR::ArithmeticInst* inst)
         Register rhs = getLLVMReg(rhs_reg, INT64);
         Register res = getLLVMReg(res_reg, INT64);
 
-        cur_block->insts.push_back(createRInst(RV64InstType::ADD, res, lhs, rhs));
+        cur_block->insts.push_back(createRInst(RV64InstType::ADDW, res, lhs, rhs));
     }
     // REG + IMME
     else if (lhs_type == ir_reg_type && rhs_type == imme_type)
@@ -548,7 +548,7 @@ void Selector::convertSUB(LLVMIR::ArithmeticInst* inst)
         Register rhs = extractIROp2Reg(inst->rhs, INT64);
         Register res = getLLVMReg(res_reg, INT64);
 
-        cur_block->insts.push_back(createRInst(RV64InstType::SUB, res, lhs, rhs));
+        cur_block->insts.push_back(createRInst(RV64InstType::SUBW, res, lhs, rhs));
     }
 
     /*
@@ -928,7 +928,7 @@ void Selector::convertMOD(LLVMIR::ArithmeticInst* inst)
         else
             rhs = getLLVMReg(((LLVMIR::RegOperand*)inst->rhs)->reg_num, INT64);
 
-        cur_block->insts.push_back(createRInst(RV64InstType::REM, rd, lhs, rhs));
+        cur_block->insts.push_back(createRInst(RV64InstType::REMW, rd, lhs, rhs));
     }
 }
 void Selector::convertSHL(LLVMIR::ArithmeticInst* inst)
