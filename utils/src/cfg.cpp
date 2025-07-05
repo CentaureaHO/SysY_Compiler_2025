@@ -78,10 +78,11 @@ void CFG::BuildCFG()
         else
             iter++;
     }
-    auto blocks_temp=this->func->blocks;
+    auto blocks_temp = this->func->blocks;
     this->func->blocks.clear();
-    for(auto& iter:blocks_temp){
-        if(visited[iter->block_id]) this->func->blocks.push_back(iter);
+    for (auto& iter : blocks_temp)
+    {
+        if (visited[iter->block_id]) this->func->blocks.push_back(iter);
     }
     // std::cout<<"visiting condition: "<<std::endl;
     // for(auto iter:visited) std::cout<<iter.first<<' '<<iter.second<<std::endl;

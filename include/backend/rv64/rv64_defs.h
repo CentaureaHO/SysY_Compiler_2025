@@ -44,7 +44,9 @@
 // (name, type, asm)
 #define RV64_INSTS            \
     X(ADD, R, add)            \
+    X(ADDW, R, addw)          \
     X(SUB, R, sub)            \
+    X(SUBW, R, subw)          \
     X(MUL, R, mul)            \
     X(MULW, R, mulw)          \
     X(DIV, R, div)            \
@@ -54,6 +56,7 @@
     X(FMUL_S, R, fmul.s)      \
     X(FDIV_S, R, fdiv.s)      \
     X(REM, R, rem)            \
+    X(REMW, R, remw)          \
     X(SLL, R, sll)            \
     X(SRL, R, srl)            \
     X(AND, R, and)            \

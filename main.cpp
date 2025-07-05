@@ -10,9 +10,13 @@
 #include <llvm_ir/ir_builder.h>
 #include <backend/factory.h>
 
+// llvmIR Optimizers
+// MEM2REG
 #include "llvm/make_cfg.h"
 #include "llvm/make_domtree.h"
 #include "llvm/mem2reg.h"
+// DCE
+#include "llvm/dce.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -28,6 +32,8 @@ extern vector<string> semanticErrMsgs;
 
 extern IR builder;
 size_t    errCnt = 0;
+
+bool no_reg_alloc = false;
 
 string truncateString(const string& str, size_t width)
 {
@@ -63,6 +69,7 @@ int main(int argc, char** argv)
         else if (arg == "-O0") { optimizeLevel = 0; }
         else if (arg == "-O2") { optimizeLevel = 2; }
         else if (arg == "-O3") { optimizeLevel = 3; }
+        else if (arg == "-no-reg-alloc") { no_reg_alloc = true; }
         else if (arg[0] != '-') { inputFile = arg; }
         else
         {
@@ -123,19 +130,8 @@ int main(int argc, char** argv)
                 token.token_name == "FLOAT_CONST" || token.token_name == "IDENT" ||
                 token.token_name == "SLASH_COMMENT" || token.token_name == "ERR_TOKEN")
             {
-                std::visit(
-                    [&](auto&& arg) {
-                        using T = std::decay_t<decltype(arg)>;
-                        if constexpr (std::is_same_v<T, int>) { *outStream << setw(STR_PW) << arg; }
-                        else if constexpr (std::is_same_v<T, long long>) { *outStream << setw(STR_PW) << arg; }
-                        else if constexpr (std::is_same_v<T, float>) { *outStream << setw(STR_PW) << arg; }
-                        else if constexpr (std::is_same_v<T, std::shared_ptr<std::string>>)
-                        {
-                            *outStream << setw(STR_PW) << truncateString(*arg, STR_REAL_WIDTH);
-                        }
-                        else { *outStream << setw(STR_PW) << "N/A"; }
-                    },
-                    token.value);
+                // TODO: Fix std::variant compatibility issue with older compilers
+                *outStream << setw(STR_PW) << "TODO_VALUE";
             }
             else { *outStream << setw(STR_PW) << " "; }
 
@@ -200,6 +196,11 @@ int main(int argc, char** argv)
         makedom.Execute();
         Mem2Reg mem2reg(&builder);
         mem2reg.Execute();
+        
+        // DCE
+        DefUseAnalysisPass defuse(&builder);
+        DCEPass dce(&builder, &defuse);
+        dce.Execute();
     }
 
     if (step == "-llvm")

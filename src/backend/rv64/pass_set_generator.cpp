@@ -10,6 +10,8 @@
 using namespace Backend::RV64;
 using namespace Backend::RV64::Passes;
 
+extern bool no_reg_alloc;
+
 std::vector<std::unique_ptr<Backend::BasePass>> PassSetGenerator::generate(
     LLVMIR::IR* ir, std::vector<Function*>& functions, std::vector<LLVMIR::Instruction*>& glb_defs, std::ostream& out)
 {
@@ -21,8 +23,11 @@ std::vector<std::unique_ptr<Backend::BasePass>> PassSetGenerator::generate(
     passes.emplace_back(std::make_unique<ImmediateFMoveEliminationPass>(functions));
     passes.emplace_back(std::make_unique<ImmediateIMoveEliminationPass>(functions));
     passes.emplace_back(std::make_unique<MoveEliminationPass>(functions));
-    passes.emplace_back(std::make_unique<RegisterAllocationPass>(functions));
-    passes.emplace_back(std::make_unique<StackLoweringPass>(functions));
+    if (!no_reg_alloc)
+    {
+        passes.emplace_back(std::make_unique<RegisterAllocationPass>(functions));
+        passes.emplace_back(std::make_unique<StackLoweringPass>(functions));
+    }
 
     passes.emplace_back(std::make_unique<CodeGenerationPass>(functions, glb_defs, out));
 

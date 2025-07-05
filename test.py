@@ -46,13 +46,13 @@ def execute_ir(input,output,opt,stdin,stdout,testout):
         print("\033[93mCompile Error on \033[0m"+input)
         return 0
     
-    result = execute(["clang-15",output,"-c","-o","tmp.o","-w"])
+    result = execute(["clang",output,"-c","-o","tmp.o","-w"])
     if(result.returncode != 0):
         print("\033[93mOutPut Error on \033[0m"+input)
         return 0
         
-    result = execute(["clang-15","-static","tmp.o","-L./lib","-lsysy_x86"])
-    # result = execute(["clang-15","-static","tmp.o","library/libsysy_rv.a"])
+    result = execute(["clang","-static","tmp.o","-L./lib","-lsysy_x86"])
+    # result = execute(["clang","-static","tmp.o","library/libsysy_rv.a"])
     if(result.returncode != 0):
         result = execute(["rm","-rf","tmp.o"])
         print("\033[93mLink Error on \033[0m"+input)
