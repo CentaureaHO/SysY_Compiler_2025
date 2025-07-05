@@ -16,7 +16,7 @@ void ADCEPass::ADceInSingleCFG(CFG* C)
     // 首先扫描得到所有的store等
     for (auto [id, bb] : C->block_id_to_block)
     {
-        auto instlist = bb->insts;
+        auto& instlist = bb->insts;
         for (auto inst : instlist)
         {
             if (inst->opcode == IROpCode::STORE)
@@ -36,7 +36,7 @@ void ADCEPass::ADceInSingleCFG(CFG* C)
             }
         }
     }
-    // std::cout << "Init Worklist size is " << WorkList.size() << std::endl;
+    std::cout << "Init Worklist size is " << WorkList.size() << std::endl;
 
     // 得到了起始的WorkList
 
@@ -65,7 +65,6 @@ void ADCEPass::ADceInSingleCFG(CFG* C)
         live_bb.insert(id);
         auto S = I->GetUsedRegs();
         for (auto s : S) { live_use.insert(s); }
-
         if (I->opcode == IROpCode::PHI)
         {
             auto Phi = (PhiInst*)I;
@@ -111,71 +110,12 @@ void ADCEPass::ADceInSingleCFG(CFG* C)
             if (live.find(inst) != live.end())
             {
                 new_instlist.push_back(inst);
-                // 如果跳转的位置label没有用,那么就需要进行替换
-                // 更换成后继第一个活跃的上
-                // if (inst->GetOpcode() == BasicInstruction::BR_COND) {
-                //     auto BRCONDInst = (BrCondInstruction *)inst;
-                //     int true_label = ((LabelOperand *)(BRCONDInst->GetTrueLabel()))->GetLabelNo();
-                //     int false_label = ((LabelOperand *)(BRCONDInst->GetFalseLabel()))->GetLabelNo();
-                //     if (live_bb.find(true_label) == live_bb.end()) {
-                //         int newtrue_label = true_label;
-                //         while (live_bb.find(newtrue_label) == live_bb.end()) {
-                //             newtrue_label = ReDom->GetDomTree(C)->redom_tree[newtrue_label]->block_id;
-                //             std::cout << "New label is " << newtrue_label << std::endl;
-                //         }
-                //         BRCONDInst->ReplcaeLabel(newtrue_label, 1);
-                //     }
-                //     if (live_bb.find(false_label) == live_bb.end()) {
-                //         int newfalse_label = false_label;
-                //         while (live_bb.find(newfalse_label) == live_bb.end()) {
-                //             newfalse_label = ReDom->GetDomTree(C)->redom_tree[newfalse_label]->block_id;
-                //             std::cout << "New label is " << newfalse_label << std::endl;
-                //         }
-                //         BRCONDInst->ReplcaeLabel(newfalse_label, 0);
-                //     }
-                // }
-
-                // if (inst->GetOpcode() == BasicInstruction::BR_UNCOND) {
-                //     auto BRUNCONDInst = (BrUncondInstruction *)inst;
-                //     int destlabel = ((LabelOperand *)(BRUNCONDInst->GetDestLabel()))->GetLabelNo();
-                //     if (live_bb.find(destlabel) == live_bb.end()) {
-                //         int newdest_label = destlabel;
-                //         while (live_bb.find(newdest_label) == live_bb.end()) {
-                //             newdest_label = ReDom->GetDomTree(C)->redom_tree[newdest_label]->block_id;
-                //             std::cout << "New label is " << newdest_label << std::endl;
-                //         }
-                //         BRUNCONDInst->ReplcaeLabel(newdest_label);
-                //     }
-                // }
-
-                // if (inst->GetOpcode() == BasicInstruction::PHI) {
-                //     auto PhiInst = (PhiInstruction *)inst;
-                //     auto philist = PhiInst->GetPhilist();
-                //     int index = 0;
-                //     for (auto [label, val] : philist) {
-                //         auto labelno = ((LabelOperand *)label)->GetLabelNo();
-                //         if (live_bb.find(labelno) == live_bb.end()) {
-                //             int newlabel = labelno;
-                //             while (live_bb.find(newlabel) == live_bb.end()) {
-                //                 newlabel = ReDom->GetDomTree(C)->redom_tree[newlabel]->block_id;
-                //             }
-                //             PhiInst->ReplcaeLabel(newlabel, index);
-                //         }
-                //         index++;
-                //     }
-                // }
             }
             else
             {
                 if (inst == instlist.back())
                 {
                     int newlabel = ReDom->imm_dom[id];
-                    // std::cout << "New id of " << id << " is " << newlabel << std::endl;
-
-                    // while (live_bb.find(newlabel) == live_bb.end()) {
-                    //     newlabel = ReDom->GetDomTree(C)->idom[newlabel]->block_id;
-                    //     std::cout << "New id of " << id << " is " << newlabel << std::endl;
-                    // }
                     auto I = new BranchUncondInst(getLabelOperand(newlabel));
                     new_instlist.push_back(I);
                 }

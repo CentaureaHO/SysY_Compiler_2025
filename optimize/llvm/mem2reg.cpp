@@ -1,7 +1,7 @@
 #include "llvm/mem2reg.h"
 #include <iostream>
 #include <queue>
-#define DEBUG_PRINT
+// #define DEBUG_PRINT
 
 bool Mem2Reg::CanMem2Reg(LLVMIR::Instruction* alloca_inst)
 {
@@ -191,6 +191,8 @@ void Mem2Reg::InsertPhi(CFG* cfg)
                     new LLVMIR::PhiInst(allocaid2inst[iter]->type, new LLVMIR::RegOperand(++cfg->func->max_reg));
                 cfg->block_id_to_block[iter2]->insts.push_front(phi);
 #ifdef DEBUG_PRINT
+                std::cout << "insert phi to block " << iter2 << " for reg " << iter << "inst type is " << phi->opcode
+                          << std::endl;
                 std::cout << "insertphi of reg " << iter << " to block " << iter2 << std::endl;
 #endif
                 new_phis[phi] = iter;

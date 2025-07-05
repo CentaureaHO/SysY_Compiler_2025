@@ -715,6 +715,7 @@ std::vector<int> PhiInst::GetUsedRegs()
     {
         if (iter.first->type == OperandType::REG) { retvec.push_back(((RegOperand*)iter.first)->reg_num); }
     }
+    std::cout<<"PhiInst::GetUsedRegs() called, size: "<<retvec.size()<<std::endl;
     return retvec;
 }
 
