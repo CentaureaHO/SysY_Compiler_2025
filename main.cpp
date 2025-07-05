@@ -10,9 +10,13 @@
 #include <llvm_ir/ir_builder.h>
 #include <backend/factory.h>
 
+// llvmIR Optimizers
+// MEM2REG
 #include "llvm/make_cfg.h"
 #include "llvm/make_domtree.h"
 #include "llvm/mem2reg.h"
+// DCE
+#include "llvm/dce.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -192,6 +196,11 @@ int main(int argc, char** argv)
         makedom.Execute();
         Mem2Reg mem2reg(&builder);
         mem2reg.Execute();
+        
+        // DCE
+        DefUseAnalysisPass defuse(&builder);
+        DCEPass dce(&builder, &defuse);
+        dce.Execute();
     }
 
     if (step == "-llvm")
