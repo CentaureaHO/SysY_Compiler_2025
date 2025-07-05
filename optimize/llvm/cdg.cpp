@@ -1,5 +1,6 @@
 #include "cdg.h"
 #include "cfg.h"
+#include <algorithm>
 
 void CDGAnalyzer::Execute() { BuildCDG(); }
 
@@ -11,15 +12,16 @@ void CDGAnalyzer::BuildCDG()
 void CDGAnalyzer::BuildSingleCDG(CFG* C)
 {
     // std::cout<<"Building CDG for CFG: " << C->func->func_def->func_name << std::endl;
-    int size = C->block_id_to_block.size() + 1;
-    // std::cout<<"CDG size is " << size << std::endl;
+    auto cmp       = [](auto& a, auto& b) { return a.first < b.first; };
+    int  max_block = std::max_element(C->block_id_to_block.begin(), C->block_id_to_block.end(), cmp)->first;
+    int  size      = max_block + 1;
+    // std::cout << "CDG size is " << size << std::endl;
     CDG[C].resize(size);
     invCDG[C].resize(size);
     for (auto [id, bb] : C->block_id_to_block)
     {
         // 建立CDG图
         // 对于每个id的控制边界
-        // std::cout << "Id is " << id << " has: ";
         auto ReDom = ir->ReDomTrees[C];
         for (auto cfg : ReDom->dom_frontier[id])
         {

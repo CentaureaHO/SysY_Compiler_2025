@@ -36,8 +36,8 @@ void ADCEPass::ADceInSingleCFG(CFG* C)
             }
         }
     }
-    std::cout << "Init Worklist size is " << WorkList.size() << std::endl;
-    std::cout << "Function is " << C->func->func_def->func_name << std::endl;
+    // std::cout << "Init Worklist size is " << WorkList.size() << std::endl;
+    // std::cout << "Function is " << C->func->func_def->func_name << std::endl;
 
     // 得到了起始的WorkList
 
@@ -96,7 +96,6 @@ void ADCEPass::ADceInSingleCFG(CFG* C)
             // std::cout << "Use is " << use << std::endl;
             if (defs.find(use) != defs.end())
             {
-                std::cout << "Find use " << use << std::endl;
                 auto def = defs[use];
                 if (live.find(def) == live.end()) { WorkList[def] = defs2id[def]; }
             }
