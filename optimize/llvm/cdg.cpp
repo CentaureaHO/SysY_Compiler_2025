@@ -10,7 +10,9 @@ void CDGAnalyzer::BuildCDG()
 
 void CDGAnalyzer::BuildSingleCDG(CFG* C)
 {
-    int size = C->block_id_to_block.size();
+    // std::cout<<"Building CDG for CFG: " << C->func->func_def->func_name << std::endl;
+    int size = C->block_id_to_block.size() + 1;
+    // std::cout<<"CDG size is " << size << std::endl;
     CDG[C].resize(size);
     invCDG[C].resize(size);
     for (auto [id, bb] : C->block_id_to_block)

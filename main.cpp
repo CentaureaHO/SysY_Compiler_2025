@@ -205,21 +205,22 @@ int main(int argc, char** argv)
         // DCE
         DefUseAnalysisPass DCEDefUse(&builder);
         DCEDefUse.Execute();
-        DCEPass            dce(&builder, &DCEDefUse);
+        DCEPass dce(&builder, &DCEDefUse);
         dce.Execute();
+        std::cout<<"DCE completed" << std::endl;
 
         // ADCE
-        // MakeDomTreePass makeredom(&builder);
-        // makeredom.Execute(true);
-        // CDGAnalyzer cdg(&builder);
-        // cdg.Execute();
-        // DefUseAnalysisPass ADCEDefUse(&builder);
-        // ADCEDefUse.Execute();
-        // ADCEPass adce(&builder, &ADCEDefUse, &cdg);
-        // adce.Execute();
-
-        // MakeCFGPass makecfg2(&builder);
-        // makecfg2.Execute();
+        MakeDomTreePass makeredom(&builder);
+        makeredom.Execute(true);
+        std::cout<<"Reversed dom tree completed" << std::endl;
+        CDGAnalyzer cdg(&builder);
+        cdg.Execute();
+        std::cout<<"CDG completed" << std::endl;
+        DefUseAnalysisPass ADCEDefUse(&builder);
+        ADCEDefUse.Execute();
+        ADCEPass adce(&builder, &ADCEDefUse, &cdg);
+        adce.Execute();
+        std::cout<<"ADCE completed" << std::endl;
     }
 
     if (step == "-llvm")

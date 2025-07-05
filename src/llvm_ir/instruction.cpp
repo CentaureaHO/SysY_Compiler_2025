@@ -253,7 +253,11 @@ void AllocInst::printIR(ostream& s)
     s << type << string(dims.size(), ']') << "\n";
 }
 
-int AllocInst::GetResultReg() { return -1; }
+int AllocInst::GetResultReg()
+{
+    if (res->type != OperandType::REG) { return -1; }
+    else { return ((RegOperand*)res)->reg_num; }
+}
 
 std::vector<int> AllocInst::GetUsedRegs()
 {
@@ -655,14 +659,8 @@ void ZextInst::Rename(std::map<int, int>& replace)
 }
 
 FPExtInst::FPExtInst(Operand* s, Operand* d) : Instruction(IROpCode::FPEXT), src(s), dest(d) {}
-void FPExtInst::printIR(ostream& s)
-{
-    s << dest << " = fpext float"
-      << " " << src << " to "
-      << "double"
-      << "\n";
-}
-int FPExtInst::GetResultReg()
+void FPExtInst::printIR(ostream& s) { s << dest << " = fpext float" << " " << src << " to " << "double" << "\n"; }
+int  FPExtInst::GetResultReg()
 {
     if (this->dest->type != OperandType::REG) { return -1; }
     return ((RegOperand*)dest)->reg_num;
@@ -715,7 +713,6 @@ std::vector<int> PhiInst::GetUsedRegs()
     {
         if (iter.first->type == OperandType::REG) { retvec.push_back(((RegOperand*)iter.first)->reg_num); }
     }
-    std::cout<<"PhiInst::GetUsedRegs() called, size: "<<retvec.size()<<std::endl;
     return retvec;
 }
 
