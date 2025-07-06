@@ -17,6 +17,12 @@
 #include "llvm/mem2reg.h"
 // DCE
 #include "llvm/dce.h"
+// CSE
+#include "llvm/cse.h"
+#include "llvm/alias_analysis/alias_analysis.h"
+#include "llvm/memdep/memdep.h"
+// Branch CSE
+#include "llvm/branch_cse.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -196,11 +202,23 @@ int main(int argc, char** argv)
         makedom.Execute();
         Mem2Reg mem2reg(&builder);
         mem2reg.Execute();
-        
+
         // DCE
         DefUseAnalysisPass defuse(&builder);
-        DCEPass dce(&builder, &defuse);
+        DCEPass            dce(&builder, &defuse);
         dce.Execute();
+
+        Analyser::AliasAnalyser aa(&builder);
+        aa.run();
+        Analyser::MemoryDependenceAnalyser md(&builder, &aa);
+        md.run();
+        Optimizer::CSEPass cse(&builder, &aa, &md);
+        cse.Execute();
+
+        Optimizer::BranchCSEPass branchCSE(&builder);
+        branchCSE.Execute();
+
+        if (optimizeLevel >= 2) {}
     }
 
     if (step == "-llvm")

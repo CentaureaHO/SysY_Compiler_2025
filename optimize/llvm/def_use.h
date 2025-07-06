@@ -12,7 +12,7 @@ class DefUseAnalysisPass : public Pass
     std::map<int, Instruction*>&           GetDefMap(CFG* C) { return IRDefMaps[C]; }
     std::map<int, std::set<Instruction*>>& GetUseMap(CFG* C) { return IRUseMaps[C]; }
     std::map<Instruction*, int>&           GetDef2idmap(CFG* C) { return IRDef2bbid[C]; }
-    void                                  Execute();
+    void                                   Execute();
 
   private:
     void GetDefUseInSingleCFG(CFG* C);

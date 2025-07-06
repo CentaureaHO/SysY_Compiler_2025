@@ -85,6 +85,7 @@ namespace LLVMIR
     {
       public:
         IROpCode opcode;
+        int      block_id;
 
         Instruction(IROpCode op = IROpCode::OTHER);
         virtual ~Instruction() = default;
