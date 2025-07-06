@@ -23,6 +23,12 @@
 #include "llvm/dce.h"
 // ADCE
 #include "llvm/adce.h"
+// CSE
+#include "llvm/cse.h"
+#include "llvm/alias_analysis/alias_analysis.h"
+#include "llvm/memdep/memdep.h"
+// Branch CSE
+#include "llvm/branch_cse.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -202,6 +208,17 @@ int main(int argc, char** argv)
         makedom.Execute();
         Mem2Reg mem2reg(&builder);
         mem2reg.Execute();
+
+        Analyser::AliasAnalyser aa(&builder);
+        aa.run();
+        Analyser::MemoryDependenceAnalyser md(&builder, &aa);
+        md.run();
+        Optimizer::CSEPass cse(&builder, &aa, &md);
+        cse.Execute();
+
+        Optimizer::BranchCSEPass branchCSE(&builder);
+        branchCSE.Execute();
+
         // DCE
         DefUseAnalysisPass DCEDefUse(&builder);
         DCEDefUse.Execute();
@@ -221,6 +238,8 @@ int main(int argc, char** argv)
         ADCEPass adce(&builder, &ADCEDefUse, &cdg);
         adce.Execute();
         // std::cout << "ADCE completed" << std::endl;
+
+        if (optimizeLevel >= 2) {}
     }
 
     if (step == "-llvm")
