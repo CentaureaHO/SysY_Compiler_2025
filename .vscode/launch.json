@@ -5,7 +5,7 @@
             "type": "cppdbg",
             "request": "launch",
             "name": "dbg main",
-            "program": "${workspaceFolder}/bin/SysYc",
+            "program": "${workspaceFolder}/bin/compiler",
             "cwd": "${workspaceFolder}",
             "externalConsole": false,
             "internalConsoleOptions": "openOnSessionStart",
@@ -17,7 +17,7 @@
                     "ignoreFailures": true
                 }
             ],
-            "args": ["-llvm", "-o", "test.ll", "test.in"],
+            "args": ["-S", "-o", "test.ll", "test.sy", "-O2"],
             "preLaunchTask": "build"
         },
         {

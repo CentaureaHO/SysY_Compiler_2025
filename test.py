@@ -61,9 +61,9 @@ def execute_ir(input,output,opt,stdin,stdout,testout):
     execute(["rm","-rf","tmp.o"])
     result = 0
     if(stdin=="none"):
-        result = execute_with_stdin_out("timeout 10 ./a.out > "+testout + " 2>/dev/null")
+        result = execute_with_stdin_out("timeout 30 ./a.out > "+testout + " 2>/dev/null")
     else:
-        result = execute_with_stdin_out("timeout 10 ./a.out < "+stdin+" > "+testout + " 2>/dev/null")
+        result = execute_with_stdin_out("timeout 30 ./a.out < "+stdin+" > "+testout + " 2>/dev/null")
     if(result == 124):
         print("\033[93mTime Limit Exceed on \033[0m"+input)
         return 0

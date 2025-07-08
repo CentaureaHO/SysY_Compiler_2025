@@ -5,7 +5,7 @@
 #include <algorithm>
 #include "llvm_ir/instruction.h"
 
-namespace Optimizer
+namespace Transform
 {
     static CFG* get_cfg_by_name(LLVMIR::IR* ir, const std::string& name)
     {
@@ -19,7 +19,7 @@ namespace Optimizer
         return nullptr;
     }
 
-    CSEPass::CSEPass(LLVMIR::IR* ir, Analyser::AliasAnalyser* aa, Analyser::MemoryDependenceAnalyser* md)
+    CSEPass::CSEPass(LLVMIR::IR* ir, Analysis::AliasAnalyser* aa, Analysis::MemoryDependenceAnalyser* md)
         : Pass(ir), alias_analyser(aa), memdep_analyser(md)
     {}
 
@@ -218,7 +218,7 @@ namespace Optimizer
             auto load_inst = dynamic_cast<LLVMIR::LoadInst*>(*it);
             auto ptr       = load_inst->ptr;
             auto result    = alias_analyser->queryInstModRef(inst, ptr, cfg);
-            if (result == Analyser::AliasAnalyser::Mod || result == Analyser::AliasAnalyser::ModRef)
+            if (result == Analysis::AliasAnalyser::Mod || result == Analysis::AliasAnalyser::ModRef)
             {
                 load_inst_map.erase(getCSEInfo(*it));
                 it = load_inst_set.erase(it);
@@ -234,7 +234,7 @@ namespace Optimizer
             bool killed = false;
             for (auto ptr : write_ptrs)
             {
-                if (alias_analyser->queryInstModRef(*it, ptr, cfg) != Analyser::AliasAnalyser::NoModRef)
+                if (alias_analyser->queryInstModRef(*it, ptr, cfg) != Analysis::AliasAnalyser::NoModRef)
                 {
                     killed = true;
                     break;
@@ -260,7 +260,7 @@ namespace Optimizer
         for (auto it = load_inst_set.begin(); it != load_inst_set.end();)
         {
             if (alias_analyser->queryAlias(ptr, dynamic_cast<LLVMIR::LoadInst*>(*it)->ptr, cfg) !=
-                Analyser::AliasAnalyser::NoAlias)
+                Analysis::AliasAnalyser::NoAlias)
             {
                 load_inst_map.erase(getCSEInfo(*it));
                 it = load_inst_set.erase(it);
@@ -271,7 +271,7 @@ namespace Optimizer
 
         for (auto it = call_inst_set.begin(); it != call_inst_set.end();)
         {
-            if (alias_analyser->queryInstModRef(*it, ptr, cfg) != Analyser::AliasAnalyser::NoModRef)
+            if (alias_analyser->queryInstModRef(*it, ptr, cfg) != Analysis::AliasAnalyser::NoModRef)
             {
                 call_inst_map.erase(getCSEInfo(*it));
                 it = call_inst_set.erase(it);
@@ -536,4 +536,4 @@ namespace Optimizer
         }
     }
 
-}  // namespace Optimizer
+}  // namespace Transform

@@ -22,6 +22,7 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
 
         void phiInstDestory(Function* func);
         void redirectBranchInst(Function* func, int from, int origin_to, int new_to);
+        void generatePhiCopyInstructions(Function* func);
     };
 
 }  // namespace Backend::RV64::Passes::Optimize::ControlFlow

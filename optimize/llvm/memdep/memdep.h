@@ -8,7 +8,7 @@
 #include <map>
 #include <vector>
 
-namespace Analyser
+namespace Analysis
 {
     class MemoryDependenceAnalyser
     {
@@ -36,6 +36,6 @@ namespace Analyser
 
         void memDepTest();
     };
-}  // namespace Analyser
+}  // namespace Analysis
 
 #endif

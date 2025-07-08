@@ -18,6 +18,21 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
 
     void PhiDestructionPass::phiInstDestory(Function* func)
     {
+        // 早期检查：如果基本块数量已经过多，使用简化策略
+        int  initial_block_count = func->cfg->blocks.size();
+        bool use_simple_strategy = initial_block_count > 500;
+
+        /*
+        if (use_simple_strategy) {
+            phiInstDestorySimple(func);
+            return;
+        }
+        */
+
+        std::set<int>                blocks_with_phi;
+        std::map<int, std::set<int>> critical_edges;
+
+        // 第一步：识别需要处理的基本块和关键边
         for (auto& [id, block] : func->cfg->blocks)
         {
             bool has_phi = false;
@@ -26,21 +41,42 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
                 if (inst->inst_type == InstType::PHI)
                 {
                     has_phi = true;
-                    // assert(false);
                     break;
                 }
             }
             if (!has_phi) continue;
 
+            blocks_with_phi.insert(id);
+
+            // 只为真正的关键边创建分割块
             for (auto& predecessor : func->cfg->inv_graph[id])
             {
-                if (func->cfg->graph[predecessor->label_num].size() <= 1) continue;
-
                 int from = predecessor->label_num;
-                int to   = id;
+                // 关键边：前驱有多个后继 AND 当前块有多个前驱
+                if (func->cfg->graph[from].size() > 1 && func->cfg->inv_graph[id].size() > 1)
+                {
+                    critical_edges[from].insert(id);
+                }
+            }
+        }
+
+        // 第二步：处理关键边分割（控制数量）
+        int new_blocks_created = 0;
+        for (auto& [from, to_set] : critical_edges)
+        {
+            for (int to : to_set)
+            {
+                // 限制新建基本块数量
+                if (new_blocks_created > initial_block_count)
+                {
+                    // 如果已经创建太多基本块，对剩余phi使用简化处理
+                    // phiInstDestorySimpleForBlock(func, to);
+                    // continue;
+                }
 
                 Block* split_block = func->getNewBlock();
                 int    mid_label   = split_block->label_num;
+                new_blocks_created++;
 
                 func->cfg->removeEdge(from, to);
                 func->cfg->makeEdge(from, mid_label);
@@ -51,6 +87,7 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
                 split_block->insts.push_back(createJInst(RV64InstType::JAL, preg_x0, RV64Label(to)));
 
                 // redirect phi inst
+                auto block = func->cfg->blocks[to];
                 for (auto& phi_inst : block->insts)
                 {
                     if (phi_inst->inst_type != InstType::PHI) continue;
@@ -75,6 +112,12 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
                     }
                 }
             }
+        }
+
+        // 第三步：处理phi指令
+        for (int block_id : blocks_with_phi)
+        {
+            auto block = func->cfg->blocks[block_id];
 
             for (auto it = block->insts.begin(); it != block->insts.end();)
             {
@@ -102,6 +145,12 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
             }
         }
 
+        // 第四步：生成拷贝指令
+        generatePhiCopyInstructions(func);
+    }
+
+    void PhiDestructionPass::generatePhiCopyInstructions(Function* func)
+    {
         for (auto& [id, block] : func->cfg->blocks)
         {
             map<Register, Operand*>& copy_map = block->phi_copy_map;
@@ -111,7 +160,6 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
             for (auto& [dst, src] : copy_map) src_ref_count[dst] = 0;
             for (auto& [dst, src] : copy_map)
             {
-                // assert(src != nullptr);
                 if (src->operand_type != OperandType::REG) continue;
                 assert((((RegOperand*)src)->reg).is_virtual);
                 ++src_ref_count[((RegOperand*)src)->reg];

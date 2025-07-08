@@ -6,7 +6,7 @@
 #include "llvm_ir/ir_builder.h"
 #include "cfg.h"
 
-namespace Analyser
+namespace Analysis
 {
     static CFG* getCfgByName(LLVMIR::IR* ir, const std::string& name)
     {
@@ -503,4 +503,4 @@ namespace Analyser
         return false;
     }
 
-}  // namespace Analyser
+}  // namespace Analysis

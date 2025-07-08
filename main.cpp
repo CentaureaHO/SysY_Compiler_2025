@@ -29,6 +29,9 @@
 #include "llvm/memdep/memdep.h"
 // Branch CSE
 #include "llvm/branch_cse.h"
+// Loop Analysis and Simplification
+#include "optimize/llvm/loop/loop_find.h"
+#include "optimize/llvm/loop/loop_simplify.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -209,15 +212,17 @@ int main(int argc, char** argv)
         Mem2Reg mem2reg(&builder);
         mem2reg.Execute();
 
-        Analyser::AliasAnalyser aa(&builder);
+        Analysis::AliasAnalyser aa(&builder);
         aa.run();
-        Analyser::MemoryDependenceAnalyser md(&builder, &aa);
+        Analysis::MemoryDependenceAnalyser md(&builder, &aa);
         md.run();
-        Optimizer::CSEPass cse(&builder, &aa, &md);
+        Transform::CSEPass cse(&builder, &aa, &md);
         cse.Execute();
 
-        Optimizer::BranchCSEPass branchCSE(&builder);
+        /* TODO: fix branch cse
+        StructuralTransform::BranchCSEPass branchCSE(&builder);
         branchCSE.Execute();
+        */
 
         // DCE
         DefUseAnalysisPass DCEDefUse(&builder);
@@ -239,7 +244,17 @@ int main(int argc, char** argv)
         adce.Execute();
         // std::cout << "ADCE completed" << std::endl;
 
-        if (optimizeLevel >= 2) {}
+        if (optimizeLevel >= 2)
+        {
+            // Loop Analysis and Simplification
+            Analysis::LoopAnalysisPass loopAnalysis(&builder);
+            loopAnalysis.Execute();
+            // std::cout << "Loop analysis completed" << std::endl;
+
+            StructuralTransform::LoopSimplifyPass loopSimplify(&builder);
+            loopSimplify.Execute();
+            // std::cout << "Loop simplification completed" << std::endl;
+        }
     }
 
     if (step == "-llvm")

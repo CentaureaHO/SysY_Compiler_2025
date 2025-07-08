@@ -3,7 +3,7 @@
 #include <queue>
 #include <algorithm>
 
-namespace Optimizer
+namespace StructuralTransform
 {
     BranchCSEPass::BranchCSEPass(LLVMIR::IR* ir) : Pass(ir) {}
 
@@ -494,4 +494,4 @@ namespace Optimizer
         }
     }
 
-}  // namespace Optimizer
+}  // namespace StructuralTransform

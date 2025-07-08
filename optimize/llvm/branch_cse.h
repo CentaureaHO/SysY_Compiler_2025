@@ -10,7 +10,7 @@
 #include <string>
 #include <functional>
 
-namespace Optimizer
+namespace StructuralTransform
 {
     struct CmpInstCSEInfo
     {
@@ -50,6 +50,6 @@ namespace Optimizer
         virtual void Execute() override;
     };
 
-}  // namespace Optimizer
+}  // namespace StructuralTransform
 
 #endif

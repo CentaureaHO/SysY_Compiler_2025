@@ -7,7 +7,7 @@
 #include "cfg.h"
 #include "llvm/alias_analysis/alias_analysis.h"
 
-namespace Analyser
+namespace Analysis
 {
     static CFG* getCfgByName(LLVMIR::IR* ir, const std::string& name)
     {
@@ -534,4 +534,4 @@ namespace Analyser
 
     void MemoryDependenceAnalyser::memDepTest() {}
 
-}  // namespace Analyser
+}  // namespace Analysis

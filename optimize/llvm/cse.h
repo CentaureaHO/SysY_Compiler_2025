@@ -9,7 +9,7 @@
 #include <map>
 #include <set>
 
-namespace Optimizer
+namespace Transform
 {
     struct InstCSEInfo
     {
@@ -30,8 +30,8 @@ namespace Optimizer
     class CSEPass : public Pass
     {
       private:
-        Analyser::AliasAnalyser*            alias_analyser;
-        Analyser::MemoryDependenceAnalyser* memdep_analyser;
+        Analysis::AliasAnalyser*            alias_analyser;
+        Analysis::MemoryDependenceAnalyser* memdep_analyser;
 
         std::set<LLVMIR::Instruction*>                           erase_set;
         std::map<InstCSEInfo, int>                               inst_cse_map;
@@ -57,10 +57,10 @@ namespace Optimizer
         void dfsDomTree(int bb_id);
 
       public:
-        CSEPass(LLVMIR::IR* ir, Analyser::AliasAnalyser* aa, Analyser::MemoryDependenceAnalyser* md);
+        CSEPass(LLVMIR::IR* ir, Analysis::AliasAnalyser* aa, Analysis::MemoryDependenceAnalyser* md);
         virtual void Execute() override;
     };
 
-}  // namespace Optimizer
+}  // namespace Transform
 
 #endif

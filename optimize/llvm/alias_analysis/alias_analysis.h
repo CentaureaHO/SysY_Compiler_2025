@@ -9,7 +9,7 @@
 #include "llvm_ir/instruction.h"
 #include "cfg.h"
 
-namespace Analyser
+namespace Analysis
 {
     class PtrRegMemInfo
     {
@@ -95,5 +95,5 @@ namespace Analyser
         std::vector<LLVMIR::Operand*> getWritePtrs(CFG* cfg) { return cfg_mem_rw_map.at(cfg).write_ptrs; }
         std::vector<LLVMIR::Operand*> getReadPtrs(CFG* cfg) { return cfg_mem_rw_map.at(cfg).read_ptrs; }
     };
-}  // namespace Analyser
+}  // namespace Analysis
 #endif

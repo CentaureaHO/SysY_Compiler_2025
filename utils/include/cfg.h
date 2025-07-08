@@ -5,6 +5,14 @@
 #include <map>
 #include <vector>
 
+namespace LLVMIR
+{
+    class IR;
+}
+
+// Forward declaration
+class NaturalLoopForest;
+
 class CFG
 {
   public:
@@ -18,8 +26,15 @@ class CFG
     std::vector<std::vector<int>> G_id{};  // 发现支配树是用这种形式构建的
     std::vector<std::vector<int>> invG_id{};
 
-    CFG() { block_id_to_block.clear(); }
+    NaturalLoopForest* LoopForest;  // Loop forest for this CFG
+
+    CFG()
+    {
+        block_id_to_block.clear();
+        LoopForest = nullptr;
+    }
     void BuildCFG();
+    void BuildLoopInfo(LLVMIR::IR* ir);  // Build loop information
 };
 
 #endif
