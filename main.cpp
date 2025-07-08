@@ -219,10 +219,11 @@ int main(int argc, char** argv)
         Transform::CSEPass cse(&builder, &aa, &md);
         cse.Execute();
 
-        /* TODO: fix branch cse
+        // 这条 Pass 曾经会导致有测试点无法通过
+        // 但我回来修复时，这几个点又可以正常通过了
+        // 日后如果出其它问题，尝试先注释掉这条 Pass 试试
         StructuralTransform::BranchCSEPass branchCSE(&builder);
         branchCSE.Execute();
-        */
 
         // DCE
         DefUseAnalysisPass DCEDefUse(&builder);
@@ -244,17 +245,13 @@ int main(int argc, char** argv)
         adce.Execute();
         // std::cout << "ADCE completed" << std::endl;
 
-        if (optimizeLevel >= 2)
-        {
-            // Loop Analysis and Simplification
-            Analysis::LoopAnalysisPass loopAnalysis(&builder);
-            loopAnalysis.Execute();
-            // std::cout << "Loop analysis completed" << std::endl;
+        // Loop Analysis and Simplification
+        Analysis::LoopAnalysisPass loopAnalysis(&builder);
+        loopAnalysis.Execute();
+        StructuralTransform::LoopSimplifyPass loopSimplify(&builder);
+        loopSimplify.Execute();
 
-            StructuralTransform::LoopSimplifyPass loopSimplify(&builder);
-            loopSimplify.Execute();
-            // std::cout << "Loop simplification completed" << std::endl;
-        }
+        if (optimizeLevel >= 2) {}
     }
 
     if (step == "-llvm")
