@@ -32,6 +32,8 @@
 // Loop Analysis and Simplification
 #include "optimize/llvm/loop/loop_find.h"
 #include "optimize/llvm/loop/loop_simplify.h"
+#include "optimize/llvm/loop/lcssa.h"
+#include "optimize/llvm/loop/licm.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -202,6 +204,9 @@ int main(int argc, char** argv)
 
     ast->genIRCode();
     // 添加优化
+    // StructuralTransform：可能改变 IR 块结构，需要重新构建 CFG 和 DomTree
+    // Transform：可能改变 IR 结构，但不会改变 IR 块结构，不需要重新构建 CFG 和 DomTree
+    // Analysis：仅分析，不改变 IR 结构，不需要重新构建 CFG 和 DomTree
     if (optimizeLevel)
     {
         // 构建CFG
@@ -219,9 +224,7 @@ int main(int argc, char** argv)
         Transform::CSEPass cse(&builder, &aa, &md);
         cse.Execute();
 
-        // 这条 Pass 曾经会导致有测试点无法通过
-        // 但我回来修复时，这几个点又可以正常通过了
-        // 日后如果出其它问题，尝试先注释掉这条 Pass 试试
+        // 已修复
         StructuralTransform::BranchCSEPass branchCSE(&builder);
         branchCSE.Execute();
 
@@ -250,6 +253,15 @@ int main(int argc, char** argv)
         loopAnalysis.Execute();
         StructuralTransform::LoopSimplifyPass loopSimplify(&builder);
         loopSimplify.Execute();
+
+        // Loop Closed SSA Form - ensures loop-defined variables used outside the loop are passed through PHI nodes
+        // at loop exits
+        StructuralTransform::LCSSAPass lcssa(&builder);
+        lcssa.Execute();
+
+        // Loop Invariant Code Motion
+        StructuralTransform::LICMPass licm(&builder, &aa);
+        licm.Execute();
 
         if (optimizeLevel >= 2) {}
     }

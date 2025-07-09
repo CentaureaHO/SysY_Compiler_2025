@@ -1050,6 +1050,23 @@ void Selector::convertAndAppend(LLVMIR::BranchCondInst* inst)
     RV64InstType op;
     Register     cmp_rd, cmp_op1, cmp_op2;
 
+    if (cmp_inst == nullptr)
+    {
+        // optimize/llvm/loop/licm.cpp 中的比较指令外提会导致 cmp_inst 缺失
+        // 则直接使用 br_reg 作为比较操作数
+        op      = RV64InstType::BNE;
+        cmp_op1 = br_reg;
+        cmp_op2 = preg_x0;
+
+        LLVMIR::LabelOperand* true_label  = (LLVMIR::LabelOperand*)inst->true_label;
+        LLVMIR::LabelOperand* false_label = (LLVMIR::LabelOperand*)inst->false_label;
+
+        cur_block->insts.push_back(
+            createBInst(op, cmp_op1, cmp_op2, RV64Label(true_label->label_num, false_label->label_num)));
+        cur_block->insts.push_back(createJInst(RV64InstType::JAL, preg_x0, RV64Label(false_label->label_num)));
+        return;
+    }
+
     if (cmp_inst->opcode == LLVMIR::IROpCode::ICMP)
     {
         LLVMIR::IcmpInst* icmp_inst = (LLVMIR::IcmpInst*)cmp_inst;
@@ -2153,6 +2170,46 @@ void Selector::convertAndAppend(LLVMIR::PhiInst* inst)
     {
         cerr << "Unknown type: " << (size_t)inst->type << endl;
         assert(false);
+    }
+
+    // For I1 type PHI nodes, check if all inputs come from the same comparison instruction
+    // This handles LCSSA-inserted PHI nodes that propagate comparison results
+    if (inst->type == LLVMIR::DataType::I1)
+    {
+        LLVMIR::Instruction* common_cmp_inst   = nullptr;
+        bool                 all_from_same_cmp = true;
+
+        for (auto& [val, label] : inst->vals_for_labels)
+        {
+            if (IS_REG(val))
+            {
+                Register             val_reg  = getLLVMReg(((LLVMIR::RegOperand*)val)->reg_num, INT64);
+                LLVMIR::Instruction* cmp_inst = cmp_context[val_reg];
+
+                if (cmp_inst != nullptr)
+                {
+                    if (common_cmp_inst == nullptr)
+                        common_cmp_inst = cmp_inst;
+                    else if (common_cmp_inst != cmp_inst)
+                    {
+                        all_from_same_cmp = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    all_from_same_cmp = false;
+                    break;
+                }
+            }
+            else
+            {
+                all_from_same_cmp = false;
+                break;
+            }
+        }
+
+        if (all_from_same_cmp && common_cmp_inst != nullptr) cmp_context[res_reg] = common_cmp_inst;
     }
 
     PhiInst* phi_inst = new PhiInst(res_reg);
