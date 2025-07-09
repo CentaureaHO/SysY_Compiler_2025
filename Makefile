@@ -15,7 +15,7 @@ WERROR_FLAGS := -Wall -Wextra -Wpedantic
 
 WARNINGS_IGNORE := -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-value
 
-CXXFLAGS = $(CXX_STANDARD) $(INCLUDES) $(WERROR_FLAGS) $(DBGFLAGS) $(WARNINGS_IGNORE) -O3 -MMD -MP
+CXXFLAGS = $(CXX_STANDARD) $(INCLUDES) $(WERROR_FLAGS) $(DBGFLAGS) $(WARNINGS_IGNORE) -O3 -MMD -MP -DLOCAL_TEST
 
 SOURCES :=
 $(foreach dir,$(SRC_DIR),$(eval SOURCES += $(shell find $(dir) -name '*.cpp' -o -name '*.c')))

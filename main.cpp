@@ -203,6 +203,11 @@ int main(int argc, char** argv)
     }
 
     ast->genIRCode();
+
+#ifndef LOCAL_TEST
+    optimizeLevel = 1;
+#endif
+
     // 添加优化
     // StructuralTransform：可能改变 IR 块结构，需要重新构建 CFG 和 DomTree
     // Transform：可能改变 IR 结构，但不会改变 IR 块结构，不需要重新构建 CFG 和 DomTree
