@@ -412,10 +412,24 @@ namespace StructuralTransform
 
     bool BranchCSEPass::compareInstructionCSE(CFG* cfg)
     {
-        bool                           changed = false;
-        std::map<CmpInstCSEInfo, int>  cmp_map;
-        std::set<LLVMIR::Instruction*> erase_set;
-        std::map<int, int>             reg_replace_map;
+        bool                                           changed = false;
+        std::map<CmpInstCSEInfo, LLVMIR::Instruction*> cmp_map;
+        std::set<LLVMIR::Instruction*>                 erase_set;
+        std::map<int, int>                             reg_replace_map;
+
+        if (!ir->DomTrees.count(cfg)) return false;
+
+        auto&                         dom_tree      = ir->DomTrees.at(cfg)->dom_tree;
+        std::function<bool(int, int)> checkDominate = [&](int dominator, int node) -> bool {
+            if (dominator == node) return true;
+            if ((unsigned)dominator >= dom_tree.size()) return false;
+
+            for (int child : dom_tree[dominator])
+            {
+                if (checkDominate(child, node)) return true;
+            }
+            return false;
+        };
 
         for (auto const& [id, bb] : cfg->block_id_to_block)
         {
@@ -437,11 +451,16 @@ namespace StructuralTransform
 
                 if (!is_const_cmp && cmp_map.count(info))
                 {
-                    erase_set.insert(inst);
-                    reg_replace_map[inst->GetResultReg()] = cmp_map[info];
-                    changed                               = true;
+                    auto* prev_inst = cmp_map[info];
+                    if (checkDominate(prev_inst->block_id, inst->block_id))
+                    {
+                        erase_set.insert(inst);
+                        reg_replace_map[inst->GetResultReg()] = prev_inst->GetResultReg();
+                        changed                               = true;
+                    }
+                    else if (checkDominate(inst->block_id, prev_inst->block_id)) { cmp_map[info] = inst; }
                 }
-                else if (!is_const_cmp) { cmp_map[info] = inst->GetResultReg(); }
+                else if (!is_const_cmp) { cmp_map[info] = inst; }
             }
         }
 
