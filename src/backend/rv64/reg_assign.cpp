@@ -13,8 +13,8 @@ Interval::Interval() : ref_cnt(0) {}
 Interval::Interval(Register r) : reg(r), ref_cnt(0) {}
 Interval::Segmant::Segmant(int s, int e) : start(s), end(e) {}
 
-bool Interval::Segmant::inside(int ins_id) { return start <= ins_id && ins_id < end; }
-bool Interval::Segmant::intersect(Interval::Segmant s)
+bool Interval::Segmant::inside(int ins_id) const { return start <= ins_id && ins_id < end; }
+bool Interval::Segmant::intersect(Interval::Segmant s) const
 {
     return inside(s.start) || inside((s.end - 1 > s.start) ? s.end - 1 : s.start) || s.inside(start) ||
            s.inside((end - 1 > start) ? end - 1 : start);
@@ -24,8 +24,29 @@ bool Interval::intersect(const Interval& i) const
 {
     if (segs.empty() || i.segs.empty()) return false;
 
-    // 快速路径：如果区间完全不重叠，直接返回
-    if (segs.back().end <= i.segs.front().start || i.segs.back().end <= segs.front().start) { return false; }
+    if (reg.is_virtual && segs.size() > 1)
+    {
+        int min_start = segs.front().start;
+        int max_end   = segs.back().end;
+
+        for (const auto& seg2 : i.segs)
+        {
+            if (seg2.start < max_end && min_start < seg2.end) { return true; }
+        }
+        return false;
+    }
+
+    if (i.reg.is_virtual && i.segs.size() > 1)
+    {
+        int min_start = i.segs.front().start;
+        int max_end   = i.segs.back().end;
+
+        for (const auto& seg1 : segs)
+        {
+            if (seg1.start < max_end && min_start < seg1.end) { return true; }
+        }
+        return false;
+    }
 
     auto it1 = segs.begin(), it2 = i.segs.begin();
     while (it1 != segs.end() && it2 != i.segs.end())
@@ -33,13 +54,13 @@ bool Interval::intersect(const Interval& i) const
         const Segmant& s1 = *it1;
         const Segmant& s2 = *it2;
 
-        // 内联 intersect 检查以避免函数调用开销
-        if (s1.start < s2.end && s2.start < s1.end) { return true; }
-
+        if (s1.intersect(s2)) return true;
         if (s1.end <= s2.start)
             ++it1;
-        else
+        else if (s2.end <= s1.start)
             ++it2;
+        else
+            ++it1;
     }
 
     return false;
@@ -90,9 +111,11 @@ std::vector<int> AssignRecord::getValidRegs(Interval in, bool save)
             RV64_REGS
 #undef X
 
-            // remove ra from simple_res
             int ra = preg_ra.reg_num;
+            int fp = preg_fp.reg_num;
             simple_res.erase(remove(simple_res.begin(), simple_res.end(), ra), simple_res.end());
+            simple_res.erase(remove(simple_res.begin(), simple_res.end(), fp), simple_res.end());
+            save_res.erase(remove(save_res.begin(), save_res.end(), fp), save_res.end());
         }
 
         // return save_res;
@@ -204,6 +227,22 @@ void BaseRegisterAssigner::getInterval()
         }
     }
 
+    for (int block_id : bfs_order)
+    {
+        Cele::dynamic_bitset in_set  = liveness.GetIN(block_id);
+        Cele::dynamic_bitset out_set = liveness.GetOUT(block_id);
+
+        for (size_t i = 0; i < MAX_REGISTERS; ++i)
+        {
+            if (in_set.test(i)) { Register reg = liveness.reverse_mapping[i]; }
+        }
+
+        for (size_t i = 0; i < MAX_REGISTERS; ++i)
+        {
+            if (out_set.test(i)) { Register reg = liveness.reverse_mapping[i]; }
+        }
+    }
+
     std::map<Register, int> last_def, last_use;
     for (auto it = bfs_order.rbegin(); it != bfs_order.rend(); ++it)
     {
@@ -226,9 +265,8 @@ void BaseRegisterAssigner::getInterval()
                 }
                 else
                 {
-                    int in_ins_id = 0, out_ins_id = 0;
-                    in_ins_id  = block->insts.front()->ins_id - 1;
-                    out_ins_id = block->insts.back()->ins_id;
+                    int in_ins_id  = block->insts.front()->ins_id - 1;
+                    int out_ins_id = block->insts.back()->ins_id;
                     intervals[reg].segs.emplace_back(in_ins_id, out_ins_id);
                 }
                 last_use[reg] = block->insts.back()->ins_id;
@@ -247,7 +285,7 @@ void BaseRegisterAssigner::getInterval()
                 if (last_use.find(*reg) != last_use.end())
                 {
                     last_use.erase(*reg);
-                    // 由于改为vector，需要找到最前面的段来修改start
+
                     if (!intervals[*reg].segs.empty()) { intervals[*reg].segs.back().start = inst->ins_id; }
                 }
                 else { intervals[*reg].segs.emplace_back(inst->ins_id, inst->ins_id + 1); }
@@ -259,8 +297,7 @@ void BaseRegisterAssigner::getInterval()
                 if (intervals.find(*reg) == intervals.end()) intervals[*reg] = Interval(*reg);
                 if (last_use.find(*reg) == last_use.end())
                 {
-                    int in_ins_id = 0;
-                    in_ins_id     = inst->ins_id - 1;
+                    int in_ins_id = inst->ins_id - 1;
                     intervals[*reg].segs.emplace_back(in_ins_id, inst->ins_id);
                 }
                 last_use[*reg] = inst->ins_id;
@@ -273,7 +310,6 @@ void BaseRegisterAssigner::getInterval()
     last_def.clear();
     last_use.clear();
 
-    // 对所有区间的段进行排序（从vector改变后需要）
     for (auto& [reg, interval] : intervals)
     {
         std::sort(interval.segs.begin(),
@@ -559,7 +595,7 @@ void LinearScanRegisterAssigner::calcIntervals()
                 else
                 {
                     last_use.erase(*reg);
-                    // 找到最后一个段来修改start
+
                     if (!intervals[*reg].segs.empty()) { intervals[*reg].segs.back().start = inst->ins_id; }
                 }
                 ++intervals[*reg].ref_cnt;
@@ -583,7 +619,6 @@ void LinearScanRegisterAssigner::calcIntervals()
         last_use.clear();
     }
 
-    // 对所有区间的段进行排序
     for (auto& [reg, interval] : intervals)
     {
         std::sort(interval.segs.begin(),
@@ -610,13 +645,10 @@ bool LinearScanRegisterAssigner::tryAssignRegister()
 {
     static int try_cnt = 0;
 
-    // 改用指针以避免复制 Interval，减少大量的内存分配/释放
     struct IntervalPtrCmp
     {
         bool operator()(const Interval* a, const Interval* b) const
         {
-            // 保持与原 intervalCmp 相同的逻辑（返回 a.start < b.start），
-            // 使得 priority_queue 顶部保持 start 最大的区间
             return a->segs.front().start < b->segs.front().start;
         }
     };
@@ -627,10 +659,7 @@ bool LinearScanRegisterAssigner::tryAssignRegister()
 
     for (auto& [reg, interval] : intervals)
     {
-        if (reg.is_virtual)
-        {
-            unalloc_queue.push(&interval);  // 仅压入指针，避免复制
-        }
+        if (reg.is_virtual) { unalloc_queue.push(&interval); }
         else { phy_regs.occupyReg(reg.reg_num, interval); }
     }
 
@@ -644,7 +673,6 @@ bool LinearScanRegisterAssigner::tryAssignRegister()
         Register vreg       = in.reg;
         int      phy_reg_id = -1;
 
-        // 预先检查是否为参数寄存器，避免重复遍历
         bool in_param = false;
         if (!cur_func->params.empty())
         {
@@ -658,7 +686,6 @@ bool LinearScanRegisterAssigner::tryAssignRegister()
             }
         }
 
-        // 获取可用寄存器列表
         const auto& valid_regs = phy_regs.getValidRegs(in, in_param);
 
         for (int reg : valid_regs)
@@ -666,14 +693,12 @@ bool LinearScanRegisterAssigner::tryAssignRegister()
             bool        conflict = false;
             const auto& occupied = phy_regs.phy_occupied[reg];
 
-            // 如果没有占用，直接分配
             if (occupied.empty())
             {
                 phy_reg_id = reg;
                 break;
             }
 
-            // 检查冲突
             for (const auto& oti : occupied)
             {
                 if (in.intersect(oti))

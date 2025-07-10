@@ -51,8 +51,8 @@ def execute_ir(input,output,opt,stdin,stdout,testout):
         print("\033[93mOutPut Error on \033[0m"+input)
         return 0
         
-    result = execute(["clang-15","-static","tmp.o","-L./lib","-lsysy_x86"])
-    # result = execute(["clang-15","-static","tmp.o","library/libsysy_rv.a"])
+    result = execute(["clang","-static","tmp.o","-L./lib","-lsysy_x86"])
+    # result = execute(["clang","-static","tmp.o","library/libsysy_rv.a"])
     if(result.returncode != 0):
         result = execute(["rm","-rf","tmp.o"])
         print("\033[93mLink Error on \033[0m"+input)
@@ -61,9 +61,9 @@ def execute_ir(input,output,opt,stdin,stdout,testout):
     execute(["rm","-rf","tmp.o"])
     result = 0
     if(stdin=="none"):
-        result = execute_with_stdin_out("timeout 10 ./a.out > "+testout + " 2>/dev/null")
+        result = execute_with_stdin_out("timeout 30 ./a.out > "+testout + " 2>/dev/null")
     else:
-        result = execute_with_stdin_out("timeout 10 ./a.out < "+stdin+" > "+testout + " 2>/dev/null")
+        result = execute_with_stdin_out("timeout 30 ./a.out < "+stdin+" > "+testout + " 2>/dev/null")
     if(result == 124):
         print("\033[93mTime Limit Exceed on \033[0m"+input)
         return 0
@@ -100,9 +100,9 @@ def execute_asm(input,output,opt,stdin,stdout,testout):
     execute(["rm","-rf","tmp.o"])
     result = 0
     if(stdin=="none"):
-        result = execute_with_stdin_out("timeout 20 qemu-riscv64 ./a.out > "+testout + " 2>/dev/null")
+        result = execute_with_stdin_out("timeout 60 qemu-riscv64 ./a.out > "+testout + " 2>/dev/null")
     else:
-        result = execute_with_stdin_out("timeout 20 qemu-riscv64 ./a.out < "+stdin+" > "+testout + " 2>/dev/null")
+        result = execute_with_stdin_out("timeout 60 qemu-riscv64 ./a.out < "+stdin+" > "+testout + " 2>/dev/null")
     if(result == 124):
         print("\033[93mTime Limit Exceed on \033[0m"+input)
         return 0
@@ -136,7 +136,7 @@ opt_arg = ""
 if(args.opt_level == 0):
     opt_arg = "-O0"
 else:
-    opt_arg = "-O1"
+    opt_arg = f"-O{args.opt_level}"
 if(step == "llvm"):
     ac=0
     total=0

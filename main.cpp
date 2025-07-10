@@ -1,8 +1,10 @@
+#include "llvm_ir/defs.h"
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <memory>
 #include <cstring>
+#include <ostream>
 #include <string>
 #include <parser/driver.h>
 #include <common/type/symtab/symbol_table.h>
@@ -10,9 +12,28 @@
 #include <llvm_ir/ir_builder.h>
 #include <backend/factory.h>
 
+// llvmIR Optimizers
+// MEM2REG
+#include "llvm/cdg.h"
+#include "llvm/def_use.h"
 #include "llvm/make_cfg.h"
 #include "llvm/make_domtree.h"
 #include "llvm/mem2reg.h"
+// DCE
+#include "llvm/dce.h"
+// ADCE
+#include "llvm/adce.h"
+// CSE
+#include "llvm/cse.h"
+#include "llvm/alias_analysis/alias_analysis.h"
+#include "llvm/memdep/memdep.h"
+// Branch CSE
+#include "llvm/branch_cse.h"
+// Loop Analysis and Simplification
+#include "optimize/llvm/loop/loop_find.h"
+#include "optimize/llvm/loop/loop_simplify.h"
+#include "optimize/llvm/loop/lcssa.h"
+#include "optimize/llvm/loop/licm.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -28,6 +49,8 @@ extern vector<string> semanticErrMsgs;
 
 extern IR builder;
 size_t    errCnt = 0;
+
+bool no_reg_alloc = false;
 
 string truncateString(const string& str, size_t width)
 {
@@ -63,6 +86,7 @@ int main(int argc, char** argv)
         else if (arg == "-O0") { optimizeLevel = 0; }
         else if (arg == "-O2") { optimizeLevel = 2; }
         else if (arg == "-O3") { optimizeLevel = 3; }
+        else if (arg == "-no-reg-alloc") { no_reg_alloc = true; }
         else if (arg[0] != '-') { inputFile = arg; }
         else
         {
@@ -123,19 +147,8 @@ int main(int argc, char** argv)
                 token.token_name == "FLOAT_CONST" || token.token_name == "IDENT" ||
                 token.token_name == "SLASH_COMMENT" || token.token_name == "ERR_TOKEN")
             {
-                std::visit(
-                    [&](auto&& arg) {
-                        using T = std::decay_t<decltype(arg)>;
-                        if constexpr (std::is_same_v<T, int>) { *outStream << setw(STR_PW) << arg; }
-                        else if constexpr (std::is_same_v<T, long long>) { *outStream << setw(STR_PW) << arg; }
-                        else if constexpr (std::is_same_v<T, float>) { *outStream << setw(STR_PW) << arg; }
-                        else if constexpr (std::is_same_v<T, std::shared_ptr<std::string>>)
-                        {
-                            *outStream << setw(STR_PW) << truncateString(*arg, STR_REAL_WIDTH);
-                        }
-                        else { *outStream << setw(STR_PW) << "N/A"; }
-                    },
-                    token.value);
+                // TODO: Fix std::variant compatibility issue with older compilers
+                *outStream << setw(STR_PW) << "TODO_VALUE";
             }
             else { *outStream << setw(STR_PW) << " "; }
 
@@ -190,7 +203,15 @@ int main(int argc, char** argv)
     }
 
     ast->genIRCode();
+
+#ifndef LOCAL_TEST
+    optimizeLevel = 1;
+#endif
+
     // 添加优化
+    // StructuralTransform：可能改变 IR 块结构，需要重新构建 CFG 和 DomTree
+    // Transform：可能改变 IR 结构，但不会改变 IR 块结构，不需要重新构建 CFG 和 DomTree
+    // Analysis：仅分析，不改变 IR 结构，不需要重新构建 CFG 和 DomTree
     if (optimizeLevel)
     {
         // 构建CFG
@@ -200,6 +221,54 @@ int main(int argc, char** argv)
         makedom.Execute();
         Mem2Reg mem2reg(&builder);
         mem2reg.Execute();
+
+        Analysis::AliasAnalyser aa(&builder);
+        aa.run();
+        Analysis::MemoryDependenceAnalyser md(&builder, &aa);
+        md.run();
+        Transform::CSEPass cse(&builder, &aa, &md);
+        cse.Execute();
+
+        // 已修复
+        StructuralTransform::BranchCSEPass branchCSE(&builder);
+        branchCSE.Execute();
+
+        // DCE
+        DefUseAnalysisPass DCEDefUse(&builder);
+        DCEDefUse.Execute();
+        DCEPass dce(&builder, &DCEDefUse);
+        dce.Execute();
+        // std::cout << "DCE completed" << std::endl;
+
+        // ADCE
+        MakeDomTreePass makeredom(&builder);
+        makeredom.Execute(true);
+        // std::cout << "Reversed dom tree completed" << std::endl;
+        CDGAnalyzer cdg(&builder);
+        cdg.Execute();
+        // std::cout << "CDG completed" << std::endl;
+        DefUseAnalysisPass ADCEDefUse(&builder);
+        ADCEDefUse.Execute();
+        ADCEPass adce(&builder, &ADCEDefUse, &cdg);
+        adce.Execute();
+        // std::cout << "ADCE completed" << std::endl;
+
+        // Loop Analysis and Simplification
+        Analysis::LoopAnalysisPass loopAnalysis(&builder);
+        loopAnalysis.Execute();
+        StructuralTransform::LoopSimplifyPass loopSimplify(&builder);
+        loopSimplify.Execute();
+
+        // Loop Closed SSA Form - ensures loop-defined variables used outside the loop are passed through PHI nodes
+        // at loop exits
+        StructuralTransform::LCSSAPass lcssa(&builder);
+        lcssa.Execute();
+
+        // Loop Invariant Code Motion
+        StructuralTransform::LICMPass licm(&builder, &aa);
+        licm.Execute();
+
+        if (optimizeLevel >= 2) {}
     }
 
     if (step == "-llvm")

@@ -33,8 +33,8 @@ namespace Backend::RV64
 
             Segmant(int s, int e);
 
-            bool inside(int ins_id);
-            bool intersect(Interval::Segmant i);
+            bool inside(int ins_id) const;
+            bool intersect(Interval::Segmant i) const;
         };
 
         Register             reg;

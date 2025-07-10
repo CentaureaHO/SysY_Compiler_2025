@@ -122,6 +122,13 @@ void IR::printIR(ostream& s)
     }
 }
 
+void IR::BuildLoopInfo()
+{
+    // This method is now deprecated and does nothing
+    // Loop analysis should be done using LoopAnalysisPass
+    // This is kept for backward compatibility
+}
+
 // 代码优化 分析pass 构建CFG 为当前IR中的每一个函数创建CFG 并维护函数def到CFG的映射
 //  void IR::BuildCFG(){
 //  //std::map<FuncDefInst*,CFG*> cfg;
