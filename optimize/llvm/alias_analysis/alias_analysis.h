@@ -5,48 +5,55 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <unordered_map>
+#include <unordered_set>
 #include "llvm_ir/ir_builder.h"
 #include "llvm_ir/instruction.h"
 #include "cfg.h"
 
 namespace Analysis
 {
-    class PtrRegMemInfo
+    class MemLocation
     {
       public:
-        bool is_full_mem = false;
-        bool is_local    = true;
+        // The set of base pointers (from alloca or globals) this location might refer to.
+        std::unordered_set<LLVMIR::Operand*> targets;
+        // True if the pointer escapes the function (e.g., returned, stored in global memory).
+        bool escapes_function = false;
+        // True if all targets are stack-allocated within the current function.
+        bool is_stack_local = true;
 
-        std::vector<LLVMIR::Operand*> possible_ptrs;
-
-        // if the ptr op is new, return true.
-        // else, return false.
-        bool insertNewPtrs(LLVMIR::Operand* op, std::map<int, PtrRegMemInfo>& ptr_map, CFG* cfg);
-        bool pushPossiblePtr(LLVMIR::Operand* op);
-
-        void printDebugInfo();
+        void addTarget(LLVMIR::Operand* op);
+        void markEscaped()
+        {
+            escapes_function = true;
+            is_stack_local   = false;
+        }
+        void markNonLocal() { is_stack_local = false; }
+        bool isLocal() const { return is_stack_local && !escapes_function; }
+        void merge(const MemLocation& other);
     };
 
-    class FunctionMemRWInfo
+    class FuncMemProfile
     {
       public:
-        bool have_external_call = false;
+        bool has_external_deps = false;
+        // Stores the base pointers of memory locations that are read.
+        std::unordered_set<LLVMIR::Operand*> mem_reads;
+        // Stores the base pointers of memory locations that are written.
+        std::unordered_set<LLVMIR::Operand*> mem_writes;
 
-        std::vector<LLVMIR::Operand*> read_ptrs;
-        std::vector<LLVMIR::Operand*> write_ptrs;
+        void addRead(LLVMIR::Operand* op);
+        void addWrite(LLVMIR::Operand* op);
+        void addReads(const std::vector<LLVMIR::Operand*>& ops);
+        void addWrites(const std::vector<LLVMIR::Operand*>& ops);
+        void combineProfile(
+            LLVMIR::CallInst* call, const FuncMemProfile& other, const std::unordered_map<int, MemLocation>& locations);
 
-        // if the ptr op is new, return true.
-        // else, return false.
-        bool insertNewReadPtrs(LLVMIR::Operand* op);
-        bool insertNewWritePtrs(LLVMIR::Operand* op);
-        bool insertNewReadPtrs(std::vector<LLVMIR::Operand*> ops);
-        bool insertNewWritePtrs(std::vector<LLVMIR::Operand*> ops);
-        bool mergeCall(LLVMIR::CallInst* call_inst, FunctionMemRWInfo& rw_info, std::map<int, PtrRegMemInfo>& ptr_map);
-
-        bool isIndependent() { return (!have_external_call) && read_ptrs.empty() && write_ptrs.empty(); }
-        bool isNoSideEffect() { return (!have_external_call) && write_ptrs.empty(); }
-        bool isReadMem() { return !read_ptrs.empty() || have_external_call; }
-        bool isWriteMem() { return !write_ptrs.empty() || have_external_call; }
+        bool isPure() const { return !has_external_deps && mem_reads.empty() && mem_writes.empty(); }
+        bool hasNoWrites() const { return !has_external_deps && mem_writes.empty(); }
+        bool readsMemory() const { return !mem_reads.empty() || has_external_deps; }
+        bool writesMemory() const { return !mem_writes.empty() || has_external_deps; }
     };
 
     class AliasAnalyser
@@ -68,13 +75,17 @@ namespace Analysis
         };
 
       private:
-        LLVMIR::IR*                                         ir;
-        std::map<CFG*, FunctionMemRWInfo>                   cfg_mem_rw_map;
-        std::map<CFG*, std::map<int, PtrRegMemInfo>>        ptr_reg_mem_map;
-        std::map<CFG*, std::map<int, LLVMIR::Instruction*>> cfg_result_map;
+        LLVMIR::IR* ir;
 
-        void analyzeCFG(CFG* cfg);
-        bool isSamePtrWithDiffConstIndex(LLVMIR::Operand* p1, LLVMIR::Operand* p2, CFG* cfg);
+        std::unordered_map<CFG*, FuncMemProfile>                                func_profiles;
+        std::unordered_map<CFG*, std::unordered_map<int, MemLocation>>          reg_locations;
+        std::unordered_map<CFG*, std::unordered_map<int, LLVMIR::Instruction*>> def_map;
+
+        void buildDefMap(CFG* cfg);
+        void processFunction(CFG* cfg);
+        void handlePtrPropagation(CFG* cfg, std::unordered_map<int, MemLocation>& locations);
+        void collectMemAccesses(CFG* cfg, const std::unordered_map<int, MemLocation>& locations);
+        bool checkSameBaseWithDistinctOffset(LLVMIR::Operand* p1, LLVMIR::Operand* p2, CFG* cfg);
 
       public:
         AliasAnalyser(LLVMIR::IR* ir);
@@ -85,15 +96,15 @@ namespace Analysis
         AliasResult  queryAlias(LLVMIR::Operand* op1, LLVMIR::Operand* op2, CFG* cfg);
         ModRefResult queryInstModRef(LLVMIR::Instruction* inst, LLVMIR::Operand* op, CFG* cfg);
 
-        bool isReadMem(CFG* cfg) { return cfg_mem_rw_map[cfg].isReadMem(); }
-        bool isWriteMem(CFG* cfg) { return cfg_mem_rw_map[cfg].isWriteMem(); }
-        bool isIndependent(CFG* cfg) { return cfg_mem_rw_map[cfg].isIndependent(); }
-        bool isNoSideEffect(CFG* cfg) { return cfg_mem_rw_map[cfg].isNoSideEffect(); }
-        bool haveExternalCall(CFG* cfg) { return cfg_mem_rw_map[cfg].have_external_call; }
+        bool isReadMem(CFG* cfg) { return func_profiles[cfg].readsMemory(); }
+        bool isWriteMem(CFG* cfg) { return func_profiles[cfg].writesMemory(); }
+        bool isIndependent(CFG* cfg) { return func_profiles[cfg].isPure(); }
+        bool isNoSideEffect(CFG* cfg) { return func_profiles[cfg].hasNoWrites(); }
+        bool haveExternalCall(CFG* cfg) { return func_profiles[cfg].has_external_deps; }
         bool isLocalPtr(CFG* cfg, LLVMIR::Operand* ptr);
 
-        std::vector<LLVMIR::Operand*> getWritePtrs(CFG* cfg) { return cfg_mem_rw_map.at(cfg).write_ptrs; }
-        std::vector<LLVMIR::Operand*> getReadPtrs(CFG* cfg) { return cfg_mem_rw_map.at(cfg).read_ptrs; }
+        std::vector<LLVMIR::Operand*> getWritePtrs(CFG* cfg);
+        std::vector<LLVMIR::Operand*> getReadPtrs(CFG* cfg);
     };
 }  // namespace Analysis
 #endif
