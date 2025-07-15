@@ -184,6 +184,7 @@ void BaseRegisterAssigner::tagBFSID()
     {
         int cur = worklist.front();
         worklist.pop();
+        // cerr << "\tTag block " << cur << " with ID " << cnt << endl;
 
         if (visited[cur]) continue;
         visited[cur] = true;
@@ -398,6 +399,8 @@ void LinearScanRegisterAssigner::assignRegisters(std::vector<Function*>& functio
 
         cur_func = worklist.front();
         worklist.pop();
+
+        // cerr << "Reg alloc processing function " << cur_func->name << endl;
 
         // calcIntervals();
         tagBFSID();
@@ -659,8 +662,10 @@ bool LinearScanRegisterAssigner::tryAssignRegister()
 
     for (auto& [reg, interval] : intervals)
     {
-        if (reg.is_virtual) { unalloc_queue.push(&interval); }
-        else { phy_regs.occupyReg(reg.reg_num, interval); }
+        if (reg.is_virtual)
+            unalloc_queue.push(&interval);
+        else
+            phy_regs.occupyReg(reg.reg_num, interval);
     }
 
     while (!unalloc_queue.empty())

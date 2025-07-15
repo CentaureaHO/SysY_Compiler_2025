@@ -1,0 +1,1031 @@
+#include "llvm/function_inline.h"
+#include "llvm_ir/instruction.h"
+#include "llvm_ir/ir_builder.h"
+#include "cfg.h"
+#include <algorithm>
+#include <iostream>
+#include <cassert>
+#include <functional>
+#include <queue>
+#include <set>
+
+namespace Transform
+{
+
+    FunctionInlineAnalyzer::FunctionInlineAnalyzer(LLVMIR::IR* ir) : ir(ir) {}
+
+    void FunctionInlineAnalyzer::buildCallGraph()
+    {
+        call_graph.clear();
+        reverse_call_graph.clear();
+        all_call_sites.clear();
+
+        for (auto func : ir->functions)
+        {
+            FunctionInfo& info = function_info[func];
+            info.func          = func;
+
+            for (auto block : func->blocks)
+            {
+                ++info.block_count;
+                for (auto inst : block->insts)
+                {
+                    ++info.instruction_count;
+
+                    if (inst->opcode == LLVMIR::IROpCode::CALL)
+                    {
+                        auto call_inst = static_cast<LLVMIR::CallInst*>(inst);
+                        auto callee    = findFunction(call_inst->func_name);
+
+                        if (callee)
+                        {
+                            info.calls_made.push_back(call_inst);
+                            ++info.call_count;
+
+                            call_graph[func].insert(callee);
+                            reverse_call_graph[callee].insert(func);
+
+                            function_info[callee].call_sites.push_back(call_inst);
+                            function_info[callee].called_count++;
+
+                            CallSiteInfo call_site;
+                            call_site.call_inst           = call_inst;
+                            call_site.caller              = func;
+                            call_site.callee              = callee;
+                            call_site.in_loop             = isInLoop(call_inst, func);
+                            call_site.nesting_level       = calculateNestingLevel(call_inst);
+                            call_site.estimated_frequency = estimateCallFrequency(call_inst);
+                            call_site.has_pointer_args    = hasPointerArguments(call_inst);
+
+                            all_call_sites.push_back(call_site);
+                        }
+                    }
+                }
+            }
+
+            info.has_pointer_params = hasPointerParameters(func);
+        }
+    }
+
+    void FunctionInlineAnalyzer::analyzeFunction(LLVMIR::IRFunction* func)
+    {
+        FunctionInfo& info = function_info[func];
+
+        NaturalLoop* loop = getLoopForBlock(func, func->blocks.front());
+        if (loop)
+            info.has_loops = true;
+        else
+            info.has_loops = false;
+
+        info.complexity_score = computeFunctionComplexity(func);
+    }
+
+    void FunctionInlineAnalyzer::detectRecursion()
+    {
+        for (auto& [func, info] : function_info)
+        {
+            for (auto call_inst : info.calls_made)
+            {
+                if (call_inst->func_name != func->func_def->func_name) continue;
+
+                info.is_recursive = true;
+                break;
+            }
+        }
+
+        for (auto& [current_func, info] : function_info)
+        {
+            if (info.is_recursive) continue;
+
+            std::set<LLVMIR::IRFunction*>   visited;
+            std::queue<LLVMIR::IRFunction*> to_visit;
+
+            if (call_graph.count(current_func))
+                for (auto callee : call_graph[current_func]) to_visit.push(callee);
+
+            while (!to_visit.empty() && !info.is_recursive)
+            {
+                auto node = to_visit.front();
+                to_visit.pop();
+
+                if (node == current_func)
+                {
+                    info.is_recursive = true;
+                    break;
+                }
+
+                if (visited.count(node)) continue;
+                visited.insert(node);
+
+                if (!call_graph.count(node)) continue;
+
+                for (auto callee : call_graph[node])
+                    if (!visited.count(callee)) to_visit.push(callee);
+            }
+        }
+    }
+
+    void FunctionInlineAnalyzer::computeTopologicalOrder()
+    {
+        topo_order.clear();
+        std::map<LLVMIR::IRFunction*, int> in_degree;
+
+        for (auto func : ir->functions) in_degree[func] = 0;
+
+        for (auto& [caller, callees] : call_graph)
+            for (auto callee : callees) in_degree[callee]++;
+
+        std::queue<LLVMIR::IRFunction*> queue;
+        for (auto func : ir->functions)
+            if (in_degree[func] == 0) queue.push(func);
+
+        while (!queue.empty())
+        {
+            auto func = queue.front();
+            queue.pop();
+            topo_order.push_back(func);
+
+            if (!call_graph.count(func)) continue;
+
+            for (auto callee : call_graph[func])
+            {
+                --in_degree[callee];
+                if (in_degree[callee] == 0) queue.push(callee);
+            }
+        }
+
+        for (auto func : ir->functions)
+            if (std::find(topo_order.begin(), topo_order.end(), func) == topo_order.end()) topo_order.push_back(func);
+    }
+
+    void FunctionInlineAnalyzer::analyzeCallSites()
+    {
+        for (auto& call_site : all_call_sites)
+        {
+            if (call_site.in_loop) call_site.estimated_frequency *= 10;
+            if (call_site.nesting_level > 1) call_site.estimated_frequency *= call_site.nesting_level;
+        }
+    }
+
+    void FunctionInlineAnalyzer::computeComplexityScores()
+    {
+        for (auto& [func, info] : function_info) info.complexity_score = computeFunctionComplexity(func);
+    }
+
+    NaturalLoop* FunctionInlineAnalyzer::getLoopForBlock(LLVMIR::IRFunction* func, LLVMIR::IRBlock* block)
+    {
+        for (auto& [func_def, cfg] : ir->cfg)
+        {
+            if (cfg->func != func && cfg->LoopForest) continue;
+            if (!cfg->LoopForest) continue;
+
+            auto it = cfg->LoopForest->header_loop_map.find(block);
+            if (it != cfg->LoopForest->header_loop_map.end()) return it->second;
+
+            for (auto loop : cfg->LoopForest->loop_set)
+                if (loop->loop_nodes.count(block)) return loop;
+        }
+        return nullptr;
+    }
+
+    int FunctionInlineAnalyzer::getLoopDepth(LLVMIR::IRFunction* func, LLVMIR::IRBlock* block)
+    {
+        int          depth        = 0;
+        NaturalLoop* current_loop = getLoopForBlock(func, block);
+
+        while (current_loop != nullptr)
+        {
+            ++depth;
+            current_loop = current_loop->fa_loop;
+        }
+
+        return depth;
+    }
+
+    int FunctionInlineAnalyzer::getControlFlowNesting(LLVMIR::IRFunction* func, LLVMIR::CallInst* call_inst)
+    {
+        LLVMIR::IRBlock* containing_block = nullptr;
+        for (auto block : func->blocks)
+        {
+            for (auto inst : block->insts)
+            {
+                if (inst != call_inst) continue;
+
+                containing_block = block;
+                break;
+            }
+            if (containing_block) break;
+        }
+
+        if (!containing_block) return 1;
+
+        int loop_depth    = getLoopDepth(func, containing_block);
+        int dom_depth     = getDominatorDepth(func, containing_block);
+        int total_nesting = dom_depth + loop_depth;
+
+        return total_nesting > 0 ? total_nesting : 1;
+    }
+
+    int FunctionInlineAnalyzer::getDominatorDepth(LLVMIR::IRFunction* func, LLVMIR::IRBlock* block)
+    {
+        CFG* target_cfg = nullptr;
+        for (auto& [func_def, cfg] : ir->cfg)
+        {
+            if (cfg->func != func) continue;
+
+            target_cfg = cfg;
+            break;
+        }
+
+        if (!target_cfg) return 1;
+
+        auto dom_it = ir->DomTrees.find(target_cfg);
+        if (dom_it == ir->DomTrees.end() || !dom_it->second) return 1;
+
+        Cele::Algo::DomAnalyzer* dom_analyzer = dom_it->second;
+
+        int block_id = block->block_id;
+        int depth    = 0;
+
+        while (block_id != -1 && static_cast<size_t>(block_id) < dom_analyzer->imm_dom.size())
+        {
+            int immediate_dominator = dom_analyzer->imm_dom[block_id];
+            if (immediate_dominator == block_id) break;
+
+            depth++;
+            block_id = immediate_dominator;
+
+            if (depth > 50) break;
+        }
+
+        return depth;
+    }
+
+    bool FunctionInlineAnalyzer::isInLoop(LLVMIR::CallInst* call_inst, LLVMIR::IRFunction* func)
+    {
+        LLVMIR::IRBlock* containing_block = nullptr;
+        for (auto block : func->blocks)
+        {
+            for (auto inst : block->insts)
+            {
+                if (inst != call_inst) continue;
+
+                containing_block = block;
+                break;
+            }
+            if (containing_block) break;
+        }
+
+        if (!containing_block) return false;
+
+        return getLoopForBlock(func, containing_block) != nullptr;
+    }
+
+    int FunctionInlineAnalyzer::estimateCallFrequency(LLVMIR::CallInst* call_inst)
+    {
+        LLVMIR::IRBlock* containing_block = nullptr;
+        for (auto inst_func : ir->functions)
+        {
+            for (auto block : inst_func->blocks)
+            {
+                for (auto inst : block->insts)
+                {
+                    if (inst != call_inst) continue;
+
+                    containing_block = block;
+                    break;
+                }
+                if (containing_block) break;
+            }
+            if (!containing_block) continue;
+
+            int loop_depth          = getLoopDepth(inst_func, containing_block);
+            int estimated_frequency = 1;
+            for (int i = 0; i < loop_depth; i++) estimated_frequency *= 10;
+
+            return estimated_frequency;
+        }
+
+        return 1;
+    }
+
+    int FunctionInlineAnalyzer::calculateNestingLevel(LLVMIR::CallInst* call_inst)
+    {
+        for (auto func : ir->functions)
+        {
+            for (auto block : func->blocks)
+            {
+                for (auto inst : block->insts)
+                {
+                    if (inst == call_inst) return getControlFlowNesting(func, call_inst);
+                }
+            }
+        }
+
+        return 1;
+    }
+
+    bool FunctionInlineAnalyzer::hasPointerParameters(LLVMIR::IRFunction* func)
+    {
+        for (auto arg_type : func->func_def->arg_types)
+            if (arg_type == LLVMIR::DataType::PTR) return true;
+
+        return false;
+    }
+
+    bool FunctionInlineAnalyzer::hasPointerArguments(LLVMIR::CallInst* call_inst)
+    {
+        for (auto& arg : call_inst->args)
+            if (arg.first == LLVMIR::DataType::PTR) return true;
+
+        return false;
+    }
+
+    int FunctionInlineAnalyzer::computeFunctionComplexity(LLVMIR::IRFunction* func)
+    {
+        int complexity = 0;
+
+        complexity += function_info[func].instruction_count;
+        complexity += function_info[func].block_count * 2;
+        complexity += function_info[func].call_count * 3;
+        if (function_info[func].has_loops) complexity += 10;
+
+        return complexity;
+    }
+
+    bool FunctionInlineAnalyzer::wouldCauseTooMuchGrowth(LLVMIR::IRFunction* caller, LLVMIR::IRFunction* callee)
+    {
+        const int MAX_FUNCTION_SIZE = 500;
+        const int MAX_TOTAL_GROWTH  = 200;
+
+        int caller_size = function_info[caller].instruction_count;
+        int callee_size = function_info[callee].instruction_count;
+        int call_count  = getCallCount(caller, callee);
+
+        int estimated_growth = callee_size * call_count;
+
+        return (caller_size + estimated_growth > MAX_FUNCTION_SIZE) || (estimated_growth > MAX_TOTAL_GROWTH);
+    }
+
+    LLVMIR::IRFunction* FunctionInlineAnalyzer::findFunction(const std::string& name)
+    {
+        for (auto func : ir->functions)
+            if (func->func_def->func_name == name) return func;
+
+        return nullptr;
+    }
+
+    bool FunctionInlineAnalyzer::isRecursive(LLVMIR::IRFunction* func)
+    {
+        auto it = function_info.find(func);
+        return it != function_info.end() && it->second.is_recursive;
+    }
+
+    int FunctionInlineAnalyzer::getCallCount(LLVMIR::IRFunction* caller, LLVMIR::IRFunction* callee)
+    {
+        int  count = 0;
+        auto it    = function_info.find(caller);
+        if (it != function_info.end())
+            for (auto call_inst : it->second.calls_made)
+                if (call_inst->func_name == callee->func_def->func_name) ++count;
+
+        return count;
+    }
+
+    const FunctionInlineAnalyzer::FunctionInfo& FunctionInlineAnalyzer::getFunctionInfo(LLVMIR::IRFunction* func) const
+    {
+        static FunctionInfo empty;
+        auto                it = function_info.find(func);
+        return it != function_info.end() ? it->second : empty;
+    }
+
+    std::string FunctionInlineAnalyzer::getInlineReason(
+        LLVMIR::IRFunction* caller, LLVMIR::IRFunction* callee, LLVMIR::CallInst* call_inst)
+    {
+        const auto& caller_info = getFunctionInfo(caller);
+        const auto& callee_info = getFunctionInfo(callee);
+
+        if (callee_info.instruction_count > 50)
+            return "Function too large (" + std::to_string(callee_info.instruction_count) + " instructions > 50)";
+
+        if (wouldCauseTooMuchGrowth(caller, callee)) return "Would cause excessive code growth";
+
+        if (caller == callee) return "Direct recursive call";
+
+        if (callee_info.is_recursive) return "Callee is recursive";
+
+        if (callee_info.instruction_count <= 10)
+            return "Very small function (" + std::to_string(callee_info.instruction_count) + " instructions <= 10)";
+
+        if (callee_info.has_pointer_params) return "Function has pointer parameters (good for optimization)";
+
+        CallSiteInfo call_site_info;
+        for (const auto& cs : all_call_sites)
+            if (cs.call_inst == call_inst)
+            {
+                call_site_info = cs;
+                break;
+            }
+
+        if (call_site_info.in_loop && callee_info.instruction_count <= 20)
+            return "Call in loop with reasonable size (" + std::to_string(callee_info.instruction_count) +
+                   " instructions <= 20, frequency x" + std::to_string(call_site_info.estimated_frequency) + ")";
+
+        int complexity_threshold = 15;
+        if (callee_info.has_loops) complexity_threshold = 10;
+
+        if (callee_info.complexity_score <= complexity_threshold)
+            return "Low complexity function (score " + std::to_string(callee_info.complexity_score) +
+                   " <= " + std::to_string(complexity_threshold) + ")";
+
+        int call_count = getCallCount(caller, callee);
+        if (call_count > 1 && callee_info.instruction_count <= 15)
+            return "Multiple calls (" + std::to_string(call_count) + "x) with small size (" +
+                   std::to_string(callee_info.instruction_count) + " instructions <= 15)";
+
+        if (callee_info.call_count == 0 && callee_info.instruction_count <= 25)
+            return "Leaf function with reasonable size (" + std::to_string(callee_info.instruction_count) +
+                   " instructions <= 25, no sub-calls)";
+
+        return "Does not meet inlining criteria";
+    }
+
+    bool FunctionInlineAnalyzer::shouldInline(
+        LLVMIR::IRFunction* caller, LLVMIR::IRFunction* callee, LLVMIR::CallInst* call_inst)
+    {
+        const auto& caller_info = getFunctionInfo(caller);
+        const auto& callee_info = getFunctionInfo(callee);
+
+        if (callee_info.instruction_count > 50) return false;
+        if (wouldCauseTooMuchGrowth(caller, callee)) return false;
+        if (caller == callee) return false;
+        if (callee_info.is_recursive) return false;
+        if (callee_info.instruction_count <= 10) return true;
+        if (callee_info.has_pointer_params) return true;
+
+        CallSiteInfo call_site_info;
+        for (const auto& cs : all_call_sites)
+            if (cs.call_inst == call_inst)
+            {
+                call_site_info = cs;
+                break;
+            }
+
+        if (call_site_info.in_loop && callee_info.instruction_count <= 20) return true;
+
+        int complexity_threshold = 15;
+        if (callee_info.has_loops) complexity_threshold = 10;
+
+        if (callee_info.complexity_score <= complexity_threshold) return true;
+
+        int call_count = getCallCount(caller, callee);
+        if (call_count > 1 && callee_info.instruction_count <= 15) return true;
+
+        if (callee_info.call_count == 0 && callee_info.instruction_count <= 25) return true;
+
+        return false;
+    }
+
+    void FunctionInlineAnalyzer::analyze()
+    {
+        buildCallGraph();
+
+        for (auto func : ir->functions) analyzeFunction(func);
+
+        detectRecursion();
+        computeTopologicalOrder();
+        analyzeCallSites();
+        computeComplexityScores();
+    }
+
+    void FunctionInlineAnalyzer::printAnalysisReport() const
+    {
+        std::cout << "\n=== Function Inline Analysis Report ===" << std::endl;
+
+        for (const auto& [func, info] : function_info)
+        {
+            std::cout << "Function: " << func->func_def->func_name << std::endl;
+            std::cout << "  Instructions: " << info.instruction_count << std::endl;
+            std::cout << "  Blocks: " << info.block_count << std::endl;
+            std::cout << "  Calls made: " << info.call_count << std::endl;
+            std::cout << "  Called: " << info.called_count << " times" << std::endl;
+            std::cout << "  Recursive: " << (info.is_recursive ? "Yes" : "No") << std::endl;
+            std::cout << "  Has loops: " << (info.has_loops ? "Yes" : "No") << std::endl;
+            std::cout << "  Has pointer params: " << (info.has_pointer_params ? "Yes" : "No") << std::endl;
+            std::cout << "  Complexity score: " << info.complexity_score << std::endl;
+            std::cout << std::endl;
+        }
+
+        std::cout << "Call sites analyzed: " << all_call_sites.size() << std::endl;
+
+        for (const auto& cs : all_call_sites)
+        {
+            std::cout << "  " << cs.caller->func_def->func_name << " -> " << cs.callee->func_def->func_name;
+            if (cs.in_loop) std::cout << " (in loop, freq x" << cs.estimated_frequency << ")";
+            if (cs.nesting_level > 1) std::cout << " (nesting " << cs.nesting_level << ")";
+            if (cs.has_pointer_args) std::cout << " (ptr args)";
+            std::cout << std::endl;
+        }
+
+        std::cout << "Processing order: ";
+        for (size_t i = 0; i < topo_order.size(); ++i)
+        {
+            if (i > 0) std::cout << " -> ";
+            std::cout << topo_order[i]->func_def->func_name;
+        }
+        std::cout << std::endl;
+    }
+
+    FunctionInlinePass::FunctionInlinePass(LLVMIR::IR* ir) : Pass(ir) { analyzer = new FunctionInlineAnalyzer(ir); }
+
+    FunctionInlinePass::~FunctionInlinePass() { delete analyzer; }
+
+    LLVMIR::IRFunction* FunctionInlinePass::findFunction(const std::string& name)
+    {
+        for (auto func : ir->functions)
+            if (func->func_def->func_name == name) return func;
+
+        return nullptr;
+    }
+
+    LLVMIR::Operand* FunctionInlinePass::copyOperand(
+        LLVMIR::Operand* operand, const std::map<int, int>& reg_map, const std::map<int, int>& label_map)
+    {
+        if (!operand) return nullptr;
+
+        switch (operand->type)
+        {
+            case LLVMIR::OperandType::REG:
+            {
+                auto reg_op = static_cast<LLVMIR::RegOperand*>(operand);
+                auto it     = reg_map.find(reg_op->reg_num);
+                if (it != reg_map.end())
+                {
+                    // std::cout << "Map reg " << reg_op->reg_num << " to " << it->second << std::endl;
+                    return getRegOperand(it->second);
+                }
+
+                // std::cout << "Kep reg " << reg_op->reg_num << std::endl;
+                return getRegOperand(reg_op->reg_num);
+            }
+            case LLVMIR::OperandType::IMMEI32:
+            {
+                auto imme_op = static_cast<LLVMIR::ImmeI32Operand*>(operand);
+                return getImmeI32Operand(imme_op->value);
+            }
+            case LLVMIR::OperandType::IMMEF32:
+            {
+                auto imme_op = static_cast<LLVMIR::ImmeF32Operand*>(operand);
+                return getImmeF32Operand(imme_op->value);
+            }
+            case LLVMIR::OperandType::LABEL:
+            {
+                auto label_op = static_cast<LLVMIR::LabelOperand*>(operand);
+                auto it       = label_map.find(label_op->label_num);
+                if (it != label_map.end()) { return getLabelOperand(it->second); }
+                return getLabelOperand(label_op->label_num);
+            }
+            case LLVMIR::OperandType::GLOBAL:
+            {
+                auto global_op = static_cast<LLVMIR::GlobalOperand*>(operand);
+                return getGlobalOperand(global_op->global_name);
+            }
+            default: return nullptr;
+        }
+    }
+
+    LLVMIR::Instruction* FunctionInlinePass::copyInstruction(LLVMIR::Instruction* inst,
+        const std::map<int, int>& reg_map, const std::map<int, int>& label_map, LLVMIR::IRFunction* caller)
+    {
+        if (!inst) return nullptr;
+
+        LLVMIR::Instruction* new_inst = nullptr;
+
+        switch (inst->opcode)
+        {
+            case LLVMIR::IROpCode::LOAD:
+            {
+                auto load_inst = static_cast<LLVMIR::LoadInst*>(inst);
+                new_inst       = new LLVMIR::LoadInst(load_inst->type,
+                    copyOperand(load_inst->ptr, reg_map, label_map),
+                    copyOperand(load_inst->res, reg_map, label_map));
+                break;
+            }
+            case LLVMIR::IROpCode::STORE:
+            {
+                auto store_inst = static_cast<LLVMIR::StoreInst*>(inst);
+                new_inst        = new LLVMIR::StoreInst(store_inst->type,
+                    copyOperand(store_inst->ptr, reg_map, label_map),
+                    copyOperand(store_inst->val, reg_map, label_map));
+                break;
+            }
+            case LLVMIR::IROpCode::ADD:
+            case LLVMIR::IROpCode::SUB:
+            case LLVMIR::IROpCode::MUL:
+            case LLVMIR::IROpCode::DIV:
+            case LLVMIR::IROpCode::MOD:
+            case LLVMIR::IROpCode::FADD:
+            case LLVMIR::IROpCode::FSUB:
+            case LLVMIR::IROpCode::FMUL:
+            case LLVMIR::IROpCode::FDIV:
+            {
+                auto arith_inst = static_cast<LLVMIR::ArithmeticInst*>(inst);
+                new_inst        = new LLVMIR::ArithmeticInst(arith_inst->opcode,
+                    arith_inst->type,
+                    copyOperand(arith_inst->lhs, reg_map, label_map),
+                    copyOperand(arith_inst->rhs, reg_map, label_map),
+                    copyOperand(arith_inst->res, reg_map, label_map));
+                break;
+            }
+            case LLVMIR::IROpCode::ICMP:
+            {
+                auto icmp_inst = static_cast<LLVMIR::IcmpInst*>(inst);
+                new_inst       = new LLVMIR::IcmpInst(icmp_inst->type,
+                    icmp_inst->cond,
+                    copyOperand(icmp_inst->lhs, reg_map, label_map),
+                    copyOperand(icmp_inst->rhs, reg_map, label_map),
+                    copyOperand(icmp_inst->res, reg_map, label_map));
+                break;
+            }
+            case LLVMIR::IROpCode::FCMP:
+            {
+                auto fcmp_inst = static_cast<LLVMIR::FcmpInst*>(inst);
+                new_inst       = new LLVMIR::FcmpInst(fcmp_inst->type,
+                    fcmp_inst->cond,
+                    copyOperand(fcmp_inst->lhs, reg_map, label_map),
+                    copyOperand(fcmp_inst->rhs, reg_map, label_map),
+                    copyOperand(fcmp_inst->res, reg_map, label_map));
+                break;
+            }
+            case LLVMIR::IROpCode::ALLOCA:
+            {
+                auto alloca_inst = static_cast<LLVMIR::AllocInst*>(inst);
+                new_inst         = new LLVMIR::AllocInst(
+                    alloca_inst->type, copyOperand(alloca_inst->res, reg_map, label_map), alloca_inst->dims);
+                break;
+            }
+            case LLVMIR::IROpCode::BR_COND:
+            {
+                auto br_inst = static_cast<LLVMIR::BranchCondInst*>(inst);
+                new_inst     = new LLVMIR::BranchCondInst(copyOperand(br_inst->cond, reg_map, label_map),
+                    copyOperand(br_inst->true_label, reg_map, label_map),
+                    copyOperand(br_inst->false_label, reg_map, label_map));
+                break;
+            }
+            case LLVMIR::IROpCode::BR_UNCOND:
+            {
+                auto br_inst = static_cast<LLVMIR::BranchUncondInst*>(inst);
+                new_inst     = new LLVMIR::BranchUncondInst(copyOperand(br_inst->target_label, reg_map, label_map));
+                break;
+            }
+            case LLVMIR::IROpCode::CALL:
+            {
+                auto call_inst = static_cast<LLVMIR::CallInst*>(inst);
+                std::vector<std::pair<LLVMIR::DataType, LLVMIR::Operand*>> new_args;
+                for (auto& arg : call_inst->args)
+                {
+                    new_args.push_back({arg.first, copyOperand(arg.second, reg_map, label_map)});
+                }
+                new_inst = new LLVMIR::CallInst(call_inst->ret_type,
+                    call_inst->func_name,
+                    new_args,
+                    copyOperand(call_inst->res, reg_map, label_map));
+                break;
+            }
+            case LLVMIR::IROpCode::RET:
+            {
+                auto ret_inst = static_cast<LLVMIR::RetInst*>(inst);
+                new_inst      = new LLVMIR::RetInst(ret_inst->ret_type, copyOperand(ret_inst->ret, reg_map, label_map));
+                break;
+            }
+            case LLVMIR::IROpCode::GETELEMENTPTR:
+            {
+                auto                          gep_inst = static_cast<LLVMIR::GEPInst*>(inst);
+                std::vector<LLVMIR::Operand*> new_idxs;
+                for (auto idx : gep_inst->idxs) { new_idxs.push_back(copyOperand(idx, reg_map, label_map)); }
+                new_inst = new LLVMIR::GEPInst(gep_inst->type,
+                    gep_inst->idx_type,
+                    copyOperand(gep_inst->base_ptr, reg_map, label_map),
+                    copyOperand(gep_inst->res, reg_map, label_map),
+                    gep_inst->dims,
+                    new_idxs);
+                break;
+            }
+            case LLVMIR::IROpCode::SITOFP:
+            {
+                auto convert_inst = static_cast<LLVMIR::SI2FPInst*>(inst);
+                new_inst          = new LLVMIR::SI2FPInst(copyOperand(convert_inst->f_si, reg_map, label_map),
+                    copyOperand(convert_inst->t_fp, reg_map, label_map));
+                break;
+            }
+            case LLVMIR::IROpCode::FPTOSI:
+            {
+                auto convert_inst = static_cast<LLVMIR::FP2SIInst*>(inst);
+                new_inst          = new LLVMIR::FP2SIInst(copyOperand(convert_inst->f_fp, reg_map, label_map),
+                    copyOperand(convert_inst->t_si, reg_map, label_map));
+                break;
+            }
+            case LLVMIR::IROpCode::ZEXT:
+            {
+                auto zext_inst = static_cast<LLVMIR::ZextInst*>(inst);
+                new_inst       = new LLVMIR::ZextInst(zext_inst->from,
+                    zext_inst->to,
+                    copyOperand(zext_inst->src, reg_map, label_map),
+                    copyOperand(zext_inst->dest, reg_map, label_map));
+                break;
+            }
+            case LLVMIR::IROpCode::PHI:
+            {
+                auto phi_inst = static_cast<LLVMIR::PhiInst*>(inst);
+                std::vector<std::pair<LLVMIR::Operand*, LLVMIR::Operand*>> new_vals;
+                for (auto& val_label : phi_inst->vals_for_labels)
+                {
+                    new_vals.push_back({copyOperand(val_label.first, reg_map, label_map),
+                        copyOperand(val_label.second, reg_map, label_map)});
+                }
+                new_inst =
+                    new LLVMIR::PhiInst(phi_inst->type, copyOperand(phi_inst->res, reg_map, label_map), &new_vals);
+                break;
+            }
+            default: return nullptr;
+        }
+
+        if (new_inst) new_inst->block_id = inst->block_id;
+
+        return new_inst;
+    }
+
+    void FunctionInlinePass::updateRegAndLabelMaps(LLVMIR::IRFunction* caller, LLVMIR::IRFunction* callee,
+        LLVMIR::CallInst* call_inst, std::map<int, int>& reg_map, std::map<int, int>& label_map)
+    {
+        // std::cout << "Caller initial max reg " << caller->max_reg << std::endl;
+
+        size_t arg_num = call_inst->args.size();
+        for (size_t i = 0; i < arg_num; ++i)
+        {
+            auto& arg = call_inst->args[i];
+            if (arg.second->type == LLVMIR::OperandType::REG)
+            {
+                auto reg_op = static_cast<LLVMIR::RegOperand*>(arg.second);
+                reg_map[i]  = reg_op->reg_num;
+            }
+            else
+            {
+                // For immediate values, we need to create a register and an assignment
+                // but handle the assignment instruction in the inlining process
+                int new_reg = ++caller->max_reg;
+                reg_map[i]  = new_reg;
+            }
+        }
+
+        for (int i = arg_num; i <= callee->max_reg; ++i) reg_map[i] = ++caller->max_reg;
+        for (int i = 0; i <= callee->max_label; i++) label_map[i] = caller->max_label++;
+    }
+
+    LLVMIR::IRBlock* FunctionInlinePass::findCallBlock(LLVMIR::IRFunction* func, LLVMIR::CallInst* call_inst)
+    {
+        for (auto block : func->blocks)
+            for (auto inst : block->insts)
+                if (inst == call_inst) return block;
+
+        return nullptr;
+    }
+
+    void FunctionInlinePass::splitBlockAtCall(LLVMIR::IRFunction* caller, LLVMIR::IRBlock* call_block,
+        LLVMIR::CallInst* call_inst, LLVMIR::IRBlock*& continue_block)
+    {
+        continue_block = caller->createBlock();
+
+        auto call_iter = std::find(call_block->insts.begin(), call_block->insts.end(), call_inst);
+        if (call_iter == call_block->insts.end()) return;
+
+        auto next_iter = call_iter;
+        ++next_iter;
+
+        for (auto iter = next_iter; iter != call_block->insts.end(); ++iter) continue_block->insts.push_back(*iter);
+
+        call_block->insts.erase(next_iter, call_block->insts.end());
+        call_block->insts.erase(call_iter);
+
+        updatePhiInstructions(caller, call_block, continue_block);
+    }
+
+    void FunctionInlinePass::updatePhiInstructions(
+        LLVMIR::IRFunction* caller, LLVMIR::IRBlock* old_block, LLVMIR::IRBlock* new_block)
+    {
+        for (auto block : caller->blocks)
+        {
+            for (auto inst : block->insts)
+            {
+                if (inst->opcode != LLVMIR::IROpCode::PHI) continue;
+
+                auto phi_inst = static_cast<LLVMIR::PhiInst*>(inst);
+
+                for (auto& val_label : phi_inst->vals_for_labels)
+                {
+                    if (val_label.second->type != LLVMIR::OperandType::LABEL) continue;
+
+                    auto label_op = static_cast<LLVMIR::LabelOperand*>(val_label.second);
+                    if (label_op->label_num == old_block->block_id)
+                        val_label.second = getLabelOperand(new_block->block_id);
+                }
+            }
+        }
+    }
+
+    void FunctionInlinePass::inlineFunction(
+        LLVMIR::IRFunction* caller, LLVMIR::IRFunction* callee, LLVMIR::CallInst* call_inst)
+    {
+        std::map<int, int> reg_map;
+        std::map<int, int> label_map;
+
+        LLVMIR::IRBlock* call_block = findCallBlock(caller, call_inst);
+        if (!call_block) return;
+
+        LLVMIR::IRBlock* continue_block = nullptr;
+        splitBlockAtCall(caller, call_block, call_inst, continue_block);
+
+        updateRegAndLabelMaps(caller, callee, call_inst, reg_map, label_map);
+
+        for (size_t i = 0; i < call_inst->args.size(); i++)
+        {
+            auto& arg = call_inst->args[i];
+            if (arg.second->type == LLVMIR::OperandType::REG) continue;
+
+            LLVMIR::Instruction* assign_inst = nullptr;
+            if (arg.first == LLVMIR::DataType::I32)
+            {
+                assign_inst = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::ADD,
+                    LLVMIR::DataType::I32,
+                    arg.second,
+                    getImmeI32Operand(0),
+                    getRegOperand(reg_map[i]));
+            }
+            else if (arg.first == LLVMIR::DataType::F32)
+            {
+                assign_inst = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::FADD,
+                    LLVMIR::DataType::F32,
+                    arg.second,
+                    getImmeF32Operand(0.0f),
+                    getRegOperand(reg_map[i]));
+            }
+
+            if (assign_inst) call_block->insts.push_back(assign_inst);
+        }
+
+        std::map<int, LLVMIR::IRBlock*> block_map;
+
+        for (auto callee_block : callee->blocks)
+        {
+            LLVMIR::IRBlock* target_block = nullptr;
+
+            if (callee_block->block_id == 0)
+            {
+                target_block = call_block;
+                block_map[0] = call_block;
+            }
+            else
+            {
+                target_block = caller->createBlock();
+                if (label_map.find(callee_block->block_id) != label_map.end())
+                {
+                    target_block->block_id = label_map[callee_block->block_id];
+                }
+                block_map[callee_block->block_id] = target_block;
+            }
+
+            for (auto inst : callee_block->insts)
+            {
+                if (inst->opcode == LLVMIR::IROpCode::ALLOCA)
+                {
+                    auto new_inst = copyInstruction(inst, reg_map, label_map, caller);
+                    if (new_inst) caller->blocks[0]->insts.insert(caller->blocks[0]->insts.begin(), new_inst);
+                }
+                else if (inst->opcode == LLVMIR::IROpCode::RET)
+                {
+                    auto ret_inst = static_cast<LLVMIR::RetInst*>(inst);
+
+                    if (ret_inst->ret && call_inst->res)
+                    {
+                        LLVMIR::Instruction* assign_inst = nullptr;
+                        if (ret_inst->ret_type == LLVMIR::DataType::I32)
+                        {
+                            assign_inst = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::ADD,
+                                LLVMIR::DataType::I32,
+                                copyOperand(ret_inst->ret, reg_map, label_map),
+                                getImmeI32Operand(0),
+                                call_inst->res);
+                        }
+                        else if (ret_inst->ret_type == LLVMIR::DataType::F32)
+                        {
+                            assign_inst = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::FADD,
+                                LLVMIR::DataType::F32,
+                                copyOperand(ret_inst->ret, reg_map, label_map),
+                                getImmeF32Operand(0.0f),
+                                call_inst->res);
+                        }
+
+                        if (assign_inst) target_block->insts.push_back(assign_inst);
+                    }
+
+                    auto br_inst = new LLVMIR::BranchUncondInst(getLabelOperand(continue_block->block_id));
+                    target_block->insts.push_back(br_inst);
+                }
+                else
+                {
+                    auto new_inst = copyInstruction(inst, reg_map, label_map, caller);
+                    if (new_inst) { target_block->insts.push_back(new_inst); }
+                }
+            }
+        }
+
+        if (!call_block->insts.empty())
+        {
+            auto last_inst = call_block->insts.back();
+            if (last_inst->opcode != LLVMIR::IROpCode::BR_UNCOND && last_inst->opcode != LLVMIR::IROpCode::BR_COND &&
+                last_inst->opcode != LLVMIR::IROpCode::RET)
+            {
+                auto br_inst = new LLVMIR::BranchUncondInst(getLabelOperand(continue_block->block_id));
+                call_block->insts.push_back(br_inst);
+            }
+        }
+        else
+        {
+            auto br_inst = new LLVMIR::BranchUncondInst(getLabelOperand(continue_block->block_id));
+            call_block->insts.push_back(br_inst);
+        }
+    }
+
+    void FunctionInlinePass::Execute()
+    {
+        analyzer->analyze();
+
+        analyzer->printAnalysisReport();
+
+        bool      changed        = true;
+        int       iteration      = 0;
+        const int MAX_ITERATIONS = 5;
+
+        while (changed && iteration < MAX_ITERATIONS)
+        {
+            changed = false;
+            ++iteration;
+
+            auto processing_order = analyzer->getProcessingOrder();
+
+            for (auto func : processing_order)
+            {
+                std::vector<LLVMIR::CallInst*> calls_to_inline;
+
+                for (auto block : func->blocks)
+                {
+                    for (auto inst : block->insts)
+                    {
+                        if (inst->opcode != LLVMIR::IROpCode::CALL) continue;
+
+                        auto call_inst = static_cast<LLVMIR::CallInst*>(inst);
+                        auto callee    = findFunction(call_inst->func_name);
+
+                        if (callee)
+                        {
+                            std::string reason = analyzer->getInlineReason(func, callee, call_inst);
+
+                            if (analyzer->shouldInline(func, callee, call_inst))
+                            {
+                                std::cout << "Accept inlining: " << callee->func_def->func_name << " in "
+                                          << func->func_def->func_name << " - " << reason << std::endl;
+                                calls_to_inline.push_back(call_inst);
+                            }
+                            else
+                            {
+                                std::cout << "Reject inlining: " << callee->func_def->func_name << " in "
+                                          << func->func_def->func_name << " - " << reason << std::endl;
+                            }
+                        }
+                    }
+                }
+
+                for (auto call_inst : calls_to_inline)
+                {
+                    auto callee = findFunction(call_inst->func_name);
+                    if (callee)
+                    {
+                        inlineFunction(func, callee, call_inst);
+                        changed = true;
+                    }
+                }
+
+                if (changed && calls_to_inline.size() > 0)
+                {
+                    analyzer->analyze();
+                    break;
+                }
+            }
+        }
+
+        if (iteration >= MAX_ITERATIONS)
+        {
+            std::cout << "Function inlining stopped after " << MAX_ITERATIONS << " iterations" << std::endl;
+        }
+    }
+}  // namespace Transform
