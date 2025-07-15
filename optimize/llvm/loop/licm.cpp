@@ -107,15 +107,20 @@ namespace StructuralTransform
 
             case LLVMIR::IROpCode::CALL:
             {
-                if (!dominates_exits) return false;
-
                 const auto* call_inst = static_cast<const LLVMIR::CallInst*>(inst);
-                const auto  cfg_it    = cfg_map.find(call_inst->func_name);
+
+                const auto cfg_it = cfg_map.find(call_inst->func_name);
                 if (cfg_it == cfg_map.end()) return false;
 
                 auto* target_cfg = cfg_it->second;
 
-                if (!alias_analyser->isNoSideEffect(target_cfg)) return false;
+                bool no_side_effect = alias_analyser->isNoSideEffect(target_cfg);
+                bool is_pure        = no_side_effect && alias_analyser->getReadPtrs(target_cfg).empty();
+
+                if (!no_side_effect) return false;
+                if (is_pure) return true;
+                if (!dominates_exits)
+                    ;  // might still be safe to hoist if no memory conflicts exist
 
                 const auto                    read_ptrs = alias_analyser->getReadPtrs(target_cfg);
                 std::vector<LLVMIR::Operand*> real_read_ptrs;
@@ -215,7 +220,6 @@ namespace StructuralTransform
         for (const auto* loop_bb : loop->loop_nodes)
             for (auto* inst : loop_bb->insts)
                 if (isLoopInvariant(cfg, inst, loop, loop_mem_write_insts)) invariant_insts_list.push_back(inst);
-
         return invariant_insts_list;
     }
 
@@ -634,12 +638,13 @@ namespace StructuralTransform
 
                 const bool dominates_exits = dominatesAllExits(cfg, cfg->block_id_to_block.at(inst->block_id), loop);
 
-                const auto cfg_it           = cfg_map.find(call_inst->func_name);
-                const bool is_pure_function = (cfg_it != cfg_map.end()) &&
-                                              alias_analyser->isNoSideEffect(cfg_it->second) &&
-                                              alias_analyser->getReadPtrs(cfg_it->second).empty();
+                const auto cfg_it = cfg_map.find(call_inst->func_name);
+                if (cfg_it == cfg_map.end()) continue;
 
-                if (dominates_exits || is_pure_function) { call_insts_to_hoist.push_back(inst); }
+                const bool is_no_side_effect = alias_analyser->isNoSideEffect(cfg_it->second);
+                const bool is_pure_function  = is_no_side_effect && alias_analyser->getReadPtrs(cfg_it->second).empty();
+
+                if (is_pure_function || (is_no_side_effect && dominates_exits)) { call_insts_to_hoist.push_back(inst); }
             }
         }
 

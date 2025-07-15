@@ -2,10 +2,12 @@
 #include <queue>
 #include <set>
 #include <algorithm>
+#include <iostream>
 #include "llvm_ir/instruction.h"
 #include "llvm_ir/ir_builder.h"
 #include "cfg.h"
 #include "llvm/alias_analysis/alias_analysis.h"
+#include "dom_analyzer.h"
 
 namespace Analysis
 {
@@ -21,376 +23,9 @@ namespace Analysis
         return nullptr;
     }
 
-    MemoryDependenceAnalyser::MemoryDependenceAnalyser(LLVMIR::IR* ir, AliasAnalyser* aa) : ir(ir), alias_analyser(aa)
-    {}
+    MemorySSA::MemorySSA(LLVMIR::IR* ir, AliasAnalyser* aa) : ir(ir), alias_analyser(aa) {}
 
-    static std::set<LLVMIR::Instruction*> getLoadClobbers(
-        LLVMIR::Instruction* inst, CFG* cfg, AliasAnalyser* alias_analyser, LLVMIR::IR* ir)
-    {
-        std::set<LLVMIR::Instruction*> res;
-
-        LLVMIR::Operand* ptr;
-        assert(inst->opcode == LLVMIR::IROpCode::LOAD || inst->opcode == LLVMIR::IROpCode::STORE);
-        if (inst->opcode == LLVMIR::IROpCode::LOAD)
-            ptr = dynamic_cast<LLVMIR::LoadInst*>(inst)->ptr;
-        else
-            ptr = dynamic_cast<LLVMIR::StoreInst*>(inst)->ptr;
-
-        auto inst_bb = cfg->block_id_to_block.at(inst->block_id);
-
-        int i_idx = -1;
-        for (int i = 0; i < (int)inst_bb->insts.size(); ++i)
-        {
-            if (inst_bb->insts[i] == inst)
-            {
-                i_idx = i;
-                break;
-            }
-        }
-        assert(i_idx != -1);
-
-        for (int i = i_idx - 1; i >= 0; --i)
-        {
-            auto tmp_inst = inst_bb->insts[i];
-            if (tmp_inst->opcode == LLVMIR::IROpCode::STORE)
-            {
-                auto store_inst = dynamic_cast<LLVMIR::StoreInst*>(tmp_inst);
-                if (alias_analyser->queryAlias(ptr, store_inst->ptr, cfg) == AliasAnalyser::MustAlias)
-                {
-                    res.insert(store_inst);
-                    return res;
-                }
-            }
-            else if (tmp_inst->opcode == LLVMIR::IROpCode::CALL)
-            {
-                auto call_inst  = dynamic_cast<LLVMIR::CallInst*>(tmp_inst);
-                auto call_name  = call_inst->func_name;
-                auto target_cfg = getCfgByName(ir, call_name);
-
-                if (!target_cfg)
-                {
-                    res.insert(call_inst);
-                    return res;
-                }
-                if (!alias_analyser->isNoSideEffect(target_cfg))
-                {
-                    res.insert(call_inst);
-                    return res;
-                }
-            }
-        }
-
-        std::queue<LLVMIR::IRBlock*> q;
-        for (auto pred : cfg->invG[inst_bb->block_id]) q.push(pred);
-
-        if (inst_bb->block_id == 0 && q.empty())
-        {
-            res.insert(cfg->func->func_def);
-            return res;
-        }
-
-        std::map<LLVMIR::IRBlock*, bool> visited;
-        while (!q.empty())
-        {
-            auto x = q.front();
-            q.pop();
-            if (visited[x]) continue;
-            visited[x] = true;
-
-            bool found = false;
-            for (int i = x->insts.size() - 1; i >= 0; --i)
-            {
-                auto tmp_inst = x->insts[i];
-                if (tmp_inst->opcode == LLVMIR::IROpCode::STORE)
-                {
-                    auto store_inst = dynamic_cast<LLVMIR::StoreInst*>(tmp_inst);
-                    if (alias_analyser->queryAlias(ptr, store_inst->ptr, cfg) == AliasAnalyser::MustAlias)
-                    {
-                        res.insert(store_inst);
-                        found = true;
-                        break;
-                    }
-                }
-                else if (tmp_inst->opcode == LLVMIR::IROpCode::CALL)
-                {
-                    auto call_inst  = dynamic_cast<LLVMIR::CallInst*>(tmp_inst);
-                    auto call_name  = call_inst->func_name;
-                    auto target_cfg = getCfgByName(ir, call_name);
-
-                    if (!target_cfg)
-                    {
-                        res.insert(call_inst);
-                        found = true;
-                        break;
-                    }
-                    if (!alias_analyser->isNoSideEffect(target_cfg))
-                    {
-                        res.insert(call_inst);
-                        found = true;
-                        break;
-                    }
-                }
-            }
-            if (!found)
-            {
-                for (auto pred : cfg->invG[x->block_id]) q.push(pred);
-            }
-            if (x->block_id == 0 && !found) res.insert(cfg->func->func_def);
-        }
-
-        return res;
-    }
-
-    static bool isExternalCallReadPtr(
-        LLVMIR::CallInst* inst, LLVMIR::Operand* ptr, CFG* cfg, AliasAnalyser* alias_analyser)
-    {
-        auto n = inst->func_name;
-        if (n == "getint" || n == "getch" || n == "getfloat" || n == "putint" || n == "putch" || n == "putfloat" ||
-            n == "_sysy_starttime" || n == "_sysy_stoptime" || n == "llvm.memset.p0.i32")
-            return false;
-
-        if (n == "putarray" || n == "putfarray")
-        {
-            assert(inst->args.size() == 2);
-            auto arg2 = inst->args[1].second;
-            assert(arg2->type == LLVMIR::OperandType::REG);
-            auto res = alias_analyser->queryAlias(ptr, arg2, cfg);
-            if (res == AliasAnalyser::MustAlias) return true;
-            return false;
-        }
-        return true;
-    }
-
-    static std::set<LLVMIR::Instruction*> getStorePostClobbers(
-        LLVMIR::Instruction* inst, CFG* cfg, AliasAnalyser* alias_analyser, LLVMIR::IR* ir)
-    {
-        std::set<LLVMIR::Instruction*> res;
-        assert(inst->opcode == LLVMIR::IROpCode::STORE);
-        auto ptr = dynamic_cast<LLVMIR::StoreInst*>(inst)->ptr;
-
-        auto inst_bb = cfg->block_id_to_block.at(inst->block_id);
-
-        int i_idx = -1;
-        for (int i = 0; i < (int)inst_bb->insts.size(); ++i)
-        {
-            if (inst_bb->insts[i] == inst)
-            {
-                i_idx = i;
-                break;
-            }
-        }
-        assert(i_idx != -1);
-
-        for (int i = i_idx + 1; i < (int)inst_bb->insts.size(); ++i)
-        {
-            auto tmp_inst = inst_bb->insts[i];
-            if (tmp_inst->opcode == LLVMIR::IROpCode::LOAD)
-            {
-                auto load_inst = dynamic_cast<LLVMIR::LoadInst*>(tmp_inst);
-                if (alias_analyser->queryAlias(ptr, load_inst->ptr, cfg) == AliasAnalyser::MustAlias)
-                {
-                    res.insert(load_inst);
-                    return res;
-                }
-            }
-            else if (tmp_inst->opcode == LLVMIR::IROpCode::CALL)
-            {
-                auto call_inst  = dynamic_cast<LLVMIR::CallInst*>(tmp_inst);
-                auto call_name  = call_inst->func_name;
-                auto target_cfg = getCfgByName(ir, call_name);
-
-                if (!target_cfg)
-                {
-                    if (!isExternalCallReadPtr(call_inst, ptr, cfg, alias_analyser)) continue;
-                    res.insert(call_inst);
-                    return res;
-                }
-                if (!alias_analyser->isIndependent(target_cfg))
-                {
-                    res.insert(call_inst);
-                    return res;
-                }
-            }
-        }
-
-        std::queue<LLVMIR::IRBlock*> q;
-        for (auto succ : cfg->G[inst_bb->block_id]) q.push(succ);
-
-        if (cfg->G[inst_bb->block_id].empty())
-        {
-            for (auto const& inst : cfg->func->blocks.back()->insts)
-            {
-                if (inst->opcode == LLVMIR::IROpCode::RET)
-                {
-                    res.insert(inst);
-                    break;
-                }
-            }
-            return res;
-        }
-
-        std::map<LLVMIR::IRBlock*, bool> visited;
-        while (!q.empty())
-        {
-            auto x = q.front();
-            q.pop();
-            if (visited[x]) continue;
-            visited[x] = true;
-
-            bool found = false;
-            for (auto tmp_inst : x->insts)
-            {
-                if (tmp_inst->opcode == LLVMIR::IROpCode::LOAD)
-                {
-                    auto load_inst = dynamic_cast<LLVMIR::LoadInst*>(tmp_inst);
-                    if (alias_analyser->queryAlias(ptr, load_inst->ptr, cfg) == AliasAnalyser::MustAlias)
-                    {
-                        res.insert(load_inst);
-                        found = true;
-                        break;
-                    }
-                }
-                else if (tmp_inst->opcode == LLVMIR::IROpCode::CALL)
-                {
-                    auto call_inst  = dynamic_cast<LLVMIR::CallInst*>(tmp_inst);
-                    auto call_name  = call_inst->func_name;
-                    auto target_cfg = getCfgByName(ir, call_name);
-
-                    if (!target_cfg)
-                    {
-                        if (!isExternalCallReadPtr(call_inst, ptr, cfg, alias_analyser)) continue;
-                        res.insert(call_inst);
-                        found = true;
-                        break;
-                    }
-                    if (!alias_analyser->isIndependent(target_cfg))
-                    {
-                        res.insert(call_inst);
-                        found = true;
-                        break;
-                    }
-                }
-            }
-            if (!found)
-            {
-                for (auto succ : cfg->G[x->block_id]) q.push(succ);
-            }
-
-            if (cfg->G[x->block_id].empty())
-            {
-                for (auto const& inst : cfg->func->blocks.back()->insts)
-                {
-                    if (inst->opcode == LLVMIR::IROpCode::RET)
-                    {
-                        res.insert(inst);
-                        break;
-                    }
-                }
-            }
-        }
-        return res;
-    }
-
-    static std::set<int> getAllBlockInPath(int id1, int id2, CFG* cfg)
-    {
-        std::set<int>    ans;
-        std::set<int>    id1_tos, to_id2s;
-        std::queue<int>  q;
-        std::vector<int> vis(cfg->func->max_label + 1, 0);
-
-        q.push(id1);
-        while (!q.empty())
-        {
-            int x = q.front();
-            q.pop();
-            if (vis[x]) continue;
-            id1_tos.insert(x);
-            vis[x] = 1;
-            for (auto v : cfg->G[x]) q.push(v->block_id);
-        }
-
-        std::fill(vis.begin(), vis.end(), 0);
-        q.push(id2);
-        while (!q.empty())
-        {
-            int x = q.front();
-            q.pop();
-            if (vis[x]) continue;
-            to_id2s.insert(x);
-            vis[x] = 1;
-            if (x == id1) continue;
-            for (auto v : cfg->invG[x]) q.push(v->block_id);
-        }
-
-        for (int i = 0; i <= (int)cfg->func->max_label; ++i)
-        {
-            if (id1_tos.count(i) && to_id2s.count(i)) ans.insert(i);
-        }
-        return ans;
-    }
-
-    static bool isNoStore(
-        LLVMIR::Instruction* inst1, LLVMIR::Instruction* inst2, CFG* cfg, AliasAnalyser* alias_analyser, LLVMIR::IR* ir)
-    {
-        LLVMIR::Operand* ptr;
-        if (inst1->opcode == LLVMIR::IROpCode::LOAD)
-            ptr = dynamic_cast<LLVMIR::LoadInst*>(inst1)->ptr;
-        else if (inst1->opcode == LLVMIR::IROpCode::STORE)
-            ptr = dynamic_cast<LLVMIR::StoreInst*>(inst1)->ptr;
-        else
-            return true;
-
-        auto blocks = getAllBlockInPath(inst1->block_id, inst2->block_id, cfg);
-        if (blocks.empty()) return false;
-
-        for (auto id : blocks)
-        {
-            auto bb = cfg->block_id_to_block.at(id);
-            int  st = 0, ed = bb->insts.size();
-            if (id == inst1->block_id)
-            {
-                for (unsigned i = 0; i < bb->insts.size(); ++i)
-                {
-                    if (bb->insts[i] == inst1)
-                    {
-                        st = i + 1;
-                        break;
-                    }
-                }
-            }
-            if (id == inst2->block_id)
-            {
-                for (unsigned i = 0; i < bb->insts.size(); ++i)
-                {
-                    if (bb->insts[i] == inst2)
-                    {
-                        ed = i;
-                        break;
-                    }
-                }
-            }
-
-            for (int i = st; i < ed; ++i)
-            {
-                auto inst = bb->insts[i];
-                if (inst->opcode == LLVMIR::IROpCode::STORE)
-                {
-                    auto store_inst = dynamic_cast<LLVMIR::StoreInst*>(inst);
-                    if (alias_analyser->queryAlias(ptr, store_inst->ptr, cfg) == AliasAnalyser::MustAlias) return false;
-                }
-                else if (inst->opcode == LLVMIR::IROpCode::CALL)
-                {
-                    auto call_inst  = dynamic_cast<LLVMIR::CallInst*>(inst);
-                    auto call_name  = call_inst->func_name;
-                    auto target_cfg = getCfgByName(ir, call_name);
-                    if (!target_cfg || !alias_analyser->isNoSideEffect(target_cfg)) return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    void MemoryDependenceAnalyser::run()
+    void MemorySSA::run()
     {
         for (auto const& [func_def, cfg] : ir->cfg)
         {
@@ -398,15 +33,246 @@ namespace Analysis
             {
                 for (auto inst : bb->insts) inst->block_id = bb->block_id;
             }
+            buildMemorySSA(cfg);
         }
     }
 
-    bool MemoryDependenceAnalyser::isDepend(LLVMIR::Instruction* inst1, LLVMIR::Instruction* inst2, CFG* cfg)
+    void MemorySSA::buildMemorySSA(CFG* cfg)
+    {
+        bb_memory_accesses[cfg].clear();
+        bb_memory_phis[cfg].clear();
+        location_accesses[cfg].clear();
+
+        for (auto const& [id, bb] : cfg->block_id_to_block)
+        {
+            for (int i = 0; i < (int)bb->insts.size(); ++i)
+            {
+                auto inst = bb->insts[i];
+                if (inst->opcode == LLVMIR::IROpCode::LOAD)
+                {
+                    auto access      = new MemoryUse(inst);
+                    access->location = getMemoryLocation(inst);
+                    access->block_id = bb->block_id;
+                    access->inst_id  = i;
+                    bb_memory_accesses[cfg][bb->block_id].push_back(access);
+                    location_accesses[cfg][access->location].push_back(access);
+                    inst_to_access[inst] = access;
+                }
+                else if (inst->opcode == LLVMIR::IROpCode::STORE)
+                {
+                    auto access      = new MemoryDef(inst);
+                    access->location = getMemoryLocation(inst);
+                    access->block_id = bb->block_id;
+                    access->inst_id  = i;
+                    bb_memory_accesses[cfg][bb->block_id].push_back(access);
+                    location_accesses[cfg][access->location].push_back(access);
+                    inst_to_access[inst] = access;
+                }
+                else if (inst->opcode == LLVMIR::IROpCode::CALL)
+                {
+                    auto call_inst = dynamic_cast<LLVMIR::CallInst*>(inst);
+                    auto call_cfg  = getCfgByName(ir, call_inst->func_name);
+                    if (!call_cfg || !alias_analyser->isNoSideEffect(call_cfg))
+                    {
+                        auto access      = new MemoryDef(inst);
+                        access->location = MemoryLocation{nullptr, LLVMIR::DataType::VOID};
+                        access->block_id = bb->block_id;
+                        access->inst_id  = i;
+                        bb_memory_accesses[cfg][bb->block_id].push_back(access);
+                        inst_to_access[inst] = access;
+                    }
+                }
+            }
+        }
+
+        insertMemoryPhis(cfg);
+        renameMemoryAccesses(cfg);
+    }
+
+    void MemorySSA::insertMemoryPhis(CFG* cfg)
+    {
+        std::set<MemoryLocation> all_locations;
+        for (auto const& [loc, accesses] : location_accesses[cfg]) { all_locations.insert(loc); }
+
+        for (const auto& location : all_locations)
+        {
+            std::set<int> defs;
+            for (auto access : location_accesses[cfg][location])
+            {
+                if (access->type == DEF) { defs.insert(access->block_id); }
+            }
+
+            if (ir->DomTrees.count(cfg))
+            {
+                auto          dom_analyzer = ir->DomTrees.at(cfg);
+                std::set<int> phi_blocks;
+
+                for (int def_block : defs)
+                {
+                    if ((unsigned)def_block < dom_analyzer->dom_frontier.size())
+                    {
+                        for (int frontier_block : dom_analyzer->dom_frontier[def_block])
+                        {
+                            phi_blocks.insert(frontier_block);
+                        }
+                    }
+                }
+
+                for (int phi_block : phi_blocks)
+                {
+                    if (bb_memory_phis[cfg].find(phi_block) == bb_memory_phis[cfg].end())
+                    {
+                        bb_memory_phis[cfg][phi_block] = new MemoryPhi(phi_block);
+                    }
+                }
+            }
+        }
+    }
+
+    void MemorySSA::renameMemoryAccesses(CFG* cfg)
+    {
+        std::map<MemoryLocation, MemoryAccess*> current_def;
+
+        for (const auto& location : location_accesses[cfg]) { current_def[location.first] = nullptr; }
+
+        if (ir->DomTrees.count(cfg)) { processBlock(cfg, 0, current_def); }
+    }
+
+    void MemorySSA::processBlock(CFG* cfg, int bb_id, std::map<MemoryLocation, MemoryAccess*>& current_def)
+    {
+        auto saved_defs = current_def;
+
+        if (bb_memory_phis[cfg].count(bb_id))
+        {
+            auto phi = bb_memory_phis[cfg][bb_id];
+            for (const auto& [location, accesses] : location_accesses[cfg])
+            {
+                bool has_def_in_block = false;
+                for (auto access : accesses)
+                {
+                    if (access->block_id == bb_id && access->type == DEF)
+                    {
+                        has_def_in_block = true;
+                        break;
+                    }
+                }
+                if (has_def_in_block) { current_def[location] = phi; }
+            }
+        }
+
+        if (bb_memory_accesses[cfg].count(bb_id))
+        {
+            for (auto access : bb_memory_accesses[cfg][bb_id])
+            {
+                if (access->type == USE)
+                {
+                    access->defining_access = current_def[access->location];
+                    if (access->defining_access) { access->defining_access->uses.push_back(access); }
+                }
+                else if (access->type == DEF) { current_def[access->location] = access; }
+            }
+        }
+
+        if (ir->DomTrees.count(cfg))
+        {
+            auto dom_analyzer = ir->DomTrees.at(cfg);
+            if ((unsigned)bb_id < dom_analyzer->dom_tree.size())
+            {
+                for (int child : dom_analyzer->dom_tree[bb_id])
+                {
+                    if (child != bb_id) { processBlock(cfg, child, current_def); }
+                }
+            }
+        }
+
+        current_def = saved_defs;
+    }
+
+    MemorySSA::MemoryLocation MemorySSA::getMemoryLocation(LLVMIR::Instruction* inst)
+    {
+        MemoryLocation loc;
+        if (inst->opcode == LLVMIR::IROpCode::LOAD)
+        {
+            auto load_inst = dynamic_cast<LLVMIR::LoadInst*>(inst);
+            loc.ptr        = load_inst->ptr;
+            loc.size       = load_inst->type;
+        }
+        else if (inst->opcode == LLVMIR::IROpCode::STORE)
+        {
+            auto store_inst = dynamic_cast<LLVMIR::StoreInst*>(inst);
+            loc.ptr         = store_inst->ptr;
+            loc.size        = store_inst->type;
+        }
+        return loc;
+    }
+
+    bool MemorySSA::mayAlias(const MemoryLocation& loc1, const MemoryLocation& loc2, CFG* cfg)
+    {
+        if (loc1.ptr == nullptr || loc2.ptr == nullptr) return true;
+        return alias_analyser->queryAlias(loc1.ptr, loc2.ptr, cfg) != AliasAnalyser::NoAlias;
+    }
+
+    MemorySSA::MemoryAccess* MemorySSA::getDefiningAccess(LLVMIR::Instruction* inst, CFG* cfg)
+    {
+        if (inst_to_access.count(inst)) { return inst_to_access[inst]->defining_access; }
+        return nullptr;
+    }
+
+    bool MemorySSA::isLoadSameMemory(LLVMIR::Instruction* inst1, LLVMIR::Instruction* inst2, CFG* cfg)
+    {
+        if (inst1->opcode != LLVMIR::IROpCode::LOAD || inst2->opcode != LLVMIR::IROpCode::LOAD) return false;
+
+        auto load1 = dynamic_cast<LLVMIR::LoadInst*>(inst1);
+        auto load2 = dynamic_cast<LLVMIR::LoadInst*>(inst2);
+
+        if (!load1 || !load2) return false;
+
+        if (alias_analyser->queryAlias(load1->ptr, load2->ptr, cfg) != AliasAnalyser::MustAlias) return false;
+        if (inst1->block_id != inst2->block_id) return false;
+
+        auto bb   = cfg->block_id_to_block.at(inst1->block_id);
+        int  idx1 = -1, idx2 = -1;
+
+        for (int i = 0; i < (int)bb->insts.size(); ++i)
+        {
+            if (bb->insts[i] == inst1) idx1 = i;
+            if (bb->insts[i] == inst2) idx2 = i;
+        }
+
+        if (idx1 == -1 || idx2 == -1) return false;
+
+        if (idx1 > idx2) return false;
+
+        for (int i = idx1 + 1; i < idx2; ++i)
+        {
+            auto inst = bb->insts[i];
+            if (inst->opcode == LLVMIR::IROpCode::STORE)
+            {
+                auto store_inst = dynamic_cast<LLVMIR::StoreInst*>(inst);
+                if (alias_analyser->queryAlias(load1->ptr, store_inst->ptr, cfg) != AliasAnalyser::NoAlias)
+                    return false;
+            }
+            else if (inst->opcode == LLVMIR::IROpCode::CALL)
+            {
+                auto call_inst = dynamic_cast<LLVMIR::CallInst*>(inst);
+                auto call_cfg  = getCfgByName(ir, call_inst->func_name);
+                if (!call_cfg || !alias_analyser->isNoSideEffect(call_cfg)) return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool MemorySSA::isDepend(LLVMIR::Instruction* inst1, LLVMIR::Instruction* inst2, CFG* cfg)
     {
         if (inst1->block_id != inst2->block_id) return true;
 
+        if (inst1->opcode != LLVMIR::IROpCode::LOAD && inst1->opcode != LLVMIR::IROpCode::STORE) return false;
+        if (inst2->opcode != LLVMIR::IROpCode::LOAD && inst2->opcode != LLVMIR::IROpCode::STORE) return false;
+
+        auto bb   = cfg->block_id_to_block.at(inst1->block_id);
         int  idx1 = -1, idx2 = -1;
-        auto bb = cfg->block_id_to_block.at(inst1->block_id);
+
         for (int i = 0; i < (int)bb->insts.size(); ++i)
         {
             if (bb->insts[i] == inst1) idx1 = i;
@@ -440,7 +306,7 @@ namespace Analysis
         return false;
     }
 
-    bool MemoryDependenceAnalyser::haveMemAccessBetween(LLVMIR::Instruction* start, LLVMIR::Instruction* end, CFG* cfg)
+    bool MemorySSA::haveMemAccessBetween(LLVMIR::Instruction* start, LLVMIR::Instruction* end, CFG* cfg)
     {
         if (start->block_id != end->block_id) return true;
 
@@ -464,74 +330,28 @@ namespace Analysis
         return false;
     }
 
-    bool MemoryDependenceAnalyser::isLoadSameMemory(LLVMIR::Instruction* a, LLVMIR::Instruction* b, CFG* cfg)
+    MemoryDependenceAnalyser::MemoryDependenceAnalyser(LLVMIR::IR* ir, AliasAnalyser* aa) : ir(ir)
     {
-        auto mem1 = getLoadClobbers(a, cfg, alias_analyser, ir);
-        auto mem2 = getLoadClobbers(b, cfg, alias_analyser, ir);
-
-        if (mem1.size() != mem2.size()) return false;
-
-        for (auto inst : mem1)
-        {
-            if (mem2.find(inst) == mem2.end()) return false;
-        }
-
-        int id1 = a->block_id;
-        int id2 = b->block_id;
-        if (mem1.size() > 1 && id1 != id2)
-        {
-            auto dom_analyser = ir->DomTrees.at(cfg);
-
-            bool            id1_dom_id2 = false;
-            std::queue<int> q1;
-            q1.push(id1);
-            while (!q1.empty())
-            {
-                int u = q1.front();
-                q1.pop();
-                if (u == id2)
-                {
-                    id1_dom_id2 = true;
-                    break;
-                }
-                if ((unsigned)u < dom_analyser->dom_tree.size())
-                {
-                    for (int v : dom_analyser->dom_tree[u]) q1.push(v);
-                }
-            }
-
-            bool            id2_dom_id1 = false;
-            std::queue<int> q2;
-            q2.push(id2);
-            while (!q2.empty())
-            {
-                int u = q2.front();
-                q2.pop();
-                if (u == id1)
-                {
-                    id2_dom_id1 = true;
-                    break;
-                }
-                if ((unsigned)u < dom_analyser->dom_tree.size())
-                {
-                    for (int v : dom_analyser->dom_tree[u]) q2.push(v);
-                }
-            }
-
-            if (id1_dom_id2)
-            {
-                if (isNoStore(a, b, cfg, alias_analyser, ir)) return true;
-            }
-            else if (id2_dom_id1)
-            {
-                if (isNoStore(b, a, cfg, alias_analyser, ir)) return true;
-            }
-            return false;
-        }
-
-        return true;
+        memory_ssa = new MemorySSA(ir, aa);
     }
 
-    void MemoryDependenceAnalyser::memDepTest() {}
+    MemoryDependenceAnalyser::~MemoryDependenceAnalyser() { delete memory_ssa; }
+
+    void MemoryDependenceAnalyser::run() { memory_ssa->run(); }
+
+    bool MemoryDependenceAnalyser::isDepend(LLVMIR::Instruction* inst1, LLVMIR::Instruction* inst2, CFG* cfg)
+    {
+        return memory_ssa->isDepend(inst1, inst2, cfg);
+    }
+
+    bool MemoryDependenceAnalyser::haveMemAccessBetween(LLVMIR::Instruction* start, LLVMIR::Instruction* end, CFG* cfg)
+    {
+        return memory_ssa->haveMemAccessBetween(start, end, cfg);
+    }
+
+    bool MemoryDependenceAnalyser::isLoadSameMemory(LLVMIR::Instruction* inst1, LLVMIR::Instruction* inst2, CFG* cfg)
+    {
+        return memory_ssa->isLoadSameMemory(inst1, inst2, cfg);
+    }
 
 }  // namespace Analysis

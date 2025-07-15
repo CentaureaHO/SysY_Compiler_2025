@@ -1,13 +1,103 @@
 #include "llvm/alias_analysis/alias_analysis.h"
+#include <cassert>
 #include <queue>
 #include <vector>
 #include <map>
 #include "llvm_ir/instruction.h"
 #include "llvm_ir/ir_builder.h"
 #include "cfg.h"
+#include <sstream>
 
 namespace Analysis
 {
+    void MemLocation::addTarget(LLVMIR::Operand* op)
+    {
+        if (op != nullptr) targets.insert(op);
+    }
+
+    void MemLocation::merge(const MemLocation& other)
+    {
+        for (auto* target : other.targets) targets.insert(target);
+        escapes_function = escapes_function || other.escapes_function;
+        is_stack_local   = is_stack_local && other.is_stack_local;
+    }
+
+    void FuncMemProfile::addRead(LLVMIR::Operand* op)
+    {
+        if (op != nullptr) mem_reads.insert(op);
+    }
+
+    void FuncMemProfile::addWrite(LLVMIR::Operand* op)
+    {
+        if (op != nullptr) mem_writes.insert(op);
+    }
+
+    void FuncMemProfile::addReads(const std::vector<LLVMIR::Operand*>& ops)
+    {
+        for (auto* op : ops) addRead(op);
+    }
+
+    void FuncMemProfile::addWrites(const std::vector<LLVMIR::Operand*>& ops)
+    {
+        for (auto* op : ops) addWrite(op);
+    }
+
+    void FuncMemProfile::combineProfile(
+        LLVMIR::CallInst* call, const FuncMemProfile& other, const std::unordered_map<int, MemLocation>& locations)
+    {
+        has_external_deps = has_external_deps || other.has_external_deps;
+
+        for (auto* op : other.mem_reads)
+        {
+            if (op->type == LLVMIR::OperandType::GLOBAL)
+                addRead(op);
+            else if (op->type == LLVMIR::OperandType::REG)
+            {
+                auto* reg_ptr = static_cast<LLVMIR::RegOperand*>(op);
+                int   arg_idx = reg_ptr->reg_num;
+                if (arg_idx < static_cast<int>(call->args.size()))
+                {
+                    auto* actual_arg = call->args[arg_idx].second;
+                    if (actual_arg->type == LLVMIR::OperandType::REG)
+                    {
+                        auto* actual_reg = static_cast<LLVMIR::RegOperand*>(actual_arg);
+                        auto  loc_it     = locations.find(actual_reg->reg_num);
+                        if (loc_it != locations.end() && !loc_it->second.isLocal())
+                        {
+                            for (auto* target : loc_it->second.targets) addRead(target);
+                        }
+                    }
+                    else
+                        addRead(actual_arg);
+                }
+            }
+        }
+
+        for (auto* op : other.mem_writes)
+        {
+            if (op->type == LLVMIR::OperandType::GLOBAL) { addWrite(op); }
+            else if (op->type == LLVMIR::OperandType::REG)
+            {
+                auto* reg_ptr = static_cast<LLVMIR::RegOperand*>(op);
+                int   arg_idx = reg_ptr->reg_num;
+                if (arg_idx < static_cast<int>(call->args.size()))
+                {
+                    auto* actual_arg = call->args[arg_idx].second;
+                    if (actual_arg->type == LLVMIR::OperandType::REG)
+                    {
+                        auto* actual_reg = static_cast<LLVMIR::RegOperand*>(actual_arg);
+                        auto  loc_it     = locations.find(actual_reg->reg_num);
+                        if (loc_it != locations.end() && !loc_it->second.isLocal())
+                        {
+                            for (auto* target : loc_it->second.targets) { addWrite(target); }
+                        }
+                    }
+                    else { addWrite(actual_arg); }
+                }
+            }
+        }
+    }
+
     static CFG* getCfgByName(LLVMIR::IR* ir, const std::string& name)
     {
         for (auto& func : ir->functions)
@@ -20,335 +110,276 @@ namespace Analysis
         return nullptr;
     }
 
-    static PtrRegMemInfo getPtrInfo(LLVMIR::Operand* ptr, std::map<int, PtrRegMemInfo>& ptr_map)
-    {
-        if (ptr->type == LLVMIR::OperandType::REG)
-        {
-            auto reg_num = dynamic_cast<LLVMIR::RegOperand*>(ptr)->reg_num;
-            if (ptr_map.find(reg_num) != ptr_map.end())
-                return ptr_map.at(reg_num);
-            else
-            {
-                // Treat an unknown pointer as pointing to unknown memory
-                PtrRegMemInfo tmp;
-                tmp.is_full_mem = true;
-                tmp.possible_ptrs.push_back(ptr);
-                return tmp;
-            }
-        }
-        else if (ptr->type == LLVMIR::OperandType::GLOBAL)
-        {
-            PtrRegMemInfo tmp;
-            tmp.possible_ptrs.push_back(ptr);
-            return tmp;
-        }
-        else { assert(false); }
-    }
-
-    static bool isAlias(PtrRegMemInfo& ptr_info1, PtrRegMemInfo& ptr_info2)
-    {
-        if (ptr_info1.is_full_mem || ptr_info2.is_full_mem) return true;
-
-        for (auto p1 : ptr_info1.possible_ptrs)
-        {
-            for (auto p2 : ptr_info2.possible_ptrs)
-            {
-                if (p1->getName() == p2->getName()) return true;
-            }
-        }
-        return false;
-    }
-
     AliasAnalyser::AliasAnalyser(LLVMIR::IR* ir) : ir(ir) {}
 
-    bool AliasAnalyser::isSamePtrWithDiffConstIndex(LLVMIR::Operand* p1, LLVMIR::Operand* p2, CFG* cfg)
+    void AliasAnalyser::buildDefMap(CFG* cfg)
     {
-        if (p1->type != LLVMIR::OperandType::REG || p2->type != LLVMIR::OperandType::REG) return false;
+        def_map[cfg].clear();
 
-        auto r1 = dynamic_cast<LLVMIR::RegOperand*>(p1)->reg_num;
-        auto r2 = dynamic_cast<LLVMIR::RegOperand*>(p2)->reg_num;
+        for (const auto* arg_reg : cfg->func->func_def->arg_regs)
+        {
+            if (arg_reg->type == LLVMIR::OperandType::REG)
+            {
+                const auto* reg_op            = static_cast<const LLVMIR::RegOperand*>(arg_reg);
+                def_map[cfg][reg_op->reg_num] = cfg->func->func_def;
+            }
+        }
 
-        if (cfg_result_map[cfg].find(r1) == cfg_result_map[cfg].end() ||
-            cfg_result_map[cfg].find(r2) == cfg_result_map[cfg].end())
+        for (const auto& [block_id, bb] : cfg->block_id_to_block)
+        {
+            for (auto* inst : bb->insts)
+            {
+                inst->block_id = bb->block_id;
+                if (const int reg_num = inst->GetResultReg(); reg_num != -1) { def_map[cfg][reg_num] = inst; }
+            }
+        }
+    }
+
+    void AliasAnalyser::processFunction(CFG* cfg)
+    {
+        auto& locations = reg_locations[cfg];
+        locations.clear();
+
+        auto& profile = func_profiles[cfg];
+        profile       = FuncMemProfile();
+
+        buildDefMap(cfg);
+
+        LLVMIR::FuncDefInst* func_def = cfg->func->func_def;
+        for (unsigned i = 0; i < func_def->arg_regs.size(); ++i)
+        {
+            if (func_def->arg_types[i] == LLVMIR::DataType::PTR)
+            {
+                auto* arg_op = func_def->arg_regs[i];
+                int   reg_no = static_cast<LLVMIR::RegOperand*>(arg_op)->reg_num;
+
+                auto& loc = locations[reg_no];
+                loc.addTarget(arg_op);
+                loc.markEscaped();
+            }
+        }
+
+        for (auto* inst : cfg->block_id_to_block.at(0)->insts)
+        {
+            if (inst->opcode == LLVMIR::IROpCode::ALLOCA)
+            {
+                auto* alloca_inst = static_cast<LLVMIR::AllocInst*>(inst);
+                int   def_reg     = alloca_inst->GetResultReg();
+                locations[def_reg].addTarget(alloca_inst->res);
+            }
+        }
+
+        handlePtrPropagation(cfg, locations);
+        collectMemAccesses(cfg, locations);
+    }
+
+    void AliasAnalyser::handlePtrPropagation(CFG* cfg, std::unordered_map<int, MemLocation>& locations)
+    {
+        bool changed = true;
+        while (changed)
+        {
+            changed = false;
+
+            std::queue<LLVMIR::IRBlock*>         worklist;
+            std::unordered_set<LLVMIR::IRBlock*> visited;
+            worklist.push(cfg->block_id_to_block.at(0));
+
+            while (!worklist.empty())
+            {
+                auto* bb = worklist.front();
+                worklist.pop();
+
+                if (visited.count(bb)) continue;
+                visited.insert(bb);
+
+                for (auto* inst : bb->insts)
+                {
+                    if (inst->opcode == LLVMIR::IROpCode::GETELEMENTPTR)
+                    {
+                        auto* gep_inst   = static_cast<LLVMIR::GEPInst*>(inst);
+                        auto* base_ptr   = gep_inst->base_ptr;
+                        int   result_reg = gep_inst->GetResultReg();
+
+                        if (base_ptr->type == LLVMIR::OperandType::REG)
+                        {
+                            auto* base_reg = static_cast<LLVMIR::RegOperand*>(base_ptr);
+                            auto  base_it  = locations.find(base_reg->reg_num);
+                            if (base_it != locations.end())
+                            {
+                                auto old_size = locations[result_reg].targets.size();
+                                locations[result_reg].merge(base_it->second);
+                                if (locations[result_reg].targets.size() != old_size) { changed = true; }
+                            }
+                            else
+                            {
+                                locations[result_reg].addTarget(base_ptr);
+                                locations[result_reg].markEscaped();
+                                changed = true;
+                            }
+                        }
+                        else
+                        {
+                            auto old_size = locations[result_reg].targets.size();
+                            locations[result_reg].addTarget(base_ptr);
+                            locations[result_reg].markNonLocal();
+                            if (locations[result_reg].targets.size() != old_size) { changed = true; }
+                        }
+                    }
+                    else if (inst->opcode == LLVMIR::IROpCode::PHI)
+                    {
+                        auto* phi_inst = static_cast<LLVMIR::PhiInst*>(inst);
+                        if (phi_inst->type == LLVMIR::DataType::PTR)
+                        {
+                            int  result_reg = phi_inst->GetResultReg();
+                            auto old_size   = locations[result_reg].targets.size();
+
+                            for (const auto& [val, label] : phi_inst->vals_for_labels)
+                            {
+                                if (val->type == LLVMIR::OperandType::REG)
+                                {
+                                    auto* val_reg = static_cast<LLVMIR::RegOperand*>(val);
+                                    auto  val_it  = locations.find(val_reg->reg_num);
+                                    if (val_it != locations.end()) { locations[result_reg].merge(val_it->second); }
+                                    else
+                                    {
+                                        locations[result_reg].addTarget(val);
+                                        locations[result_reg].markEscaped();
+                                    }
+                                }
+                                else
+                                {
+                                    locations[result_reg].addTarget(val);
+                                    locations[result_reg].markNonLocal();
+                                }
+                            }
+
+                            if (locations[result_reg].targets.size() != old_size) { changed = true; }
+                        }
+                    }
+                }
+
+                for (auto* succ_bb : cfg->G[bb->block_id]) { worklist.push(succ_bb); }
+            }
+        }
+    }
+
+    void AliasAnalyser::collectMemAccesses(CFG* cfg, const std::unordered_map<int, MemLocation>& locations)
+    {
+        auto& profile = func_profiles[cfg];
+
+        for (const auto& [block_id, bb] : cfg->block_id_to_block)
+        {
+            for (auto* inst : bb->insts)
+            {
+                if (inst->opcode == LLVMIR::IROpCode::STORE)
+                {
+                    auto* store_inst = static_cast<LLVMIR::StoreInst*>(inst);
+                    auto* ptr        = store_inst->ptr;
+
+                    if (ptr->type == LLVMIR::OperandType::GLOBAL) { profile.addWrite(ptr); }
+                    else if (ptr->type == LLVMIR::OperandType::REG)
+                    {
+                        auto* ptr_reg = static_cast<LLVMIR::RegOperand*>(ptr);
+                        auto  loc_it  = locations.find(ptr_reg->reg_num);
+                        if (loc_it != locations.end() && !loc_it->second.isLocal())
+                        {
+                            for (auto* target : loc_it->second.targets) { profile.addWrite(target); }
+                        }
+                    }
+                }
+                else if (inst->opcode == LLVMIR::IROpCode::LOAD)
+                {
+                    auto* load_inst = static_cast<LLVMIR::LoadInst*>(inst);
+                    auto* ptr       = load_inst->ptr;
+
+                    if (ptr->type == LLVMIR::OperandType::GLOBAL) { profile.addRead(ptr); }
+                    else if (ptr->type == LLVMIR::OperandType::REG)
+                    {
+                        auto* ptr_reg = static_cast<LLVMIR::RegOperand*>(ptr);
+                        auto  loc_it  = locations.find(ptr_reg->reg_num);
+                        if (loc_it != locations.end() && !loc_it->second.isLocal())
+                        {
+                            for (auto* target : loc_it->second.targets) { profile.addRead(target); }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    bool AliasAnalyser::checkSameBaseWithDistinctOffset(LLVMIR::Operand* p1, LLVMIR::Operand* p2, CFG* cfg)
+    {
+        if (p1->type != LLVMIR::OperandType::REG || p2->type != LLVMIR::OperandType::REG) { return false; }
+
+        auto* r1 = static_cast<LLVMIR::RegOperand*>(p1);
+        auto* r2 = static_cast<LLVMIR::RegOperand*>(p2);
+
+        auto def_it1 = def_map[cfg].find(r1->reg_num);
+        auto def_it2 = def_map[cfg].find(r2->reg_num);
+
+        if (def_it1 == def_map[cfg].end() || def_it2 == def_map[cfg].end()) { return false; }
+
+        auto* inst1 = def_it1->second;
+        auto* inst2 = def_it2->second;
+
+        if (!inst1 || !inst2 || inst1->opcode != LLVMIR::IROpCode::GETELEMENTPTR ||
+            inst2->opcode != LLVMIR::IROpCode::GETELEMENTPTR)
+        {
             return false;
-
-        auto I1 = cfg_result_map[cfg][r1];
-        auto I2 = cfg_result_map[cfg][r2];
-        if (I1 == nullptr || I2 == nullptr || I1->opcode != LLVMIR::IROpCode::GETELEMENTPTR ||
-            I2->opcode != LLVMIR::IROpCode::GETELEMENTPTR)
-            return false;
-
-        auto gep_inst1 = dynamic_cast<LLVMIR::GEPInst*>(I1);
-        auto gep_inst2 = dynamic_cast<LLVMIR::GEPInst*>(I2);
-        if (gep_inst1->idxs.size() != gep_inst2->idxs.size() || gep_inst1->idxs.empty()) return false;
-
-        auto ptr1 = gep_inst1->base_ptr;
-        auto ptr2 = gep_inst2->base_ptr;
-        if (ptr1->getName() != ptr2->getName()) return false;
-
-        auto idx1_op = gep_inst1->idxs.back();
-        auto idx2_op = gep_inst2->idxs.back();
-
-        if (idx1_op->type == LLVMIR::OperandType::IMMEI32 && idx2_op->type == LLVMIR::OperandType::IMMEI32)
-        {
-            auto const_idx1 = dynamic_cast<LLVMIR::ImmeI32Operand*>(idx1_op)->value;
-            auto const_idx2 = dynamic_cast<LLVMIR::ImmeI32Operand*>(idx2_op)->value;
-            if (const_idx1 != const_idx2) return true;
         }
+
+        auto* gep1 = static_cast<LLVMIR::GEPInst*>(inst1);
+        auto* gep2 = static_cast<LLVMIR::GEPInst*>(inst2);
+
+        if (gep1->idxs.size() != gep2->idxs.size() || gep1->idxs.empty()) { return false; }
+
+        // Check if base pointers are the same
+        if (gep1->base_ptr->getName() != gep2->base_ptr->getName()) { return false; }
+
+        // Check if last indices are different constants
+        auto* idx1 = gep1->idxs.back();
+        auto* idx2 = gep2->idxs.back();
+
+        if (idx1->type == LLVMIR::OperandType::IMMEI32 && idx2->type == LLVMIR::OperandType::IMMEI32)
+        {
+            auto* imm1 = static_cast<LLVMIR::ImmeI32Operand*>(idx1);
+            auto* imm2 = static_cast<LLVMIR::ImmeI32Operand*>(idx2);
+            return imm1->value != imm2->value;
+        }
+
         return false;
     }
 
-    AliasAnalyser::AliasResult AliasAnalyser::queryAlias(LLVMIR::Operand* op1, LLVMIR::Operand* op2, CFG* cfg)
+    std::vector<LLVMIR::Operand*> AliasAnalyser::getWritePtrs(CFG* cfg)
     {
-        auto& ptr_map = ptr_reg_mem_map[cfg];
-
-        auto ptr_info1 = getPtrInfo(op1, ptr_map);
-        auto ptr_info2 = getPtrInfo(op2, ptr_map);
-
-        if (ptr_info1.possible_ptrs.size() == 1 && ptr_info2.possible_ptrs.size() == 1)
-        {
-            if (isSamePtrWithDiffConstIndex(op1, op2, cfg)) return NoAlias;
-        }
-
-        if (isAlias(ptr_info1, ptr_info2)) return MustAlias;
-
-        return NoAlias;
+        std::vector<LLVMIR::Operand*> result;
+        for (auto* op : func_profiles[cfg].mem_writes) { result.push_back(op); }
+        return result;
     }
 
-    AliasAnalyser::ModRefResult AliasAnalyser::queryInstModRef(LLVMIR::Instruction* inst, LLVMIR::Operand* op, CFG* cfg)
+    std::vector<LLVMIR::Operand*> AliasAnalyser::getReadPtrs(CFG* cfg)
     {
-        auto& ptr_map = ptr_reg_mem_map.at(cfg);
-
-        if (inst->opcode == LLVMIR::IROpCode::LOAD)
-        {
-            auto ptr       = dynamic_cast<LLVMIR::LoadInst*>(inst)->ptr;
-            auto ptr_info1 = getPtrInfo(ptr, ptr_map);
-            auto ptr_info2 = getPtrInfo(op, ptr_map);
-            if (isAlias(ptr_info1, ptr_info2)) return ModRefResult::Ref;
-        }
-        else if (inst->opcode == LLVMIR::IROpCode::STORE)
-        {
-            auto ptr       = dynamic_cast<LLVMIR::StoreInst*>(inst)->ptr;
-            auto ptr_info1 = getPtrInfo(ptr, ptr_map);
-            auto ptr_info2 = getPtrInfo(op, ptr_map);
-            if (isAlias(ptr_info1, ptr_info2)) return ModRefResult::Mod;
-        }
-        else if (inst->opcode == LLVMIR::IROpCode::CALL)
-        {
-            auto call_inst = dynamic_cast<LLVMIR::CallInst*>(inst);
-            auto call_name = call_inst->func_name;
-            auto call_cfg  = getCfgByName(ir, call_name);
-
-            if (call_cfg == nullptr) return ModRefResult::ModRef;
-
-            auto& rw_info = cfg_mem_rw_map.at(call_cfg);
-            if (rw_info.have_external_call) return ModRefResult::ModRef;
-            if (rw_info.isIndependent()) return ModRefResult::NoModRef;
-
-            bool is_mod = false, is_ref = false;
-            auto ptr_info1 = getPtrInfo(op, ptr_map);
-
-            for (auto ptr2 : rw_info.read_ptrs)
-            {
-                PtrRegMemInfo real_ptr_info2;
-                if (ptr2->type == LLVMIR::OperandType::GLOBAL) { real_ptr_info2 = getPtrInfo(ptr2, ptr_map); }
-                else if (ptr2->type == LLVMIR::OperandType::REG)
-                {
-                    int ptr2_reg_no       = dynamic_cast<LLVMIR::RegOperand*>(ptr2)->reg_num;
-                    auto [type, real_ptr] = call_inst->args.at(ptr2_reg_no);
-                    real_ptr_info2        = getPtrInfo(real_ptr, ptr_map);
-                }
-                if (isAlias(ptr_info1, real_ptr_info2))
-                {
-                    is_ref = true;
-                    break;
-                }
-            }
-
-            for (auto ptr2 : rw_info.write_ptrs)
-            {
-                PtrRegMemInfo real_ptr_info2;
-                if (ptr2->type == LLVMIR::OperandType::GLOBAL) { real_ptr_info2 = getPtrInfo(ptr2, ptr_map); }
-                else if (ptr2->type == LLVMIR::OperandType::REG)
-                {
-                    int ptr2_reg_no       = dynamic_cast<LLVMIR::RegOperand*>(ptr2)->reg_num;
-                    auto [type, real_ptr] = call_inst->args.at(ptr2_reg_no);
-                    real_ptr_info2        = getPtrInfo(real_ptr, ptr_map);
-                }
-                if (isAlias(ptr_info1, real_ptr_info2))
-                {
-                    is_mod = true;
-                    break;
-                }
-            }
-
-            if (is_mod && is_ref) return ModRefResult::ModRef;
-            if (is_mod) return ModRefResult::Mod;
-            if (is_ref) return ModRefResult::Ref;
-        }
-        return ModRefResult::NoModRef;
-    }
-
-    static bool isFunctionArg(LLVMIR::IRFunction* func, LLVMIR::Operand* op)
-    {
-        if (op->type == LLVMIR::OperandType::REG)
-        {
-            auto reg_op = dynamic_cast<LLVMIR::RegOperand*>(op);
-            for (const auto& arg : func->func_def->arg_regs)
-            {
-                if (dynamic_cast<LLVMIR::RegOperand*>(arg)->reg_num == reg_op->reg_num) return true;
-            }
-        }
-        return false;
-    }
-
-    bool PtrRegMemInfo::pushPossiblePtr(LLVMIR::Operand* op)
-    {
-        for (auto ptr : possible_ptrs)
-        {
-            if (ptr->getName() == op->getName()) return false;
-        }
-        possible_ptrs.push_back(op);
-        return true;
-    }
-
-    bool PtrRegMemInfo::insertNewPtrs(LLVMIR::Operand* op, std::map<int, PtrRegMemInfo>& ptr_map, CFG* cfg)
-    {
-        if (op->type == LLVMIR::OperandType::GLOBAL)
-        {
-            is_local = false;
-            return pushPossiblePtr(op);
-        }
-        else if (op->type == LLVMIR::OperandType::REG)
-        {
-            if (isFunctionArg(cfg->func, op))
-            {
-                is_local    = false;
-                is_full_mem = true;
-                return pushPossiblePtr(op);
-            }
-            else
-            {
-                int reg_no = dynamic_cast<LLVMIR::RegOperand*>(op)->reg_num;
-                if (ptr_map.count(reg_no) == 0)
-                {
-                    is_full_mem = true;
-                    return pushPossiblePtr(op);
-                }
-                auto ptr_info = ptr_map.at(reg_no);
-                bool changed  = false;
-                for (auto ptr : ptr_info.possible_ptrs) changed |= pushPossiblePtr(ptr);
-                is_full_mem |= ptr_info.is_full_mem;
-                is_local &= ptr_info.is_local;
-                return changed;
-            }
-        }
-        return false;
-    }
-
-    bool FunctionMemRWInfo::insertNewReadPtrs(LLVMIR::Operand* op)
-    {
-        for (auto ptr : read_ptrs)
-        {
-            if (ptr->getName() == op->getName()) return false;
-        }
-        read_ptrs.push_back(op);
-        return true;
-    }
-
-    bool FunctionMemRWInfo::insertNewWritePtrs(LLVMIR::Operand* op)
-    {
-        for (auto ptr : write_ptrs)
-        {
-            if (ptr->getName() == op->getName()) return false;
-        }
-        write_ptrs.push_back(op);
-        return true;
-    }
-
-    bool FunctionMemRWInfo::insertNewReadPtrs(std::vector<LLVMIR::Operand*> ops)
-    {
-        bool changed = false;
-        for (auto ptr : ops) changed |= insertNewReadPtrs(ptr);
-        return changed;
-    }
-
-    bool FunctionMemRWInfo::insertNewWritePtrs(std::vector<LLVMIR::Operand*> ops)
-    {
-        bool changed = false;
-        for (auto ptr : ops) changed |= insertNewWritePtrs(ptr);
-        return changed;
-    }
-
-    bool FunctionMemRWInfo::mergeCall(
-        LLVMIR::CallInst* call_inst, FunctionMemRWInfo& rw_info, std::map<int, PtrRegMemInfo>& ptr_map)
-    {
-        bool changed = false;
-
-        for (auto op : rw_info.read_ptrs)
-        {
-            if (op->type == LLVMIR::OperandType::GLOBAL) { changed |= insertNewReadPtrs(op); }
-            else if (op->type == LLVMIR::OperandType::REG)
-            {
-                int reg_no = dynamic_cast<LLVMIR::RegOperand*>(op)->reg_num;
-                assert(reg_no < (int)call_inst->args.size());
-
-                auto [type, ptr] = call_inst->args.at(reg_no);
-                assert(ptr->type == LLVMIR::OperandType::REG);
-
-                auto ptr_reg_no = dynamic_cast<LLVMIR::RegOperand*>(ptr)->reg_num;
-                if (ptr_map.at(ptr_reg_no).is_local) continue;
-                changed |= insertNewReadPtrs(ptr_map.at(ptr_reg_no).possible_ptrs);
-            }
-        }
-
-        for (auto op : rw_info.write_ptrs)
-        {
-            if (op->type == LLVMIR::OperandType::GLOBAL) { changed |= insertNewWritePtrs(op); }
-            else if (op->type == LLVMIR::OperandType::REG)
-            {
-                int reg_no = dynamic_cast<LLVMIR::RegOperand*>(op)->reg_num;
-                assert(reg_no < (int)call_inst->args.size());
-
-                auto [type, ptr] = call_inst->args.at(reg_no);
-                assert(ptr->type == LLVMIR::OperandType::REG);
-
-                auto ptr_reg_no = dynamic_cast<LLVMIR::RegOperand*>(ptr)->reg_num;
-                if (ptr_map.at(ptr_reg_no).is_local) continue;
-                changed |= insertNewWritePtrs(ptr_map.at(ptr_reg_no).possible_ptrs);
-            }
-        }
-        return changed;
+        std::vector<LLVMIR::Operand*> result;
+        for (auto* op : func_profiles[cfg].mem_reads) { result.push_back(op); }
+        return result;
     }
 
     void AliasAnalyser::run()
     {
-        cfg_result_map.clear();
-        for (auto const& [func_def, cfg] : ir->cfg)
-        {
-            for (auto const& [id, bb] : cfg->block_id_to_block)
-            {
-                for (auto inst : bb->insts)
-                {
-                    int v = inst->GetResultReg();
-                    if (v != -1) cfg_result_map[cfg][v] = inst;
-                }
-            }
-        }
-
-        ptr_reg_mem_map.clear();
-        cfg_mem_rw_map.clear();
-        for (auto const& [func_def, cfg] : ir->cfg) analyzeCFG(cfg);
+        for (auto const& [func_def, cfg] : ir->cfg) buildDefMap(cfg);
+        for (auto const& [func_def, cfg] : ir->cfg) processFunction(cfg);
 
         std::map<CFG*, std::vector<LLVMIR::CallInst*>> call_map;
         for (auto const& [func_def, cfg] : ir->cfg)
         {
             for (auto const& [id, bb] : cfg->block_id_to_block)
             {
-                for (auto inst : bb->insts)
+                for (auto* inst : bb->insts)
                 {
                     if (inst->opcode == LLVMIR::IROpCode::CALL)
-                        call_map[cfg].push_back(dynamic_cast<LLVMIR::CallInst*>(inst));
+                    {
+                        call_map[cfg].push_back(static_cast<LLVMIR::CallInst*>(inst));
+                    }
                 }
             }
         }
@@ -359,148 +390,500 @@ namespace Analysis
             changed = false;
             for (auto const& [func_def, cfg] : ir->cfg)
             {
-                if (cfg_mem_rw_map[cfg].have_external_call) continue;
+                auto& profile = func_profiles[cfg];
+                if (profile.has_external_deps) continue;
 
-                auto& ptr_map = ptr_reg_mem_map[cfg];
+                const auto& locations = reg_locations[cfg];
 
                 if (call_map.find(cfg) == call_map.end()) continue;
 
-                for (auto call_inst : call_map.at(cfg))
+                for (auto* call_inst : call_map.at(cfg))
                 {
                     std::string call_name = call_inst->func_name;
-                    auto        call_cfg  = getCfgByName(ir, call_name);
+                    auto*       call_cfg  = getCfgByName(ir, call_name);
+
+                    /*
+                    std::cerr << "DEBUG: Processing CALL to " << call_name << ", call_cfg=" << (void*)call_cfg
+                              << std::endl;
+                    */
+
                     if (call_cfg == nullptr)
                     {
-                        cfg_mem_rw_map[cfg].have_external_call = true;
-                        changed                                = true;
+                        if (!profile.has_external_deps)
+                        {
+                            profile.has_external_deps = true;
+                            changed                   = true;
+                        }
                         continue;
                     }
 
-                    auto& call_info = cfg_mem_rw_map.at(call_cfg);
-                    if (call_info.have_external_call)
+                    const auto& callee_profile = func_profiles.at(call_cfg);
+                    if (callee_profile.has_external_deps)
                     {
-                        cfg_mem_rw_map[cfg].have_external_call = true;
-                        changed                                = true;
+                        if (!profile.has_external_deps)
+                        {
+                            profile.has_external_deps = true;
+                            changed                   = true;
+                        }
                         continue;
                     }
-                    changed |= cfg_mem_rw_map[cfg].mergeCall(call_inst, call_info, ptr_map);
+
+                    auto old_reads_size  = profile.mem_reads.size();
+                    auto old_writes_size = profile.mem_writes.size();
+
+                    profile.combineProfile(call_inst, callee_profile, locations);
+
+                    if (profile.mem_reads.size() != old_reads_size || profile.mem_writes.size() != old_writes_size)
+                    {
+                        changed = true;
+                    }
                 }
             }
         }
     }
 
-    void AliasAnalyser::analyzeCFG(CFG* cfg)
+    AliasAnalyser::AliasResult AliasAnalyser::queryAlias(LLVMIR::Operand* op1, LLVMIR::Operand* op2, CFG* cfg)
     {
-        std::map<int, PtrRegMemInfo> ptr_map;
-        FunctionMemRWInfo            rw_info;
-        LLVMIR::FuncDefInst*         func_def = cfg->func->func_def;
-
-        for (unsigned i = 0; i < func_def->arg_regs.size(); ++i)
+        AliasResult result = NoAlias;
+        if (reg_locations.count(cfg))
         {
-            if (func_def->arg_types[i] == LLVMIR::DataType::PTR)
+            const auto& locations = reg_locations[cfg];
+
+            MemLocation loc1, loc2;
+            bool        found1 = false, found2 = false;
+
+            // Get location info for op1
+            if (op1->type == LLVMIR::OperandType::REG)
             {
-                auto arg_op                 = func_def->arg_regs[i];
-                int  reg_no                 = dynamic_cast<LLVMIR::RegOperand*>(arg_op)->reg_num;
-                ptr_map[reg_no].is_full_mem = true;
-                ptr_map[reg_no].is_local    = false;
-                ptr_map[reg_no].possible_ptrs.push_back(arg_op);
-            }
-        }
-
-        for (auto inst : cfg->block_id_to_block.at(0)->insts)
-        {
-            if (inst->opcode == LLVMIR::IROpCode::ALLOCA)
-            {
-                auto alloca_inst = dynamic_cast<LLVMIR::AllocInst*>(inst);
-                int  def_reg     = alloca_inst->GetResultReg();
-                ptr_map[def_reg].possible_ptrs.push_back(alloca_inst->res);
-            }
-        }
-
-        bool changed = true;
-        while (changed)
-        {
-            changed = false;
-            std::queue<LLVMIR::IRBlock*>     q;
-            std::map<LLVMIR::IRBlock*, bool> vis;
-            q.push(cfg->block_id_to_block.at(0));
-
-            while (!q.empty())
-            {
-                auto bb = q.front();
-                q.pop();
-                if (vis[bb]) continue;
-                vis[bb] = true;
-
-                for (auto inst : bb->insts)
+                auto* reg1 = static_cast<LLVMIR::RegOperand*>(op1);
+                auto  it1  = locations.find(reg1->reg_num);
+                if (it1 != locations.end())
                 {
-                    if (inst->opcode == LLVMIR::IROpCode::GETELEMENTPTR)
+                    loc1   = it1->second;
+                    found1 = true;
+                }
+            }
+            else if (op1->type == LLVMIR::OperandType::GLOBAL)
+            {
+                loc1.addTarget(op1);
+                loc1.markNonLocal();
+                found1 = true;
+            }
+
+            // Get location info for op2
+            if (op2->type == LLVMIR::OperandType::REG)
+            {
+                auto* reg2 = static_cast<LLVMIR::RegOperand*>(op2);
+                auto  it2  = locations.find(reg2->reg_num);
+                if (it2 != locations.end())
+                {
+                    loc2   = it2->second;
+                    found2 = true;
+                }
+            }
+            else if (op2->type == LLVMIR::OperandType::GLOBAL)
+            {
+                loc2.addTarget(op2);
+                loc2.markNonLocal();
+                found2 = true;
+            }
+
+            if (found1 && found2)
+            {
+                // Handle escapes_function case
+                // If either pointer escapes the function, they may alias (conservative approach)
+                if (loc1.escapes_function || loc2.escapes_function) { result = MustAlias; }
+                else
+                {
+                    if (loc1.targets.size() == 1 && loc2.targets.size() == 1)
                     {
-                        auto gep_inst      = dynamic_cast<LLVMIR::GEPInst*>(inst);
-                        auto addr          = gep_inst->base_ptr;
-                        auto result_reg_no = gep_inst->GetResultReg();
-                        changed |= ptr_map[result_reg_no].insertNewPtrs(addr, ptr_map, cfg);
-                    }
-                    else if (inst->opcode == LLVMIR::IROpCode::PHI)
-                    {
-                        auto phi_inst      = dynamic_cast<LLVMIR::PhiInst*>(inst);
-                        auto result_reg_no = phi_inst->GetResultReg();
-                        if (phi_inst->type == LLVMIR::DataType::PTR)
+                        if (checkSameBaseWithDistinctOffset(op1, op2, cfg)) { result = NoAlias; }
+                        else
                         {
-                            for (auto const& [val, label] : phi_inst->vals_for_labels)
-                                changed |= ptr_map[result_reg_no].insertNewPtrs(val, ptr_map, cfg);
+                            for (auto* target1 : loc1.targets)
+                            {
+                                for (auto* target2 : loc2.targets)
+                                {
+                                    if (target1->getName() == target2->getName())
+                                    {
+                                        result = MustAlias;
+                                        break;
+                                    }
+                                }
+                                if (result == MustAlias) break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        for (auto* target1 : loc1.targets)
+                        {
+                            for (auto* target2 : loc2.targets)
+                            {
+                                if (target1->getName() == target2->getName())
+                                {
+                                    result = MustAlias;
+                                    break;
+                                }
+                            }
+                            if (result == MustAlias) break;
                         }
                     }
                 }
-                for (auto bb_succ : cfg->G[bb->block_id]) q.push(bb_succ);
             }
         }
 
-        for (auto const& [id, bb] : cfg->block_id_to_block)
-        {
-            for (auto inst : bb->insts)
-            {
-                if (inst->opcode == LLVMIR::IROpCode::STORE)
-                {
-                    auto store_inst = dynamic_cast<LLVMIR::StoreInst*>(inst);
-                    auto ptr        = store_inst->ptr;
-                    if (ptr->type == LLVMIR::OperandType::GLOBAL) { rw_info.insertNewWritePtrs(ptr); }
-                    else if (ptr->type == LLVMIR::OperandType::REG)
-                    {
-                        auto ptr_reg_no = dynamic_cast<LLVMIR::RegOperand*>(ptr)->reg_num;
-                        if (ptr_map.count(ptr_reg_no) && ptr_map.at(ptr_reg_no).is_local) continue;
-                        if (ptr_map.count(ptr_reg_no)) rw_info.insertNewWritePtrs(ptr_map.at(ptr_reg_no).possible_ptrs);
-                    }
-                    else { assert(false); }
-                }
-                else if (inst->opcode == LLVMIR::IROpCode::LOAD)
-                {
-                    auto load_inst = dynamic_cast<LLVMIR::LoadInst*>(inst);
-                    auto ptr       = load_inst->ptr;
-                    if (ptr->type == LLVMIR::OperandType::GLOBAL) { rw_info.insertNewReadPtrs(ptr); }
-                    else if (ptr->type == LLVMIR::OperandType::REG)
-                    {
-                        auto ptr_reg_no = dynamic_cast<LLVMIR::RegOperand*>(ptr)->reg_num;
-                        if (ptr_map.count(ptr_reg_no) && ptr_map.at(ptr_reg_no).is_local) continue;
-                        if (ptr_map.count(ptr_reg_no)) rw_info.insertNewReadPtrs(ptr_map.at(ptr_reg_no).possible_ptrs);
-                    }
-                    else { assert(false); }
-                }
-            }
-        }
-
-        ptr_reg_mem_map[cfg] = ptr_map;
-        cfg_mem_rw_map[cfg]  = rw_info;
+        return result;
     }
 
-    bool AliasAnalyser::isLocalPtr(CFG* cfg, LLVMIR::Operand* ptr)
+    AliasAnalyser::ModRefResult AliasAnalyser::queryInstModRef(LLVMIR::Instruction* inst, LLVMIR::Operand* op, CFG* cfg)
     {
-        if (ptr->type == LLVMIR::OperandType::REG)
+        ModRefResult result = NoModRef;
+
+        if (reg_locations.count(cfg))
         {
-            auto reg_no = dynamic_cast<LLVMIR::RegOperand*>(ptr)->reg_num;
-            if (ptr_reg_mem_map.at(cfg).count(reg_no)) return ptr_reg_mem_map.at(cfg).at(reg_no).is_local;
+            const auto& locations = reg_locations[cfg];
+
+            MemLocation op_loc;
+            bool        found_op = false;
+
+            if (op->type == LLVMIR::OperandType::REG)
+            {
+                auto* reg_op = static_cast<LLVMIR::RegOperand*>(op);
+                auto  it     = locations.find(reg_op->reg_num);
+                if (it != locations.end())
+                {
+                    op_loc   = it->second;
+                    found_op = true;
+                }
+                else
+                {
+                    // Unknown pointer should -> escaping
+                    op_loc.addTarget(op);
+                    op_loc.markEscaped();
+                    found_op = true;
+                }
+            }
+            else if (op->type == LLVMIR::OperandType::GLOBAL)
+            {
+                op_loc.addTarget(op);
+                op_loc.markNonLocal();
+                found_op = true;
+            }
+
+            if (!found_op) { return NoModRef; }
+
+            if (inst->opcode == LLVMIR::IROpCode::LOAD)
+            {
+                auto* load_inst = static_cast<LLVMIR::LoadInst*>(inst);
+                auto* ptr       = load_inst->ptr;
+
+                MemLocation ptr_loc;
+                bool        found_ptr = false;
+
+                if (ptr->type == LLVMIR::OperandType::REG)
+                {
+                    auto* ptr_reg = static_cast<LLVMIR::RegOperand*>(ptr);
+                    auto  it      = locations.find(ptr_reg->reg_num);
+                    if (it != locations.end())
+                    {
+                        ptr_loc   = it->second;
+                        found_ptr = true;
+                    }
+                    else
+                    {
+                        // Unknown pointer -> escaping
+                        ptr_loc.addTarget(ptr);
+                        ptr_loc.markEscaped();
+                        found_ptr = true;
+                    }
+                }
+                else if (ptr->type == LLVMIR::OperandType::GLOBAL)
+                {
+                    ptr_loc.addTarget(ptr);
+                    ptr_loc.markNonLocal();
+                    found_ptr = true;
+                }
+
+                if (found_ptr)
+                {
+                    if (ptr_loc.escapes_function || op_loc.escapes_function) { result = Ref; }
+                    else
+                    {
+                        for (auto* ptr_target : ptr_loc.targets)
+                        {
+                            for (auto* op_target : op_loc.targets)
+                            {
+                                if (ptr_target->getName() == op_target->getName())
+                                {
+                                    result = Ref;
+                                    break;
+                                }
+                            }
+                            if (result == Ref) break;
+                        }
+                    }
+                }
+            }
+            else if (inst->opcode == LLVMIR::IROpCode::STORE)
+            {
+                auto* store_inst = static_cast<LLVMIR::StoreInst*>(inst);
+                auto* ptr        = store_inst->ptr;
+
+                MemLocation ptr_loc;
+                bool        found_ptr = false;
+
+                if (ptr->type == LLVMIR::OperandType::REG)
+                {
+                    auto* ptr_reg = static_cast<LLVMIR::RegOperand*>(ptr);
+                    auto  it      = locations.find(ptr_reg->reg_num);
+                    if (it != locations.end())
+                    {
+                        ptr_loc   = it->second;
+                        found_ptr = true;
+                    }
+                    else
+                    {
+                        ptr_loc.addTarget(ptr);
+                        ptr_loc.markEscaped();
+                        found_ptr = true;
+                    }
+                }
+                else if (ptr->type == LLVMIR::OperandType::GLOBAL)
+                {
+                    ptr_loc.addTarget(ptr);
+                    ptr_loc.markNonLocal();
+                    found_ptr = true;
+                }
+
+                if (found_ptr)
+                {
+                    if (ptr_loc.escapes_function || op_loc.escapes_function) { result = Mod; }
+                    else
+                    {
+                        for (auto* ptr_target : ptr_loc.targets)
+                        {
+                            for (auto* op_target : op_loc.targets)
+                            {
+                                if (ptr_target->getName() == op_target->getName())
+                                {
+                                    result = Mod;
+                                    break;
+                                }
+                            }
+                            if (result == Mod) break;
+                        }
+                    }
+                }
+            }
+            else if (inst->opcode == LLVMIR::IROpCode::CALL)
+            {
+                auto*       call_inst = static_cast<LLVMIR::CallInst*>(inst);
+                std::string call_name = call_inst->func_name;
+                auto*       call_cfg  = getCfgByName(ir, call_name);
+
+                // std::cerr << "DEBUG: Processing CALL to " << call_name << ", call_cfg=" << (void*)call_cfg <<
+                // std::endl;
+
+                if (call_cfg == nullptr)
+                {
+                    if (call_name.find("llvm.memset") != std::string::npos ||
+                        call_name.find("llvm.memcpy") != std::string::npos ||
+                        call_name.find("llvm.memmove") != std::string::npos)
+                        result = ModRef;
+                    else if (op_loc.escapes_function || !op_loc.isLocal() || op->type == LLVMIR::OperandType::GLOBAL)
+                    {
+                        result = ModRef;
+                    }
+                }
+                else
+                {
+                    const auto& callee_profile = func_profiles.at(call_cfg);
+
+                    if (callee_profile.has_external_deps)
+                    {
+                        if (op_loc.escapes_function || !op_loc.isLocal() || op->type == LLVMIR::OperandType::GLOBAL)
+                        {
+                            result = ModRef;
+                        }
+                    }
+                    else
+                    {
+                        bool is_mod = false, is_ref = false;
+
+                        if (op_loc.escapes_function)
+                        {
+                            if (!callee_profile.isPure())
+                            {
+                                is_ref = true;
+                                is_mod = true;
+                            }
+                        }
+
+                        if (!is_ref || !is_mod)
+                        {
+                            for (auto* callee_ptr : callee_profile.mem_reads)
+                            {
+                                bool should_ref = false;
+
+                                if (callee_ptr->type == LLVMIR::OperandType::GLOBAL)
+                                {
+                                    if (op->type == LLVMIR::OperandType::GLOBAL &&
+                                        callee_ptr->getName() == op->getName())
+                                    {
+                                        should_ref = true;
+                                    }
+                                    else if (op->type == LLVMIR::OperandType::REG)
+                                    {
+                                        for (auto* op_target : op_loc.targets)
+                                        {
+                                            if (op_target->getName() == callee_ptr->getName())
+                                            {
+                                                should_ref = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                else if (callee_ptr->type == LLVMIR::OperandType::REG)
+                                {
+                                    auto* callee_reg  = static_cast<LLVMIR::RegOperand*>(callee_ptr);
+                                    int   param_index = callee_reg->reg_num;
+
+                                    if (param_index < (int)call_inst->args.size())
+                                    {
+                                        auto [arg_type, actual_arg] = call_inst->args[param_index];
+
+                                        if (actual_arg->type == LLVMIR::OperandType::GLOBAL &&
+                                            op->type == LLVMIR::OperandType::GLOBAL &&
+                                            actual_arg->getName() == op->getName())
+                                        {
+                                            should_ref = true;
+                                        }
+                                        else if (actual_arg->type == LLVMIR::OperandType::REG &&
+                                                 op->type == LLVMIR::OperandType::REG)
+                                        {
+                                            auto* arg_reg = static_cast<LLVMIR::RegOperand*>(actual_arg);
+                                            auto* op_reg  = static_cast<LLVMIR::RegOperand*>(op);
+                                            auto  arg_it  = locations.find(arg_reg->reg_num);
+                                            auto  op_it   = locations.find(op_reg->reg_num);
+
+                                            if (arg_it != locations.end() && op_it != locations.end())
+                                            {
+                                                for (auto* arg_target : arg_it->second.targets)
+                                                {
+                                                    for (auto* op_target : op_it->second.targets)
+                                                    {
+                                                        if (arg_target->getName() == op_target->getName())
+                                                        {
+                                                            should_ref = true;
+                                                            break;
+                                                        }
+                                                    }
+                                                    if (should_ref) break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (should_ref)
+                                {
+                                    is_ref = true;
+                                    break;
+                                }
+                            }
+
+                            if (!is_mod)
+                            {
+                                for (auto* callee_ptr : callee_profile.mem_writes)
+                                {
+                                    bool should_mod = false;
+
+                                    if (callee_ptr->type == LLVMIR::OperandType::GLOBAL)
+                                    {
+                                        if (op->type == LLVMIR::OperandType::GLOBAL &&
+                                            callee_ptr->getName() == op->getName())
+                                        {
+                                            should_mod = true;
+                                        }
+                                        else if (op->type == LLVMIR::OperandType::REG)
+                                        {
+                                            for (auto* op_target : op_loc.targets)
+                                            {
+                                                if (op_target->getName() == callee_ptr->getName())
+                                                {
+                                                    should_mod = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    else if (callee_ptr->type == LLVMIR::OperandType::REG)
+                                    {
+                                        auto* callee_reg  = static_cast<LLVMIR::RegOperand*>(callee_ptr);
+                                        int   param_index = callee_reg->reg_num;
+
+                                        if (param_index < (int)call_inst->args.size())
+                                        {
+                                            auto [arg_type, actual_arg] = call_inst->args[param_index];
+
+                                            if (actual_arg->type == LLVMIR::OperandType::GLOBAL &&
+                                                op->type == LLVMIR::OperandType::GLOBAL &&
+                                                actual_arg->getName() == op->getName())
+                                            {
+                                                should_mod = true;
+                                            }
+                                            else if (actual_arg->type == LLVMIR::OperandType::REG &&
+                                                     op->type == LLVMIR::OperandType::REG)
+                                            {
+                                                auto* arg_reg = static_cast<LLVMIR::RegOperand*>(actual_arg);
+                                                auto* op_reg  = static_cast<LLVMIR::RegOperand*>(op);
+                                                auto  arg_it  = locations.find(arg_reg->reg_num);
+                                                auto  op_it   = locations.find(op_reg->reg_num);
+
+                                                if (arg_it != locations.end() && op_it != locations.end())
+                                                {
+                                                    for (auto* arg_target : arg_it->second.targets)
+                                                    {
+                                                        for (auto* op_target : op_it->second.targets)
+                                                        {
+                                                            if (arg_target->getName() == op_target->getName())
+                                                            {
+                                                                should_mod = true;
+                                                                break;
+                                                            }
+                                                        }
+                                                        if (should_mod) break;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    if (should_mod)
+                                    {
+                                        is_mod = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (is_mod && is_ref)
+                            result = ModRef;
+                        else if (is_mod)
+                            result = Mod;
+                        else if (is_ref)
+                            result = Ref;
+                        else
+                            result = NoModRef;
+                    }
+                }
+            }
         }
-        return false;
+
+        return result;
     }
 
 }  // namespace Analysis
