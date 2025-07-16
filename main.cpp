@@ -37,6 +37,10 @@
 #include "optimize/llvm/function_inline.h"
 // Unify Return
 #include "optimize/llvm/unify_return.h"
+// Tail Recursion Elimination
+#include "optimize/llvm/tail_recursion.h"
+// Phi Precursor verify
+#include "optimize/llvm/verify/phi_precursor.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -218,34 +222,44 @@ int main(int argc, char** argv)
     if (optimizeLevel)
     {
         // 构建CFG
-        MakeCFGPass makecfg(&builder);
+        MakeCFGPass              makecfg(&builder);
+        MakeDomTreePass          makedom(&builder);
+        Verify::PhiPrecursorPass phiPrecursor(&builder);
         makecfg.Execute();
-        Transform::UnifyReturnPass unifyReturn(&builder);
-        unifyReturn.Execute();
-        MakeDomTreePass makedom(&builder);
         makedom.Execute();
 
-        // 统一返回点 - 在其他优化之前进行
+        Transform::TailRecursionPass tailRecursion(&builder);
+        tailRecursion.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
+
+        Transform::UnifyReturnPass unifyReturn(&builder);
+        unifyReturn.Execute();
 
         Mem2Reg mem2reg(&builder);
         mem2reg.Execute();
 
         // Loop Analysis and Simplification
         Analysis::LoopAnalysisPass loopAnalysis(&builder);
-        loopAnalysis.Execute(); // inlinepass 需要，先执行一次
-                                // inlinepass 会改变程序结构，因此规范化与 SSA 形式在 inlinepass 后执行
+        loopAnalysis.Execute();  // inlinepass 需要，先执行一次
+                                 // inlinepass 会改变程序结构，因此规范化与 SSA 形式在 inlinepass 后执行
         StructuralTransform::LoopSimplifyPass loopSimplify(&builder);
         // loopSimplify.Execute();
         // Loop Closed SSA Form - ensures loop-defined variables used outside the loop are passed through PHI nodes
         // at loop exits
         StructuralTransform::LCSSAPass lcssa(&builder);
         // lcssa.Execute();
-
+        // std::cout << "Before Function Inline" << std::endl;
+        // phiPrecursor.Execute();
         Transform::FunctionInlinePass inlinePass(&builder);
         inlinePass.Execute();
 
         makecfg.Execute();
         makedom.Execute();
+        // std::cout << "After Function Inline" << std::endl;
+        // phiPrecursor.Execute();
+
         loopAnalysis.Execute();
         loopSimplify.Execute();
         lcssa.Execute();
@@ -260,7 +274,9 @@ int main(int argc, char** argv)
         Analysis::MemoryDependenceAnalyser md(&builder, &aa);
         md.run();
         Transform::CSEPass cse(&builder, &aa, &md);
-        cse.Execute();  // 如果注释掉这里 lcssa 会出错，但我不知道为什么
+        cse.Execute();  // 如果注释掉这里 lcssa 会出错，但我不知道为什么;
+                        // 更新：这里可以神奇的修好 function inline 的 phi 重命名问题，在特定测试用例下
+                        //      function inline 已经修复，因此现在它并不影响 lcssa 的执行
         StructuralTransform::BranchCSEPass branchCSE(&builder);
         branchCSE.Execute();
 
@@ -283,6 +299,8 @@ int main(int argc, char** argv)
         ADCEPass adce(&builder, &ADCEDefUse, &cdg);
         adce.Execute();
         // std::cout << "ADCE completed" << std::endl;
+
+        if (optimizeLevel >= 2) {}
     }
 
     if (step == "-llvm")

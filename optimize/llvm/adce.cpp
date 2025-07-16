@@ -6,7 +6,6 @@
 
 using namespace LLVMIR;
 
-
 void ADCEPass::Execute()
 {
     for (auto [defI, C] : ir->cfg) { ADceInSingleCFG(C); }
