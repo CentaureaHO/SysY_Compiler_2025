@@ -4,7 +4,7 @@
 #include "llvm/pass.h"
 
 using namespace LLVMIR;
-using namespace std;
+
 class DefUseAnalysisPass : public Pass
 {
   public:

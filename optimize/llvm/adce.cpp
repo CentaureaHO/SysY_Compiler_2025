@@ -4,6 +4,9 @@
 #include <deque>
 #include <set>
 
+using namespace LLVMIR;
+
+
 void ADCEPass::Execute()
 {
     for (auto [defI, C] : ir->cfg) { ADceInSingleCFG(C); }
