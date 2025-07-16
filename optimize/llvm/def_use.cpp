@@ -1,6 +1,9 @@
 #include "def_use.h"
 #include <vector>
 
+using namespace LLVMIR;
+
+
 /*
 伪代码:
 for BasicBlock bb in C

@@ -4,7 +4,6 @@
 #include <set>
 
 using namespace LLVMIR;
-using namespace std;
 
 void DCEPass::Execute()
 {

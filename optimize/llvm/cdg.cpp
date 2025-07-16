@@ -2,6 +2,8 @@
 #include "cfg.h"
 #include <algorithm>
 
+using namespace LLVMIR;
+
 void CDGAnalyzer::Execute() { BuildCDG(); }
 
 void CDGAnalyzer::BuildCDG()
