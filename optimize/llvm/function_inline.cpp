@@ -758,28 +758,8 @@ namespace Transform
     void FunctionInlinePass::updateRegAndLabelMaps(LLVMIR::IRFunction* caller, LLVMIR::IRFunction* callee,
         LLVMIR::CallInst* call_inst, std::map<int, int>& reg_map, std::map<int, int>& label_map)
     {
-        // std::cout << "Caller initial max reg " << caller->max_reg << std::endl;
-
-        size_t arg_num = call_inst->args.size();
-        for (size_t i = 0; i < arg_num; ++i)
-        {
-            auto& arg = call_inst->args[i];
-            if (arg.second->type == LLVMIR::OperandType::REG)
-            {
-                auto reg_op = static_cast<LLVMIR::RegOperand*>(arg.second);
-                reg_map[i]  = reg_op->reg_num;
-            }
-            else
-            {
-                // For immediate values, we need to create a register and an assignment
-                // but handle the assignment instruction in the inlining process
-                int new_reg = ++caller->max_reg;
-                reg_map[i]  = new_reg;
-            }
-        }
-
-        for (int i = arg_num; i <= callee->max_reg; ++i) reg_map[i] = ++caller->max_reg;
-        for (int i = 0; i <= callee->max_label; i++) label_map[i] = caller->max_label++;
+        for (int i = call_inst->args.size(); i <= callee->max_reg; ++i) reg_map[i] = ++caller->max_reg;
+        for (int i = 1; i <= callee->max_label; i++) label_map[i] = ++caller->max_label;
     }
 
     LLVMIR::IRBlock* FunctionInlinePass::findCallBlock(LLVMIR::IRFunction* func, LLVMIR::CallInst* call_inst)
@@ -802,10 +782,13 @@ namespace Transform
         auto next_iter = call_iter;
         ++next_iter;
 
-        for (auto iter = next_iter; iter != call_block->insts.end(); ++iter) continue_block->insts.push_back(*iter);
+        for (auto iter = next_iter; iter != call_block->insts.end(); ++iter)
+        {
+            (*iter)->block_id = continue_block->block_id;
+            continue_block->insts.push_back(*iter);
+        }
 
-        call_block->insts.erase(next_iter, call_block->insts.end());
-        call_block->insts.erase(call_iter);
+        call_block->insts.erase(call_iter, call_block->insts.end());
 
         updatePhiInstructions(caller, call_block, continue_block);
     }
@@ -847,30 +830,40 @@ namespace Transform
 
         updateRegAndLabelMaps(caller, callee, call_inst, reg_map, label_map);
 
+        label_map[0] = call_block->block_id;
         for (size_t i = 0; i < call_inst->args.size(); i++)
         {
             auto& arg = call_inst->args[i];
-            if (arg.second->type == LLVMIR::OperandType::REG) continue;
-
-            LLVMIR::Instruction* assign_inst = nullptr;
-            if (arg.first == LLVMIR::DataType::I32)
+            if (arg.second->type == LLVMIR::OperandType::REG)
             {
-                assign_inst = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::ADD,
-                    LLVMIR::DataType::I32,
-                    arg.second,
-                    getImmeI32Operand(0),
-                    getRegOperand(reg_map[i]));
+                auto reg_op = static_cast<LLVMIR::RegOperand*>(arg.second);
+                reg_map[i]  = reg_op->reg_num;
             }
-            else if (arg.first == LLVMIR::DataType::F32)
+            else
             {
-                assign_inst = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::FADD,
-                    LLVMIR::DataType::F32,
-                    arg.second,
-                    getImmeF32Operand(0.0f),
-                    getRegOperand(reg_map[i]));
-            }
+                int new_reg = ++caller->max_reg;
+                reg_map[i]  = new_reg;
 
-            if (assign_inst) call_block->insts.push_back(assign_inst);
+                LLVMIR::Instruction* assign_inst = nullptr;
+                if (arg.first == LLVMIR::DataType::I32)
+                {
+                    assign_inst = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::ADD,
+                        LLVMIR::DataType::I32,
+                        arg.second,
+                        getImmeI32Operand(0),
+                        getRegOperand(new_reg));
+                }
+                else if (arg.first == LLVMIR::DataType::F32)
+                {
+                    assign_inst = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::FADD,
+                        LLVMIR::DataType::F32,
+                        arg.second,
+                        getImmeF32Operand(0.0f),
+                        getRegOperand(new_reg));
+                }
+
+                if (assign_inst) call_block->insts.push_back(assign_inst);
+            }
         }
 
         std::map<int, LLVMIR::IRBlock*> block_map;
@@ -934,7 +927,7 @@ namespace Transform
                 else
                 {
                     auto new_inst = copyInstruction(inst, reg_map, label_map, caller);
-                    if (new_inst) { target_block->insts.push_back(new_inst); }
+                    if (new_inst) target_block->insts.push_back(new_inst);
                 }
             }
         }
@@ -960,7 +953,7 @@ namespace Transform
     {
         analyzer->analyze();
 
-        analyzer->printAnalysisReport();
+        // analyzer->printAnalysisReport();
 
         bool      changed        = true;
         int       iteration      = 0;
@@ -992,14 +985,14 @@ namespace Transform
 
                             if (analyzer->shouldInline(func, callee, call_inst))
                             {
-                                std::cout << "Accept inlining: " << callee->func_def->func_name << " in "
-                                          << func->func_def->func_name << " - " << reason << std::endl;
+                                // std::cout << "Accept inlining: " << callee->func_def->func_name << " in "
+                                //           << func->func_def->func_name << " - " << reason << std::endl;
                                 calls_to_inline.push_back(call_inst);
                             }
                             else
                             {
-                                std::cout << "Reject inlining: " << callee->func_def->func_name << " in "
-                                          << func->func_def->func_name << " - " << reason << std::endl;
+                                // std::cout << "Reject inlining: " << callee->func_def->func_name << " in "
+                                //           << func->func_def->func_name << " - " << reason << std::endl;
                             }
                         }
                     }

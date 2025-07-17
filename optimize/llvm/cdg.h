@@ -6,7 +6,6 @@
 #include "llvm_ir/ir_builder.h"
 
 using namespace LLVMIR;
-using namespace std;
 
 class CDGAnalyzer : public Pass
 {

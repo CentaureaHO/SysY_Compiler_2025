@@ -307,7 +307,18 @@ void Selector::convertAndAppend(LLVMIR::LoadInst* inst)
         }
 
         int       offset = it->second;
-        RV64Inst* lw     = createIInst(RV64InstType::LD, rd, preg_sp, offset);
+        RV64Inst* lw     = nullptr;
+
+        if (offset >= -2048 && offset <= 2047)
+            lw = createIInst(RV64InstType::LD, rd, preg_sp, offset);
+        else
+        {
+            Register num_reg = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, num_reg, offset));
+            cur_block->insts.push_back(createRInst(RV64InstType::ADD, num_reg, preg_sp, num_reg));
+            lw = createIInst(RV64InstType::LD, rd, num_reg, 0);
+        }
+
         cur_func->alloc_insts.push_back(lw);
         cur_block->insts.push_back(lw);
     }
@@ -326,6 +337,8 @@ void Selector::convertAndAppend(LLVMIR::StoreInst* inst)
             val_reg = getLLVMReg(reg_num, INT64);
         else if (val_type == LLVMIR::DataType::F32)
             val_reg = getLLVMReg(reg_num, FLOAT64);
+        else if (val_type == LLVMIR::DataType::PTR)
+            val_reg = getLLVMReg(reg_num, INT64);
         else
             assert(false);
     }
@@ -357,6 +370,8 @@ void Selector::convertAndAppend(LLVMIR::StoreInst* inst)
             cur_block->insts.push_back(createSInst(RV64InstType::SW, val_reg, hi, 0));
         else if (inst->type == LLVMIR::DataType::F32)
             cur_block->insts.push_back(createSInst(RV64InstType::FSW, val_reg, hi, 0));
+        else if (inst->type == LLVMIR::DataType::PTR)
+            cur_block->insts.push_back(createSInst(RV64InstType::SD, val_reg, hi, 0));
         else
             assert(false);
 
@@ -434,6 +449,31 @@ void Selector::convertAndAppend(LLVMIR::StoreInst* inst)
             cur_block->insts.push_back(createMoveInst(INT64, num_reg, offset));
             cur_block->insts.push_back(createRInst(RV64InstType::ADD, num_reg, preg_sp, num_reg));
             sw = createSInst(RV64InstType::FSW, val_reg, num_reg, 0);
+        }
+
+        cur_func->alloc_insts.push_back(sw);
+        cur_block->insts.push_back(sw);
+    }
+    else if (inst->type == LLVMIR::DataType::PTR)
+    {
+        if (it == alloc_shift_map.end())
+        {
+            Register ptr = getLLVMReg(ptr_ir_regno, INT64);
+            cur_block->insts.push_back(createSInst(RV64InstType::SD, val_reg, ptr, 0));
+            return;
+        }
+
+        int       offset = it->second;
+        RV64Inst* sw     = nullptr;
+
+        if (offset >= -2048 && offset <= 2047)
+            sw = createSInst(RV64InstType::SD, val_reg, preg_sp, offset);
+        else
+        {
+            Register num_reg = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, num_reg, offset));
+            cur_block->insts.push_back(createRInst(RV64InstType::ADD, num_reg, preg_sp, num_reg));
+            sw = createSInst(RV64InstType::SD, val_reg, num_reg, 0);
         }
 
         cur_func->alloc_insts.push_back(sw);
@@ -1035,7 +1075,12 @@ void Selector::convertAndAppend(LLVMIR::AllocInst* inst)
     LLVMIR::RegOperand* res_op = (LLVMIR::RegOperand*)inst->res;
     int                 size   = 1;
     for (auto dim : inst->dims) size *= dim;
-    size       = size << 2;
+
+    if (inst->type == LLVMIR::DataType::PTR)
+        size = size << 3;
+    else
+        size = size << 2;  // 目前不支持其他64位类型
+
     int ir_reg = res_op->reg_num;
 
     alloc_shift_map[ir_reg] = cur_offset;

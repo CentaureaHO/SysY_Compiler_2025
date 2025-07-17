@@ -4,7 +4,6 @@
 #include "def_use.h"
 
 using namespace LLVMIR;
-using namespace std;
 
 class DCEPass : public Pass
 {
