@@ -41,6 +41,8 @@
 #include "optimize/llvm/tail_recursion.h"
 // Phi Precursor verify
 #include "optimize/llvm/verify/phi_precursor.h"
+// TSCCP
+#include "optimize/llvm/t_sccp.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -300,7 +302,22 @@ int main(int argc, char** argv)
         adce.Execute();
         // std::cout << "ADCE completed" << std::endl;
 
-        if (optimizeLevel >= 2) {}
+        aa.run();
+        md.run();
+        makecfg.Execute();
+        makedom.Execute();
+        makeredom.Execute(true);
+        loopAnalysis.Execute();
+        if (optimizeLevel >= 2)
+        {
+            // TSCCP - Sparse Conditional Constant Propagation
+            Transform::TSCCPPass tsccp(&builder, &aa);
+            tsccp.Execute();
+            // std::cout << "TSCCP completed" << std::endl;
+        }
+
+        makecfg.Execute();
+        makedom.Execute();
     }
 
     if (step == "-llvm")

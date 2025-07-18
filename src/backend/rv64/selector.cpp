@@ -353,7 +353,7 @@ void Selector::convertAndAppend(LLVMIR::StoreInst* inst)
     {
         val_reg   = getReg(FLOAT64);
         float val = ((LLVMIR::ImmeF32Operand*)inst->val)->value;
-        cur_block->insts.push_back(createMoveInst(INT64, val_reg, val));
+        cur_block->insts.push_back(createMoveInst(FLOAT64, val_reg, val));
         // cur_block->insts.push_back(createIInst(RV64InstType::FCVT_S_W, val_reg, preg_x0, val));
     }
     else
@@ -515,8 +515,16 @@ void Selector::convertADD(LLVMIR::ArithmeticInst* inst)
         Register lhs = getLLVMReg(lhs_reg, INT64);
         Register res = getLLVMReg(res_reg, INT64);
 
-        assert(rhs_val >= -2048 && rhs_val <= 2047);
-        cur_block->insts.push_back(createIInst(RV64InstType::ADDI, res, lhs, rhs_val));
+        if (rhs_val >= -2048 && rhs_val <= 2047)
+        {
+            cur_block->insts.push_back(createIInst(RV64InstType::ADDI, res, lhs, rhs_val));
+        }
+        else
+        {
+            Register rhs_reg = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, rhs_reg, rhs_val));
+            cur_block->insts.push_back(createRInst(RV64InstType::ADDW, res, lhs, rhs_reg));
+        }
     }
     // IMME + REG
     else if (lhs_type == imme_type && rhs_type == ir_reg_type)
@@ -528,8 +536,16 @@ void Selector::convertADD(LLVMIR::ArithmeticInst* inst)
         Register rhs = getLLVMReg(rhs_reg, INT64);
         Register res = getLLVMReg(res_reg, INT64);
 
-        assert(lhs_val >= -2048 && lhs_val <= 2047);
-        cur_block->insts.push_back(createIInst(RV64InstType::ADDI, res, rhs, lhs_val));
+        if (lhs_val >= -2048 && lhs_val <= 2047)
+        {
+            cur_block->insts.push_back(createIInst(RV64InstType::ADDI, res, rhs, lhs_val));
+        }
+        else
+        {
+            Register lhs_reg = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, lhs_reg, lhs_val));
+            cur_block->insts.push_back(createRInst(RV64InstType::ADDW, res, lhs_reg, rhs));
+        }
     }
     // IMME + IMME
     else if (lhs_type == imme_type && lhs_type == rhs_type)
@@ -578,7 +594,16 @@ void Selector::convertSUB(LLVMIR::ArithmeticInst* inst)
         Register lhs = getLLVMReg(lhs_reg, INT64);
         Register res = getLLVMReg(res_reg, INT64);
 
-        cur_block->insts.push_back(createIInst(RV64InstType::ADDI, res, lhs, -rhs_val));
+        if (-rhs_val >= -2048 && -rhs_val <= 2047)
+        {
+            cur_block->insts.push_back(createIInst(RV64InstType::ADDI, res, lhs, -rhs_val));
+        }
+        else
+        {
+            Register rhs_reg = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, rhs_reg, rhs_val));
+            cur_block->insts.push_back(createRInst(RV64InstType::SUBW, res, lhs, rhs_reg));
+        }
     }
     else
     {
@@ -1088,6 +1113,18 @@ void Selector::convertAndAppend(LLVMIR::AllocInst* inst)
 }
 void Selector::convertAndAppend(LLVMIR::BranchCondInst* inst)
 {
+    if (IS_IMMEI32(inst->cond))
+    {
+        // 如果条件是立即数，根据其值生成无条件跳转
+        int                   cond_val = ((LLVMIR::ImmeI32Operand*)inst->cond)->value;
+        LLVMIR::LabelOperand* target_label =
+            cond_val ? (LLVMIR::LabelOperand*)inst->true_label : (LLVMIR::LabelOperand*)inst->false_label;
+
+        cur_block->insts.push_back(createJInst(RV64InstType::JAL, preg_x0, RV64Label(target_label->label_num)));
+        return;
+    }
+
+    assert(IS_REG(inst->cond));
     LLVMIR::RegOperand*  cond_reg = (LLVMIR::RegOperand*)inst->cond;
     Register             br_reg   = getLLVMReg(cond_reg->reg_num, INT64);
     LLVMIR::Instruction* cmp_inst = cmp_context[br_reg];
@@ -1784,8 +1821,17 @@ void Selector::convertAndAppend(LLVMIR::GEPInst* inst)
         if (shift_reg_assigned)
         {
             Register new_shift_reg = getReg(INT64);
-            cur_block->insts.push_back(createIInst(RV64InstType::ADDI, new_shift_reg, shift_reg, offset));
-            res_reg = new_shift_reg;
+            if (offset >= -2048 && offset <= 2047)
+            {
+                cur_block->insts.push_back(createIInst(RV64InstType::ADDI, new_shift_reg, shift_reg, offset));
+            }
+            else
+            {
+                Register offset_reg = getReg(INT64);
+                cur_block->insts.push_back(createMoveInst(INT64, offset_reg, offset));
+                cur_block->insts.push_back(createRInst(RV64InstType::ADD, new_shift_reg, shift_reg, offset_reg));
+            }
+            shift_reg = new_shift_reg;
         }
         else
         {
