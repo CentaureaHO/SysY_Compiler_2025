@@ -43,6 +43,10 @@
 #include "optimize/llvm/verify/phi_precursor.h"
 // TSCCP
 #include "optimize/llvm/t_sccp.h"
+// Strength Reduction
+#include "optimize/llvm/strength_reduction/const_branch_reduce.h"
+#include "optimize/llvm/strength_reduction/arith_inst_reduce.h"
+#include "optimize/llvm/strength_reduction/gep_strength_reduce.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -308,16 +312,31 @@ int main(int argc, char** argv)
         makedom.Execute();
         makeredom.Execute(true);
         loopAnalysis.Execute();
-        if (optimizeLevel >= 2)
-        {
-            // TSCCP - Sparse Conditional Constant Propagation
-            Transform::TSCCPPass tsccp(&builder, &aa);
-            tsccp.Execute();
-            // std::cout << "TSCCP completed" << std::endl;
-        }
+
+        // TSCCP - Sparse Conditional Constant Propagation
+        Transform::TSCCPPass tsccp(&builder, &aa);
+        tsccp.Execute();
+        // std::cout << "TSCCP completed" << std::endl;
 
         makecfg.Execute();
         makedom.Execute();
+
+        Transform::ConstBranchReduce constBranchReduce(&builder);
+        constBranchReduce.Execute();
+        Transform::ArithInstReduce arithInstReduce(&builder);
+        arithInstReduce.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
+        if (optimizeLevel >= 2)
+        {
+            // GEP Strength Reduction
+            Transform::GEPStrengthReduce gepStrengthReduce(&builder);
+            gepStrengthReduce.Execute();
+
+            makecfg.Execute();
+            makedom.Execute();
+        }
     }
 
     if (step == "-llvm")

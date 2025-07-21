@@ -1,4 +1,5 @@
 #include "llvm_ir/ir_builder.h"
+#include <algorithm>
 
 std::map<int, int> visited;
 
@@ -84,6 +85,26 @@ void CFG::BuildCFG()
     {
         if (visited[iter->block_id]) this->func->blocks.push_back(iter);
     }
+
+    // 清理G_id和invG_id中指向已删除块的边
+    for (size_t i = 0; i < G_id.size(); ++i)
+    {
+        if (!visited[i]) continue;
+
+        auto& edges = G_id[i];
+        edges.erase(std::remove_if(edges.begin(), edges.end(), [&](int target_id) { return !visited[target_id]; }),
+            edges.end());
+    }
+
+    for (size_t i = 0; i < invG_id.size(); ++i)
+    {
+        if (!visited[i]) continue;
+
+        auto& edges = invG_id[i];
+        edges.erase(std::remove_if(edges.begin(), edges.end(), [&](int source_id) { return !visited[source_id]; }),
+            edges.end());
+    }
+
     // std::cout<<"visiting condition: "<<std::endl;
     // for(auto iter:visited) std::cout<<iter.first<<' '<<iter.second<<std::endl;
     // // 打印CFG

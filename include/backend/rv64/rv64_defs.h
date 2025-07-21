@@ -59,6 +59,7 @@
     X(REMW, R, remw)          \
     X(SLL, R, sll)            \
     X(SRL, R, srl)            \
+    X(SRA, R, sra)            \
     X(AND, R, and)            \
     X(OR, R, or)              \
     X(XOR, R, xor)            \
@@ -71,6 +72,7 @@
     X(ADDI, I, addi)          \
     X(SLLI, I, slli)          \
     X(SRLI, I, srli)          \
+    X(SRAI, I, srai)          \
     X(ANDI, I, andi)          \
     X(ORI, I, ori)            \
     X(XORI, I, xori)          \

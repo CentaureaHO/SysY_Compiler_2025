@@ -71,7 +71,10 @@ namespace Backend::RV64
         void convertFDIV(LLVMIR::ArithmeticInst* inst);
         void convertMOD(LLVMIR::ArithmeticInst* inst);
         void convertSHL(LLVMIR::ArithmeticInst* inst);
+        void convertASHR(LLVMIR::ArithmeticInst* inst);
+        void convertLSHR(LLVMIR::ArithmeticInst* inst);
         void convertBITXOR(LLVMIR::ArithmeticInst* inst);
+        void convertBITAND(LLVMIR::ArithmeticInst* inst);
     };
 }  // namespace Backend::RV64
 
