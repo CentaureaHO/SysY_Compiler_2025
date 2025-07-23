@@ -60,6 +60,15 @@ std::vector<int> LoadInst::GetUsedRegs()
     return ret;
 }
 
+std::vector<Operand*> LoadInst::GetUsedOperands()
+{
+    std::vector<Operand*> ret{};
+    if (this->ptr) { ret.push_back(this->ptr); }
+    return ret;
+}
+
+Operand* LoadInst::GetResultOperand() { return this->res; }
+
 void LoadInst::Rename(std::map<int, int>& replace)
 {
     if (this->ptr->type == OperandType::REG)
@@ -93,6 +102,15 @@ std::vector<int> StoreInst::GetUsedRegs()
     if (this->val->type == OperandType::REG) { ret.push_back(((RegOperand*)(this->val))->reg_num); }
     return ret;
 }
+
+std::vector<Operand*> StoreInst::GetUsedOperands()
+{
+    std::vector<Operand*> ret{};
+    if (this->ptr) { ret.push_back(this->ptr); }
+    if (this->val) { ret.push_back(this->val); }
+    return ret;
+}
+Operand* StoreInst::GetResultOperand() { return nullptr; }
 
 void StoreInst::Rename(std::map<int, int>& replace)
 {
@@ -136,6 +154,16 @@ std::vector<int> ArithmeticInst::GetUsedRegs()
     if (this->rhs->type == OperandType::REG) { ret.push_back(((RegOperand*)(this->rhs))->reg_num); }
     return ret;
 }
+
+std::vector<Operand*> ArithmeticInst::GetUsedOperands()
+{
+    std::vector<Operand*> ret{};
+    if (this->lhs) { ret.push_back(this->lhs); }
+    if (this->rhs) { ret.push_back(this->rhs); }
+    return ret;
+}
+
+Operand* ArithmeticInst::GetResultOperand() { return this->res; }
 
 void ArithmeticInst::Rename(std::map<int, int>& replace)
 {
@@ -182,6 +210,16 @@ std::vector<int> IcmpInst::GetUsedRegs()
     return ret;
 }
 
+std::vector<Operand*> IcmpInst::GetUsedOperands()
+{
+    std::vector<Operand*> ret{};
+    if (this->lhs) { ret.push_back(this->lhs); }
+    if (this->rhs) { ret.push_back(this->rhs); }
+    return ret;
+}
+
+Operand* IcmpInst::GetResultOperand() { return this->res; }
+
 void IcmpInst::Rename(std::map<int, int>& replace)
 {
     if (this->lhs->type == OperandType::REG)
@@ -220,6 +258,16 @@ std::vector<int> FcmpInst::GetUsedRegs()
     if (this->rhs->type == OperandType::REG) { ret.push_back(((RegOperand*)(this->rhs))->reg_num); }
     return ret;
 }
+
+std::vector<Operand*> FcmpInst::GetUsedOperands()
+{
+    std::vector<Operand*> ret{};
+    if (this->lhs) { ret.push_back(this->lhs); }
+    if (this->rhs) { ret.push_back(this->rhs); }
+    return ret;
+}
+
+Operand* FcmpInst::GetResultOperand() { return this->res; }
 
 void FcmpInst::Rename(std::map<int, int>& replace)
 {
@@ -265,6 +313,14 @@ std::vector<int> AllocInst::GetUsedRegs()
     return ret;
 }
 
+std::vector<Operand*> AllocInst::GetUsedOperands()
+{
+    std::vector<Operand*> ret{};
+    return ret;
+}
+
+Operand* AllocInst::GetResultOperand() { return this->res; }
+
 void AllocInst::Rename(std::map<int, int>& replace) {}
 
 BranchCondInst::BranchCondInst(Operand* c, Operand* t, Operand* f)
@@ -283,6 +339,17 @@ std::vector<int> BranchCondInst::GetUsedRegs()
     if (this->cond->type == OperandType::REG) { ret.push_back(((RegOperand*)(this->cond))->reg_num); }
     return ret;
 }
+
+std::vector<Operand*> BranchCondInst::GetUsedOperands()
+{
+    std::vector<Operand*> ret{};
+    if (this->cond) { ret.push_back(this->cond); }
+    if (this->true_label) { ret.push_back(this->true_label); }
+    if (this->false_label) { ret.push_back(this->false_label); }
+    return ret;
+}
+
+Operand* BranchCondInst::GetResultOperand() { return nullptr; }
 
 void BranchCondInst::Rename(std::map<int, int>& replace)
 {  // 其实这里是cmp出来的寄存器，不会被mem2reg波及
@@ -305,6 +372,14 @@ std::vector<int> BranchUncondInst::GetUsedRegs()
     std::vector<int> ret{};
     return ret;
 }
+
+std::vector<Operand*> BranchUncondInst::GetUsedOperands()
+{
+    std::vector<Operand*> ret{};
+    if (this->target_label) { ret.push_back(this->target_label); }
+    return ret;
+}
+Operand* BranchUncondInst::GetResultOperand() { return nullptr; }
 
 void BranchUncondInst::Rename(std::map<int, int>& replace) {}
 
@@ -392,6 +467,14 @@ std::vector<int> GlbvarDefInst::GetUsedRegs()
     return ret;
 }
 
+std::vector<Operand*> GlbvarDefInst::GetUsedOperands()
+{
+    std::vector<Operand*> ret{};
+    return ret;
+}
+
+Operand* GlbvarDefInst::GetResultOperand() { return nullptr; }
+
 void GlbvarDefInst::Rename(std::map<int, int>& replace) {}
 
 CallInst::CallInst(DataType rt, string fn, Operand* r)
@@ -433,6 +516,15 @@ std::vector<int> CallInst::GetUsedRegs()
     return ret;
 }
 
+std::vector<Operand*> CallInst::GetUsedOperands()
+{
+    std::vector<Operand*> ret{};
+    for (auto iter : args) { ret.push_back(iter.second); }
+    return ret;
+}
+
+Operand* CallInst::GetResultOperand() { return this->res; }
+
 void CallInst::Rename(std::map<int, int>& replace)
 {
     for (auto& iter : args)
@@ -464,6 +556,15 @@ std::vector<int> RetInst::GetUsedRegs()
 
     return retvec;
 }
+
+std::vector<Operand*> RetInst::GetUsedOperands()
+{
+    std::vector<Operand*> retvec{};
+    if (ret) { retvec.push_back(ret); }
+    return retvec;
+}
+
+Operand* RetInst::GetResultOperand() { return nullptr; }
 
 void RetInst::Rename(std::map<int, int>& replace)
 {
@@ -510,6 +611,16 @@ std::vector<int> GEPInst::GetUsedRegs()
     return retvec;
 }
 
+std::vector<Operand*> GEPInst::GetUsedOperands()
+{
+    std::vector<Operand*> retvec{};
+    if (base_ptr) { retvec.push_back(base_ptr); }
+    for (auto& iter : idxs) { retvec.push_back(iter); }
+    return retvec;
+}
+
+Operand* GEPInst::GetResultOperand() { return this->res; }
+
 void GEPInst::Rename(std::map<int, int>& replace)
 {
     if (base_ptr->type == OperandType::REG)
@@ -552,6 +663,14 @@ std::vector<int> FuncDeclareInst::GetUsedRegs()
     std::vector<int> retvec{};
     return retvec;
 }
+
+std::vector<Operand*> FuncDeclareInst::GetUsedOperands()
+{
+    std::vector<Operand*> retvec{};
+    return retvec;
+}
+
+Operand* FuncDeclareInst::GetResultOperand() { return nullptr; }
 
 void FuncDeclareInst::Rename(std::map<int, int>& replace) {}
 
@@ -598,6 +717,15 @@ std::vector<int> SI2FPInst::GetUsedRegs()
     return retvec;
 }
 
+std::vector<Operand*> SI2FPInst::GetUsedOperands()
+{
+    std::vector<Operand*> retvec{};
+    if (f_si) { retvec.push_back(f_si); }
+    return retvec;
+}
+
+Operand* SI2FPInst::GetResultOperand() { return this->t_fp; }
+
 void SI2FPInst::Rename(std::map<int, int>& replace)
 {
     if (f_si->type == OperandType::REG)
@@ -621,6 +749,15 @@ std::vector<int> FP2SIInst::GetUsedRegs()
     if (f_fp->type == OperandType::REG) { retvec.push_back(((RegOperand*)f_fp)->reg_num); }
     return retvec;
 }
+
+std::vector<Operand*> FP2SIInst::GetUsedOperands()
+{
+    std::vector<Operand*> retvec{};
+    if (f_fp) { retvec.push_back(f_fp); }
+    return retvec;
+}
+
+Operand* FP2SIInst::GetResultOperand() { return this->t_si; }
 
 void FP2SIInst::Rename(std::map<int, int>& replace)
 {
@@ -649,6 +786,15 @@ std::vector<int> ZextInst::GetUsedRegs()
     return retvec;
 }
 
+std::vector<Operand*> ZextInst::GetUsedOperands()
+{
+    std::vector<Operand*> retvec{};
+    if (src) { retvec.push_back(src); }
+    return retvec;
+}
+
+Operand* ZextInst::GetResultOperand() { return this->dest; }
+
 void ZextInst::Rename(std::map<int, int>& replace)
 {
     if (src->type == OperandType::REG)
@@ -672,6 +818,15 @@ std::vector<int> FPExtInst::GetUsedRegs()
     if (src->type == OperandType::REG) { retvec.push_back(((RegOperand*)src)->reg_num); }
     return retvec;
 }
+
+std::vector<Operand*> FPExtInst::GetUsedOperands()
+{
+    std::vector<Operand*> retvec{};
+    if (src) { retvec.push_back(src); }
+    return retvec;
+}
+
+Operand* FPExtInst::GetResultOperand() { return this->dest; }
 
 void FPExtInst::Rename(std::map<int, int>& replace)
 {
@@ -715,6 +870,19 @@ std::vector<int> PhiInst::GetUsedRegs()
     }
     return retvec;
 }
+
+std::vector<Operand*> PhiInst::GetUsedOperands()
+{
+    std::vector<Operand*> retvec{};
+    for (auto iter : vals_for_labels)
+    {
+        retvec.push_back(iter.first);
+        retvec.push_back(iter.second);
+    }
+    return retvec;
+}
+
+Operand* PhiInst::GetResultOperand() { return this->res; }
 
 void PhiInst::Rename(std::map<int, int>& replace)
 {

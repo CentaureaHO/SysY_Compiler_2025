@@ -23,6 +23,7 @@ namespace Cele
             void solve(const std::vector<std::vector<int>>& graph, const std::vector<int>& entry_points,
                 bool reverse = false, bool gen_frontier = false);
             void clear();
+            int  LCA(int u, int v);
 
           private:
             void build(const std::vector<std::vector<int>>& working_graph, int node_count, int virtual_source);
