@@ -47,17 +47,76 @@ namespace LLVMIR
             return false;  // 其他类型不支持比较
         }
 
+        // 辅助函数：计算操作数的哈希值
+        size_t hashOperand(const Operand* op) const
+        {
+            if (op == nullptr) return 0;
+
+            // 先哈希操作数类型
+            size_t hash = std::hash<int>()(static_cast<int>(op->type));
+
+            // 根据操作数类型计算特定哈希值
+            switch (op->type)
+            {
+                case OperandType::IMMEI32:
+                    hash = hash * 31 + std::hash<int>()(static_cast<const ImmeI32Operand*>(op)->value);
+                    break;
+
+                case OperandType::IMMEF32:
+                    // 浮点数哈希需要特殊处理避免近似值问题
+                    {
+                        float val = static_cast<const ImmeF32Operand*>(op)->value;
+                        hash      = hash * 31 + std::hash<float>()(val);
+                    }
+                    break;
+
+                case OperandType::REG:
+                    hash = hash * 31 + std::hash<int>()(static_cast<const RegOperand*>(op)->reg_num);
+                    break;
+
+                case OperandType::GLOBAL:
+                    hash = hash * 31 + std::hash<std::string>()(static_cast<const GlobalOperand*>(op)->global_name);
+                    break;
+
+                case OperandType::LABEL:
+                    hash = hash * 31 + std::hash<int>()(static_cast<const LabelOperand*>(op)->label_num);
+                    break;
+
+                default:
+                    // 对于其他类型，使用指针值作为哈希基础
+                    hash = hash * 31 + std::hash<const void*>()(op);
+            }
+
+            return hash;
+        }
+
       public:
         // 用于表示LLVM IR中的表达式，在这里我们用这里记录表达式的相关信息
         IROpCode              opcode;    // 表达式的操作码
         std::vector<Operand*> operands;  // 表达式的操作数
 
+        Expression() = default;
         Expression(IROpCode op, std::vector<Operand*>& ops) : opcode(op), operands(ops) {}
         virtual ~Expression() = default;
 
         // 纯虚函数，子类必须实现
         virtual bool   equals(const Expression& other) const = 0;
         virtual size_t hash() const                          = 0;
+    };
+
+    struct ExpressionPtrHash
+    {
+        size_t operator()(const Expression* expr) const { return expr ? expr->hash() : 0; }
+    };
+
+    struct ExpressionPtrEqual
+    {
+        bool operator()(const Expression* lhs, const Expression* rhs) const
+        {
+            if (lhs == rhs) return true;
+            if (!lhs || !rhs) return false;
+            return lhs->equals(*rhs);  // 虚函数调用具体类型 equals()
+        }
     };
 
 };  // namespace LLVMIR

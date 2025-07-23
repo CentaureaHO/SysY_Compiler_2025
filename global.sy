@@ -1,18 +1,14 @@
 
-int w = 3;
-int x = 3;
-int y;
-int z;
-int t;
+int r = 1;
 int main()
 {
-    y = x + 4;
-    z = w + 4;
-    t = y + z;
-    putint(t);
-    putint(w);
-    putint(x);
-    putint(y);
-    putint(z);
-    return 0;
+    int c = getint();
+    int d = getint();
+    int a = c * d;
+    int e = c;
+    int f = e * d;
+    putint(r);
+    putint(a);
+    putint(f);
+    return e;
 }

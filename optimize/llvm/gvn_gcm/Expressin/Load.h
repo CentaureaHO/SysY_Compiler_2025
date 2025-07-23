@@ -4,9 +4,9 @@
 namespace LLVMIR
 {
     /*
-    * @brief Load表达式类，表示LLVM IR中的加载操作
-    * @details 该类继承自Expression，表示LLVM IR中的加载操作表达
-    */
+     * @brief Load表达式类，表示LLVM IR中的加载操作
+     * @details 该类继承自Expression，表示LLVM IR中的加载操作表达
+     */
     class LoadExpression : public Expression
     {
       public:
@@ -24,6 +24,14 @@ namespace LLVMIR
         size_t hash() const override
         {
             // TODO:实现哈希
+            size_t hash = std::hash<int>()(static_cast<int>(this->opcode));
+            for (const auto& op : this->operands)
+            {
+                size_t operand_hash = hashOperand(op);
+                // 使用乘法和位移组合哈希值，提高分布性
+                hash = hash * 31 + operand_hash;
+            }
+            return hash;
         }
     };
 }  // namespace LLVMIR

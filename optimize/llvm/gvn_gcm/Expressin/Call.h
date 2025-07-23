@@ -30,6 +30,11 @@ namespace LLVMIR
             // return true;
         }
 
-        size_t hash() const override;
+        size_t hash() const override
+        {
+            size_t hash = std::hash<IROpCode>()(opcode);
+            for (const auto& op : operands) { hash = hash * 31 + Expression::hashOperand(op); }
+            return hash;
+        }
     };
 }  // namespace LLVMIR
