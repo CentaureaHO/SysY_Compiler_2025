@@ -42,9 +42,12 @@
     X(FCMP, fcmp, 16)          \
     X(MOD, srem, 17)           \
     X(BITXOR, xor, 18)         \
+    X(BITAND, and, 31)         \
     X(RET, NONE, 19)           \
     X(ZEXT, NONE, 20)          \
     X(SHL, shl, 21)            \
+    X(ASHR, ashr, 22)          \
+    X(LSHR, lshr, 23)          \
     X(FPTOSI, NONE, 24)        \
     X(GETELEMENTPTR, NONE, 25) \
     X(CALL, NONE, 26)          \

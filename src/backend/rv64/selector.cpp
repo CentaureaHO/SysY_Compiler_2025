@@ -86,10 +86,19 @@ void Selector::selectInstruction()
         // Build control flow graph using the new CFG structure
         if (ir_cfg != nullptr)
         {
-            for (size_t i = 0; i < ir_cfg->G_id.size(); ++i)
+            for (const auto& [block_id, block_ptr] : ir_cfg->block_id_to_block)
             {
-                const vector<int>& tos = ir_cfg->G_id[i];
-                for (const auto& to : tos) mcfg->makeEdge(i, to);
+                if (block_id < ir_cfg->G_id.size())
+                {
+                    const vector<int>& tos = ir_cfg->G_id[block_id];
+                    for (const auto& to : tos)
+                    {
+                        if (ir_cfg->block_id_to_block.find(to) != ir_cfg->block_id_to_block.end())
+                        {
+                            mcfg->makeEdge(block_id, to);
+                        }
+                    }
+                }
             }
         }
     }
@@ -171,7 +180,10 @@ void Selector::convertAndAppend(LLVMIR::Instruction* inst)
         case LOC::FDIV:
         case LOC::MOD:
         case LOC::SHL:
-        case LOC::BITXOR: convertAndAppend((LLVMIR::ArithmeticInst*)inst); break;
+        case LOC::ASHR:
+        case LOC::LSHR:
+        case LOC::BITXOR:
+        case LOC::BITAND: convertAndAppend((LLVMIR::ArithmeticInst*)inst); break;
         default: cerr << "Unknown opcode: " << inst->opcode << endl; assert(false);
     }
 }
@@ -353,7 +365,7 @@ void Selector::convertAndAppend(LLVMIR::StoreInst* inst)
     {
         val_reg   = getReg(FLOAT64);
         float val = ((LLVMIR::ImmeF32Operand*)inst->val)->value;
-        cur_block->insts.push_back(createMoveInst(INT64, val_reg, val));
+        cur_block->insts.push_back(createMoveInst(FLOAT64, val_reg, val));
         // cur_block->insts.push_back(createIInst(RV64InstType::FCVT_S_W, val_reg, preg_x0, val));
     }
     else
@@ -515,8 +527,16 @@ void Selector::convertADD(LLVMIR::ArithmeticInst* inst)
         Register lhs = getLLVMReg(lhs_reg, INT64);
         Register res = getLLVMReg(res_reg, INT64);
 
-        assert(rhs_val >= -2048 && rhs_val <= 2047);
-        cur_block->insts.push_back(createIInst(RV64InstType::ADDI, res, lhs, rhs_val));
+        if (rhs_val >= -2048 && rhs_val <= 2047)
+        {
+            cur_block->insts.push_back(createIInst(RV64InstType::ADDI, res, lhs, rhs_val));
+        }
+        else
+        {
+            Register rhs_reg = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, rhs_reg, rhs_val));
+            cur_block->insts.push_back(createRInst(RV64InstType::ADDW, res, lhs, rhs_reg));
+        }
     }
     // IMME + REG
     else if (lhs_type == imme_type && rhs_type == ir_reg_type)
@@ -528,8 +548,16 @@ void Selector::convertADD(LLVMIR::ArithmeticInst* inst)
         Register rhs = getLLVMReg(rhs_reg, INT64);
         Register res = getLLVMReg(res_reg, INT64);
 
-        assert(lhs_val >= -2048 && lhs_val <= 2047);
-        cur_block->insts.push_back(createIInst(RV64InstType::ADDI, res, rhs, lhs_val));
+        if (lhs_val >= -2048 && lhs_val <= 2047)
+        {
+            cur_block->insts.push_back(createIInst(RV64InstType::ADDI, res, rhs, lhs_val));
+        }
+        else
+        {
+            Register lhs_reg = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, lhs_reg, lhs_val));
+            cur_block->insts.push_back(createRInst(RV64InstType::ADDW, res, lhs_reg, rhs));
+        }
     }
     // IMME + IMME
     else if (lhs_type == imme_type && lhs_type == rhs_type)
@@ -578,7 +606,16 @@ void Selector::convertSUB(LLVMIR::ArithmeticInst* inst)
         Register lhs = getLLVMReg(lhs_reg, INT64);
         Register res = getLLVMReg(res_reg, INT64);
 
-        cur_block->insts.push_back(createIInst(RV64InstType::ADDI, res, lhs, -rhs_val));
+        if (-rhs_val >= -2048 && -rhs_val <= 2047)
+        {
+            cur_block->insts.push_back(createIInst(RV64InstType::ADDI, res, lhs, -rhs_val));
+        }
+        else
+        {
+            Register rhs_reg = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, rhs_reg, rhs_val));
+            cur_block->insts.push_back(createRInst(RV64InstType::SUBW, res, lhs, rhs_reg));
+        }
     }
     else
     {
@@ -973,8 +1010,73 @@ void Selector::convertMOD(LLVMIR::ArithmeticInst* inst)
 }
 void Selector::convertSHL(LLVMIR::ArithmeticInst* inst)
 {
-    std::cerr << "Not implemented yet" << std::endl;
-    assert(false);
+    if (inst->type != LLVMIR::DataType::I32) assert(false);
+
+    LLVMIR::OperandType lhs_type = inst->lhs->type;
+    LLVMIR::OperandType rhs_type = inst->rhs->type;
+
+    LLVMIR::OperandType ir_reg_type = LLVMIR::OperandType::REG;
+    LLVMIR::OperandType imme_type   = LLVMIR::OperandType::IMMEI32;
+
+    // REG << REG
+    if (lhs_type == ir_reg_type && lhs_type == rhs_type)
+    {
+        int lhs_reg = ((LLVMIR::RegOperand*)inst->lhs)->reg_num;
+        int rhs_reg = ((LLVMIR::RegOperand*)inst->rhs)->reg_num;
+        int res_reg = ((LLVMIR::RegOperand*)inst->res)->reg_num;
+
+        Register lhs = getLLVMReg(lhs_reg, INT64);
+        Register rhs = getLLVMReg(rhs_reg, INT64);
+        Register res = getLLVMReg(res_reg, INT64);
+
+        cur_block->insts.push_back(createRInst(RV64InstType::SLL, res, lhs, rhs));
+    }
+    // REG << IMME
+    else if (lhs_type == ir_reg_type && rhs_type == imme_type)
+    {
+        int lhs_reg = ((LLVMIR::RegOperand*)inst->lhs)->reg_num;
+        int rhs_val = ((LLVMIR::ImmeI32Operand*)inst->rhs)->value;
+        int res_reg = ((LLVMIR::RegOperand*)inst->res)->reg_num;
+
+        Register lhs = getLLVMReg(lhs_reg, INT64);
+        Register res = getLLVMReg(res_reg, INT64);
+
+        if (rhs_val >= -2048 && rhs_val <= 2047)
+        {
+            cur_block->insts.push_back(createIInst(RV64InstType::SLLI, res, lhs, rhs_val));
+        }
+        else
+        {
+            Register temp = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, temp, rhs_val));
+            cur_block->insts.push_back(createRInst(RV64InstType::SLL, res, lhs, temp));
+        }
+    }
+    // IMME << REG
+    else if (lhs_type == imme_type && rhs_type == ir_reg_type)
+    {
+        int lhs_val = ((LLVMIR::ImmeI32Operand*)inst->lhs)->value;
+        int rhs_reg = ((LLVMIR::RegOperand*)inst->rhs)->reg_num;
+        int res_reg = ((LLVMIR::RegOperand*)inst->res)->reg_num;
+
+        Register rhs = getLLVMReg(rhs_reg, INT64);
+        Register res = getLLVMReg(res_reg, INT64);
+
+        Register temp = getReg(INT64);
+        cur_block->insts.push_back(createMoveInst(INT64, temp, lhs_val));
+        cur_block->insts.push_back(createRInst(RV64InstType::SLL, res, temp, rhs));
+    }
+    // IMME << IMME
+    else
+    {
+        int lhs_val = ((LLVMIR::ImmeI32Operand*)inst->lhs)->value;
+        int rhs_val = ((LLVMIR::ImmeI32Operand*)inst->rhs)->value;
+        int res_reg = ((LLVMIR::RegOperand*)inst->res)->reg_num;
+
+        Register res = getLLVMReg(res_reg, INT64);
+
+        cur_block->insts.push_back(createMoveInst(INT64, res, lhs_val << rhs_val));
+    }
 }
 void Selector::convertBITXOR(LLVMIR::ArithmeticInst* inst)
 {
@@ -1009,7 +1111,16 @@ void Selector::convertBITXOR(LLVMIR::ArithmeticInst* inst)
         Register lhs = getLLVMReg(lhs_reg, INT64);
         Register res = getLLVMReg(res_reg, INT64);
 
-        cur_block->insts.push_back(createIInst(RV64InstType::XORI, res, lhs, rhs_val));
+        if (rhs_val >= -2048 && rhs_val <= 2047)
+        {
+            cur_block->insts.push_back(createIInst(RV64InstType::XORI, res, lhs, rhs_val));
+        }
+        else
+        {
+            Register temp = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, temp, rhs_val));
+            cur_block->insts.push_back(createRInst(RV64InstType::XOR, res, lhs, temp));
+        }
     }
     // IMME ^ REG
     else if (lhs_type == imme_type && rhs_type == ir_reg_type)
@@ -1021,7 +1132,16 @@ void Selector::convertBITXOR(LLVMIR::ArithmeticInst* inst)
         Register rhs = getLLVMReg(rhs_reg, INT64);
         Register res = getLLVMReg(res_reg, INT64);
 
-        cur_block->insts.push_back(createIInst(RV64InstType::XORI, res, rhs, lhs_val));
+        if (lhs_val >= -2048 && lhs_val <= 2047)
+        {
+            cur_block->insts.push_back(createIInst(RV64InstType::XORI, res, rhs, lhs_val));
+        }
+        else
+        {
+            Register temp = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, temp, lhs_val));
+            cur_block->insts.push_back(createRInst(RV64InstType::XOR, res, temp, rhs));
+        }
     }
     // IMME ^ IMME
     else
@@ -1033,6 +1153,191 @@ void Selector::convertBITXOR(LLVMIR::ArithmeticInst* inst)
         Register res = getLLVMReg(res_reg, INT64);
 
         cur_block->insts.push_back(createMoveInst(INT64, res, lhs_val ^ rhs_val));
+    }
+}
+void Selector::convertASHR(LLVMIR::ArithmeticInst* inst)
+{
+    if (inst->type != LLVMIR::DataType::I32) assert(false);
+
+    LLVMIR::OperandType lhs_type = inst->lhs->type;
+    LLVMIR::OperandType rhs_type = inst->rhs->type;
+
+    LLVMIR::OperandType ir_reg_type = LLVMIR::OperandType::REG;
+    LLVMIR::OperandType imme_type   = LLVMIR::OperandType::IMMEI32;
+
+    // REG >> REG
+    if (lhs_type == ir_reg_type && lhs_type == rhs_type)
+    {
+        int lhs_reg = ((LLVMIR::RegOperand*)inst->lhs)->reg_num;
+        int rhs_reg = ((LLVMIR::RegOperand*)inst->rhs)->reg_num;
+        int res_reg = ((LLVMIR::RegOperand*)inst->res)->reg_num;
+
+        Register lhs = getLLVMReg(lhs_reg, INT64);
+        Register rhs = getLLVMReg(rhs_reg, INT64);
+        Register res = getLLVMReg(res_reg, INT64);
+
+        cur_block->insts.push_back(createRInst(RV64InstType::SRA, res, lhs, rhs));
+    }
+    // REG >> IMME
+    else if (lhs_type == ir_reg_type && rhs_type == imme_type)
+    {
+        int lhs_reg = ((LLVMIR::RegOperand*)inst->lhs)->reg_num;
+        int rhs_val = ((LLVMIR::ImmeI32Operand*)inst->rhs)->value;
+        int res_reg = ((LLVMIR::RegOperand*)inst->res)->reg_num;
+
+        Register lhs = getLLVMReg(lhs_reg, INT64);
+        Register res = getLLVMReg(res_reg, INT64);
+
+        if (rhs_val >= -2048 && rhs_val <= 2047)
+        {
+            cur_block->insts.push_back(createIInst(RV64InstType::SRAI, res, lhs, rhs_val));
+        }
+        else
+        {
+            Register temp = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, temp, rhs_val));
+            cur_block->insts.push_back(createRInst(RV64InstType::SRA, res, lhs, temp));
+        }
+    }
+    else
+    {
+        // Handle other cases by loading immediate to register
+        Register rd  = getLLVMReg(((LLVMIR::RegOperand*)inst->res)->reg_num, INT64);
+        Register lhs = extractIROp2Reg(inst->lhs, INT64);
+        Register rhs = extractIROp2Reg(inst->rhs, INT64);
+
+        cur_block->insts.push_back(createRInst(RV64InstType::SRA, rd, lhs, rhs));
+    }
+}
+void Selector::convertLSHR(LLVMIR::ArithmeticInst* inst)
+{
+    if (inst->type != LLVMIR::DataType::I32) assert(false);
+
+    LLVMIR::OperandType lhs_type = inst->lhs->type;
+    LLVMIR::OperandType rhs_type = inst->rhs->type;
+
+    LLVMIR::OperandType ir_reg_type = LLVMIR::OperandType::REG;
+    LLVMIR::OperandType imme_type   = LLVMIR::OperandType::IMMEI32;
+
+    // REG >> REG (logical)
+    if (lhs_type == ir_reg_type && lhs_type == rhs_type)
+    {
+        int lhs_reg = ((LLVMIR::RegOperand*)inst->lhs)->reg_num;
+        int rhs_reg = ((LLVMIR::RegOperand*)inst->rhs)->reg_num;
+        int res_reg = ((LLVMIR::RegOperand*)inst->res)->reg_num;
+
+        Register lhs = getLLVMReg(lhs_reg, INT64);
+        Register rhs = getLLVMReg(rhs_reg, INT64);
+        Register res = getLLVMReg(res_reg, INT64);
+
+        cur_block->insts.push_back(createRInst(RV64InstType::SRL, res, lhs, rhs));
+    }
+    // REG >> IMME (logical)
+    else if (lhs_type == ir_reg_type && rhs_type == imme_type)
+    {
+        int lhs_reg = ((LLVMIR::RegOperand*)inst->lhs)->reg_num;
+        int rhs_val = ((LLVMIR::ImmeI32Operand*)inst->rhs)->value;
+        int res_reg = ((LLVMIR::RegOperand*)inst->res)->reg_num;
+
+        Register lhs = getLLVMReg(lhs_reg, INT64);
+        Register res = getLLVMReg(res_reg, INT64);
+
+        if (rhs_val >= -2048 && rhs_val <= 2047)
+        {
+            cur_block->insts.push_back(createIInst(RV64InstType::SRLI, res, lhs, rhs_val));
+        }
+        else
+        {
+            Register temp = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, temp, rhs_val));
+            cur_block->insts.push_back(createRInst(RV64InstType::SRL, res, lhs, temp));
+        }
+    }
+    else
+    {
+        // Handle other cases by loading immediate to register
+        Register rd  = getLLVMReg(((LLVMIR::RegOperand*)inst->res)->reg_num, INT64);
+        Register lhs = extractIROp2Reg(inst->lhs, INT64);
+        Register rhs = extractIROp2Reg(inst->rhs, INT64);
+
+        cur_block->insts.push_back(createRInst(RV64InstType::SRL, rd, lhs, rhs));
+    }
+}
+void Selector::convertBITAND(LLVMIR::ArithmeticInst* inst)
+{
+    if (inst->type != LLVMIR::DataType::I32) assert(false);
+
+    LLVMIR::OperandType lhs_type = inst->lhs->type;
+    LLVMIR::OperandType rhs_type = inst->rhs->type;
+
+    LLVMIR::OperandType ir_reg_type = LLVMIR::OperandType::REG;
+    LLVMIR::OperandType imme_type   = LLVMIR::OperandType::IMMEI32;
+
+    // REG & REG
+    if (lhs_type == ir_reg_type && lhs_type == rhs_type)
+    {
+        int lhs_reg = ((LLVMIR::RegOperand*)inst->lhs)->reg_num;
+        int rhs_reg = ((LLVMIR::RegOperand*)inst->rhs)->reg_num;
+        int res_reg = ((LLVMIR::RegOperand*)inst->res)->reg_num;
+
+        Register lhs = getLLVMReg(lhs_reg, INT64);
+        Register rhs = getLLVMReg(rhs_reg, INT64);
+        Register res = getLLVMReg(res_reg, INT64);
+
+        cur_block->insts.push_back(createRInst(RV64InstType::AND, res, lhs, rhs));
+    }
+    // REG & IMME
+    else if (lhs_type == ir_reg_type && rhs_type == imme_type)
+    {
+        int lhs_reg = ((LLVMIR::RegOperand*)inst->lhs)->reg_num;
+        int rhs_val = ((LLVMIR::ImmeI32Operand*)inst->rhs)->value;
+        int res_reg = ((LLVMIR::RegOperand*)inst->res)->reg_num;
+
+        Register lhs = getLLVMReg(lhs_reg, INT64);
+        Register res = getLLVMReg(res_reg, INT64);
+
+        if (rhs_val >= -2048 && rhs_val <= 2047)
+        {
+            cur_block->insts.push_back(createIInst(RV64InstType::ANDI, res, lhs, rhs_val));
+        }
+        else
+        {
+            Register temp = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, temp, rhs_val));
+            cur_block->insts.push_back(createRInst(RV64InstType::AND, res, lhs, temp));
+        }
+    }
+    // IMME & REG
+    else if (lhs_type == imme_type && rhs_type == ir_reg_type)
+    {
+        int lhs_val = ((LLVMIR::ImmeI32Operand*)inst->lhs)->value;
+        int rhs_reg = ((LLVMIR::RegOperand*)inst->rhs)->reg_num;
+        int res_reg = ((LLVMIR::RegOperand*)inst->res)->reg_num;
+
+        Register rhs = getLLVMReg(rhs_reg, INT64);
+        Register res = getLLVMReg(res_reg, INT64);
+
+        if (lhs_val >= -2048 && lhs_val <= 2047)
+        {
+            cur_block->insts.push_back(createIInst(RV64InstType::ANDI, res, rhs, lhs_val));
+        }
+        else
+        {
+            Register temp = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, temp, lhs_val));
+            cur_block->insts.push_back(createRInst(RV64InstType::AND, res, temp, rhs));
+        }
+    }
+    // IMME & IMME
+    else
+    {
+        int lhs_val = ((LLVMIR::ImmeI32Operand*)inst->lhs)->value;
+        int rhs_val = ((LLVMIR::ImmeI32Operand*)inst->rhs)->value;
+        int res_reg = ((LLVMIR::RegOperand*)inst->res)->reg_num;
+
+        Register res = getLLVMReg(res_reg, INT64);
+
+        cur_block->insts.push_back(createMoveInst(INT64, res, lhs_val & rhs_val));
     }
 }
 void Selector::convertAndAppend(LLVMIR::ArithmeticInst* inst)
@@ -1049,7 +1354,10 @@ void Selector::convertAndAppend(LLVMIR::ArithmeticInst* inst)
         case LOC::FDIV: convertFDIV(inst); break;
         case LOC::MOD: convertMOD(inst); break;
         case LOC::SHL: convertSHL(inst); break;
+        case LOC::ASHR: convertASHR(inst); break;
+        case LOC::LSHR: convertLSHR(inst); break;
         case LOC::BITXOR: convertBITXOR(inst); break;
+        case LOC::BITAND: convertBITAND(inst); break;
         default: cerr << "Unknown opcode: " << inst->opcode << endl; assert(false);
     }
 }
@@ -1088,6 +1396,18 @@ void Selector::convertAndAppend(LLVMIR::AllocInst* inst)
 }
 void Selector::convertAndAppend(LLVMIR::BranchCondInst* inst)
 {
+    if (IS_IMMEI32(inst->cond))
+    {
+        // 如果条件是立即数，根据其值生成无条件跳转
+        int                   cond_val = ((LLVMIR::ImmeI32Operand*)inst->cond)->value;
+        LLVMIR::LabelOperand* target_label =
+            cond_val ? (LLVMIR::LabelOperand*)inst->true_label : (LLVMIR::LabelOperand*)inst->false_label;
+
+        cur_block->insts.push_back(createJInst(RV64InstType::JAL, preg_x0, RV64Label(target_label->label_num)));
+        return;
+    }
+
+    assert(IS_REG(inst->cond));
     LLVMIR::RegOperand*  cond_reg = (LLVMIR::RegOperand*)inst->cond;
     Register             br_reg   = getLLVMReg(cond_reg->reg_num, INT64);
     LLVMIR::Instruction* cmp_inst = cmp_context[br_reg];
@@ -1784,8 +2104,17 @@ void Selector::convertAndAppend(LLVMIR::GEPInst* inst)
         if (shift_reg_assigned)
         {
             Register new_shift_reg = getReg(INT64);
-            cur_block->insts.push_back(createIInst(RV64InstType::ADDI, new_shift_reg, shift_reg, offset));
-            res_reg = new_shift_reg;
+            if (offset >= -2048 && offset <= 2047)
+            {
+                cur_block->insts.push_back(createIInst(RV64InstType::ADDI, new_shift_reg, shift_reg, offset));
+            }
+            else
+            {
+                Register offset_reg = getReg(INT64);
+                cur_block->insts.push_back(createMoveInst(INT64, offset_reg, offset));
+                cur_block->insts.push_back(createRInst(RV64InstType::ADD, new_shift_reg, shift_reg, offset_reg));
+            }
+            shift_reg = new_shift_reg;
         }
         else
         {
