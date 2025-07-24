@@ -1,4 +1,3 @@
-#pragma once
 #include "Valuemap.h"
 
 namespace LLVMIR
@@ -15,6 +14,6 @@ namespace LLVMIR
         auto it = exprToValueMap.find(const_cast<Expression*>(expr));
         if (it != exprToValueMap.end()) { return it->second; }
         // 如果没有找到，返回一个默认值
-        return Value(false);
+        return Value();
     }
 }  // namespace LLVMIR

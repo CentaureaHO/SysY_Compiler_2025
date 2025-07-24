@@ -1,4 +1,3 @@
-#pragma once
 #include "gvn.h"
 #include "llvm_ir/instruction.h"
 #include "llvm_ir/ir_block.h"
@@ -70,7 +69,5 @@ namespace LLVMIR
                 return nullptr;
         }
     }
-
-    
 
 }  // namespace LLVMIR

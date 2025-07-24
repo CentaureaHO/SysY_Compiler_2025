@@ -47,6 +47,8 @@
 #include "optimize/llvm/strength_reduction/const_branch_reduce.h"
 #include "optimize/llvm/strength_reduction/arith_inst_reduce.h"
 #include "optimize/llvm/strength_reduction/gep_strength_reduce.h"
+// GVN GCM
+#include "optimize/llvm/gvn_gcm/gcm.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -305,8 +307,17 @@ int main(int argc, char** argv)
         ADCEPass adce(&builder, &ADCEDefUse, &cdg);
         adce.Execute();
         // std::cout << "ADCE completed" << std::endl;
+        // GCM
+        DefUseAnalysisPass GCMDefUse(&builder);
+        GCMDefUse.Execute();
+        MakeDomTreePass GCMmakeredom(&builder);
+        GCMmakeredom.Execute(true);
+        GCMmakeredom.Execute(false);
+        GCM gcm(&builder, &GCMDefUse);
+        gcm.Execute();
 
         aa.run();
+        licm.Execute();
         md.run();
         makecfg.Execute();
         makedom.Execute();

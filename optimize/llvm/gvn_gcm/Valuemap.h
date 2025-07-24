@@ -11,8 +11,8 @@ namespace LLVMIR
         // 其实就是一个RegOperand，我们可以直接记录
         Operand* operand;
         bool     notfound;  // 是否找到对应的值
-        Value(Operand* op, bool notfound = false) : operand(op), notfound(notfound) {}
-        Value(bool notfound) : operand(nullptr), notfound(notfound) {}
+        // Value(Operand* op, bool notfound = false) : operand(op), notfound(notfound) {}
+        // Value(bool notfound) : operand(nullptr), notfound(notfound) {}
     };
 
     class ValueMap

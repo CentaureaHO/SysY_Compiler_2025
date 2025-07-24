@@ -26,14 +26,7 @@ namespace LLVMIR
         void MoveInstructions(CFG* func_cfg);
 
       public:
-        GCM(LLVMIR::IR* ir, Cele::Algo::DomAnalyzer* DomAnalyzer, Cele::Algo::DomAnalyzer* PostdomAnalyzer,
-            DefUseAnalysisPass* DefUseAnalysis)
-            : Pass(ir)
-        {
-            domAnalyzer     = DomAnalyzer;
-            postdomAnalyzer = PostdomAnalyzer;
-            defuseAnalysis  = DefUseAnalysis;
-        }
+        GCM(LLVMIR::IR* ir, DefUseAnalysisPass* DefUseAnalysis) : Pass(ir) { defuseAnalysis = DefUseAnalysis; }
 
         void Execute() override;
 

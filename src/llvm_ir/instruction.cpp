@@ -700,6 +700,14 @@ std::vector<int> FuncDefInst::GetUsedRegs()
     return retvec;
 }
 
+std::vector<Operand*> FuncDefInst::GetUsedOperands()
+{
+    std::vector<Operand*> retvec{};
+    return retvec;
+}
+
+Operand* FuncDefInst::GetResultOperand() { return nullptr; }
+
 void FuncDefInst::Rename(std::map<int, int>& replace) {}
 
 SI2FPInst::SI2FPInst(Operand* f, Operand* t) : Instruction(IROpCode::SITOFP), f_si(f), t_fp(t) {}

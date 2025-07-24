@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <algorithm>
+#include <iostream>
 
 using namespace std;
 using namespace Cele::Algo;
@@ -152,13 +153,16 @@ void DomAnalyzer::clear()
 
 int DomAnalyzer::LCA(int u, int v)
 {
-
+    if (u == v) return u;  // 如果 u 和 v 相同，直接返回
     std::set<int> path_u;
+    // std::cout << imm_dom[0] << std::endl;
 
     // 把 u 的祖先都加入集合
     while (u != -1)
     {
         path_u.insert(u);
+        // std::cout << "u is " << u << std::endl;
+        if (u == imm_dom[u]) break;  // 如果到达根节点，停止
         u = imm_dom[u];
     }
 
