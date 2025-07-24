@@ -1,6 +1,9 @@
 #include "gcm.h"
+#include "llvm_ir/defs.h"
 #include "llvm_ir/instruction.h"
 #include "llvm_ir/ir_block.h"
+#include <deque>
+#include <ostream>
 #include <queue>
 #include <unordered_set>
 #define DEBUG_GCM
@@ -30,7 +33,8 @@ namespace LLVMIR
             case IROpCode::FPTOSI:
             case IROpCode::SITOFP:
             case IROpCode::FPEXT:
-            case IROpCode::GETELEMENTPTR: return true;
+                // case IROpCode::GETELEMENTPTR:
+                return true;
 
             default: return false;
         }
@@ -99,28 +103,81 @@ namespace LLVMIR
         return L;
     }
 
-    void GCM::MoveInstructions(CFG* func_cfg)
+    void GCM::GenerateInformation(CFG* func_cfg)
     {
-        auto                                               id2block = func_cfg->block_id_to_block;
-        std::unordered_set<Instruction*>                   erase_set;
-        std::unordered_map<int, std::queue<Instruction*> > latest_map;
-
         for (auto& [inst, E] : earliestBlockId)
         {
             int L = latestBlockId[inst];
             if (E == L) continue;  // 已在最优位置，无需移动
 
-            // 1. 从原始位置移除
-            // IRBlock* old_block = id2block[inst->block_id];
-            // old_block->insts.remove(inst);  // 你也可以使用 erase+find
+            // 记录下删除的指令
             erase_set.insert(inst);
 
-            // 2. 移动到最早可执行块 E 的结尾（除去 terminator）
-            // IRBlock* target_block = id2block[E];
-            // inst->block_id        = E;
-            latest_map[E].push(inst);  // 将指令放入最新块的队列
+            // 记录下需要放到最早可执行块E的指令,注意除去 terminator
+            if (E == -1)
+            {
+                std::cout << "Warning: E is -1 for instruction: " << inst->opcode << std::endl;
+                continue;  // 如果 E 是 -1，说明没有可执行的块，跳
+            }
+            latest_map[E].insert({instorder[inst], inst});
         }
-        // 一起进行处理，我们需要先进行一次检查，建立新的指令
+#ifdef DEBUG_GCM
+        std::cout << "Generate information completed" << std::endl;
+        std::cout << "Erase set size: " << erase_set.size() << std::endl;
+        std::cout << "Latest map size: " << latest_map.size() << std::endl;
+#endif
+    }
+
+    void GCM::EraseInstructions(CFG* func_cfg)
+    {
+#ifdef DEBUG_GCM
+        std::cout << "Erase: func is " << func_cfg->func->func_def->func_name << std::endl;
+#endif
+
+        for (auto [id, block] : func_cfg->block_id_to_block)
+        {
+            std::deque<Instruction*> new_insts;
+            for (auto& inst : block->insts)
+            {
+                // 如果指令不在 erase_set 中，则保留
+                if (erase_set.find(inst) == erase_set.end()) { new_insts.push_back(inst); }
+            }
+            block->insts = std::move(new_insts);
+        }
+#ifdef DEBUG_GCM
+        std::cout << "Erase instructions of " << func_cfg->func->func_def->func_name << " completed" << std::endl;
+#endif
+    }
+
+    void GCM::MoveInstructions(CFG* func_cfg)
+    {
+#ifdef DEBUG_GCM
+        std::cout << "Move: func is " << func_cfg->func->func_def->func_name << std::endl;
+#endif
+        // 接下来进行重新处理
+        for (auto [id, block] : func_cfg->block_id_to_block)
+        {
+            std::deque<Instruction*> new_insts;
+            for (auto& inst : block->insts)
+            {
+                // 如果到达了结尾
+                if (inst->opcode == IROpCode::BR_COND || inst->opcode == IROpCode::BR_UNCOND ||
+                    inst->opcode == IROpCode::RET)
+                {
+                    // 将最新的指令添加到当前块
+                    if (latest_map.find(id) != latest_map.end())
+                    {
+                        for (auto& [_, moved_inst] : latest_map[id]) { new_insts.push_back(moved_inst); }
+                    }
+                }
+                // 我们已经删除了需要删去的,所以这里只需要添加当前指令
+                new_insts.push_back(inst);
+            }
+            block->insts = std::move(new_insts);
+        }
+#ifdef DEBUG_GCM
+        std::cout << "Move instructions of " << func_cfg->func->func_def->func_name << " completed" << std::endl;
+#endif
     }
 
     void GCM::Execute()
@@ -131,13 +188,29 @@ namespace LLVMIR
             std::cout << "Processing GCM for function: " << func->func_name << std::endl;
 #endif
             ExecuteInSingleCFG(cfg);
+            // 生成移动辅助信息
+            GenerateInformation(cfg);
+            // 移除指令
+            EraseInstructions(cfg);
+            // 移动指令
+            MoveInstructions(cfg);
+
+            earliestBlockId.clear();
+            latestBlockId.clear();
+            erase_set.clear();
+            latest_map.clear();
         }
+#ifdef DEBUG_GCM
+        std::cout << "GCM completed" << std::endl;
+#endif
     }
 
     void GCM::ExecuteInSingleCFG(CFG* func_cfg)
     {
         this->domAnalyzer     = ir->DomTrees[func_cfg];
         this->postdomAnalyzer = ir->ReDomTrees[func_cfg];
+        // 记录下指令的顺序
+        int order = 0;
 
 #ifdef DEBUG_GCM
         std::cout << "Processing GCM for function: " << func_cfg->func->func_def->func_name << std::endl;
@@ -160,6 +233,7 @@ namespace LLVMIR
 
                 earliestBlockId[inst] = E;
                 latestBlockId[inst]   = L;
+                instorder[inst]       = order++;
             }
         }
     }

@@ -11,9 +11,12 @@ namespace LLVMIR
     class GCM : Pass
     {
       private:
-        Cele::Algo::DomAnalyzer* domAnalyzer;      // 支配关系分析器
-        Cele::Algo::DomAnalyzer* postdomAnalyzer;  // 后支配关系分析器
-        DefUseAnalysisPass*      defuseAnalysis;   // 定义使用分析
+        Cele::Algo::DomAnalyzer*         domAnalyzer;                           // 支配关系分析器
+        Cele::Algo::DomAnalyzer*         postdomAnalyzer;                       // 后支配关系分析器
+        DefUseAnalysisPass*              defuseAnalysis;                        // 定义使用分析
+        std::unordered_set<Instruction*> erase_set;                             // 用于存储需要删除的指令
+        std::unordered_map<int, std::multimap<int, Instruction*> > latest_map;  // 用于存储每个块的最新指令队列
+        std::unordered_map<Instruction*, int> instorder;                        // 用于存储指令的顺序
 
         // 记录指令最早和最迟的位置
         std::unordered_map<Instruction*, int> earliestBlockId;
@@ -23,7 +26,11 @@ namespace LLVMIR
 
         int  ComputeEarliestBlockId(CFG* func_cfg, Instruction* inst);
         int  ComputeLatestBlockId(CFG* func_cfg, Instruction* inst);
+        void EraseInstructions(CFG* func_cfg);
         void MoveInstructions(CFG* func_cfg);
+
+        // 生成辅助信息
+        void GenerateInformation(CFG* func_cfg);
 
       public:
         GCM(LLVMIR::IR* ir, DefUseAnalysisPass* DefUseAnalysis) : Pass(ir) { defuseAnalysis = DefUseAnalysis; }

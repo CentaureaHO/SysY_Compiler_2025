@@ -1,44 +1,62 @@
-int a, b, d;
 
-int set_a(int val) { a = val; return a; }
-int set_b(int val) { b = val; return b; }
-int set_d(int val) { d = val; return d; }
+void get_next(int str[], int next[])
+{
+    next[0] = -1;
+    int i = 0, j = -1;
+    while (str[i]) {
+        if (j == -1 || str[i] == str[j]) {
+            j = j + 1;
+            i = i + 1;
+            next[i] = j;
+        }
+        else
+            j = next[j];
+    }
+}
+
+int KMP(int dst[], int src[])
+{
+    int next[4096];
+    get_next(dst, next);
+
+    int i = 0, j = 0;
+    while (src[j]) {
+        if (dst[i] == src[j]) {
+            i = i + 1;
+            j = j + 1;
+            if (!dst[i]) {
+                return j;
+            }
+        } else {
+            i = next[i];
+            if (i == -1) {
+                i = i + 1;
+                j = j + 1;
+            }
+        }
+    }
+    return -1;
+}
+
+int read_str(int buf[])
+{
+    int i = 0;
+    while (1) {
+        buf[i] = getch();
+        if (buf[i] == 10)
+            break;
+        i = i + 1;
+    }
+    buf[i] = 0;
+    return i;
+}
 
 int main()
 {
-    a = 2; b = 3;
-    if (set_a(0) && set_b(1)) {}
-    putint(a); putch(32);
-    putint(b); putch(32);
-
-    a = 2; b = 3;
-    if (set_a(0) && set_b(1)) ;
-    putint(a); putch(32);
-    putint(b); putch(10);
-
-    const int c = 1;
-    d = 2;
-    if (c >= 1 && set_d(3)) ;
-    putint(d); putch(32);
-    if (c <= 1 || set_d(4)) {}
-    putint(d); putch(10);
-
-    if (16 >= (3 - (2 + 1))) { putch(65); }
-    if ((25 - 7) != (36 - 6 * 3)) putch(66);
-    if (1 < 8 != 7 % 2) { putch(67); }
-    if (3 > 4 == 0) { putch(68); }
-    if (1 == 0x66 <= 077) putch(69);
-    if (5 - 6 == -!0) putch(70);
+    int dst[4096], src[4096];
+    read_str(dst);
+    read_str(src);
+    putint(KMP(dst, src));
     putch(10);
-
-    int i0 = 0, i1 = 1, i2 = 2, i3 = 3, i4 = 4;
-    while (i0 && i1) putch(32);
-    if (i0 || i1) putch(67);
-    if (i0 >= i1 || i1 <= i0) putch(72);
-    if (i2 >= i1 && i4 != i3) { putch(73); }
-    if (i0 == !i1 && i3 < i3 || i4 >= i4) { putch(74); }
-    if (i0 == !i1 || i3 < i3 && i4 >= i4) putch(75);
-    putch(10);
-
     return 0;
 }
