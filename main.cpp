@@ -230,8 +230,10 @@ int main(int argc, char** argv)
     if (optimizeLevel)
     {
         // 构建CFG
-        MakeCFGPass              makecfg(&builder);
-        MakeDomTreePass          makedom(&builder);
+        MakeCFGPass     makecfg(&builder);
+        MakeDomTreePass makedom(&builder);
+        MakeDomTreePass makeredom(&builder);
+
         Verify::PhiPrecursorPass phiPrecursor(&builder);
         makecfg.Execute();
         makedom.Execute();
@@ -288,6 +290,16 @@ int main(int argc, char** argv)
         StructuralTransform::BranchCSEPass branchCSE(&builder);
         branchCSE.Execute();
 
+        // TSCCP - Sparse Conditional Constant Propagation
+        Transform::TSCCPPass tsccp(&builder, &aa);
+        tsccp.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
+
+        Transform::ConstBranchReduce constBranchReduce(&builder);
+        constBranchReduce.Execute();
+
         // DCE
         DefUseAnalysisPass DCEDefUse(&builder);
         DCEDefUse.Execute();
@@ -296,7 +308,6 @@ int main(int argc, char** argv)
         // std::cout << "DCE completed" << std::endl;
 
         // ADCE
-        MakeDomTreePass makeredom(&builder);
         makeredom.Execute(true);
         // std::cout << "Reversed dom tree completed" << std::endl;
         CDGAnalyzer cdg(&builder);
@@ -324,16 +335,11 @@ int main(int argc, char** argv)
         makeredom.Execute(true);
         loopAnalysis.Execute();
 
-        // TSCCP - Sparse Conditional Constant Propagation
-        Transform::TSCCPPass tsccp(&builder, &aa);
-        tsccp.Execute();
         // std::cout << "TSCCP completed" << std::endl;
 
         makecfg.Execute();
         makedom.Execute();
 
-        Transform::ConstBranchReduce constBranchReduce(&builder);
-        constBranchReduce.Execute();
         Transform::ArithInstReduce arithInstReduce(&builder);
         arithInstReduce.Execute();
 
