@@ -300,6 +300,9 @@ int main(int argc, char** argv)
         Transform::ConstBranchReduce constBranchReduce(&builder);
         constBranchReduce.Execute();
 
+        makecfg.Execute();
+        makedom.Execute();
+
         // DCE
         DefUseAnalysisPass DCEDefUse(&builder);
         DCEDefUse.Execute();
@@ -326,6 +329,10 @@ int main(int argc, char** argv)
         GCMmakeredom.Execute(false);
         GCM gcm(&builder, &GCMDefUse);
         gcm.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
+        makeredom.Execute(true);
 
         aa.run();
         licm.Execute();
