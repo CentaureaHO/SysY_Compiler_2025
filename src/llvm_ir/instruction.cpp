@@ -700,7 +700,11 @@ Operand* FuncDeclareInst::GetResultOperand() { return nullptr; }
 
 void FuncDeclareInst::Rename(std::map<int, int>& replace) {}
 
-FuncDefInst::FuncDefInst(DataType rt, string fn, vector<DataType> at) : FuncDeclareInst(rt, fn, at), arg_regs({}) {}
+FuncDefInst::FuncDefInst(DataType rt, string fn, vector<DataType> at) : FuncDeclareInst(rt, fn, at), arg_regs({})
+{
+    // 设置函数定义时的block_id为-1，表示不在所有block内
+    block_id = -1;
+}
 void FuncDefInst::printIR(ostream& s)
 {
     size_t arg_num = arg_types.size();

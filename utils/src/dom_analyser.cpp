@@ -152,7 +152,9 @@ void DomAnalyzer::clear()
 
 int DomAnalyzer::LCA(int u, int v)
 {
-    if (u == v) return u;  // 如果 u 和 v 相同，直接返回
+    if (u == v) return u;              // 如果 u 和 v 相同，直接返回
+    if (u == -1 && v != -1) return v;  // 如果 u 是 -1，返回 v
+    if (v == -1 && u != -1) return u;  // 如果 v 是 -1，返回 u
     std::set<int> path_u;
     // std::cout << imm_dom[0] << std::endl;
 

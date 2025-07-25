@@ -273,7 +273,6 @@ int main(int argc, char** argv)
         loopAnalysis.Execute();
         loopSimplify.Execute();
         lcssa.Execute();
-
         // 已修复
         Analysis::AliasAnalyser aa(&builder);
         aa.run();
@@ -302,7 +301,7 @@ int main(int argc, char** argv)
 
         makecfg.Execute();
         makedom.Execute();
-
+        std::cout << "Reach here" << std::endl;
         // DCE
         DefUseAnalysisPass DCEDefUse(&builder);
         DCEDefUse.Execute();
