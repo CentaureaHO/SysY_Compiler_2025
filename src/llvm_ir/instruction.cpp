@@ -38,6 +38,32 @@ string LabelOperand::getName() { return "%Block" + to_string(label_num); }
 GlobalOperand::GlobalOperand(string name) : Operand(OT::GLOBAL), global_name(name) {}
 string GlobalOperand::getName() { return "@" + global_name; }
 
+// Followed Get functions
+// RegOp
+int    RegOperand::GetRegNum() const { return reg_num; }
+string RegOperand::GetGlobal() const { return ""; }
+int    RegOperand::GetImm() const { return -1; }
+float  RegOperand::GetImmF() const { return -1.0f; }
+// ImmeI32Op
+int    ImmeI32Operand::GetRegNum() const { return -1; }
+string ImmeI32Operand::GetGlobal() const { return ""; }
+int    ImmeI32Operand::GetImm() const { return value; }
+float  ImmeI32Operand::GetImmF() const { return -1.0f; }
+// ImmeF32Op
+int    ImmeF32Operand::GetRegNum() const { return -1; }
+string ImmeF32Operand::GetGlobal() const { return ""; }
+int    ImmeF32Operand::GetImm() const { return -1; }
+float  ImmeF32Operand::GetImmF() const { return value; }
+// LabelOp
+string LabelOperand::GetGlobal() const { return ""; }
+int    LabelOperand::GetRegNum() const { return -1; }
+int    LabelOperand::GetImm() const { return -1; }
+float  LabelOperand::GetImmF() const { return -1.0f; }
+// GlobalOp
+string GlobalOperand::GetGlobal() const { return global_name; }
+int    GlobalOperand::GetRegNum() const { return -1; }
+int    GlobalOperand::GetImm() const { return -1; }
+float  GlobalOperand::GetImmF() const { return -1.0f; }
 /*
     Followed insts
  */

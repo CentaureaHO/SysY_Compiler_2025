@@ -2,11 +2,12 @@
 #include "llvm_ir/defs.h"
 #include "llvm_ir/instruction.h"
 #include "llvm_ir/ir_block.h"
+#include <cassert>
 #include <deque>
 #include <ostream>
-#include <queue>
 #include <unordered_set>
-#define DEBUG_GCM
+// #define DEBUG_GCM
+#define DEBUG_PHI
 namespace LLVMIR
 {
     bool GCM::IsSafeInst(Instruction* inst)
@@ -33,10 +34,23 @@ namespace LLVMIR
             case IROpCode::FPTOSI:
             case IROpCode::SITOFP:
             case IROpCode::FPEXT:
-                // case IROpCode::GETELEMENTPTR:
+            {  // case IROpCode::GETELEMENTPTR:
+                for (auto& op : inst->GetUsedOperands())
+                {
+                    if (op->type == OperandType::GLOBAL)
+                    {
+                        if (inst->GetResultOperand()) { cannot_move.insert(inst->GetResultOperand()); }
+                        return false;  // 如果有全局变量，不能处理
+                    }
+                }
                 return true;
-
-            default: return false;
+            }
+            // PHI不能移动,所以这里用到PHI的也不能移动
+            default:
+            {
+                if (inst->GetResultOperand()) { cannot_move.insert(inst->GetResultOperand()); }
+                return false;
+            }
         }
     }
 
@@ -50,12 +64,19 @@ namespace LLVMIR
         std::cout << "Processing instruction: " << inst->opcode << " in block " << currentBlockId << std::endl;
         std::cout << "used operands size: " << inst->GetUsedOperands().size() << std::endl;
 #endif
-
         for (auto* op : inst->GetUsedOperands())
         {
 #ifdef DEBUG_GCM
             std::cout << op->getName() << std::endl;
 #endif
+            if (cannot_move.find(op) != cannot_move.end())
+            {
+#ifdef DEBUG_GCM
+                std::cout << "Cannot move operand: " << op->getName() << std::endl;
+#endif
+                cannot_move.insert(inst->GetResultOperand());
+                return -1;  // 如果操作数不能移动，返回 -1
+            }
             if (op->type == OperandType::REG)
             {
                 auto         reg_op   = dynamic_cast<RegOperand*>(op);
@@ -68,6 +89,7 @@ namespace LLVMIR
                 if (def_inst) { def_blocks.insert(def_inst->block_id); }
             }
         }
+
 #ifdef DEBUG_GCM
         std::cout << "Def blocks: ";
         for (int blk : def_blocks) std::cout << blk << " ";
@@ -86,10 +108,25 @@ namespace LLVMIR
     int GCM::ComputeLatestBlockId(CFG* cfg, Instruction* inst)
     {
         std::set<int> use_blocks;
-        auto          result_op = inst->GetResultReg();
-        if (result_op == -1) { return -1; }                          // 如果没有结果寄存器，直接返回 -1
-        for (auto& use : defuseAnalysis->GetUseMap(cfg)[result_op])  // 你应该有 use 集合
+        auto          result_op = inst->GetResultOperand();
+        if (cannot_move.find(result_op) != cannot_move.end())
         {
+#ifdef DEBUG_GCM
+            std::cout << "Cannot move result operand: " << result_op->getName() << std::endl;
+#endif
+            cannot_move.insert(result_op);  // 如果结果操作数不能移动，记录下来
+            return -1;                      // 如果结果操作数不能移动，返回 -1
+        }
+        auto reg_op = dynamic_cast<RegOperand*>(result_op)->reg_num;
+        if (reg_op == -1) { return -1; }                          // 如果没有结果寄存器，直接返回 -1
+        for (auto& use : defuseAnalysis->GetUseMap(cfg)[reg_op])  // 你应该有 use 集合
+        {
+            // if (reg_op == 24)
+            // {
+            //     std::cout << use->GetResultReg() << std::endl;
+            //     std::cout << "In ComputeLatestBlockId, use is " << use->opcode << " in block " << use->block_id
+            //               << std::endl;
+            // }
             use_blocks.insert(use->block_id);
         }
 
@@ -199,6 +236,8 @@ namespace LLVMIR
             latestBlockId.clear();
             erase_set.clear();
             latest_map.clear();
+            cannot_move.clear();
+            instorder.clear();
         }
 #ifdef DEBUG_GCM
         std::cout << "GCM completed" << std::endl;
@@ -224,16 +263,34 @@ namespace LLVMIR
             for (auto& inst : block->insts)
             {
 #ifdef DEBUG_GCM
-                std::cout << ++cnt << std::endl;
+                std::cout << "In processing instruction NO is " << ++cnt << std::endl;
 #endif
                 if (!IsSafeInst(inst)) { continue; }
                 // 是可以处理的
                 int E = ComputeEarliestBlockId(func_cfg, inst);
                 int L = ComputeLatestBlockId(func_cfg, inst);
 
-                earliestBlockId[inst] = E;
-                latestBlockId[inst]   = L;
-                instorder[inst]       = order++;
+                if (inst->block_id == 3 && inst->GetResultReg() == 19)
+                {
+                    std::cout << "In block 3, inst is " << inst->opcode << " with result reg " << inst->GetResultReg()
+                              << std::endl;
+                    std::cout << "order is " << order << std::endl;
+                    std::cout << "E is " << E << " and L is " << L << std::endl;
+                }
+                if (inst->block_id == 3 && inst->GetResultReg() == 23)
+                {
+                    std::cout << "In block 3, inst is " << inst->opcode << " with result reg " << inst->GetResultReg()
+                              << std::endl;
+                    std::cout << "order is " << order << std::endl;
+                    std::cout << "E is " << E << " and L is " << L << std::endl;
+                }
+
+                if (E != -1 && L != -1)
+                {
+                    earliestBlockId[inst] = E;
+                    latestBlockId[inst]   = L;
+                    instorder[inst]       = order++;
+                }
             }
         }
     }
