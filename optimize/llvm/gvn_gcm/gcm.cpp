@@ -215,7 +215,11 @@ namespace LLVMIR
                     // 将最新的指令添加到当前块
                     if (latest_map.find(id) != latest_map.end())
                     {
-                        for (auto& [_, moved_inst] : latest_map[id]) { new_insts.push_back(moved_inst); }
+                        for (auto& [_, moved_inst] : latest_map[id])
+                        {
+                            new_insts.push_back(moved_inst);
+                            moved_inst->block_id = id;
+                        }
                     }
                 }
                 // 我们已经删除了需要删去的,所以这里只需要添加当前指令
@@ -284,21 +288,6 @@ namespace LLVMIR
 #endif
                 int E = ComputeEarliestBlockId(func_cfg, inst);
                 int L = ComputeLatestBlockId(func_cfg, inst);
-
-                if (inst->block_id == 3 && inst->GetResultReg() == 19)
-                {
-                    std::cout << "In block 3, inst is " << inst->opcode << " with result reg " << inst->GetResultReg()
-                              << std::endl;
-                    std::cout << "order is " << order << std::endl;
-                    std::cout << "E is " << E << " and L is " << L << std::endl;
-                }
-                if (inst->block_id == 3 && inst->GetResultReg() == 23)
-                {
-                    std::cout << "In block 3, inst is " << inst->opcode << " with result reg " << inst->GetResultReg()
-                              << std::endl;
-                    std::cout << "order is " << order << std::endl;
-                    std::cout << "E is " << E << " and L is " << L << std::endl;
-                }
 
                 if (E != -1 && L != -1)
                 {

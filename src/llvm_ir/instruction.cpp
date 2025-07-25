@@ -729,6 +729,7 @@ std::vector<int> FuncDefInst::GetUsedRegs()
 std::vector<Operand*> FuncDefInst::GetUsedOperands()
 {
     std::vector<Operand*> retvec{};
+    for (auto& op : arg_regs) { retvec.push_back(op); }
     return retvec;
 }
 
