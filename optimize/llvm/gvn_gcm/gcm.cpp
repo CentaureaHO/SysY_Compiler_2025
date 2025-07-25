@@ -6,8 +6,9 @@
 #include <deque>
 #include <ostream>
 #include <unordered_set>
-// #define DEBUG_GCM
-#define DEBUG_PHI
+#define DEBUG_GCM
+// #define DEBUG_PHI
+#define DEBUG_CALL
 namespace LLVMIR
 {
     bool GCM::IsSafeInst(Instruction* inst)
@@ -35,6 +36,15 @@ namespace LLVMIR
             case IROpCode::SITOFP:
             case IROpCode::FPEXT:
             {  // case IROpCode::GETELEMENTPTR:
+#ifdef DEBUG_CALL
+                if (inst->opcode == IROpCode::CALL)
+                {
+                    std::cout << "In IsSafeInst, inst is " << inst->opcode << " in block " << inst->block_id
+                              << std::endl;
+                    std::cout << inst->GetUsedOperands().size() << std::endl;
+                    for (auto& op : inst->GetUsedOperands()) { std::cout << "Operand: " << op->getName() << std::endl; }
+                }
+#endif
                 for (auto& op : inst->GetUsedOperands())
                 {
                     if (op->type == OperandType::GLOBAL)
@@ -145,7 +155,8 @@ namespace LLVMIR
         for (auto& [inst, E] : earliestBlockId)
         {
             int L = latestBlockId[inst];
-            if (E == L) continue;  // 已在最优位置，无需移动
+            if (E == L) continue;               // 已在最优位置，无需移动
+            if (E == inst->block_id) continue;  // 如果 E 是当前块，说明不需要移动
 
             // 记录下删除的指令
             erase_set.insert(inst);
@@ -266,7 +277,11 @@ namespace LLVMIR
                 std::cout << "In processing instruction NO is " << ++cnt << std::endl;
 #endif
                 if (!IsSafeInst(inst)) { continue; }
-                // 是可以处理的
+// 是可以处理的
+#ifdef DEBUG_CALL
+                std::cout << "In ExecuteInSingleCFG, inst is " << inst->opcode << " in block " << inst->block_id
+                          << std::endl;
+#endif
                 int E = ComputeEarliestBlockId(func_cfg, inst);
                 int L = ComputeLatestBlockId(func_cfg, inst);
 
