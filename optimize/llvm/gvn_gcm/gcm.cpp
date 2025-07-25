@@ -6,9 +6,9 @@
 #include <deque>
 #include <ostream>
 #include <unordered_set>
-#define DEBUG_GCM
+// #define DEBUG_GCM
 // #define DEBUG_PHI
-#define DEBUG_CALL
+// #define DEBUG_CALL
 namespace LLVMIR
 {
     bool GCM::IsSafeInst(Instruction* inst)
