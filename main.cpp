@@ -49,6 +49,8 @@
 #include "optimize/llvm/strength_reduction/gep_strength_reduce.h"
 // GVN GCM
 #include "optimize/llvm/gvn_gcm/gcm.h"
+// Blockid Set
+#include "optimize/llvm/setid.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -301,7 +303,7 @@ int main(int argc, char** argv)
 
         makecfg.Execute();
         makedom.Execute();
-        std::cout << "Reach here" << std::endl;
+
         // DCE
         DefUseAnalysisPass DCEDefUse(&builder);
         DCEDefUse.Execute();
@@ -326,6 +328,9 @@ int main(int argc, char** argv)
         MakeDomTreePass GCMmakeredom(&builder);
         GCMmakeredom.Execute(true);
         GCMmakeredom.Execute(false);
+        // Used to set all instructions with the block they are in.
+        SetIdAnalysis setIdAnalysis(&builder);
+        setIdAnalysis.Execute();
         GCM gcm(&builder, &GCMDefUse);
         gcm.Execute();
 

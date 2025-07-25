@@ -36,10 +36,6 @@ void DefUseAnalysisPass::GetDefUseInSingleCFG(CFG* C)
             // 这里其实和mem2reg不一样，我们只要有结果，就可以消除，而不需要考虑是不是数组
             // 那么接下来就是重复性工作了
 
-            std::cout << "In block " << id << ", inst is " << inst->opcode << " block is " << inst->block_id
-                      << std::endl;
-            assert(id == inst->block_id);
-
             int regno = inst->GetResultReg();
             if (regno >= 0)
             {
@@ -71,8 +67,6 @@ void DefUseAnalysisPass::Execute()
                 {
                     int regno           = ((RegOperand*)op)->reg_num;
                     IRDefMaps[C][regno] = C->func->func_def;  // 参数寄存器没有定义
-                    std::cout << "In func " << C->func->func_def->func_name << " block " << C->func->func_def->block_id
-                              << std::endl;
                 }
             }
         }

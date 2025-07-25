@@ -68,7 +68,15 @@ namespace StructuralTransform
 
             const auto* result_inst = result_it->second;
             const int   inst_bb_id  = result_inst->block_id;
-            const auto* inst_bb     = cfg->block_id_to_block.at(inst_bb_id);
+
+            // Special handling for FuncDefInst which has block_id = -1; made by lhz
+            if (inst_bb_id == -1)
+            {
+                invariant_map[op_reg] = true;
+                continue;
+            }
+
+            const auto* inst_bb = cfg->block_id_to_block.at(inst_bb_id);
 
             if (loop->loop_nodes.find(const_cast<LLVMIR::IRBlock*>(inst_bb)) != loop->loop_nodes.end())
                 return false;
@@ -76,7 +84,11 @@ namespace StructuralTransform
                 invariant_map[op_reg] = true;
         }
 
+        // Special handling for FuncDefInst which has block_id = -1
+        if (inst->block_id == -1) return false;
+
         const bool dominates_exits = dominatesAllExits(cfg, cfg->block_id_to_block.at(inst->block_id), loop);
+
         switch (inst->opcode)
         {
             case LLVMIR::IROpCode::LOAD:
