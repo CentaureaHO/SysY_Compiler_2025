@@ -33,6 +33,7 @@
 #include "optimize/llvm/loop/loop_find.h"
 #include "optimize/llvm/loop/loop_simplify.h"
 #include "optimize/llvm/loop/lcssa.h"
+#include "optimize/llvm/loop/loop_rotate.h"
 #include "optimize/llvm/loop/licm.h"
 #include "optimize/llvm/function_inline.h"
 // Unify Return
@@ -268,9 +269,22 @@ int main(int argc, char** argv)
 
         loopAnalysis.Execute();
         loopSimplify.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
+        loopAnalysis.Execute();
+        loopSimplify.Execute();  // 确保在LICM之前所有循环都已简化，有有效的preheader
         lcssa.Execute();
+        StructuralTransform::LoopRotatePass loopRotate(&builder);
+        if (optimizeLevel >= 2)
+        {
+            loopRotate.Execute();
+            std::cout << "=== Running Loop Simplify after rotation ===" << std::endl;
+        }
 
         // 已修复
+        makecfg.Execute();
+        makedom.Execute();
         Analysis::AliasAnalyser aa(&builder);
         aa.run();
         StructuralTransform::LICMPass licm(&builder, &aa);
@@ -328,15 +342,13 @@ int main(int argc, char** argv)
 
         makecfg.Execute();
         makedom.Execute();
-        if (optimizeLevel >= 2)
-        {
-            // GEP Strength Reduction
-            Transform::GEPStrengthReduce gepStrengthReduce(&builder);
-            gepStrengthReduce.Execute();
 
-            makecfg.Execute();
-            makedom.Execute();
-        }
+        // GEP Strength Reduction
+        Transform::GEPStrengthReduce gepStrengthReduce(&builder);
+        gepStrengthReduce.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
     }
 
     if (step == "-llvm")

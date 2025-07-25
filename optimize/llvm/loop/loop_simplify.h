@@ -14,6 +14,7 @@ namespace StructuralTransform
     {
       private:
         void eliminateUselessPhi(CFG* cfg);
+        void addLoopStructureComments(CFG* cfg);
 
       public:
         explicit LoopSimplifyPass(LLVMIR::IR* ir);

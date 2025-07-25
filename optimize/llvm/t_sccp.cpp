@@ -3,6 +3,8 @@
 #include "cfg.h"
 #include <algorithm>
 #include <cassert>
+#include <climits>
+#include <cmath>
 #include <queue>
 #include <sstream>
 
@@ -314,6 +316,7 @@ namespace Transform
     {
         switch (inst->opcode)
         {
+            // 算术指令
             case LLVMIR::IROpCode::ADD:
             case LLVMIR::IROpCode::SUB:
             case LLVMIR::IROpCode::MUL:
@@ -323,6 +326,11 @@ namespace Transform
             case LLVMIR::IROpCode::FSUB:
             case LLVMIR::IROpCode::FMUL:
             case LLVMIR::IROpCode::FDIV:
+            case LLVMIR::IROpCode::BITXOR:
+            case LLVMIR::IROpCode::BITAND:
+            case LLVMIR::IROpCode::SHL:
+            case LLVMIR::IROpCode::ASHR:
+            case LLVMIR::IROpCode::LSHR:
             {
                 auto* arith   = static_cast<LLVMIR::ArithmeticInst*>(inst);
                 auto  lhs_val = getValueForOperand(arith->lhs);
@@ -331,6 +339,7 @@ namespace Transform
                 if (rhs_val.isConstant()) replaceWithConstant(arith->rhs, rhs_val);
                 break;
             }
+            // 比较指令
             case LLVMIR::IROpCode::ICMP:
             {
                 auto* icmp    = static_cast<LLVMIR::IcmpInst*>(inst);
@@ -349,6 +358,7 @@ namespace Transform
                 if (rhs_val.isConstant()) replaceWithConstant(fcmp->rhs, rhs_val);
                 break;
             }
+            // 分支指令
             case LLVMIR::IROpCode::BR_COND:
             {
                 auto* br       = static_cast<LLVMIR::BranchCondInst*>(inst);
@@ -356,6 +366,65 @@ namespace Transform
                 if (cond_val.isConstant()) replaceWithConstant(br->cond, cond_val);
                 break;
             }
+            // 内存指令
+            case LLVMIR::IROpCode::LOAD:
+            {
+                auto* load    = static_cast<LLVMIR::LoadInst*>(inst);
+                auto  ptr_val = getValueForOperand(load->ptr);
+                if (ptr_val.isConstant()) replaceWithConstant(load->ptr, ptr_val);
+                break;
+            }
+            case LLVMIR::IROpCode::STORE:
+            {
+                auto* store = static_cast<LLVMIR::StoreInst*>(inst);
+                auto  val   = getValueForOperand(store->val);
+                auto  ptr   = getValueForOperand(store->ptr);
+                if (val.isConstant()) replaceWithConstant(store->val, val);
+                if (ptr.isConstant()) replaceWithConstant(store->ptr, ptr);
+                break;
+            }
+            case LLVMIR::IROpCode::GETELEMENTPTR:
+            {
+                auto* gep = static_cast<LLVMIR::GEPInst*>(inst);
+                auto  ptr = getValueForOperand(gep->base_ptr);
+                if (ptr.isConstant()) replaceWithConstant(gep->base_ptr, ptr);
+                for (auto*& idx : gep->idxs)
+                {
+                    auto idx_val = getValueForOperand(idx);
+                    if (idx_val.isConstant()) replaceWithConstant(idx, idx_val);
+                }
+                break;
+            }
+            // 类型转换指令
+            case LLVMIR::IROpCode::ZEXT:
+            {
+                auto* zext    = static_cast<LLVMIR::ZextInst*>(inst);
+                auto  src_val = getValueForOperand(zext->src);
+                if (src_val.isConstant()) replaceWithConstant(zext->src, src_val);
+                break;
+            }
+            case LLVMIR::IROpCode::SITOFP:
+            {
+                auto* sitofp  = static_cast<LLVMIR::SI2FPInst*>(inst);
+                auto  src_val = getValueForOperand(sitofp->f_si);
+                if (src_val.isConstant()) replaceWithConstant(sitofp->f_si, src_val);
+                break;
+            }
+            case LLVMIR::IROpCode::FPTOSI:
+            {
+                auto* fptosi  = static_cast<LLVMIR::FP2SIInst*>(inst);
+                auto  src_val = getValueForOperand(fptosi->f_fp);
+                if (src_val.isConstant()) replaceWithConstant(fptosi->f_fp, src_val);
+                break;
+            }
+            case LLVMIR::IROpCode::FPEXT:
+            {
+                auto* fpext   = static_cast<LLVMIR::FPExtInst*>(inst);
+                auto  src_val = getValueForOperand(fpext->src);
+                if (src_val.isConstant()) replaceWithConstant(fpext->src, src_val);
+                break;
+            }
+            // 函数调用
             case LLVMIR::IROpCode::CALL:
             {
                 auto* call = static_cast<LLVMIR::CallInst*>(inst);
@@ -366,6 +435,7 @@ namespace Transform
                 }
                 break;
             }
+            // 返回指令
             case LLVMIR::IROpCode::RET:
             {
                 auto* ret = static_cast<LLVMIR::RetInst*>(inst);
@@ -376,6 +446,23 @@ namespace Transform
                 }
                 break;
             }
+            // PHI指令
+            case LLVMIR::IROpCode::PHI:
+            {
+                auto* phi = static_cast<LLVMIR::PhiInst*>(inst);
+                for (auto& phi_pair : phi->vals_for_labels)
+                {
+                    auto val = getValueForOperand(phi_pair.first);
+                    if (val.isConstant()) replaceWithConstant(phi_pair.first, val);
+                }
+                break;
+            }
+            // 其他指令暂不处理
+            case LLVMIR::IROpCode::BR_UNCOND:
+            case LLVMIR::IROpCode::ALLOCA:
+            case LLVMIR::IROpCode::GLOBAL_VAR:
+            case LLVMIR::IROpCode::GLOBAL_STR:
+            case LLVMIR::IROpCode::OTHER:
             default: break;
         }
     }
@@ -422,6 +509,7 @@ namespace Transform
                 for (auto& phi_pair : phi->vals_for_labels) replaceIfMatch(phi_pair.first);
                 break;
             }
+            // 算术指令
             case LLVMIR::IROpCode::ADD:
             case LLVMIR::IROpCode::SUB:
             case LLVMIR::IROpCode::MUL:
@@ -431,12 +519,18 @@ namespace Transform
             case LLVMIR::IROpCode::FSUB:
             case LLVMIR::IROpCode::FMUL:
             case LLVMIR::IROpCode::FDIV:
+            case LLVMIR::IROpCode::BITXOR:
+            case LLVMIR::IROpCode::BITAND:
+            case LLVMIR::IROpCode::SHL:
+            case LLVMIR::IROpCode::ASHR:
+            case LLVMIR::IROpCode::LSHR:
             {
                 auto* arith = static_cast<LLVMIR::ArithmeticInst*>(inst);
                 replaceIfMatch(arith->lhs);
                 replaceIfMatch(arith->rhs);
                 break;
             }
+            // 比较指令
             case LLVMIR::IROpCode::ICMP:
             case LLVMIR::IROpCode::FCMP:
             {
@@ -445,24 +539,14 @@ namespace Transform
                 replaceIfMatch(cmp->rhs);
                 break;
             }
+            // 分支指令
             case LLVMIR::IROpCode::BR_COND:
             {
                 auto* br = static_cast<LLVMIR::BranchCondInst*>(inst);
                 replaceIfMatch(br->cond);
                 break;
             }
-            case LLVMIR::IROpCode::CALL:
-            {
-                auto* call = static_cast<LLVMIR::CallInst*>(inst);
-                for (auto& arg_pair : call->args) replaceIfMatch(arg_pair.second);
-                break;
-            }
-            case LLVMIR::IROpCode::RET:
-            {
-                auto* ret = static_cast<LLVMIR::RetInst*>(inst);
-                if (ret->ret) replaceIfMatch(ret->ret);
-                break;
-            }
+            // 内存指令
             case LLVMIR::IROpCode::STORE:
             {
                 auto* store = static_cast<LLVMIR::StoreInst*>(inst);
@@ -476,12 +560,6 @@ namespace Transform
                 replaceIfMatch(load->ptr);
                 break;
             }
-            case LLVMIR::IROpCode::ZEXT:
-            {
-                auto* zext = static_cast<LLVMIR::ZextInst*>(inst);
-                replaceIfMatch(zext->src);
-                break;
-            }
             case LLVMIR::IROpCode::GETELEMENTPTR:
             {
                 auto* gep = static_cast<LLVMIR::GEPInst*>(inst);
@@ -489,6 +567,51 @@ namespace Transform
                 for (auto*& index : gep->idxs) replaceIfMatch(index);
                 break;
             }
+            // 类型转换指令
+            case LLVMIR::IROpCode::ZEXT:
+            {
+                auto* zext = static_cast<LLVMIR::ZextInst*>(inst);
+                replaceIfMatch(zext->src);
+                break;
+            }
+            case LLVMIR::IROpCode::SITOFP:
+            {
+                auto* sitofp = static_cast<LLVMIR::SI2FPInst*>(inst);
+                replaceIfMatch(sitofp->f_si);
+                break;
+            }
+            case LLVMIR::IROpCode::FPTOSI:
+            {
+                auto* fptosi = static_cast<LLVMIR::FP2SIInst*>(inst);
+                replaceIfMatch(fptosi->f_fp);
+                break;
+            }
+            case LLVMIR::IROpCode::FPEXT:
+            {
+                auto* fpext = static_cast<LLVMIR::FPExtInst*>(inst);
+                replaceIfMatch(fpext->src);
+                break;
+            }
+            // 函数调用
+            case LLVMIR::IROpCode::CALL:
+            {
+                auto* call = static_cast<LLVMIR::CallInst*>(inst);
+                for (auto& arg_pair : call->args) replaceIfMatch(arg_pair.second);
+                break;
+            }
+            // 返回指令
+            case LLVMIR::IROpCode::RET:
+            {
+                auto* ret = static_cast<LLVMIR::RetInst*>(inst);
+                if (ret->ret) replaceIfMatch(ret->ret);
+                break;
+            }
+            // 其他指令暂不处理
+            case LLVMIR::IROpCode::BR_UNCOND:
+            case LLVMIR::IROpCode::ALLOCA:
+            case LLVMIR::IROpCode::GLOBAL_VAR:
+            case LLVMIR::IROpCode::GLOBAL_STR:
+            case LLVMIR::IROpCode::OTHER:
             default: break;
         }
     }
@@ -512,6 +635,7 @@ namespace Transform
                 {
                     switch (inst->opcode)
                     {
+                        // 算术指令
                         case LLVMIR::IROpCode::ADD:
                         case LLVMIR::IROpCode::SUB:
                         case LLVMIR::IROpCode::MUL:
@@ -521,12 +645,39 @@ namespace Transform
                         case LLVMIR::IROpCode::FSUB:
                         case LLVMIR::IROpCode::FMUL:
                         case LLVMIR::IROpCode::FDIV:
+                        case LLVMIR::IROpCode::BITXOR:
+                        case LLVMIR::IROpCode::BITAND:
+                        case LLVMIR::IROpCode::SHL:
+                        case LLVMIR::IROpCode::ASHR:
+                        case LLVMIR::IROpCode::LSHR:
+                        // 比较指令
                         case LLVMIR::IROpCode::ICMP:
                         case LLVMIR::IROpCode::FCMP:
+                        // 类型转换指令
                         case LLVMIR::IROpCode::SITOFP:
                         case LLVMIR::IROpCode::FPTOSI:
                         case LLVMIR::IROpCode::ZEXT:
-                        case LLVMIR::IROpCode::LOAD: should_eliminate = true; break;
+                        case LLVMIR::IROpCode::FPEXT:
+                        // 内存读取指令（需谨慎，可能有副作用）
+                        case LLVMIR::IROpCode::LOAD:
+                        // GEP指令
+                        case LLVMIR::IROpCode::GETELEMENTPTR: should_eliminate = true; break;
+                        // 函数调用不能消除，可能有副作用
+                        case LLVMIR::IROpCode::CALL:
+                        // 内存写入不能消除，有副作用
+                        case LLVMIR::IROpCode::STORE:
+                        // 控制流指令不能消除
+                        case LLVMIR::IROpCode::BR_COND:
+                        case LLVMIR::IROpCode::BR_UNCOND:
+                        case LLVMIR::IROpCode::RET:
+                        // PHI指令不能消除，影响控制流
+                        case LLVMIR::IROpCode::PHI:
+                        // 分配指令不能消除，影响内存布局
+                        case LLVMIR::IROpCode::ALLOCA:
+                        // 全局变量定义不能消除
+                        case LLVMIR::IROpCode::GLOBAL_VAR:
+                        case LLVMIR::IROpCode::GLOBAL_STR:
+                        case LLVMIR::IROpCode::OTHER:
                         default: break;
                     }
                 }
@@ -569,6 +720,7 @@ namespace Transform
             case LLVMIR::IROpCode::PHI: visitPhi(static_cast<LLVMIR::PhiInst*>(inst)); break;
             case LLVMIR::IROpCode::BR_COND:
             case LLVMIR::IROpCode::BR_UNCOND: visitBranch(inst); break;
+            // 算术指令
             case LLVMIR::IROpCode::ADD:
             case LLVMIR::IROpCode::SUB:
             case LLVMIR::IROpCode::MUL:
@@ -577,15 +729,32 @@ namespace Transform
             case LLVMIR::IROpCode::FADD:
             case LLVMIR::IROpCode::FSUB:
             case LLVMIR::IROpCode::FMUL:
-            case LLVMIR::IROpCode::FDIV: visitArithmetic(static_cast<LLVMIR::ArithmeticInst*>(inst)); break;
+            case LLVMIR::IROpCode::FDIV:
+            case LLVMIR::IROpCode::BITXOR:
+            case LLVMIR::IROpCode::BITAND:
+            case LLVMIR::IROpCode::SHL:
+            case LLVMIR::IROpCode::ASHR:
+            case LLVMIR::IROpCode::LSHR: visitArithmetic(static_cast<LLVMIR::ArithmeticInst*>(inst)); break;
+            // 比较指令
             case LLVMIR::IROpCode::ICMP:
             case LLVMIR::IROpCode::FCMP: visitComparison(inst); break;
+            // 类型转换指令
             case LLVMIR::IROpCode::SITOFP:
             case LLVMIR::IROpCode::FPTOSI:
-            case LLVMIR::IROpCode::ZEXT: visitConversion(inst); break;
+            case LLVMIR::IROpCode::ZEXT:
+            case LLVMIR::IROpCode::FPEXT: visitConversion(inst); break;
+            // 内存指令
             case LLVMIR::IROpCode::LOAD: visitLoad(static_cast<LLVMIR::LoadInst*>(inst)); break;
             case LLVMIR::IROpCode::STORE: visitStore(static_cast<LLVMIR::StoreInst*>(inst)); break;
+            // 函数调用
             case LLVMIR::IROpCode::CALL: visitCall(static_cast<LLVMIR::CallInst*>(inst)); break;
+            // 其他指令
+            case LLVMIR::IROpCode::ALLOCA:
+            case LLVMIR::IROpCode::GETELEMENTPTR:
+            case LLVMIR::IROpCode::RET:
+            case LLVMIR::IROpCode::GLOBAL_VAR:
+            case LLVMIR::IROpCode::GLOBAL_STR:
+            case LLVMIR::IROpCode::OTHER:
             default: visitOther(inst); break;
         }
     }
@@ -850,11 +1019,26 @@ namespace Transform
 
             switch (opcode)
             {
+                // 基本算术运算
                 case LLVMIR::IROpCode::ADD: return LatticeValue(l + r);
                 case LLVMIR::IROpCode::SUB: return LatticeValue(l - r);
                 case LLVMIR::IROpCode::MUL: return LatticeValue(l * r);
                 case LLVMIR::IROpCode::DIV: return r != 0 ? LatticeValue(l / r) : LatticeValue::createBottom();
                 case LLVMIR::IROpCode::MOD: return r != 0 ? LatticeValue(l % r) : LatticeValue::createBottom();
+
+                // 位运算
+                case LLVMIR::IROpCode::BITXOR: return LatticeValue(l ^ r);
+                case LLVMIR::IROpCode::BITAND: return LatticeValue(l & r);
+
+                // 移位运算（需要检查移位量的合理性）
+                case LLVMIR::IROpCode::SHL:
+                    return (r >= 0 && r < 32) ? LatticeValue(l << r) : LatticeValue::createBottom();
+                case LLVMIR::IROpCode::ASHR:
+                    return (r >= 0 && r < 32) ? LatticeValue(l >> r) : LatticeValue::createBottom();
+                case LLVMIR::IROpCode::LSHR:
+                    return (r >= 0 && r < 32) ? LatticeValue(static_cast<int>(static_cast<unsigned>(l) >> r))
+                                              : LatticeValue::createBottom();
+
                 default: return LatticeValue::createBottom();
             }
         }
@@ -868,7 +1052,15 @@ namespace Transform
                 case LLVMIR::IROpCode::FADD: return LatticeValue(l + r);
                 case LLVMIR::IROpCode::FSUB: return LatticeValue(l - r);
                 case LLVMIR::IROpCode::FMUL: return LatticeValue(l * r);
-                case LLVMIR::IROpCode::FDIV: return LatticeValue(l / r);
+                case LLVMIR::IROpCode::FDIV:
+                {
+                    // 浮点除法，检查是否除零或无穷大
+                    if (r == 0.0f) return LatticeValue::createBottom();
+                    float result = l / r;
+                    // 检查结果是否为有限数
+                    if (std::isfinite(result)) return LatticeValue(result);
+                    return LatticeValue::createBottom();
+                }
                 default: break;
             }
         }
@@ -892,12 +1084,26 @@ namespace Transform
 
             switch (icond)
             {
+                // 相等性比较
                 case LLVMIR::IcmpCond::EQ: return LatticeValue(l == r ? 1 : 0);
                 case LLVMIR::IcmpCond::NE: return LatticeValue(l != r ? 1 : 0);
+
+                // 有符号比较
                 case LLVMIR::IcmpCond::SGT: return LatticeValue(l > r ? 1 : 0);
                 case LLVMIR::IcmpCond::SGE: return LatticeValue(l >= r ? 1 : 0);
                 case LLVMIR::IcmpCond::SLT: return LatticeValue(l < r ? 1 : 0);
                 case LLVMIR::IcmpCond::SLE: return LatticeValue(l <= r ? 1 : 0);
+
+                // 无符号比较
+                case LLVMIR::IcmpCond::UGT:
+                    return LatticeValue(static_cast<unsigned>(l) > static_cast<unsigned>(r) ? 1 : 0);
+                case LLVMIR::IcmpCond::UGE:
+                    return LatticeValue(static_cast<unsigned>(l) >= static_cast<unsigned>(r) ? 1 : 0);
+                case LLVMIR::IcmpCond::ULT:
+                    return LatticeValue(static_cast<unsigned>(l) < static_cast<unsigned>(r) ? 1 : 0);
+                case LLVMIR::IcmpCond::ULE:
+                    return LatticeValue(static_cast<unsigned>(l) <= static_cast<unsigned>(r) ? 1 : 0);
+
                 default: return LatticeValue::createBottom();
             }
         }
@@ -907,14 +1113,35 @@ namespace Transform
             float l = lhs.getFloatValue();
             float r = rhs.getFloatValue();
 
+            // 检查NaN值，NaN比较总是返回false（除了UNO）
+            bool l_is_nan = std::isnan(l);
+            bool r_is_nan = std::isnan(r);
+            bool any_nan  = l_is_nan || r_is_nan;
+
             switch (fcond)
             {
-                case LLVMIR::FcmpCond::OEQ: return LatticeValue(l == r ? 1 : 0);
-                case LLVMIR::FcmpCond::ONE: return LatticeValue(l != r ? 1 : 0);
-                case LLVMIR::FcmpCond::OGT: return LatticeValue(l > r ? 1 : 0);
-                case LLVMIR::FcmpCond::OGE: return LatticeValue(l >= r ? 1 : 0);
-                case LLVMIR::FcmpCond::OLT: return LatticeValue(l < r ? 1 : 0);
-                case LLVMIR::FcmpCond::OLE: return LatticeValue(l <= r ? 1 : 0);
+                // 常量比较结果
+                case LLVMIR::FcmpCond::FALSE: return LatticeValue(0);
+                case LLVMIR::FcmpCond::TRUE: return LatticeValue(1);
+
+                // 有序比较（ordered）- 如果有NaN则返回false
+                case LLVMIR::FcmpCond::OEQ: return LatticeValue(any_nan ? 0 : (l == r ? 1 : 0));
+                case LLVMIR::FcmpCond::OGT: return LatticeValue(any_nan ? 0 : (l > r ? 1 : 0));
+                case LLVMIR::FcmpCond::OGE: return LatticeValue(any_nan ? 0 : (l >= r ? 1 : 0));
+                case LLVMIR::FcmpCond::OLT: return LatticeValue(any_nan ? 0 : (l < r ? 1 : 0));
+                case LLVMIR::FcmpCond::OLE: return LatticeValue(any_nan ? 0 : (l <= r ? 1 : 0));
+                case LLVMIR::FcmpCond::ONE: return LatticeValue(any_nan ? 0 : (l != r ? 1 : 0));
+                case LLVMIR::FcmpCond::ORD: return LatticeValue(any_nan ? 0 : 1);
+
+                // 无序比较（unordered）- 如果有NaN则返回true
+                case LLVMIR::FcmpCond::UEQ: return LatticeValue(any_nan ? 1 : (l == r ? 1 : 0));
+                case LLVMIR::FcmpCond::UGT: return LatticeValue(any_nan ? 1 : (l > r ? 1 : 0));
+                case LLVMIR::FcmpCond::UGE: return LatticeValue(any_nan ? 1 : (l >= r ? 1 : 0));
+                case LLVMIR::FcmpCond::ULT: return LatticeValue(any_nan ? 1 : (l < r ? 1 : 0));
+                case LLVMIR::FcmpCond::ULE: return LatticeValue(any_nan ? 1 : (l <= r ? 1 : 0));
+                case LLVMIR::FcmpCond::UNE: return LatticeValue(any_nan ? 1 : (l != r ? 1 : 0));
+                case LLVMIR::FcmpCond::UNO: return LatticeValue(any_nan ? 1 : 0);
+
                 default: return LatticeValue::createBottom();
             }
         }
@@ -929,25 +1156,52 @@ namespace Transform
         switch (opcode)
         {
             case LLVMIR::IROpCode::SITOFP:
+                // 有符号整数转浮点数
                 if (operand.getType() == LatticeValue::ValueType::INTEGER)
                 {
                     return LatticeValue(static_cast<float>(operand.getIntValue()));
                 }
                 break;
+
             case LLVMIR::IROpCode::FPTOSI:
+                // 浮点数转有符号整数
                 if (operand.getType() == LatticeValue::ValueType::FLOAT)
                 {
-                    return LatticeValue(static_cast<int>(operand.getFloatValue()));
+                    float val = operand.getFloatValue();
+                    // 检查是否为有限数
+                    if (std::isfinite(val))
+                    {
+                        // 检查是否在int范围内
+                        if (val >= static_cast<float>(INT_MIN) && val <= static_cast<float>(INT_MAX))
+                        {
+                            return LatticeValue(static_cast<int>(val));
+                        }
+                    }
+                    // 如果不在范围内或不是有限数，返回bottom
+                    return LatticeValue::createBottom();
                 }
                 break;
+
             case LLVMIR::IROpCode::ZEXT:
+                // 零扩展（通常用于布尔值或小整数类型扩展到更大的整数类型）
                 if (operand.getType() == LatticeValue::ValueType::INTEGER)
                 {
+                    // 对于我们的实现，假设都是32位整数，所以zext实际上不改变值
                     return LatticeValue(operand.getIntValue());
                 }
                 break;
+
+            case LLVMIR::IROpCode::FPEXT:
+                // 浮点数精度扩展（如float到double）
+                if (operand.getType() == LatticeValue::ValueType::FLOAT)
+                {
+                    // 在我们的实现中，假设只有float类型，所以fpext不改变值
+                    return LatticeValue(operand.getFloatValue());
+                }
+                break;
+
             default:
-                // Unsupported conversion operations
+                // 未支持的类型转换操作
                 break;
         }
 

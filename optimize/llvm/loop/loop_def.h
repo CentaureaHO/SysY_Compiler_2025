@@ -26,6 +26,7 @@ class NaturalLoop
     std::set<LLVMIR::IRBlock*> latches;              ///< Nodes with back edges to header
     LLVMIR::IRBlock*           header    = nullptr;  ///< Loop header (entry point)
     LLVMIR::IRBlock*           preheader = nullptr;  ///< Unique predecessor outside loop
+    LLVMIR::IRBlock*           guard     = nullptr;  ///< Guard block for loop rotation
     int                        loop_id   = -1;       ///< Unique loop identifier
 
     // Loop hierarchy
