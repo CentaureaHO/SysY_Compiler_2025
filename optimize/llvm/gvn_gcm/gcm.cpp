@@ -294,6 +294,7 @@ namespace LLVMIR
                     earliestBlockId[inst] = E;
                     latestBlockId[inst]   = L;
                     instorder[inst]       = order++;
+                    inst->block_id        = E;
                 }
             }
         }
