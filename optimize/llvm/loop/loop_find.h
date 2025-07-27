@@ -16,6 +16,10 @@ namespace Analysis
         bool isDominated(CFG* cfg, int dominator_id, int node_id) const;
         void buildLoopHierarchy(NaturalLoopForest* forest);
 
+        void identifyLoopPreheaders(CFG* cfg);
+        void identifyLoopPreheader(CFG* cfg, NaturalLoop* loop);
+        bool isValidPreheader(CFG* cfg, LLVMIR::IRBlock* candidate, NaturalLoop* loop) const;
+
       public:
         explicit LoopAnalysisPass(LLVMIR::IR* ir);
 

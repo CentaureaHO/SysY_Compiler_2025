@@ -38,7 +38,7 @@ void Mem2Reg::Mem2RegUseDefInSameBlock(CFG* C, std::set<int>& vset, int block_id
                 if (vset.find(reg_num) != vset.end())
                 {
                     reg_now[reg_num] = reg_now[val_reg] != 0 ? reg_now[val_reg] : val_reg;
-                    std::cout << "reg now " << reg_num << " is set to" << val_reg << std::endl;
+                    // std::cout << "reg now " << reg_num << " is set to" << val_reg << std::endl;
                     todel[ins] = 1;
                 }
             }
@@ -55,7 +55,7 @@ void Mem2Reg::Mem2RegUseDefInSameBlock(CFG* C, std::set<int>& vset, int block_id
                 if (vset.find(reg_num) != vset.end())
                 {
                     replaces[res_num] = reg_now[reg_num];
-                    std::cout << "reg now " << reg_num << " is " << reg_now[reg_num] << std::endl;
+                    // std::cout << "reg now " << reg_num << " is " << reg_now[reg_num] << std::endl;
                     reg_now[res_num] = reg_now[reg_num];
                     todel[ins]       = 1;
                 }
