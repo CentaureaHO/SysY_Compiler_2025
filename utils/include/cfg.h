@@ -33,8 +33,15 @@ class CFG
         block_id_to_block.clear();
         LoopForest = nullptr;
     }
+
+    LLVMIR::IRBlock* createBlock()
+    {
+        auto* new_block                        = func->createBlock();
+        block_id_to_block[new_block->block_id] = new_block;
+        return new_block;
+    }
+
     void BuildCFG();
-    void BuildLoopInfo(LLVMIR::IR* ir);  // Build loop information
 };
 
 #endif

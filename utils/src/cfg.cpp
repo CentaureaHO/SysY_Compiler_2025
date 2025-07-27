@@ -73,9 +73,18 @@ void CFG::BuildCFG()
     dfs(this, 0);
     // std::cout<<222<<std::endl;
     // 在当前cfg中删除不可达块
+    // std::cout << "Unreachable blocks in current cfg: " << std::endl;
     for (auto iter = this->block_id_to_block.begin(); iter != this->block_id_to_block.end();)
     {
-        if (!visited[iter->first]) { iter = this->block_id_to_block.erase(iter); }
+        if (!visited[iter->first])
+        {
+            /*
+            std::cout << '\t' << iter->first << " -> ";
+            for (auto& next : invG[iter->first]) { std::cout << next->block_id << ", "; }
+            std::cout << std::endl;
+            */
+            iter = this->block_id_to_block.erase(iter);
+        }
         else
             iter++;
     }
