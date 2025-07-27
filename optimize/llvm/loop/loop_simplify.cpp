@@ -143,15 +143,22 @@ namespace StructuralTransform
 
             for (const auto& [id, bb] : cfg->block_id_to_block)
             {
+                std::vector<std::pair<LLVMIR::PhiInst*, LLVMIR::Operand*>> phi_to_eliminate;
+
                 auto it = bb->insts.begin();
                 while (it != bb->insts.end())
                 {
                     if ((*it)->opcode != LLVMIR::IROpCode::PHI) break;
 
                     auto* phi = dynamic_cast<LLVMIR::PhiInst*>(*it);
+                    if (!phi)
+                    {
+                        ++it;
+                        continue;
+                    }
 
-                    std::cout << "    SIMPLIFY_CHECK: PHI reg_" << phi->GetResultReg() << " in Block" << bb->block_id
-                              << " has " << phi->vals_for_labels.size() << " entries" << std::endl;
+                    // std::cout << "    SIMPLIFY_CHECK: PHI reg_" << phi->GetResultReg() << " in Block" << bb->block_id
+                    //           << " has " << phi->vals_for_labels.size() << " entries" << std::endl;
 
                     bool             should_eliminate = false;
                     LLVMIR::Operand* replacement_val  = nullptr;
@@ -160,7 +167,7 @@ namespace StructuralTransform
                     {
                         should_eliminate = true;
                         replacement_val  = phi->vals_for_labels[0].first;
-                        std::cout << "      SIMPLIFY_ELIMINATE: single entry PHI" << std::endl;
+                        // std::cout << "      SIMPLIFY_ELIMINATE: single entry PHI" << std::endl;
                     }
                     else if (phi->vals_for_labels.size() > 1)
                     {
@@ -173,90 +180,95 @@ namespace StructuralTransform
                         if (should_eliminate)
                         {
                             replacement_val = first_val;
-                            std::cout << "      SIMPLIFY_ELIMINATE: all values identical" << std::endl;
+                            // std::cout << "      SIMPLIFY_ELIMINATE: all values identical" << std::endl;
                         }
                     }
 
-                    if (should_eliminate && replacement_val)
+                    if (should_eliminate && replacement_val) { phi_to_eliminate.push_back({phi, replacement_val}); }
+
+                    ++it;
+                }
+
+                for (const auto& [phi, replacement_val] : phi_to_eliminate)
+                {
+                    /* std::cout << "      SIMPLIFY_REPLACING: reg_" << phi->GetResultReg() << " with ";
+                    if (auto* reg_val = dynamic_cast<LLVMIR::RegOperand*>(replacement_val))
+                        std::cout << "reg_" << reg_val->reg_num;
+                    else std::cout << "immediate";
+                    std::cout << std::endl;
+                    */
+
+                    std::map<int, int>   replace_map;
+                    LLVMIR::Instruction* new_inst = nullptr;
+
+                    if (auto* reg_val = dynamic_cast<LLVMIR::RegOperand*>(replacement_val))
                     {
-                        std::cout << "      SIMPLIFY_REPLACING: reg_" << phi->GetResultReg() << " with ";
-                        if (auto* reg_val = dynamic_cast<LLVMIR::RegOperand*>(replacement_val))
+                        replace_map[phi->GetResultReg()] = reg_val->reg_num;
+                        // std::cout << "      SIMPLIFY_REPLACE_REG: reg_" << phi->GetResultReg() << " -> reg_"
+                        //           << reg_val->reg_num << std::endl;
+                    }
+                    else if (auto* imm_i32 = dynamic_cast<LLVMIR::ImmeI32Operand*>(replacement_val))
+                    {
+                        int new_reg                      = ++cfg->func->max_reg;
+                        replace_map[phi->GetResultReg()] = new_reg;
+
+                        new_inst          = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::ADD,
+                            LLVMIR::DataType::I32,
+                            getImmeI32Operand(imm_i32->value),
+                            getImmeI32Operand(0),
+                            getRegOperand(new_reg));
+                        new_inst->comment = "SIMPLIFY_CREATED: immediate assignment for PHI elimination";
+
+                        // std::cout << "      SIMPLIFY_REPLACE_IMM: reg_" << phi->GetResultReg() << " -> "
+                        //           << imm_i32->value << " (via reg_" << new_reg << ")" << std::endl;
+                    }
+                    else if (auto* imm_f32 = dynamic_cast<LLVMIR::ImmeF32Operand*>(replacement_val))
+                    {
+                        int new_reg                      = ++cfg->func->max_reg;
+                        replace_map[phi->GetResultReg()] = new_reg;
+
+                        new_inst          = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::FADD,
+                            LLVMIR::DataType::F32,
+                            getImmeF32Operand(imm_f32->value),
+                            getImmeF32Operand(0.0f),
+                            getRegOperand(new_reg));
+                        new_inst->comment = "SIMPLIFY_CREATED: float immediate assignment for PHI elimination";
+
+                        // std::cout << "      SIMPLIFY_REPLACE_FLOAT: reg_" << phi->GetResultReg() << " -> "
+                        //           << imm_f32->value << " (via reg_" << new_reg << ")" << std::endl;
+                    }
+                    else
+                    {
+                        // std::cout << "      SIMPLIFY_SKIP: unsupported operand type" << std::endl;
+                        continue;
+                    }
+
+                    for (const auto& [block_id, block] : cfg->block_id_to_block)
+                    {
+                        for (auto* inst : block->insts)
                         {
-                            std::cout << "reg_" << reg_val->reg_num;
+                            if (inst != phi) { inst->Rename(replace_map); }
                         }
-                        else { std::cout << "immediate"; }
-                        std::cout << std::endl;
+                    }
 
-                        // 创建替换映射
-                        std::map<int, int> replace_map;
-                        if (auto* reg_val = dynamic_cast<LLVMIR::RegOperand*>(replacement_val))
+                    auto phi_it = std::find(bb->insts.begin(), bb->insts.end(), phi);
+                    if (phi_it != bb->insts.end())
+                    {
+                        if (new_inst)
                         {
-                            // 寄存器替换：直接使用现有寄存器
-                            replace_map[phi->GetResultReg()] = reg_val->reg_num;
-                            std::cout << "      SIMPLIFY_REPLACE_REG: reg_" << phi->GetResultReg() << " -> reg_"
-                                      << reg_val->reg_num << std::endl;
-                        }
-                        else if (auto* imm_i32 = dynamic_cast<LLVMIR::ImmeI32Operand*>(replacement_val))
-                        {
-                            // 立即数替换：创建新寄存器并生成赋值指令
-                            int new_reg                      = ++cfg->func->max_reg;
-                            replace_map[phi->GetResultReg()] = new_reg;
-
-                            // 在当前基本块开头插入 new_reg = add imm, 0
-                            auto* assign_inst    = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::ADD,
-                                LLVMIR::DataType::I32,
-                                getImmeI32Operand(imm_i32->value),
-                                getImmeI32Operand(0),
-                                getRegOperand(new_reg));
-                            assign_inst->comment = "SIMPLIFY_CREATED: immediate assignment for PHI elimination";
-
-                            // 插入到PHI指令之前
-                            bb->insts.insert(it, assign_inst);
-
-                            std::cout << "      SIMPLIFY_REPLACE_IMM: reg_" << phi->GetResultReg() << " -> "
-                                      << imm_i32->value << " (via reg_" << new_reg << ")" << std::endl;
-                        }
-                        else if (auto* imm_f32 = dynamic_cast<LLVMIR::ImmeF32Operand*>(replacement_val))
-                        {
-                            // 浮点立即数替换
-                            int new_reg                      = ++cfg->func->max_reg;
-                            replace_map[phi->GetResultReg()] = new_reg;
-
-                            // 在当前基本块开头插入 new_reg = fadd imm, 0.0
-                            auto* assign_inst    = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::FADD,
-                                LLVMIR::DataType::F32,
-                                getImmeF32Operand(imm_f32->value),
-                                getImmeF32Operand(0.0f),
-                                getRegOperand(new_reg));
-                            assign_inst->comment = "SIMPLIFY_CREATED: float immediate assignment for PHI elimination";
-
-                            // 插入到PHI指令之前
-                            bb->insts.insert(it, assign_inst);
-
-                            std::cout << "      SIMPLIFY_REPLACE_FLOAT: reg_" << phi->GetResultReg() << " -> "
-                                      << imm_f32->value << " (via reg_" << new_reg << ")" << std::endl;
+                            *phi_it = new_inst;
+                            // std::cout << "      SIMPLIFY_REPLACED: PHI reg_" << phi->GetResultReg()
+                            //           << " with assignment instruction" << std::endl;
                         }
                         else
                         {
-                            // 其他类型（如GlobalOperand等），暂时跳过
-                            std::cout << "      SIMPLIFY_SKIP: unsupported operand type" << std::endl;
-                            ++it;
-                            continue;
+                            bb->insts.erase(phi_it);
+                            // std::cout << "      SIMPLIFY_DELETED: PHI reg_" << phi->GetResultReg() << std::endl;
                         }
 
-                        // 在当前CFG中替换使用该PHI结果的地方
-                        for (const auto& [block_id, block] : cfg->block_id_to_block)
-                        {
-                            for (auto* inst : block->insts) { inst->Rename(replace_map); }
-                        }
-
-                        // 删除PHI指令
-                        std::cout << "      SIMPLIFY_DELETED: PHI reg_" << phi->GetResultReg() << std::endl;
-                        delete *it;
-                        it      = bb->insts.erase(it);
+                        delete phi;
                         changed = true;
                     }
-                    else { ++it; }
                 }
             }
         }

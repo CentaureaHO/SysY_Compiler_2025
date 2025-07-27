@@ -66,6 +66,7 @@ namespace Analysis
 
                 // Create new loop
                 auto* loop   = new NaturalLoop();
+                loop->cfg    = cfg;
                 loop->header = successor;
                 loop->latches.insert(block);
                 loop->loop_id    = loop_count++;

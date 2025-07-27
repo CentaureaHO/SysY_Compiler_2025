@@ -48,6 +48,10 @@
 #include "optimize/llvm/strength_reduction/const_branch_reduce.h"
 #include "optimize/llvm/strength_reduction/arith_inst_reduce.h"
 #include "optimize/llvm/strength_reduction/gep_strength_reduce.h"
+// SCEV Analysis
+#include "optimize/llvm/loop/scev_analysis.h"
+// Constant Loop Unroll
+// #include "optimize/llvm/loop/constant_loop_unroll.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -269,18 +273,14 @@ int main(int argc, char** argv)
 
         loopAnalysis.Execute();
         loopSimplify.Execute();
+        StructuralTransform::LoopRotatePass loopRotate(&builder);
 
         makecfg.Execute();
         makedom.Execute();
         loopAnalysis.Execute();
         loopSimplify.Execute();  // 确保在LICM之前所有循环都已简化，有有效的preheader
         lcssa.Execute();
-        StructuralTransform::LoopRotatePass loopRotate(&builder);
-        if (optimizeLevel >= 2)
-        {
-            loopRotate.Execute();
-            std::cout << "=== Running Loop Simplify after rotation ===" << std::endl;
-        }
+        loopRotate.Execute();
 
         // 已修复
         makecfg.Execute();
@@ -349,6 +349,24 @@ int main(int argc, char** argv)
 
         makecfg.Execute();
         makedom.Execute();
+        loopAnalysis.Execute();
+        loopSimplify.Execute();
+
+        tsccp.Execute();
+        Analysis::SCEVAnalyser scevAnalyser(&builder);
+        scevAnalyser.run();
+        scevAnalyser.printAllResults();
+
+        if (optimizeLevel >= 2)
+        {
+            // StructuralTransform::ConstantLoopFullyUnrollPass constantUnroll(&builder, &scevAnalyser);
+            // constantUnroll.Execute();
+        }
+        makecfg.Execute();
+        makedom.Execute();
+        loopAnalysis.Execute();
+
+        // tsccp.Execute();
     }
 
     if (step == "-llvm")

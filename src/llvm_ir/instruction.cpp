@@ -1,4 +1,5 @@
 #include <llvm_ir/instruction.h>
+#include <llvm_ir/ir_block.h>
 #include <cassert>
 #include <sstream>
 #include <map>
@@ -1510,4 +1511,294 @@ std::vector<Operand*> FPExtInst::GetCSEOperands() const { return {src}; }
 std::vector<Operand*> PhiInst::GetCSEOperands() const
 {
     return {};  // PHI指令不参与CSE
+}
+
+void LoadInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->ptr->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->ptr))->reg_num;
+        if (replace.find(reg) != replace.end()) { ptr = new RegOperand(replace[reg]); }
+    }
+
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+    }
+}
+
+void StoreInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->ptr->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->ptr))->reg_num;
+        if (replace.find(reg) != replace.end()) { ptr = new RegOperand(replace[reg]); }
+    }
+
+    if (this->val->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->val))->reg_num;
+        if (replace.find(reg) != replace.end()) { val = new RegOperand(replace[reg]); }
+    }
+}
+
+void ArithmeticInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->lhs->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->lhs))->reg_num;
+        if (replace.find(reg) != replace.end()) { lhs = new RegOperand(replace[reg]); }
+    }
+
+    if (this->rhs->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->rhs))->reg_num;
+        if (replace.find(reg) != replace.end()) { rhs = new RegOperand(replace[reg]); }
+    }
+
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+    }
+}
+
+void IcmpInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->lhs->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->lhs))->reg_num;
+        if (replace.find(reg) != replace.end()) { lhs = new RegOperand(replace[reg]); }
+    }
+
+    if (this->rhs->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->rhs))->reg_num;
+        if (replace.find(reg) != replace.end()) { rhs = new RegOperand(replace[reg]); }
+    }
+
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+    }
+}
+
+void FcmpInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->lhs->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->lhs))->reg_num;
+        if (replace.find(reg) != replace.end()) { lhs = new RegOperand(replace[reg]); }
+    }
+
+    if (this->rhs->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->rhs))->reg_num;
+        if (replace.find(reg) != replace.end()) { rhs = new RegOperand(replace[reg]); }
+    }
+
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+    }
+}
+
+void AllocInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+    }
+}
+
+void BranchCondInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->cond->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->cond))->reg_num;
+        if (replace.find(reg) != replace.end()) { cond = new RegOperand(replace[reg]); }
+    }
+}
+
+void BranchUncondInst::ReplaceAllOperands(std::map<int, int>& replace) {}
+
+void GlbvarDefInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->init && this->init->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->init))->reg_num;
+        if (replace.find(reg) != replace.end()) { init = new RegOperand(replace[reg]); }
+    }
+}
+
+void CallInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    for (auto& arg : args)
+    {
+        if (arg.second && arg.second->type == OperandType::REG)
+        {
+            int reg = ((RegOperand*)(arg.second))->reg_num;
+            if (replace.find(reg) != replace.end()) { arg.second = new RegOperand(replace[reg]); }
+        }
+    }
+
+    if (this->res && this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+    }
+}
+
+void RetInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->ret && this->ret->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->ret))->reg_num;
+        if (replace.find(reg) != replace.end()) { ret = new RegOperand(replace[reg]); }
+    }
+}
+
+void GEPInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->base_ptr->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->base_ptr))->reg_num;
+        if (replace.find(reg) != replace.end()) { base_ptr = new RegOperand(replace[reg]); }
+    }
+
+    for (auto& idx : idxs)
+    {
+        if (idx && idx->type == OperandType::REG)
+        {
+            int reg = ((RegOperand*)(idx))->reg_num;
+            if (replace.find(reg) != replace.end()) { idx = new RegOperand(replace[reg]); }
+        }
+    }
+
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+    }
+}
+
+void FuncDeclareInst::ReplaceAllOperands(std::map<int, int>& replace) {}
+
+void FuncDefInst::ReplaceAllOperands(std::map<int, int>& replace) {}
+
+void SI2FPInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->f_si->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->f_si))->reg_num;
+        if (replace.find(reg) != replace.end()) { f_si = new RegOperand(replace[reg]); }
+    }
+
+    if (this->t_fp->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->t_fp))->reg_num;
+        if (replace.find(reg) != replace.end()) { t_fp = new RegOperand(replace[reg]); }
+    }
+}
+
+void FP2SIInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->f_fp->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->f_fp))->reg_num;
+        if (replace.find(reg) != replace.end()) { f_fp = new RegOperand(replace[reg]); }
+    }
+
+    if (this->t_si->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->t_si))->reg_num;
+        if (replace.find(reg) != replace.end()) { t_si = new RegOperand(replace[reg]); }
+    }
+}
+
+void ZextInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->src->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->src))->reg_num;
+        if (replace.find(reg) != replace.end()) { src = new RegOperand(replace[reg]); }
+    }
+
+    if (this->dest->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->dest))->reg_num;
+        if (replace.find(reg) != replace.end()) { dest = new RegOperand(replace[reg]); }
+    }
+}
+
+void FPExtInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->src->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->src))->reg_num;
+        if (replace.find(reg) != replace.end()) { src = new RegOperand(replace[reg]); }
+    }
+
+    if (this->dest->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->dest))->reg_num;
+        if (replace.find(reg) != replace.end()) { dest = new RegOperand(replace[reg]); }
+    }
+}
+
+void PhiInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    for (auto& val_label : vals_for_labels)
+    {
+        if (val_label.first && val_label.first->type == OperandType::REG)
+        {
+            int reg = ((RegOperand*)(val_label.first))->reg_num;
+            if (replace.find(reg) != replace.end()) { val_label.first = new RegOperand(replace[reg]); }
+        }
+    }
+
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+    }
+}
+
+void updateBlockRegisterMapping(IRBlock* block, const std::map<int, int>& reg_mapping)
+{
+    if (!block || reg_mapping.empty()) return;
+
+    for (auto* inst : block->insts)
+    {
+        if (!inst) continue;
+
+        std::map<int, int> mutable_mapping = reg_mapping;
+        inst->ReplaceAllOperands(mutable_mapping);
+    }
+}
+
+unsigned getInstructionCost(LLVMIR::Instruction* inst)
+{
+    if (!inst) return 0;
+
+    switch (inst->opcode)
+    {
+        case LLVMIR::IROpCode::PHI: return 0;  // PHI节点在机器代码中不产生实际指令
+        case LLVMIR::IROpCode::BR_UNCOND:
+        case LLVMIR::IROpCode::BR_COND: return 1;  // 分支指令
+        case LLVMIR::IROpCode::CALL: return 3;     // 函数调用代价较高
+        case LLVMIR::IROpCode::LOAD:
+        case LLVMIR::IROpCode::STORE: return 2;  // 内存访问指令
+        case LLVMIR::IROpCode::ADD:
+        case LLVMIR::IROpCode::SUB:
+        case LLVMIR::IROpCode::MUL:
+        case LLVMIR::IROpCode::DIV:
+        case LLVMIR::IROpCode::ICMP:
+        case LLVMIR::IROpCode::FCMP: return 1;  // 基本算术和比较指令
+        default: return 1;                      // 其他指令的默认代价
+    }
 }
