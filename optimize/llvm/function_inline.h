@@ -120,9 +120,6 @@ namespace Transform
         LLVMIR::Instruction* copyInstruction(LLVMIR::Instruction* inst, const std::map<int, int>& reg_map,
             const std::map<int, int>& label_map, LLVMIR::IRFunction* caller);
 
-        LLVMIR::Operand* copyOperand(
-            LLVMIR::Operand* operand, const std::map<int, int>& reg_map, const std::map<int, int>& label_map);
-
         LLVMIR::IRBlock* findCallBlock(LLVMIR::IRFunction* func, LLVMIR::CallInst* call_inst);
 
         void splitBlockAtCall(LLVMIR::IRFunction* caller, LLVMIR::IRBlock* call_block, LLVMIR::CallInst* call_inst,

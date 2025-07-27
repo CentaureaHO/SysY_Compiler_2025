@@ -373,7 +373,6 @@ namespace StructuralTransform
                 {
                     for (auto inst2 : cmp_map[info])
                     {
-                        inst2->block_id = inst2->block_id;
                         if (canJump(true, inst2->block_id, inst->block_id, cfg) ||
                             canJump(false, inst2->block_id, inst->block_id, cfg))
                         {

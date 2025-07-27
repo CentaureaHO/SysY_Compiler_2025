@@ -4,6 +4,7 @@
 #include <queue>
 #include <algorithm>
 #include <cassert>
+#include <set>
 
 namespace Analysis
 {
@@ -65,6 +66,7 @@ namespace Analysis
 
                 // Create new loop
                 auto* loop   = new NaturalLoop();
+                loop->cfg    = cfg;
                 loop->header = successor;
                 loop->latches.insert(block);
                 loop->loop_id    = loop_count++;
@@ -80,6 +82,7 @@ namespace Analysis
         for (auto* loop : forest->loop_set) loop->findExitNodes(cfg);
 
         buildLoopHierarchy(forest);
+        identifyLoopPreheaders(cfg);
     }
 
     bool LoopAnalysisPass::hasLoopInfo(CFG* cfg) const
@@ -128,6 +131,67 @@ namespace Analysis
         for (auto* loop : forest->getRootLoops()) dfs(loop);
 
         return result;
+    }
+
+    void LoopAnalysisPass::identifyLoopPreheaders(CFG* cfg)
+    {
+        if (!cfg || !cfg->LoopForest) return;
+
+        for (auto* loop : cfg->LoopForest->loop_set) { identifyLoopPreheader(cfg, loop); }
+    }
+
+    void LoopAnalysisPass::identifyLoopPreheader(CFG* cfg, NaturalLoop* loop)
+    {
+        if (!loop || !cfg) return;
+
+        loop->preheader = nullptr;
+
+        std::set<LLVMIR::IRBlock*> out_of_loop_predecessors;
+
+        if (static_cast<size_t>(loop->header->block_id) < cfg->invG.size())
+        {
+            for (const auto& pred : cfg->invG[loop->header->block_id])
+            {
+                if (loop->loop_nodes.find(pred) == loop->loop_nodes.end()) { out_of_loop_predecessors.insert(pred); }
+            }
+        }
+
+        if (out_of_loop_predecessors.empty()) return;
+
+        if (out_of_loop_predecessors.size() == 1)
+        {
+            auto* candidate = *out_of_loop_predecessors.begin();
+            if (isValidPreheader(cfg, candidate, loop))
+            {
+                loop->preheader = candidate;
+                return;
+            }
+        }
+
+        // 多个外前驱需在 LoopSimplifyPass 中处理为单前驱
+    }
+
+    bool LoopAnalysisPass::isValidPreheader(CFG* cfg, LLVMIR::IRBlock* candidate, NaturalLoop* loop) const
+    {
+        if (!candidate || !loop || !cfg) return false;
+
+        if (loop->loop_nodes.find(candidate) != loop->loop_nodes.end()) return false;
+
+        if (candidate->block_id == 0) return false;
+
+        if (static_cast<size_t>(candidate->block_id) < cfg->G.size())
+        {
+            const auto& successors = cfg->G[candidate->block_id];
+            if (successors.size() != 1 || successors[0] != loop->header) { return false; }
+        }
+
+        if (!candidate->insts.empty())
+        {
+            auto* last_inst = candidate->insts.back();
+            if (last_inst->opcode != LLVMIR::IROpCode::BR_UNCOND) { return false; }
+        }
+
+        return true;
     }
 
 }  // namespace Analysis

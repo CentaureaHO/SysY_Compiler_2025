@@ -1,4 +1,5 @@
 #include <llvm_ir/instruction.h>
+#include <llvm_ir/ir_block.h>
 #include <cassert>
 #include <sstream>
 #include <map>
@@ -44,7 +45,12 @@ string GlobalOperand::getName() { return "@" + global_name; }
 Instruction::Instruction(IROpCode op) : opcode(op) {}
 
 LoadInst::LoadInst(DataType t, Operand* p, Operand* r) : Instruction(IROpCode::LOAD), type(t), ptr(p), res(r) {}
-void LoadInst::printIR(ostream& s) { s << res << " = load " << type << ", ptr " << ptr << "\n"; }
+void LoadInst::printIR(ostream& s)
+{
+    s << res << " = load " << type << ", ptr " << ptr;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
+}
 
 int LoadInst::GetResultReg()
 {
@@ -82,7 +88,12 @@ void LoadInst::Rename(std::map<int, int>& replace)
 }
 
 StoreInst::StoreInst(DataType t, Operand* p, Operand* r) : Instruction(IROpCode::STORE), type(t), ptr(p), val(r) {}
-void StoreInst::printIR(ostream& s) { s << "store " << type << " " << val << ", ptr " << ptr << "\n"; }
+void StoreInst::printIR(ostream& s)
+{
+    s << "store " << type << " " << val << ", ptr " << ptr;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
+}
 
 int StoreInst::GetResultReg() { return -1; }
 
@@ -120,7 +131,9 @@ ArithmeticInst::ArithmeticInst(IROpCode op, DataType t, Operand* l, Operand* r, 
 {}
 void ArithmeticInst::printIR(ostream& s)
 {
-    s << res << " = " << opcode << " " << type << " " << lhs << ", " << rhs << "\n";
+    s << res << " = " << opcode << " " << type << " " << lhs << ", " << rhs;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
 }
 
 int ArithmeticInst::GetResultReg()
@@ -165,7 +178,9 @@ IcmpInst::IcmpInst(DataType t, IcmpCond c, Operand* l, Operand* r, Operand* res)
 {}
 void IcmpInst::printIR(ostream& s)
 {
-    s << res << " = icmp " << cond << " " << type << " " << lhs << ", " << rhs << "\n";
+    s << res << " = icmp " << cond << " " << type << " " << lhs << ", " << rhs;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
 }
 
 int IcmpInst::GetResultReg()
@@ -205,7 +220,9 @@ FcmpInst::FcmpInst(DataType t, FcmpCond c, Operand* l, Operand* r, Operand* res)
 {}
 void FcmpInst::printIR(ostream& s)
 {
-    s << res << " = fcmp " << cond << " " << type << " " << lhs << ", " << rhs << "\n";
+    s << res << " = fcmp " << cond << " " << type << " " << lhs << ", " << rhs;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
 }
 int FcmpInst::GetResultReg()
 {
@@ -250,7 +267,9 @@ void AllocInst::printIR(ostream& s)
     }
 
     for (int& dim : dims) s << "[" << dim << " x ";
-    s << type << string(dims.size(), ']') << "\n";
+    s << type << string(dims.size(), ']');
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
 }
 
 int AllocInst::GetResultReg()
@@ -272,7 +291,9 @@ BranchCondInst::BranchCondInst(Operand* c, Operand* t, Operand* f)
 {}
 void BranchCondInst::printIR(ostream& s)
 {
-    s << "br i1 " << cond << ", label " << true_label << ", label " << false_label << "\n";
+    s << "br i1 " << cond << ", label " << true_label << ", label " << false_label;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
 }
 
 int BranchCondInst::GetResultReg() { return -1; }
@@ -297,8 +318,13 @@ void BranchCondInst::Rename(std::map<int, int>& replace)
 }
 
 BranchUncondInst::BranchUncondInst(Operand* t) : Instruction(IROpCode::BR_UNCOND), target_label(t) {}
-void BranchUncondInst::printIR(ostream& s) { s << "br label " << target_label << "\n"; }
-int  BranchUncondInst::GetResultReg() { return -1; }
+void BranchUncondInst::printIR(ostream& s)
+{
+    s << "br label " << target_label;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
+}
+int BranchUncondInst::GetResultReg() { return -1; }
 
 std::vector<int> BranchUncondInst::GetUsedRegs()
 {
@@ -382,6 +408,7 @@ void GlbvarDefInst::printIR(ostream& s)
 
     glb_arr_init(s, type, arr_init, 0, 0, step - 1);
 
+    if (!comment.empty()) s << " ; " << comment;
     s << "\n";
 }
 int GlbvarDefInst::GetResultReg() { return -1; }
@@ -413,7 +440,9 @@ void CallInst::printIR(ostream& s)
         ++cp;
         if (cp != args.end()) s << ", ";
     }
-    s << ")\n";
+    s << ")";
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
 }
 int CallInst::GetResultReg()
 {
@@ -451,6 +480,7 @@ void RetInst::printIR(ostream& s)
 {
     s << "ret " << ret_type;
     if (ret) s << " " << ret;
+    if (!comment.empty()) s << " ; " << comment;
     s << "\n";
 }
 
@@ -490,6 +520,7 @@ void GEPInst::printIR(ostream& s)
 
     s << ", ptr " << base_ptr;
     for (auto& idx : idxs) s << ", " << idx_type << " " << idx;
+    if (!comment.empty()) s << " ; " << comment;
     s << "\n";
 }
 
@@ -542,7 +573,9 @@ void FuncDeclareInst::printIR(ostream& s)
         ++cp;
         if (cp != arg_types.end()) s << ", ";
     }
-    s << ")\n";
+    s << ")";
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
 }
 
 int FuncDeclareInst::GetResultReg() { return -1; }
@@ -555,7 +588,10 @@ std::vector<int> FuncDeclareInst::GetUsedRegs()
 
 void FuncDeclareInst::Rename(std::map<int, int>& replace) {}
 
-FuncDefInst::FuncDefInst(DataType rt, string fn, vector<DataType> at) : FuncDeclareInst(rt, fn, at), arg_regs({}) {}
+FuncDefInst::FuncDefInst(DataType rt, string fn, vector<DataType> at) : FuncDeclareInst(rt, fn, at), arg_regs({})
+{
+    block_id = -1;
+}
 void FuncDefInst::printIR(ostream& s)
 {
     size_t arg_num = arg_types.size();
@@ -570,7 +606,9 @@ void FuncDefInst::printIR(ostream& s)
         if (i != arg_num - 1) s << ", ";
     }
 
-    s << ")\n";
+    s << ")";
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
 }
 
 int FuncDefInst::GetResultReg() { return -1; }
@@ -584,8 +622,13 @@ std::vector<int> FuncDefInst::GetUsedRegs()
 void FuncDefInst::Rename(std::map<int, int>& replace) {}
 
 SI2FPInst::SI2FPInst(Operand* f, Operand* t) : Instruction(IROpCode::SITOFP), f_si(f), t_fp(t) {}
-void SI2FPInst::printIR(ostream& s) { s << t_fp << " = sitofp i32 " << f_si << " to float\n"; }
-int  SI2FPInst::GetResultReg()
+void SI2FPInst::printIR(ostream& s)
+{
+    s << t_fp << " = sitofp i32 " << f_si << " to float";
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
+}
+int SI2FPInst::GetResultReg()
 {
     if (this->t_fp->type != OperandType::REG) { return -1; }
     return ((RegOperand*)t_fp)->reg_num;
@@ -608,8 +651,13 @@ void SI2FPInst::Rename(std::map<int, int>& replace)
 }
 
 FP2SIInst::FP2SIInst(Operand* f, Operand* t) : Instruction(IROpCode::FPTOSI), f_fp(f), t_si(t) {}
-void FP2SIInst::printIR(ostream& s) { s << t_si << " = fptosi float " << f_fp << " to i32\n"; }
-int  FP2SIInst::GetResultReg()
+void FP2SIInst::printIR(ostream& s)
+{
+    s << t_si << " = fptosi float " << f_fp << " to i32";
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
+}
+int FP2SIInst::GetResultReg()
 {
     if (this->t_si->type != OperandType::REG) { return -1; }
     return ((RegOperand*)t_si)->reg_num;
@@ -634,7 +682,12 @@ void FP2SIInst::Rename(std::map<int, int>& replace)
 ZextInst::ZextInst(DataType f, DataType t, Operand* s, Operand* d)
     : Instruction(IROpCode::ZEXT), from(f), to(t), src(s), dest(d)
 {}
-void ZextInst::printIR(ostream& s) { s << dest << " = zext " << from << " " << src << " to " << to << "\n"; }
+void ZextInst::printIR(ostream& s)
+{
+    s << dest << " = zext " << from << " " << src << " to " << to;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
+}
 
 int ZextInst::GetResultReg()
 {
@@ -659,8 +712,13 @@ void ZextInst::Rename(std::map<int, int>& replace)
 }
 
 FPExtInst::FPExtInst(Operand* s, Operand* d) : Instruction(IROpCode::FPEXT), src(s), dest(d) {}
-void FPExtInst::printIR(ostream& s) { s << dest << " = fpext float" << " " << src << " to " << "double" << "\n"; }
-int  FPExtInst::GetResultReg()
+void FPExtInst::printIR(ostream& s)
+{
+    s << dest << " = fpext float" << " " << src << " to " << "double";
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
+}
+int FPExtInst::GetResultReg()
 {
     if (this->dest->type != OperandType::REG) { return -1; }
     return ((RegOperand*)dest)->reg_num;
@@ -698,6 +756,7 @@ void PhiInst::printIR(ostream& s)
         ++cp;
         if (cp != vals_for_labels.end()) s << ", ";
     }
+    if (!comment.empty()) s << " ; " << comment;
     s << "\n";
 }
 int PhiInst::GetResultReg()
@@ -844,4 +903,902 @@ GlobalOperand* getGlobalOperand(string name)
         return op;
     }
     return it->second;
+}
+
+Instruction* LoadInst::Clone(int new_result_reg) const
+{
+    auto* result_op = (new_result_reg != -1) ? getRegOperand(new_result_reg) : res;
+    return new LoadInst(type, ptr, result_op);
+}
+
+Instruction* StoreInst::Clone(int new_result_reg) const { return new StoreInst(type, ptr, val); }
+
+Instruction* ArithmeticInst::Clone(int new_result_reg) const
+{
+    auto* result_op = (new_result_reg != -1) ? getRegOperand(new_result_reg) : res;
+    return new ArithmeticInst(opcode, type, lhs, rhs, result_op);
+}
+
+Instruction* IcmpInst::Clone(int new_result_reg) const
+{
+    auto* result_op = (new_result_reg != -1) ? getRegOperand(new_result_reg) : res;
+    return new IcmpInst(type, cond, lhs, rhs, result_op);
+}
+
+Instruction* FcmpInst::Clone(int new_result_reg) const
+{
+    auto* result_op = (new_result_reg != -1) ? getRegOperand(new_result_reg) : res;
+    return new FcmpInst(type, cond, lhs, rhs, result_op);
+}
+
+Instruction* AllocInst::Clone(int new_result_reg) const
+{
+    auto* result_op = (new_result_reg != -1) ? getRegOperand(new_result_reg) : res;
+    return new AllocInst(type, result_op, dims);
+}
+
+Instruction* BranchCondInst::Clone(int new_result_reg) const
+{
+    return new BranchCondInst(cond, true_label, false_label);
+}
+
+Instruction* BranchUncondInst::Clone(int new_result_reg) const { return new BranchUncondInst(target_label); }
+
+Instruction* GlbvarDefInst::Clone(int new_result_reg) const
+{
+    if (arr_init.dims.empty())
+        return new GlbvarDefInst(type, name, init);
+    else
+        return new GlbvarDefInst(type, name, arr_init);
+}
+
+Instruction* CallInst::Clone(int new_result_reg) const
+{
+    auto* result_op = (new_result_reg != -1) ? getRegOperand(new_result_reg) : res;
+    return new CallInst(ret_type, func_name, args, result_op);
+}
+
+Instruction* RetInst::Clone(int new_result_reg) const { return new RetInst(ret_type, ret); }
+
+Instruction* GEPInst::Clone(int new_result_reg) const
+{
+    auto* result_op = (new_result_reg != -1) ? getRegOperand(new_result_reg) : res;
+    return new GEPInst(type, idx_type, base_ptr, result_op, dims, idxs);
+}
+
+Instruction* FuncDeclareInst::Clone(int new_result_reg) const
+{
+    return new FuncDeclareInst(ret_type, func_name, arg_types);
+}
+
+Instruction* FuncDefInst::Clone(int new_result_reg) const
+{
+    auto* cloned     = new FuncDefInst(ret_type, func_name, arg_types);
+    cloned->arg_regs = arg_regs;
+    return cloned;
+}
+
+Instruction* SI2FPInst::Clone(int new_result_reg) const
+{
+    auto* result_op = (new_result_reg != -1) ? getRegOperand(new_result_reg) : t_fp;
+    return new SI2FPInst(f_si, result_op);
+}
+
+Instruction* FP2SIInst::Clone(int new_result_reg) const
+{
+    auto* result_op = (new_result_reg != -1) ? getRegOperand(new_result_reg) : t_si;
+    return new FP2SIInst(f_fp, result_op);
+}
+
+Instruction* ZextInst::Clone(int new_result_reg) const
+{
+    auto* result_op = (new_result_reg != -1) ? getRegOperand(new_result_reg) : dest;
+    return new ZextInst(from, to, src, result_op);
+}
+
+Instruction* FPExtInst::Clone(int new_result_reg) const
+{
+    auto* result_op = (new_result_reg != -1) ? getRegOperand(new_result_reg) : dest;
+    return new FPExtInst(src, result_op);
+}
+
+Instruction* PhiInst::Clone(int new_result_reg) const
+{
+    auto* result_op         = (new_result_reg != -1) ? getRegOperand(new_result_reg) : res;
+    auto* cloned            = new PhiInst(type, result_op);
+    cloned->vals_for_labels = vals_for_labels;
+    return cloned;
+}
+
+// SubstituteOperands implementations for all instruction classes
+void LoadInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+{
+    if (ptr && ptr->type == OperandType::REG)
+    {
+        auto* reg_op = dynamic_cast<RegOperand*>(ptr);
+        auto  it     = substitutions.find(reg_op->reg_num);
+        if (it != substitutions.end()) { ptr = it->second; }
+    }
+}
+
+void StoreInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+{
+    if (ptr && ptr->type == OperandType::REG)
+    {
+        auto* reg_op = dynamic_cast<RegOperand*>(ptr);
+        auto  it     = substitutions.find(reg_op->reg_num);
+        if (it != substitutions.end()) { ptr = it->second; }
+    }
+    if (val && val->type == OperandType::REG)
+    {
+        auto* reg_op = dynamic_cast<RegOperand*>(val);
+        auto  it     = substitutions.find(reg_op->reg_num);
+        if (it != substitutions.end()) { val = it->second; }
+    }
+}
+
+void ArithmeticInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+{
+    if (lhs && lhs->type == OperandType::REG)
+    {
+        auto* reg_op = dynamic_cast<RegOperand*>(lhs);
+        auto  it     = substitutions.find(reg_op->reg_num);
+        if (it != substitutions.end()) { lhs = it->second; }
+    }
+    if (rhs && rhs->type == OperandType::REG)
+    {
+        auto* reg_op = dynamic_cast<RegOperand*>(rhs);
+        auto  it     = substitutions.find(reg_op->reg_num);
+        if (it != substitutions.end()) { rhs = it->second; }
+    }
+}
+
+void IcmpInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+{
+    if (lhs && lhs->type == OperandType::REG)
+    {
+        auto* reg_op = dynamic_cast<RegOperand*>(lhs);
+        auto  it     = substitutions.find(reg_op->reg_num);
+        if (it != substitutions.end()) { lhs = it->second; }
+    }
+    if (rhs && rhs->type == OperandType::REG)
+    {
+        auto* reg_op = dynamic_cast<RegOperand*>(rhs);
+        auto  it     = substitutions.find(reg_op->reg_num);
+        if (it != substitutions.end()) { rhs = it->second; }
+    }
+}
+
+void FcmpInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+{
+    if (lhs && lhs->type == OperandType::REG)
+    {
+        auto* reg_op = dynamic_cast<RegOperand*>(lhs);
+        auto  it     = substitutions.find(reg_op->reg_num);
+        if (it != substitutions.end()) { lhs = it->second; }
+    }
+    if (rhs && rhs->type == OperandType::REG)
+    {
+        auto* reg_op = dynamic_cast<RegOperand*>(rhs);
+        auto  it     = substitutions.find(reg_op->reg_num);
+        if (it != substitutions.end()) { rhs = it->second; }
+    }
+}
+
+void AllocInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) {}
+
+void BranchCondInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+{
+    if (cond && cond->type == OperandType::REG)
+    {
+        auto* reg_op = dynamic_cast<RegOperand*>(cond);
+        auto  it     = substitutions.find(reg_op->reg_num);
+        if (it != substitutions.end()) { cond = it->second; }
+    }
+}
+
+void BranchUncondInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) {}
+
+void GlbvarDefInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+{
+    if (init && init->type == OperandType::REG)
+    {
+        auto* reg_op = dynamic_cast<RegOperand*>(init);
+        auto  it     = substitutions.find(reg_op->reg_num);
+        if (it != substitutions.end()) { init = it->second; }
+    }
+}
+
+void CallInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+{
+    for (auto& arg : args)
+    {
+        if (arg.second && arg.second->type == OperandType::REG)
+        {
+            auto* reg_op = dynamic_cast<RegOperand*>(arg.second);
+            auto  it     = substitutions.find(reg_op->reg_num);
+            if (it != substitutions.end()) { arg.second = it->second; }
+        }
+    }
+}
+
+void RetInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+{
+    if (ret && ret->type == OperandType::REG)
+    {
+        auto* reg_op = dynamic_cast<RegOperand*>(ret);
+        auto  it     = substitutions.find(reg_op->reg_num);
+        if (it != substitutions.end()) { ret = it->second; }
+    }
+}
+
+void GEPInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+{
+    if (base_ptr && base_ptr->type == OperandType::REG)
+    {
+        auto* reg_op = dynamic_cast<RegOperand*>(base_ptr);
+        auto  it     = substitutions.find(reg_op->reg_num);
+        if (it != substitutions.end()) { base_ptr = it->second; }
+    }
+    for (auto& idx : idxs)
+    {
+        if (idx && idx->type == OperandType::REG)
+        {
+            auto* reg_op = dynamic_cast<RegOperand*>(idx);
+            auto  it     = substitutions.find(reg_op->reg_num);
+            if (it != substitutions.end()) { idx = it->second; }
+        }
+    }
+}
+
+void FuncDeclareInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) {}
+
+void FuncDefInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) {}
+
+void SI2FPInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+{
+    if (f_si && f_si->type == OperandType::REG)
+    {
+        auto* reg_op = dynamic_cast<RegOperand*>(f_si);
+        auto  it     = substitutions.find(reg_op->reg_num);
+        if (it != substitutions.end()) { f_si = it->second; }
+    }
+}
+
+void FP2SIInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+{
+    if (f_fp && f_fp->type == OperandType::REG)
+    {
+        auto* reg_op = dynamic_cast<RegOperand*>(f_fp);
+        auto  it     = substitutions.find(reg_op->reg_num);
+        if (it != substitutions.end()) { f_fp = it->second; }
+    }
+}
+
+void ZextInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+{
+    if (src && src->type == OperandType::REG)
+    {
+        auto* reg_op = dynamic_cast<RegOperand*>(src);
+        auto  it     = substitutions.find(reg_op->reg_num);
+        if (it != substitutions.end()) { src = it->second; }
+    }
+}
+
+void FPExtInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+{
+    if (src && src->type == OperandType::REG)
+    {
+        auto* reg_op = dynamic_cast<RegOperand*>(src);
+        auto  it     = substitutions.find(reg_op->reg_num);
+        if (it != substitutions.end()) { src = it->second; }
+    }
+}
+
+void PhiInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+{
+    for (auto& val_label : vals_for_labels)
+    {
+        if (val_label.first && val_label.first->type == OperandType::REG)
+        {
+            auto* reg_op = dynamic_cast<RegOperand*>(val_label.first);
+            auto  it     = substitutions.find(reg_op->reg_num);
+            if (it != substitutions.end()) { val_label.first = it->second; }
+        }
+    }
+}
+
+DataType LoadInst::GetResultType() const { return type; }
+DataType StoreInst::GetResultType() const { return DataType::VOID; }
+DataType ArithmeticInst::GetResultType() const { return type; }
+DataType IcmpInst::GetResultType() const { return DataType::I1; }
+DataType FcmpInst::GetResultType() const { return DataType::I1; }
+DataType AllocInst::GetResultType() const { return DataType::PTR; }
+DataType BranchCondInst::GetResultType() const { return DataType::VOID; }
+DataType BranchUncondInst::GetResultType() const { return DataType::VOID; }
+DataType GlbvarDefInst::GetResultType() const { return DataType::VOID; }
+DataType CallInst::GetResultType() const { return ret_type; }
+DataType RetInst::GetResultType() const { return DataType::VOID; }
+DataType GEPInst::GetResultType() const { return DataType::PTR; }
+DataType FuncDeclareInst::GetResultType() const { return DataType::VOID; }
+DataType FuncDefInst::GetResultType() const { return DataType::VOID; }
+DataType SI2FPInst::GetResultType() const { return DataType::F32; }
+DataType FP2SIInst::GetResultType() const { return DataType::I32; }
+DataType ZextInst::GetResultType() const { return to; }
+DataType FPExtInst::GetResultType() const { return DataType::DOUBLE; }
+DataType PhiInst::GetResultType() const { return type; }
+
+LLVMIR::Operand* copyOperand(
+    LLVMIR::Operand* operand, const std::map<int, int>& reg_map, const std::map<int, int>& label_map)
+{
+    if (!operand) return nullptr;
+
+    switch (operand->type)
+    {
+        case LLVMIR::OperandType::REG:
+        {
+            auto reg_op = static_cast<LLVMIR::RegOperand*>(operand);
+            auto it     = reg_map.find(reg_op->reg_num);
+            if (it != reg_map.end()) { return getRegOperand(it->second); }
+            return getRegOperand(reg_op->reg_num);
+        }
+        case LLVMIR::OperandType::IMMEI32:
+        {
+            auto imme_op = static_cast<LLVMIR::ImmeI32Operand*>(operand);
+            return getImmeI32Operand(imme_op->value);
+        }
+        case LLVMIR::OperandType::IMMEF32:
+        {
+            auto imme_op = static_cast<LLVMIR::ImmeF32Operand*>(operand);
+            return getImmeF32Operand(imme_op->value);
+        }
+        case LLVMIR::OperandType::LABEL:
+        {
+            auto label_op = static_cast<LLVMIR::LabelOperand*>(operand);
+            auto it       = label_map.find(label_op->label_num);
+            if (it != label_map.end()) { return getLabelOperand(it->second); }
+            return getLabelOperand(label_op->label_num);
+        }
+        case LLVMIR::OperandType::GLOBAL:
+        {
+            auto global_op = static_cast<LLVMIR::GlobalOperand*>(operand);
+            return getGlobalOperand(global_op->global_name);
+        }
+        default: return nullptr;
+    }
+}
+
+Instruction* LoadInst::CloneWithMapping(const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const
+{
+    auto* new_inst     = new LoadInst(type, copyOperand(ptr, reg_map, label_map), copyOperand(res, reg_map, label_map));
+    new_inst->block_id = block_id;
+    return new_inst;
+}
+
+Instruction* StoreInst::CloneWithMapping(const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const
+{
+    auto* new_inst = new StoreInst(type, copyOperand(ptr, reg_map, label_map), copyOperand(val, reg_map, label_map));
+    new_inst->block_id = block_id;
+    return new_inst;
+}
+
+Instruction* ArithmeticInst::CloneWithMapping(
+    const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const
+{
+    auto* new_inst     = new ArithmeticInst(opcode,
+        type,
+        copyOperand(lhs, reg_map, label_map),
+        copyOperand(rhs, reg_map, label_map),
+        copyOperand(res, reg_map, label_map));
+    new_inst->block_id = block_id;
+    return new_inst;
+}
+
+Instruction* IcmpInst::CloneWithMapping(const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const
+{
+    auto* new_inst     = new IcmpInst(type,
+        cond,
+        copyOperand(lhs, reg_map, label_map),
+        copyOperand(rhs, reg_map, label_map),
+        copyOperand(res, reg_map, label_map));
+    new_inst->block_id = block_id;
+    return new_inst;
+}
+
+Instruction* FcmpInst::CloneWithMapping(const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const
+{
+    auto* new_inst     = new FcmpInst(type,
+        cond,
+        copyOperand(lhs, reg_map, label_map),
+        copyOperand(rhs, reg_map, label_map),
+        copyOperand(res, reg_map, label_map));
+    new_inst->block_id = block_id;
+    return new_inst;
+}
+
+Instruction* AllocInst::CloneWithMapping(const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const
+{
+    auto* new_inst     = new AllocInst(type, copyOperand(res, reg_map, label_map), dims);
+    new_inst->block_id = block_id;
+    return new_inst;
+}
+
+Instruction* BranchCondInst::CloneWithMapping(
+    const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const
+{
+    auto* new_inst     = new BranchCondInst(copyOperand(cond, reg_map, label_map),
+        copyOperand(true_label, reg_map, label_map),
+        copyOperand(false_label, reg_map, label_map));
+    new_inst->block_id = block_id;
+    return new_inst;
+}
+
+Instruction* BranchUncondInst::CloneWithMapping(
+    const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const
+{
+    auto* new_inst     = new BranchUncondInst(copyOperand(target_label, reg_map, label_map));
+    new_inst->block_id = block_id;
+    return new_inst;
+}
+
+Instruction* GlbvarDefInst::CloneWithMapping(
+    const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const
+{
+    auto* new_inst     = new GlbvarDefInst(type, name, copyOperand(init, reg_map, label_map));
+    new_inst->block_id = block_id;
+    return new_inst;
+}
+
+Instruction* CallInst::CloneWithMapping(const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const
+{
+    std::vector<std::pair<DataType, Operand*>> new_args;
+    for (const auto& arg : args) { new_args.push_back({arg.first, copyOperand(arg.second, reg_map, label_map)}); }
+    auto* new_inst     = new CallInst(ret_type, func_name, new_args, copyOperand(res, reg_map, label_map));
+    new_inst->block_id = block_id;
+    return new_inst;
+}
+
+Instruction* RetInst::CloneWithMapping(const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const
+{
+    auto* new_inst     = new RetInst(ret_type, copyOperand(ret, reg_map, label_map));
+    new_inst->block_id = block_id;
+    return new_inst;
+}
+
+Instruction* GEPInst::CloneWithMapping(const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const
+{
+    std::vector<Operand*> new_idxs;
+    for (auto idx : idxs) { new_idxs.push_back(copyOperand(idx, reg_map, label_map)); }
+    auto* new_inst     = new GEPInst(type,
+        idx_type,
+        copyOperand(base_ptr, reg_map, label_map),
+        copyOperand(res, reg_map, label_map),
+        dims,
+        new_idxs);
+    new_inst->block_id = block_id;
+    return new_inst;
+}
+
+Instruction* FuncDeclareInst::CloneWithMapping(
+    const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const
+{
+    auto* new_inst     = new FuncDeclareInst(ret_type, func_name, arg_types);
+    new_inst->block_id = block_id;
+    return new_inst;
+}
+
+Instruction* FuncDefInst::CloneWithMapping(const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const
+{
+    auto* new_inst = new FuncDefInst(ret_type, func_name, arg_types);
+    for (auto arg_reg : arg_regs) { new_inst->arg_regs.push_back(copyOperand(arg_reg, reg_map, label_map)); }
+    new_inst->block_id = block_id;
+    return new_inst;
+}
+
+Instruction* SI2FPInst::CloneWithMapping(const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const
+{
+    auto* new_inst     = new SI2FPInst(copyOperand(f_si, reg_map, label_map), copyOperand(t_fp, reg_map, label_map));
+    new_inst->block_id = block_id;
+    return new_inst;
+}
+
+Instruction* FP2SIInst::CloneWithMapping(const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const
+{
+    auto* new_inst     = new FP2SIInst(copyOperand(f_fp, reg_map, label_map), copyOperand(t_si, reg_map, label_map));
+    new_inst->block_id = block_id;
+    return new_inst;
+}
+
+Instruction* ZextInst::CloneWithMapping(const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const
+{
+    auto* new_inst =
+        new ZextInst(from, to, copyOperand(src, reg_map, label_map), copyOperand(dest, reg_map, label_map));
+    new_inst->block_id = block_id;
+    return new_inst;
+}
+
+Instruction* FPExtInst::CloneWithMapping(const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const
+{
+    auto* new_inst     = new FPExtInst(copyOperand(src, reg_map, label_map), copyOperand(dest, reg_map, label_map));
+    new_inst->block_id = block_id;
+    return new_inst;
+}
+
+Instruction* PhiInst::CloneWithMapping(const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const
+{
+    std::vector<std::pair<Operand*, Operand*>> new_vals;
+    for (const auto& val_label : vals_for_labels)
+    {
+        new_vals.push_back(
+            {copyOperand(val_label.first, reg_map, label_map), copyOperand(val_label.second, reg_map, label_map)});
+    }
+    auto* new_inst     = new PhiInst(type, copyOperand(res, reg_map, label_map), &new_vals);
+    new_inst->block_id = block_id;
+    return new_inst;
+}
+
+std::vector<Operand*> LoadInst::GetCSEOperands() const { return {ptr}; }
+
+std::vector<Operand*> StoreInst::GetCSEOperands() const
+{
+    return {};  // Store指令不参与CSE
+}
+
+std::vector<Operand*> ArithmeticInst::GetCSEOperands() const { return {lhs, rhs}; }
+
+std::vector<Operand*> IcmpInst::GetCSEOperands() const { return {lhs, rhs}; }
+
+std::vector<Operand*> FcmpInst::GetCSEOperands() const { return {lhs, rhs}; }
+
+std::vector<Operand*> AllocInst::GetCSEOperands() const
+{
+    return {};  // Alloca指令不参与CSE
+}
+
+std::vector<Operand*> BranchCondInst::GetCSEOperands() const
+{
+    return {};  // 分支指令不参与CSE
+}
+
+std::vector<Operand*> BranchUncondInst::GetCSEOperands() const
+{
+    return {};  // 分支指令不参与CSE
+}
+
+std::vector<Operand*> GlbvarDefInst::GetCSEOperands() const
+{
+    return {};  // 全局变量定义不参与CSE
+}
+
+std::vector<Operand*> CallInst::GetCSEOperands() const
+{
+    std::vector<Operand*> operands;
+    for (const auto& arg : args) { operands.push_back(arg.second); }
+    return operands;
+}
+
+std::vector<Operand*> RetInst::GetCSEOperands() const
+{
+    return {};  // Return指令不参与CSE
+}
+
+std::vector<Operand*> GEPInst::GetCSEOperands() const
+{
+    std::vector<Operand*> operands;
+    operands.push_back(base_ptr);
+    for (auto idx : idxs) { operands.push_back(idx); }
+    return operands;
+}
+
+std::vector<Operand*> FuncDeclareInst::GetCSEOperands() const
+{
+    return {};  // 函数声明不参与CSE
+}
+
+std::vector<Operand*> FuncDefInst::GetCSEOperands() const
+{
+    return {};  // 函数定义不参与CSE
+}
+
+std::vector<Operand*> SI2FPInst::GetCSEOperands() const { return {f_si}; }
+
+std::vector<Operand*> FP2SIInst::GetCSEOperands() const { return {f_fp}; }
+
+std::vector<Operand*> ZextInst::GetCSEOperands() const { return {src}; }
+
+std::vector<Operand*> FPExtInst::GetCSEOperands() const { return {src}; }
+
+std::vector<Operand*> PhiInst::GetCSEOperands() const
+{
+    return {};  // PHI指令不参与CSE
+}
+
+void LoadInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->ptr->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->ptr))->reg_num;
+        if (replace.find(reg) != replace.end()) { ptr = new RegOperand(replace[reg]); }
+    }
+
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+    }
+}
+
+void StoreInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->ptr->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->ptr))->reg_num;
+        if (replace.find(reg) != replace.end()) { ptr = new RegOperand(replace[reg]); }
+    }
+
+    if (this->val->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->val))->reg_num;
+        if (replace.find(reg) != replace.end()) { val = new RegOperand(replace[reg]); }
+    }
+}
+
+void ArithmeticInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->lhs->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->lhs))->reg_num;
+        if (replace.find(reg) != replace.end()) { lhs = new RegOperand(replace[reg]); }
+    }
+
+    if (this->rhs->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->rhs))->reg_num;
+        if (replace.find(reg) != replace.end()) { rhs = new RegOperand(replace[reg]); }
+    }
+
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+    }
+}
+
+void IcmpInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->lhs->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->lhs))->reg_num;
+        if (replace.find(reg) != replace.end()) { lhs = new RegOperand(replace[reg]); }
+    }
+
+    if (this->rhs->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->rhs))->reg_num;
+        if (replace.find(reg) != replace.end()) { rhs = new RegOperand(replace[reg]); }
+    }
+
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+    }
+}
+
+void FcmpInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->lhs->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->lhs))->reg_num;
+        if (replace.find(reg) != replace.end()) { lhs = new RegOperand(replace[reg]); }
+    }
+
+    if (this->rhs->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->rhs))->reg_num;
+        if (replace.find(reg) != replace.end()) { rhs = new RegOperand(replace[reg]); }
+    }
+
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+    }
+}
+
+void AllocInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+    }
+}
+
+void BranchCondInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->cond->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->cond))->reg_num;
+        if (replace.find(reg) != replace.end()) { cond = new RegOperand(replace[reg]); }
+    }
+}
+
+void BranchUncondInst::ReplaceAllOperands(std::map<int, int>& replace) {}
+
+void GlbvarDefInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->init && this->init->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->init))->reg_num;
+        if (replace.find(reg) != replace.end()) { init = new RegOperand(replace[reg]); }
+    }
+}
+
+void CallInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    for (auto& arg : args)
+    {
+        if (arg.second && arg.second->type == OperandType::REG)
+        {
+            int reg = ((RegOperand*)(arg.second))->reg_num;
+            if (replace.find(reg) != replace.end()) { arg.second = new RegOperand(replace[reg]); }
+        }
+    }
+
+    if (this->res && this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+    }
+}
+
+void RetInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->ret && this->ret->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->ret))->reg_num;
+        if (replace.find(reg) != replace.end()) { ret = new RegOperand(replace[reg]); }
+    }
+}
+
+void GEPInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->base_ptr->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->base_ptr))->reg_num;
+        if (replace.find(reg) != replace.end()) { base_ptr = new RegOperand(replace[reg]); }
+    }
+
+    for (auto& idx : idxs)
+    {
+        if (idx && idx->type == OperandType::REG)
+        {
+            int reg = ((RegOperand*)(idx))->reg_num;
+            if (replace.find(reg) != replace.end()) { idx = new RegOperand(replace[reg]); }
+        }
+    }
+
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+    }
+}
+
+void FuncDeclareInst::ReplaceAllOperands(std::map<int, int>& replace) {}
+
+void FuncDefInst::ReplaceAllOperands(std::map<int, int>& replace) {}
+
+void SI2FPInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->f_si->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->f_si))->reg_num;
+        if (replace.find(reg) != replace.end()) { f_si = new RegOperand(replace[reg]); }
+    }
+
+    if (this->t_fp->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->t_fp))->reg_num;
+        if (replace.find(reg) != replace.end()) { t_fp = new RegOperand(replace[reg]); }
+    }
+}
+
+void FP2SIInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->f_fp->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->f_fp))->reg_num;
+        if (replace.find(reg) != replace.end()) { f_fp = new RegOperand(replace[reg]); }
+    }
+
+    if (this->t_si->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->t_si))->reg_num;
+        if (replace.find(reg) != replace.end()) { t_si = new RegOperand(replace[reg]); }
+    }
+}
+
+void ZextInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->src->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->src))->reg_num;
+        if (replace.find(reg) != replace.end()) { src = new RegOperand(replace[reg]); }
+    }
+
+    if (this->dest->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->dest))->reg_num;
+        if (replace.find(reg) != replace.end()) { dest = new RegOperand(replace[reg]); }
+    }
+}
+
+void FPExtInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    if (this->src->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->src))->reg_num;
+        if (replace.find(reg) != replace.end()) { src = new RegOperand(replace[reg]); }
+    }
+
+    if (this->dest->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->dest))->reg_num;
+        if (replace.find(reg) != replace.end()) { dest = new RegOperand(replace[reg]); }
+    }
+}
+
+void PhiInst::ReplaceAllOperands(std::map<int, int>& replace)
+{
+    for (auto& val_label : vals_for_labels)
+    {
+        if (val_label.first && val_label.first->type == OperandType::REG)
+        {
+            int reg = ((RegOperand*)(val_label.first))->reg_num;
+            if (replace.find(reg) != replace.end()) { val_label.first = new RegOperand(replace[reg]); }
+        }
+    }
+
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+    }
+}
+
+void updateBlockRegisterMapping(IRBlock* block, const std::map<int, int>& reg_mapping)
+{
+    if (!block || reg_mapping.empty()) return;
+
+    for (auto* inst : block->insts)
+    {
+        if (!inst) continue;
+
+        std::map<int, int> mutable_mapping = reg_mapping;
+        inst->ReplaceAllOperands(mutable_mapping);
+    }
+}
+
+unsigned getInstructionCost(LLVMIR::Instruction* inst)
+{
+    if (!inst) return 0;
+
+    switch (inst->opcode)
+    {
+        case LLVMIR::IROpCode::PHI: return 0;  // PHI节点在机器代码中不产生实际指令
+        case LLVMIR::IROpCode::BR_UNCOND:
+        case LLVMIR::IROpCode::BR_COND: return 1;  // 分支指令
+        case LLVMIR::IROpCode::CALL: return 3;     // 函数调用代价较高
+        case LLVMIR::IROpCode::LOAD:
+        case LLVMIR::IROpCode::STORE: return 2;  // 内存访问指令
+        case LLVMIR::IROpCode::ADD:
+        case LLVMIR::IROpCode::SUB:
+        case LLVMIR::IROpCode::MUL:
+        case LLVMIR::IROpCode::DIV:
+        case LLVMIR::IROpCode::ICMP:
+        case LLVMIR::IROpCode::FCMP: return 1;  // 基本算术和比较指令
+        default: return 1;                      // 其他指令的默认代价
+    }
 }

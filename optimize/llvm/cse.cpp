@@ -27,80 +27,25 @@ namespace Transform
     {
         InstCSEInfo ans;
         ans.opcode = inst->opcode;
-        std::vector<LLVMIR::Operand*> operands;
 
-        switch (inst->opcode)
+        // 获取CSE操作数列表
+        auto operands = inst->GetCSEOperands();
+
+        // 处理需要额外信息的指令类型
+        if (inst->opcode == LLVMIR::IROpCode::ICMP)
         {
-            case LLVMIR::IROpCode::ADD:
-            case LLVMIR::IROpCode::SUB:
-            case LLVMIR::IROpCode::MUL:
-            case LLVMIR::IROpCode::DIV:
-            case LLVMIR::IROpCode::MOD:
-            case LLVMIR::IROpCode::FADD:
-            case LLVMIR::IROpCode::FSUB:
-            case LLVMIR::IROpCode::FMUL:
-            case LLVMIR::IROpCode::FDIV:
-            {
-                auto arith_inst = dynamic_cast<LLVMIR::ArithmeticInst*>(inst);
-                operands.push_back(arith_inst->lhs);
-                operands.push_back(arith_inst->rhs);
-                break;
-            }
-            case LLVMIR::IROpCode::ICMP:
-            {
-                auto icmp_inst = dynamic_cast<LLVMIR::IcmpInst*>(inst);
-                ans.icmp_cond  = icmp_inst->cond;
-                operands.push_back(icmp_inst->lhs);
-                operands.push_back(icmp_inst->rhs);
-                break;
-            }
-            case LLVMIR::IROpCode::FCMP:
-            {
-                auto fcmp_inst = dynamic_cast<LLVMIR::FcmpInst*>(inst);
-                ans.fcmp_cond  = fcmp_inst->cond;
-                operands.push_back(fcmp_inst->lhs);
-                operands.push_back(fcmp_inst->rhs);
-                break;
-            }
-            case LLVMIR::IROpCode::LOAD:
-            {
-                auto load_inst = dynamic_cast<LLVMIR::LoadInst*>(inst);
-                operands.push_back(load_inst->ptr);
-                break;
-            }
-            case LLVMIR::IROpCode::GETELEMENTPTR:
-            {
-                auto gep_inst = dynamic_cast<LLVMIR::GEPInst*>(inst);
-                operands.push_back(gep_inst->base_ptr);
-                for (auto idx : gep_inst->idxs) operands.push_back(idx);
-                break;
-            }
-            case LLVMIR::IROpCode::CALL:
-            {
-                auto call_inst = dynamic_cast<LLVMIR::CallInst*>(inst);
-                ans.operand_list.push_back(call_inst->func_name);
-                for (auto const& arg : call_inst->args) operands.push_back(arg.second);
-                break;
-            }
-            case LLVMIR::IROpCode::SITOFP:
-            {
-                auto convert_inst = dynamic_cast<LLVMIR::SI2FPInst*>(inst);
-                operands.push_back(convert_inst->f_si);
-                break;
-            }
-            case LLVMIR::IROpCode::FPTOSI:
-            {
-                auto convert_inst = dynamic_cast<LLVMIR::FP2SIInst*>(inst);
-                operands.push_back(convert_inst->f_fp);
-                break;
-            }
-            case LLVMIR::IROpCode::ZEXT:
-            {
-                auto convert_inst = dynamic_cast<LLVMIR::ZextInst*>(inst);
-                operands.push_back(convert_inst->src);
-                break;
-            }
-            default: break;
+            auto icmp_inst = dynamic_cast<LLVMIR::IcmpInst*>(inst);
+            ans.icmp_cond  = icmp_inst->cond;
+        }
+        else if (inst->opcode == LLVMIR::IROpCode::FCMP)
+        {
+            auto fcmp_inst = dynamic_cast<LLVMIR::FcmpInst*>(inst);
+            ans.fcmp_cond  = fcmp_inst->cond;
+        }
+        else if (inst->opcode == LLVMIR::IROpCode::CALL)
+        {
+            auto call_inst = dynamic_cast<LLVMIR::CallInst*>(inst);
+            ans.operand_list.push_back(call_inst->func_name);
         }
 
         for (auto op : operands) ans.operand_list.push_back(op->getName());

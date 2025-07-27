@@ -138,7 +138,12 @@ void NaturalLoop::addPreheader(CFG* cfg)
     }
 
     // Create new preheader && update parent loops
-    preheader = insertTransferBlock(cfg, out_of_loop_predecessors, header);
+    preheader              = insertTransferBlock(cfg, out_of_loop_predecessors, header);
+    std::string depth_info = "";
+    int         depth      = 0;
+    for (auto* current = fa_loop; current != nullptr; current = current->fa_loop) depth++;
+    if (depth > 0) depth_info = " (nested depth: " + std::to_string(depth) + ")";
+    preheader->comment = "Loop " + std::to_string(loop_id) + " preheader" + depth_info;
     for (auto* current = fa_loop; current != nullptr; current = current->fa_loop) current->loop_nodes.insert(preheader);
 }
 
@@ -147,7 +152,12 @@ void NaturalLoop::insertSingleLatch(CFG* cfg)
     assert(!latches.empty() && "Loop has no latch nodes");
     if (latches.size() == 1) return;  // Already has single latch
 
-    auto* new_latch = insertTransferBlock(cfg, latches, header);
+    auto*       new_latch  = insertTransferBlock(cfg, latches, header);
+    std::string depth_info = "";
+    int         depth      = 0;
+    for (auto* current = fa_loop; current != nullptr; current = current->fa_loop) depth++;
+    if (depth > 0) depth_info = " (nested depth: " + std::to_string(depth) + ")";
+    new_latch->comment = "Loop " + std::to_string(loop_id) + " single latch" + depth_info;
     latches.clear();
     latches.insert(new_latch);
     loop_nodes.insert(new_latch);
@@ -182,7 +192,12 @@ void NaturalLoop::insertDedicatedExits(CFG* cfg)
 
         if (!(has_out_of_loop_predecessor && !in_loop_predecessors.empty())) continue;
 
-        auto* new_exit = insertTransferBlock(cfg, in_loop_predecessors, exit);
+        auto*       new_exit   = insertTransferBlock(cfg, in_loop_predecessors, exit);
+        std::string depth_info = "";
+        int         depth      = 0;
+        for (auto* current = fa_loop; current != nullptr; current = current->fa_loop) depth++;
+        if (depth > 0) depth_info = " (nested depth: " + std::to_string(depth) + ")";
+        new_exit->comment = "Loop " + std::to_string(loop_id) + " dedicated exit" + depth_info;
         for (auto* current = fa_loop; current != nullptr; current = current->fa_loop)
         {
             if (current->loop_nodes.find(exit) != current->loop_nodes.end()) current->loop_nodes.insert(new_exit);
@@ -317,8 +332,9 @@ LLVMIR::IRBlock* insertTransferBlock(CFG* cfg, const std::set<LLVMIR::IRBlock*>&
 
     for (auto* phi : phi_instructions)
     {
-        auto* new_reg      = getRegOperand(++cfg->func->max_reg);
-        auto* transfer_phi = new LLVMIR::PhiInst(phi->type, new_reg);
+        auto* new_reg         = getRegOperand(++cfg->func->max_reg);
+        auto* transfer_phi    = new LLVMIR::PhiInst(phi->type, new_reg);
+        transfer_phi->comment = "Merge values from multiple predecessors";
 
         // Add entries for each source block
         for (const auto* from : froms)
@@ -367,7 +383,9 @@ LLVMIR::IRBlock* insertTransferBlock(CFG* cfg, const std::set<LLVMIR::IRBlock*>&
             delete transfer_phi;
     }
 
-    transfer_block->insts.push_back(new LLVMIR::BranchUncondInst(getLabelOperand(to->block_id)));
+    auto* branch_inst    = new LLVMIR::BranchUncondInst(getLabelOperand(to->block_id));
+    branch_inst->comment = "Transfer control to target block";
+    transfer_block->insts.push_back(branch_inst);
     // Update source blocks to branch to transfer block
     for (auto* from : froms)
     {
