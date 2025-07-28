@@ -52,6 +52,8 @@
 #include "optimize/llvm/loop/scev_analysis.h"
 // Constant Loop Unroll
 // #include "optimize/llvm/loop/constant_loop_unroll.h"
+//loop_strength_reduce
+#include "llvm/loop/loop_strength_reduce.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -356,6 +358,11 @@ int main(int argc, char** argv)
         Analysis::SCEVAnalyser scevAnalyser(&builder);
         scevAnalyser.run();
         scevAnalyser.printAllResults();
+
+        Transform::StrengthReducePass strength_reduce(&builder,&scevAnalyser);
+        strength_reduce.Execute();
+        DCEDefUse.Execute();
+        dce.Execute();
 
         if (optimizeLevel >= 2)
         {

@@ -229,16 +229,21 @@ namespace Analysis
         return *this;
     }
 
-    ChainOfRecurrences ChainOfRecurrences::operator*(const CROperand& constant) const
+     ChainOfRecurrences ChainOfRecurrences::operator*(const CROperand& constant) const
     {
         if (isPureSum())
         {
             ChainOfRecurrences result = *this;
-            for (auto& operand : result.operands)
+            auto constant_val = constant.getConstantValue();
+            if (constant_val)
             {
-                if (operand.type == CROperand::CONSTANT && constant.type == CROperand::CONSTANT)
+                for (auto& operand : result.operands)
                 {
-                    operand = CROperand(operand.const_val * constant.const_val);
+                    auto operand_val = operand.getConstantValue();
+                    if (operand_val)
+                    {
+                        operand = CROperand(*operand_val * *constant_val);
+                    }
                 }
             }
             return result;

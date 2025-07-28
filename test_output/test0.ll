@@ -12,92 +12,64 @@ declare void @_sysy_starttime(i32)
 declare void @_sysy_stoptime(i32)
 declare void @llvm.memset.p0.i32(ptr, i8, i32, i1)
 
-@n = global i32 zeroinitializer
-
-define i32 @gcd(i32 %reg_0, i32 %reg_1)
-{
-Block0:  ;Func define at line 3
-	%reg_12 = alloca i32
-	%reg_10 = alloca i32
-	%reg_6 = alloca i32
-	%reg_4 = alloca i32
-	%reg_3 = alloca i32
-	%reg_2 = alloca i32
-	store i32 %reg_0, ptr %reg_2
-	store i32 %reg_1, ptr %reg_3
-	br label %Block1
-Block1:  ;Func body at line 3
-	%reg_5 = add i32 0, 0
-	store i32 %reg_5, ptr %reg_4
-	%reg_7 = add i32 0, 0
-	store i32 %reg_7, ptr %reg_6
-	%reg_8 = load i32, ptr %reg_2
-	store i32 %reg_8, ptr %reg_4
-	%reg_9 = load i32, ptr %reg_3
-	store i32 %reg_9, ptr %reg_6
-	%reg_11 = add i32 0, 0
-	store i32 %reg_11, ptr %reg_10
-	%reg_13 = add i32 0, 0
-	store i32 %reg_13, ptr %reg_12
-	%reg_14 = load i32, ptr %reg_2
-	%reg_15 = load i32, ptr %reg_3
-	%reg_16 = icmp slt i32 %reg_14, %reg_15
-	br i1 %reg_16, label %Block2, label %Block3
-Block2:  ;If then at line 13
-	%reg_17 = load i32, ptr %reg_2
-	store i32 %reg_17, ptr %reg_10
-	%reg_18 = load i32, ptr %reg_3
-	store i32 %reg_18, ptr %reg_2
-	%reg_19 = load i32, ptr %reg_10
-	store i32 %reg_19, ptr %reg_3
-	br label %Block3
-Block3:  ;If end at line 13
-	%reg_20 = load i32, ptr %reg_2
-	%reg_21 = load i32, ptr %reg_3
-	%reg_22 = srem i32 %reg_20, %reg_21
-	store i32 %reg_22, ptr %reg_12
-	br label %Block4
-Block4:  ;While condition at line 17
-	%reg_23 = load i32, ptr %reg_12
-	%reg_24 = add i32 0, 0
-	%reg_25 = icmp ne i32 %reg_23, %reg_24
-	br i1 %reg_25, label %Block5, label %Block6
-Block5:  ;While body at line 17
-	%reg_26 = load i32, ptr %reg_3
-	store i32 %reg_26, ptr %reg_2
-	%reg_27 = load i32, ptr %reg_12
-	store i32 %reg_27, ptr %reg_3
-	%reg_28 = load i32, ptr %reg_2
-	%reg_29 = load i32, ptr %reg_3
-	%reg_30 = srem i32 %reg_28, %reg_29
-	store i32 %reg_30, ptr %reg_12
-	br label %Block4
-Block6:  ;While end at line 17
-	%reg_31 = load i32, ptr %reg_4
-	%reg_32 = load i32, ptr %reg_6
-	%reg_33 = mul i32 %reg_31, %reg_32
-	%reg_34 = load i32, ptr %reg_3
-	%reg_35 = sdiv i32 %reg_33, %reg_34
-	ret i32 %reg_35
-}
 
 define i32 @main()
 {
-Block0:  ;Func define at line 24
-	%reg_2 = alloca i32
-	%reg_0 = alloca i32
+Block0:
 	br label %Block1
-Block1:  ;Func body at line 24
-	%reg_1 = add i32 0, 0
-	store i32 %reg_1, ptr %reg_0
-	%reg_3 = add i32 0, 0
-	store i32 %reg_3, ptr %reg_2
-	%reg_4 = call i32 @getint()
-	store i32 %reg_4, ptr %reg_0
-	%reg_5 = call i32 @getint()
-	store i32 %reg_5, ptr %reg_2
-	%reg_6 = load i32, ptr %reg_0
-	%reg_7 = load i32, ptr %reg_2
-	%reg_8 = call i32 @gcd(i32 %reg_6, i32 %reg_7)
-	ret i32 %reg_8
+Block1:
+	br label %Block10
+Block2: ; Loop 0 header
+	%reg_51 = phi i32 [ %reg_57, %Block7 ], [ 0, %Block14 ]
+	%reg_49 = phi i32 [ %reg_47, %Block7 ], [ 0, %Block14 ]
+	br label %Block3
+Block3: ; Loop 0 body
+	br label %Block11
+Block4: ; Loop 0 exit target
+	ret i32 0
+Block5: ; Loop 1 header (nested depth: 1)
+	%reg_50 = phi i32 [ %reg_44, %Block9 ], [ %reg_51, %Block12 ]
+	br label %Block6
+Block6: ; Loop 1 body (nested depth: 1)
+	%reg_21 = sub i32 100, %reg_49
+	%reg_23 = sub i32 %reg_21, %reg_50
+	%reg_26 = mul i32 5, %reg_49
+	%reg_29 = add i32 %reg_50, 0
+	%reg_30 = add i32 %reg_26, %reg_29
+	%reg_77 = ashr i32 %reg_23, 31
+	%reg_78 = and i32 %reg_77, 1
+	%reg_79 = add i32 %reg_23, %reg_78
+	%reg_33 = ashr i32 %reg_79, 1
+	%reg_34 = add i32 %reg_30, %reg_33
+	%reg_36 = icmp eq i32 %reg_34, 100
+	br i1 %reg_36, label %Block8, label %Block9
+Block7: ; Loop 0 latch
+	%reg_57 = phi i32 [ %reg_51, %Block11 ], [ %reg_44, %Block13 ]
+	%reg_47 = add i32 %reg_49, 1
+	%reg_67 = icmp slt i32 %reg_47, 21
+	br i1 %reg_67, label %Block2, label %Block15
+Block8: ; Loop 1 body (nested depth: 1)
+	call void @putint(i32 %reg_49)
+	call void @putint(i32 %reg_50)
+	call void @putint(i32 %reg_23)
+	call void @putch(i32 10)
+	br label %Block9
+Block9: ; Loop 1 latch (nested depth: 1)
+	%reg_44 = add i32 %reg_50, 1
+	%reg_76 = icmp slt i32 %reg_44, %reg_72
+	br i1 %reg_76, label %Block5, label %Block13
+Block10:
+	br i1 1, label %Block14, label %Block4
+Block11: ; Loop 0 body
+	%reg_72 = sub i32 101, %reg_49
+	%reg_73 = icmp slt i32 %reg_51, %reg_72
+	br i1 %reg_73, label %Block12, label %Block7
+Block12: ; Loop 1 preheader (nested depth: 1)
+	br label %Block5 ; Transfer control to target block
+Block13: ; Loop 1 dedicated exit (nested depth: 1)
+	br label %Block7 ; Transfer control to target block
+Block14: ; Loop 0 preheader
+	br label %Block2 ; Transfer control to target block
+Block15: ; Loop 0 dedicated exit
+	br label %Block4 ; Transfer control to target block
 }
