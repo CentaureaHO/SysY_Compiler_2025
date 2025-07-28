@@ -3,6 +3,7 @@
 #include "dom_analyzer.h"
 #include "llvm/def_use.h"
 #include "llvm/alias_analysis/alias_analysis.h"
+#include "llvm/global_analysis/readonly.h"
 #include "llvm/memdep/memdep.h"
 #include "llvm_ir/instruction.h"
 #include "llvm/pass.h"
@@ -22,6 +23,8 @@ namespace LLVMIR
         Analysis::AliasAnalyser* aliasAnalyser;  // 别名分析器
         // 内存依赖分析
         Analysis::MemoryDependenceAnalyser* memdep;  // 内存依赖分析器
+        // 只读全局变量
+        Analysis::ReadOnlyGlobalAnalysis* readOnlyGlobalAnalysis;  // 只读全局变量分析
 
         std::unordered_set<Instruction*> erase_set;                             // 用于存储需要删除的指令
         std::unordered_map<int, std::multimap<int, Instruction*> > latest_map;  // 用于存储每个块的最新指令队列
@@ -43,14 +46,19 @@ namespace LLVMIR
         // 生成辅助信息
         void GenerateInformation(CFG* func_cfg);
 
+        // 判断load是否安全
+        bool isSafeLoad(Instruction* inst);
+
       public:
         GCM(LLVMIR::IR* ir, DefUseAnalysisPass* DefUseAnalysis, Analysis::AliasAnalyser* AliasAnalyser,
-            Analysis::MemoryDependenceAnalyser* MemoryDependenceAnalyser)
+            Analysis::MemoryDependenceAnalyser* MemoryDependenceAnalyser,
+            Analysis::ReadOnlyGlobalAnalysis*   ReadOnlyGlobalAnalysis)
             : Pass(ir)
         {
-            defuseAnalysis = DefUseAnalysis;
-            aliasAnalyser  = AliasAnalyser;
-            memdep         = MemoryDependenceAnalyser;
+            defuseAnalysis         = DefUseAnalysis;
+            aliasAnalyser          = AliasAnalyser;
+            memdep                 = MemoryDependenceAnalyser;
+            readOnlyGlobalAnalysis = ReadOnlyGlobalAnalysis;
         }
 
         void Execute() override;

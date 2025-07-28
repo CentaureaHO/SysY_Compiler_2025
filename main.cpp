@@ -352,8 +352,8 @@ int main(int argc, char** argv)
         md.run();
         Analysis::ReadOnlyGlobalAnalysis readOnlyGlobalAnalysis(&builder, &aa);
         readOnlyGlobalAnalysis.run();
-        readOnlyGlobalAnalysis.print();
-        GCM gcm(&builder, &GCMDefUse, &aa, &md);
+        // readOnlyGlobalAnalysis.print();
+        GCM gcm(&builder, &GCMDefUse, &aa, &md, &readOnlyGlobalAnalysis);
         gcm.Execute();
 
         makecfg.Execute();

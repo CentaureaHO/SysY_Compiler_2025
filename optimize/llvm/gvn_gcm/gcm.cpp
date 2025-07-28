@@ -11,6 +11,23 @@
 // #define DEBUG_CALL
 namespace LLVMIR
 {
+    bool GCM::isSafeLoad(Instruction* inst)
+    {
+        auto load_inst = dynamic_cast<LoadInst*>(inst);
+        auto load_op   = load_inst->ptr;
+        // 只读的全局变量的加载是安全的
+        if (load_op->type == OperandType::GLOBAL && readOnlyGlobalAnalysis->isReadOnly(load_op))
+        {
+            // 说明是load一个只读全局变量
+            return true;
+        }
+        // 说明是通过如getelementptr加载的只读全局变量
+        auto traced = readOnlyGlobalAnalysis->traceToGlobal(load_op);
+        if (traced && readOnlyGlobalAnalysis->isReadOnly(traced)) { return true; }
+        // 前面没有 write 或 call 会写到同一地址
+        
+    }
+
     bool GCM::IsSafeInst(Instruction* inst)
     {
         switch (inst->opcode)
@@ -57,12 +74,33 @@ namespace LLVMIR
             }
             case IROpCode::GETELEMENTPTR:
             {
+                auto gep_inst = dynamic_cast<GEPInst*>(inst);
+                bool is_safe  = true;
+                if (gep_inst->base_ptr->type == OperandType::GLOBAL &&
+                    !readOnlyGlobalAnalysis->isReadOnly(gep_inst->base_ptr))
+                {
+                    // 如果是非只读的全局变量的 GEP，不能移动
+                    cannot_move.insert(gep_inst->GetResultOperand());
+                    is_safe = false;
+                }
+                for (auto& idx : gep_inst->idxs)
+                {
+                    if (idx->type == OperandType::GLOBAL && !readOnlyGlobalAnalysis->isReadOnly(idx))
+                    {
+                        // 如果索引是非只读的全局变量，不能移动
+                        cannot_move.insert(gep_inst->GetResultOperand());
+                        is_safe = false;
+                    }
+                }
+                return is_safe;
             }
             case IROpCode::LOAD:
             {
             }
             case IROpCode::STORE:
             {
+                auto store_inst = dynamic_cast<StoreInst*>(inst);
+                auto store_op   = store_inst->ptr;
             }
             case IROpCode::CALL:
             {

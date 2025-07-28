@@ -82,8 +82,10 @@ namespace Analysis
             if (visited.count(op)) break;                            // 防止 alias 循环
             visited.insert(op);
             op = maybe_alias_regs[op];
+#ifdef DEBUG
             std::cout << "op is " << op->getName() << " and type is "
                       << ((op->type == LLVMIR::OperandType::GLOBAL) ? "Global" : "Other") << std::endl;
+#endif
         }
 
         if (op->type == LLVMIR::OperandType::GLOBAL) return op;
@@ -134,7 +136,8 @@ namespace Analysis
                         if (call_cfg && alias_analyser->isNoSideEffect(call_cfg))
                         {
                             // 没有副作用的函数调用
-                            std::cout << "Call to function without side effects: " << call_inst->func_name << std::endl;
+                            // std::cout << "Call to function without side effects: " << call_inst->func_name <<
+                            // std::endl;
                         }
                         else
                         {
