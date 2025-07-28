@@ -1,8 +1,5 @@
 #include "gvn.h"
 #include "llvm_ir/instruction.h"
-#include "llvm_ir/ir_block.h"
-#include <queue>
-#include <algorithm>
 
 namespace LLVMIR
 {
