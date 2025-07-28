@@ -1,4 +1,3 @@
-#include "llvm_ir/defs.h"
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -48,10 +47,17 @@
 #include "optimize/llvm/strength_reduction/const_branch_reduce.h"
 #include "optimize/llvm/strength_reduction/arith_inst_reduce.h"
 #include "optimize/llvm/strength_reduction/gep_strength_reduce.h"
+<<<<<<< HEAD
 // SCEV Analysis
 #include "optimize/llvm/loop/scev_analysis.h"
 // Constant Loop Unroll
 // #include "optimize/llvm/loop/constant_loop_unroll.h"
+=======
+// GVN GCM
+#include "optimize/llvm/gvn_gcm/gcm.h"
+// Blockid Set
+#include "optimize/llvm/setid.h"
+>>>>>>> GCM
 
 #define STR_PW 30
 #define INT_PW 8
@@ -233,8 +239,10 @@ int main(int argc, char** argv)
     if (optimizeLevel)
     {
         // 构建CFG
-        MakeCFGPass              makecfg(&builder);
-        MakeDomTreePass          makedom(&builder);
+        MakeCFGPass     makecfg(&builder);
+        MakeDomTreePass makedom(&builder);
+        MakeDomTreePass makeredom(&builder);
+
         Verify::PhiPrecursorPass phiPrecursor(&builder);
         makecfg.Execute();
         makedom.Execute();
@@ -300,6 +308,19 @@ int main(int argc, char** argv)
         StructuralTransform::BranchCSEPass branchCSE(&builder);
         branchCSE.Execute();
 
+        // TSCCP - Sparse Conditional Constant Propagation
+        Transform::TSCCPPass tsccp(&builder, &aa);
+        tsccp.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
+
+        Transform::ConstBranchReduce constBranchReduce(&builder);
+        constBranchReduce.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
+
         // DCE
         DefUseAnalysisPass DCEDefUse(&builder);
         DCEDefUse.Execute();
@@ -308,7 +329,6 @@ int main(int argc, char** argv)
         // std::cout << "DCE completed" << std::endl;
 
         // ADCE
-        MakeDomTreePass makeredom(&builder);
         makeredom.Execute(true);
         // std::cout << "Reversed dom tree completed" << std::endl;
         CDGAnalyzer cdg(&builder);
@@ -319,24 +339,35 @@ int main(int argc, char** argv)
         ADCEPass adce(&builder, &ADCEDefUse, &cdg);
         adce.Execute();
         // std::cout << "ADCE completed" << std::endl;
+        // GCM
+        DefUseAnalysisPass GCMDefUse(&builder);
+        GCMDefUse.Execute();
+        MakeDomTreePass GCMmakeredom(&builder);
+        GCMmakeredom.Execute(true);
+        GCMmakeredom.Execute(false);
+        // Used to set all instructions with the block they are in.
+        SetIdAnalysis setIdAnalysis(&builder);
+        setIdAnalysis.Execute();
+        GCM gcm(&builder, &GCMDefUse);
+        gcm.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
+        makeredom.Execute(true);
 
         aa.run();
+        licm.Execute();
         md.run();
         makecfg.Execute();
         makedom.Execute();
         makeredom.Execute(true);
         loopAnalysis.Execute();
 
-        // TSCCP - Sparse Conditional Constant Propagation
-        Transform::TSCCPPass tsccp(&builder, &aa);
-        tsccp.Execute();
         // std::cout << "TSCCP completed" << std::endl;
 
         makecfg.Execute();
         makedom.Execute();
 
-        Transform::ConstBranchReduce constBranchReduce(&builder);
-        constBranchReduce.Execute();
         Transform::ArithInstReduce arithInstReduce(&builder);
         arithInstReduce.Execute();
 
