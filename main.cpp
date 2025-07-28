@@ -47,17 +47,14 @@
 #include "optimize/llvm/strength_reduction/const_branch_reduce.h"
 #include "optimize/llvm/strength_reduction/arith_inst_reduce.h"
 #include "optimize/llvm/strength_reduction/gep_strength_reduce.h"
-<<<<<<< HEAD
 // SCEV Analysis
 #include "optimize/llvm/loop/scev_analysis.h"
 // Constant Loop Unroll
 // #include "optimize/llvm/loop/constant_loop_unroll.h"
-=======
 // GVN GCM
 #include "optimize/llvm/gvn_gcm/gcm.h"
 // Blockid Set
 #include "optimize/llvm/setid.h"
->>>>>>> GCM
 
 #define STR_PW 30
 #define INT_PW 8
@@ -348,7 +345,7 @@ int main(int argc, char** argv)
         // Used to set all instructions with the block they are in.
         SetIdAnalysis setIdAnalysis(&builder);
         setIdAnalysis.Execute();
-        GCM gcm(&builder, &GCMDefUse);
+        GCM gcm(&builder, &GCMDefUse, &aa);
         gcm.Execute();
 
         makecfg.Execute();
