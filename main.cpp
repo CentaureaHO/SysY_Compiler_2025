@@ -55,6 +55,8 @@
 #include "optimize/llvm/gvn_gcm/gcm.h"
 // Blockid Set
 #include "optimize/llvm/setid.h"
+// Global Analysis
+#include "optimize/llvm/global_analysis/readonly.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -336,6 +338,7 @@ int main(int argc, char** argv)
         ADCEPass adce(&builder, &ADCEDefUse, &cdg);
         adce.Execute();
         // std::cout << "ADCE completed" << std::endl;
+
         // GCM
         DefUseAnalysisPass GCMDefUse(&builder);
         GCMDefUse.Execute();
@@ -345,7 +348,12 @@ int main(int argc, char** argv)
         // Used to set all instructions with the block they are in.
         SetIdAnalysis setIdAnalysis(&builder);
         setIdAnalysis.Execute();
-        GCM gcm(&builder, &GCMDefUse, &aa);
+        aa.run();
+        md.run();
+        Analysis::ReadOnlyGlobalAnalysis readOnlyGlobalAnalysis(&builder, &aa);
+        readOnlyGlobalAnalysis.run();
+        readOnlyGlobalAnalysis.print();
+        GCM gcm(&builder, &GCMDefUse, &aa, &md);
         gcm.Execute();
 
         makecfg.Execute();

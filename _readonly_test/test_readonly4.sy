@@ -1,0 +1,59 @@
+// 全局配置数据
+const int CONFIG_SIZE       = 5;
+int       CONFIG_VALUES[5]  = {10, 20, 30, 40, 50};            // 只读配置
+int       RESULT_BUFFER[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};  // 存储结果
+int       GLOBAL_COUNTER    = 0;                               // 会被修改
+
+// 更新结果缓冲区
+void updateResult(int index, int value)
+{
+    RESULT_BUFFER[index]     = value;
+    RESULT_BUFFER[index + 3] = value * 2;
+}
+
+// 基于配置计算值
+int calculateValue(int base)
+{
+    int sum = 0;
+    int i   = 0;
+
+    for (i = 0; i < CONFIG_SIZE; i = i + 1) { sum = sum + (base * CONFIG_VALUES[i]); }
+
+    return sum;
+}
+
+// 主处理函数
+void processData(int mode, int value)
+{
+    int calculated = calculateValue(value);
+
+    if (mode == 1)
+    {
+        GLOBAL_COUNTER = GLOBAL_COUNTER + 1;
+        updateResult(0, calculated);
+    }
+    else if (mode == 2)
+    {
+        GLOBAL_COUNTER = GLOBAL_COUNTER + 2;
+        updateResult(1, calculated);
+    }
+    else { updateResult(2, calculated); }
+}
+
+int main()
+{
+    // 使用不同模式调用处理函数
+    processData(1, 2);
+    processData(2, 3);
+    processData(0, 4);
+
+    // 输出结果
+    putint(GLOBAL_COUNTER);
+    putint(RESULT_BUFFER[0]);
+    putint(RESULT_BUFFER[1]);
+
+    return 0;
+}
+
+// ✅ CONFIG_SIZE - const常量
+// ✅ CONFIG_VALUES - 只被读取不被修改的配置数组

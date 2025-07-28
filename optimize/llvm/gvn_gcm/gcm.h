@@ -3,6 +3,7 @@
 #include "dom_analyzer.h"
 #include "llvm/def_use.h"
 #include "llvm/alias_analysis/alias_analysis.h"
+#include "llvm/memdep/memdep.h"
 #include "llvm_ir/instruction.h"
 #include "llvm/pass.h"
 #include <unordered_set>
@@ -19,6 +20,8 @@ namespace LLVMIR
 
         // 别名分析
         Analysis::AliasAnalyser* aliasAnalyser;  // 别名分析器
+        // 内存依赖分析
+        Analysis::MemoryDependenceAnalyser* memdep;  // 内存依赖分析器
 
         std::unordered_set<Instruction*> erase_set;                             // 用于存储需要删除的指令
         std::unordered_map<int, std::multimap<int, Instruction*> > latest_map;  // 用于存储每个块的最新指令队列
@@ -41,10 +44,13 @@ namespace LLVMIR
         void GenerateInformation(CFG* func_cfg);
 
       public:
-        GCM(LLVMIR::IR* ir, DefUseAnalysisPass* DefUseAnalysis, Analysis::AliasAnalyser* AliasAnalyser) : Pass(ir)
+        GCM(LLVMIR::IR* ir, DefUseAnalysisPass* DefUseAnalysis, Analysis::AliasAnalyser* AliasAnalyser,
+            Analysis::MemoryDependenceAnalyser* MemoryDependenceAnalyser)
+            : Pass(ir)
         {
             defuseAnalysis = DefUseAnalysis;
             aliasAnalyser  = AliasAnalyser;
+            memdep         = MemoryDependenceAnalyser;
         }
 
         void Execute() override;

@@ -35,7 +35,7 @@ namespace LLVMIR
             case IROpCode::FPTOSI:
             case IROpCode::SITOFP:
             case IROpCode::FPEXT:
-            {  // case IROpCode::GETELEMENTPTR:
+            {
 #ifdef DEBUG_CALL
                 if (inst->opcode == IROpCode::CALL)
                 {
@@ -54,6 +54,18 @@ namespace LLVMIR
                     }
                 }
                 return true;
+            }
+            case IROpCode::GETELEMENTPTR:
+            {
+            }
+            case IROpCode::LOAD:
+            {
+            }
+            case IROpCode::STORE:
+            {
+            }
+            case IROpCode::CALL:
+            {
             }
             // PHI不能移动,所以这里用到PHI的也不能移动
             default:

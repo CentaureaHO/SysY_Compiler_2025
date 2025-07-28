@@ -1,0 +1,73 @@
+// 只读全局变量
+const int READ_ONLY_CONST    = 42;               // 常量声明(编译期可确定)
+int       READ_ONLY_VAR      = 100;              // 运行时只读
+int       READ_ONLY_ARRAY[5] = {1, 2, 3, 4, 5};  // 运行时只读数组
+
+// 非只读全局变量
+int MODIFIED_VAR      = 200;           // 会被修改
+int MODIFIED_ARRAY[3] = {10, 20, 30};  // 会被修改的数组
+
+// 复杂情况
+int PARTIALLY_READ_ONLY[4] = {1, 2, 3, 4};     // 部分元素被修改
+int CONDITIONALLY_MODIFIED = 75;               // 条件性修改
+int ARRAY_INDEX_MOD[5]     = {1, 2, 3, 4, 5};  // 通过动态索引修改
+
+// 全局索引变量 (替代指针)
+int global_idx = 0;
+
+void modifyGlobals(int arg)
+{
+    MODIFIED_VAR           = arg + 1;
+    PARTIALLY_READ_ONLY[2] = arg * 2;  // 只修改部分元素
+}
+
+void readOnlyAccess()
+{
+    // 只读取不修改全局变量
+    int temp;
+    temp = READ_ONLY_CONST;
+    temp = READ_ONLY_VAR;
+    temp = READ_ONLY_ARRAY[0] + READ_ONLY_ARRAY[4];
+    temp = MODIFIED_VAR;            // 读取被其他地方修改的变量
+    temp = PARTIALLY_READ_ONLY[0];  // 读取数组中未修改的元素
+    putint(temp);
+}
+
+int modifyByIndex(int idx)
+{
+    // 通过索引修改全局数组
+    ARRAY_INDEX_MOD[idx] = 30;
+    return ARRAY_INDEX_MOD[idx];
+}
+
+int main()
+{
+    // 读取只读变量
+    putint(READ_ONLY_CONST);
+    putint(READ_ONLY_VAR);
+    putint(READ_ONLY_ARRAY[2]);
+
+    // 修改非只读变量
+    MODIFIED_VAR      = 201;
+    MODIFIED_ARRAY[1] = 21;
+
+    // 调用修改全局变量的函数
+    modifyGlobals(5);
+
+    // 调用只读取全局变量的函数
+    readOnlyAccess();
+
+    // 通过全局索引变量修改
+    global_idx                  = 0;
+    ARRAY_INDEX_MOD[global_idx] = 10;
+    global_idx                  = 1;
+    ARRAY_INDEX_MOD[global_idx] = 20;
+
+    // 条件修改
+    if (READ_ONLY_CONST > 30) { CONDITIONALLY_MODIFIED = 76; }
+
+    // 通过函数和索引修改
+    modifyByIndex(2);
+
+    return 0;
+}
