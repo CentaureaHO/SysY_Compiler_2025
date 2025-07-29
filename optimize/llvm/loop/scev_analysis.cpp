@@ -1056,15 +1056,9 @@ namespace Analysis
                 upperbound_operand = CROperand(op1);
                 normalized_cond    = getSwapIcmpCond(cond);
             }
-            else
-            {
-                return;
-            }
+            else { return; }
         }
-        else
-        {
-            return;
-        }
+        else { return; }
 
         if (!selected_cr) return;
 
@@ -1093,14 +1087,8 @@ namespace Analysis
 
         if (is_do_while_form && current_start && step_val)
         {
-            if (selected_cr->isPureSum())
-            {
-                true_lowerbound = CROperand(*current_start - *step_val);
-            }
-            else if (selected_cr->isPureProduct())
-            {
-                true_lowerbound = CROperand(*current_start / *step_val);
-            }
+            if (selected_cr->isPureSum()) { true_lowerbound = CROperand(*current_start - *step_val); }
+            else if (selected_cr->isPureProduct()) { true_lowerbound = CROperand(*current_start / *step_val); }
         }
 
         info->loop_info.lowerbound     = true_lowerbound;
