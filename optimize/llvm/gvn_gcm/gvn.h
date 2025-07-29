@@ -32,7 +32,6 @@ namespace LLVMIR
         bool optimize();
 
       private:
-
         // 构造表达式
         std::unique_ptr<Expression> buildExpression(Instruction* inst);
 

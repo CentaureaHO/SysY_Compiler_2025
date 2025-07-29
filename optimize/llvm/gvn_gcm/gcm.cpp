@@ -25,7 +25,6 @@ namespace LLVMIR
         auto traced = readOnlyGlobalAnalysis->traceToGlobal(load_op);
         if (traced && readOnlyGlobalAnalysis->isReadOnly(traced)) { return true; }
         // 前面没有 write 或 call 会写到同一地址
-        
     }
 
     bool GCM::IsSafeInst(Instruction* inst)
