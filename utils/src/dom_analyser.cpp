@@ -149,3 +149,30 @@ void DomAnalyzer::clear()
     dom_frontier.clear();
     imm_dom.clear();
 }
+
+int DomAnalyzer::LCA(int u, int v)
+{
+    if (u == v) return u;              // 如果 u 和 v 相同，直接返回
+    if (u == -1 && v != -1) return v;  // 如果 u 是 -1，返回 v
+    if (v == -1 && u != -1) return u;  // 如果 v 是 -1，返回 u
+    std::set<int> path_u;
+    // std::cout << imm_dom[0] << std::endl;
+
+    // 把 u 的祖先都加入集合
+    while (u != -1)
+    {
+        path_u.insert(u);
+        // std::cout << "u is " << u << std::endl;
+        if (u == imm_dom[u]) break;  // 如果到达根节点，停止
+        u = imm_dom[u];
+    }
+
+    // 沿着 v 的链往上找第一个在 path_u 中的祖先
+    while (v != -1)
+    {
+        if (path_u.count(v)) return v;
+        v = imm_dom[v];
+    }
+
+    return -1;  // 不存在共同祖先（理论上不应该发生）
+}
