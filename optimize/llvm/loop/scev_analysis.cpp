@@ -6,6 +6,8 @@
 #include <functional>
 #include <cmath>
 
+#define ALLOW_MULTI_EXITING
+
 namespace Analysis
 {
     LLVMIR::IcmpCond getInverseIcmpCond(LLVMIR::IcmpCond cond);
@@ -622,7 +624,10 @@ namespace Analysis
         auto lower    = loop_info.lowerbound.getConstantValue();
         auto upper    = loop_info.upperbound.getConstantValue();
         auto step_val = loop_info.step.getConstantValue();
-        std::cout << "lower: " << *lower << ", upper: " << *upper << ", step_val: " << *step_val << std::endl;
+
+        std::cout << "lower: " << (lower ? std::to_string(*lower) : "runtime")
+                  << ", upper: " << (upper ? std::to_string(*upper) : "runtime")
+                  << ", step_val: " << (step_val ? std::to_string(*step_val) : "runtime") << std::endl;
 
         if (lower && upper && step_val && *step_val > 0)
         {
@@ -726,8 +731,57 @@ namespace Analysis
         {
             std::cout << "Loop Analysis:" << std::endl;
             std::cout << "\tLoop structure recognized" << std::endl;
+
+            auto lower_val = loop_info.lowerbound.getConstantValue();
+            auto upper_val = loop_info.upperbound.getConstantValue();
+            auto step_val  = loop_info.step.getConstantValue();
+
+            std::cout << "\tLower bound: ";
+            if (lower_val) { std::cout << *lower_val; }
+            else
+            {
+                std::cout << "runtime (";
+                loop_info.lowerbound.print();
+                std::cout << ")";
+            }
+            std::cout << std::endl;
+
+            std::cout << "\tUpper bound: ";
+            if (upper_val) { std::cout << *upper_val; }
+            else
+            {
+                std::cout << "runtime (";
+                loop_info.upperbound.print();
+                std::cout << ")";
+            }
+            std::cout << std::endl;
+
+            std::cout << "\tStep: ";
+            if (step_val) { std::cout << *step_val; }
+            else
+            {
+                std::cout << "runtime (";
+                loop_info.step.print();
+                std::cout << ")";
+            }
+            std::cout << std::endl;
+
+            std::cout << "\tCondition: ";
+            switch (loop_info.cond)
+            {
+                case LLVMIR::IcmpCond::SLT: std::cout << "signed less than"; break;
+                case LLVMIR::IcmpCond::SLE: std::cout << "signed less or equal"; break;
+                case LLVMIR::IcmpCond::SGT: std::cout << "signed greater than"; break;
+                case LLVMIR::IcmpCond::SGE: std::cout << "signed greater or equal"; break;
+                case LLVMIR::IcmpCond::EQ: std::cout << "equal"; break;
+                case LLVMIR::IcmpCond::NE: std::cout << "not equal"; break;
+                default: std::cout << "unknown"; break;
+            }
+            std::cout << std::endl;
+
             auto trip_count = getConstantTripCount();
             if (trip_count) { std::cout << "\tConstant trip count: " << *trip_count << std::endl; }
+            else { std::cout << "\tTrip count: runtime dependent" << std::endl; }
         }
         else
             std::cout << "\tLoop structure not recognized" << std::endl;
@@ -967,18 +1021,29 @@ namespace Analysis
         info->is_simple_loop = false;
 
         if (info->loop->exit_nodes.size() != 1) return;
+
+#ifndef ALLOW_MULTI_EXITING
         if (info->loop->exiting_nodes.size() != 1) return;
+#endif
 
-        auto* exit_node    = *info->loop->exit_nodes.begin();
-        auto* exiting_node = *info->loop->exiting_nodes.begin();
-        auto* latch        = *info->loop->latches.begin();
+        auto* exit_node = *info->loop->exit_nodes.begin();
+        auto* latch     = *info->loop->latches.begin();
 
-        bool is_latch_eq_exiting = (exiting_node == latch);
-        if (!is_latch_eq_exiting) return;
-        if (exiting_node->insts.size() < 2) return;
+        LLVMIR::IRBlock* selected_exiting_node = nullptr;
 
-        auto* cmp_inst = exiting_node->insts[exiting_node->insts.size() - 2];
-        auto* br_inst  = exiting_node->insts[exiting_node->insts.size() - 1];
+        // do-while form: latch is exiting node
+        if (info->loop->exiting_nodes.find(latch) != info->loop->exiting_nodes.end()) selected_exiting_node = latch;
+        // while form: header is exiting node
+        else if (info->loop->exiting_nodes.find(info->loop->header) != info->loop->exiting_nodes.end())
+            selected_exiting_node = info->loop->header;
+        else if (!info->loop->exiting_nodes.empty())
+            selected_exiting_node = *info->loop->exiting_nodes.begin();
+
+        if (!selected_exiting_node) return;
+        if (selected_exiting_node->insts.size() < 2) return;
+
+        auto* cmp_inst = selected_exiting_node->insts[selected_exiting_node->insts.size() - 2];
+        auto* br_inst  = selected_exiting_node->insts[selected_exiting_node->insts.size() - 1];
 
         if (cmp_inst->opcode == LLVMIR::IROpCode::FCMP) return;
         if (cmp_inst->opcode != LLVMIR::IROpCode::ICMP) return;
@@ -1068,20 +1133,34 @@ namespace Analysis
         CROperand true_lowerbound = selected_cr->operands[0];
         CROperand step_operand    = (selected_cr->operands.size() > 1) ? selected_cr->operands[1] : CROperand(1);
 
-        // 对 do-while 形式循环，真正的下界为比较语句使用的归纳变量再前推一步的值
-        // do-while的特征：latch块有条件跳转到header
-        // 其它形式循环：latch块无条件跳转到header
-        bool is_do_while_form = true;
+        // 根据选中的 exiting 节点判断循环形式
+        // do-while的特征：latch块是exiting节点且有条件跳转
+        // while的特征：header块是exiting节点
+        bool is_do_while_form = false;
 
-        if (!latch->insts.empty())
+        if (selected_exiting_node == latch)
         {
-            auto* last_inst = latch->insts.back();
-
-            if (last_inst->opcode == LLVMIR::IROpCode::BR_UNCOND)
+            // latch 是 exiting 节点，这是 do-while 形式
+            is_do_while_form = true;
+        }
+        else if (selected_exiting_node == info->loop->header)
+        {
+            // header 是 exiting 节点，这是 while 形式
+            is_do_while_form = false;
+        }
+        else
+        {
+            // 其他情况，根据 latch 的跳转指令判断
+            if (!latch->insts.empty())
             {
-                auto* br_uncond    = static_cast<LLVMIR::BranchUncondInst*>(last_inst);
-                auto* target_label = static_cast<LLVMIR::LabelOperand*>(br_uncond->target_label);
-                if (target_label->label_num == info->loop->header->block_id) { is_do_while_form = false; }
+                auto* last_inst = latch->insts.back();
+                if (last_inst->opcode == LLVMIR::IROpCode::BR_UNCOND)
+                {
+                    auto* br_uncond    = static_cast<LLVMIR::BranchUncondInst*>(last_inst);
+                    auto* target_label = static_cast<LLVMIR::LabelOperand*>(br_uncond->target_label);
+                    is_do_while_form   = (target_label->label_num != info->loop->header->block_id);
+                }
+                else { is_do_while_form = true; }
             }
         }
 

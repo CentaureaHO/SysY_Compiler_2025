@@ -387,8 +387,7 @@ int main(int argc, char** argv)
         {
             std::cout << "Function: " << func_def->func_name << std::endl;
             if (!cfg || !cfg->LoopForest) continue;
-            for (auto* loop : cfg->LoopForest->loop_set)
-                loop->printLoopInfo();
+            for (auto* loop : cfg->LoopForest->loop_set) loop->printLoopInfo();
         }
 
         tsccp.Execute();
