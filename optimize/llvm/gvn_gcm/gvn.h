@@ -1,5 +1,4 @@
 #pragma once
-
 #include "./Expressin/Binary.h"
 #include "./Expressin/Call.h"
 #include "./Expressin/Commutative.h"
@@ -54,4 +53,4 @@ namespace LLVMIR
         bool replaceInstruction(Instruction* from, Operand* to);
     };
 
-}  // namespace LLVMIR
+}  // namespace LLVMIR#pragma once

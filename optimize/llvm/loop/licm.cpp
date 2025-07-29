@@ -88,6 +88,7 @@ namespace StructuralTransform
         if (inst->block_id == -1) return false;
 
         const bool dominates_exits = dominatesAllExits(cfg, cfg->block_id_to_block.at(inst->block_id), loop);
+
         switch (inst->opcode)
         {
             case LLVMIR::IROpCode::LOAD:

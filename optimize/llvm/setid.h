@@ -4,7 +4,7 @@ namespace LLVMIR
 {
     class SetIdAnalysis : Pass
     {
-      public:
+      public:   
         SetIdAnalysis(LLVMIR::IR* ir) : Pass(ir) {}
         void Execute() override;
         void ExecuteInSingleCFG(CFG* func_cfg);

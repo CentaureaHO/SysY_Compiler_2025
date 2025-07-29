@@ -46,6 +46,10 @@
 #include "optimize/llvm/strength_reduction/const_branch_reduce.h"
 #include "optimize/llvm/strength_reduction/arith_inst_reduce.h"
 #include "optimize/llvm/strength_reduction/gep_strength_reduce.h"
+// SCEV Analysis
+#include "optimize/llvm/loop/scev_analysis.h"
+// Constant Loop Unroll
+// #include "optimize/llvm/loop/constant_loop_unroll.h"
 // GVN GCM
 #include "optimize/llvm/gvn_gcm/gcm.h"
 // Blockid Set
