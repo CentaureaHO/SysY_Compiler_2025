@@ -13,8 +13,13 @@ namespace StructuralTransform
     class LoopSimplifyPass : public Pass
     {
       private:
-        void eliminateUselessPhi(CFG* cfg);
-        void addLoopStructureComments(CFG* cfg);
+        void             eliminateUselessPhi(CFG* cfg);
+        void             addLoopStructureComments(CFG* cfg);
+        void             cleanupInvalidPhiReferences(CFG* cfg);
+        void             simplifyExitNodes(NaturalLoop* loop, CFG* cfg);
+        LLVMIR::IRBlock* findUltimateTarget(LLVMIR::IRBlock* exit_node, CFG* cfg);
+        LLVMIR::Operand* traceValueThroughChain(
+            LLVMIR::IRBlock* exiting, LLVMIR::IRBlock* exit, LLVMIR::IRBlock* ultimate, int phi_reg, CFG* cfg);
 
       public:
         explicit LoopSimplifyPass(LLVMIR::IR* ir);

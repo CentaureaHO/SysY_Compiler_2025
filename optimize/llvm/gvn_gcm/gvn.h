@@ -53,4 +53,4 @@ namespace LLVMIR
         bool replaceInstruction(Instruction* from, Operand* to);
     };
 
-}  // namespace LLVMIR#pragma once
+}  // namespace LLVMIR

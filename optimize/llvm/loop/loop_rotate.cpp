@@ -19,8 +19,9 @@ namespace StructuralTransform
 
             for (auto* loop : eligible_loops)
             {
-                auto* guard_block = createGuardBlock(cfg, loop);
-                restructureLoop(cfg, loop, guard_block);
+                std::map<int, int> value_map;
+                auto*              guard_block = createGuardBlock(cfg, loop, value_map);
+                restructureLoop(cfg, loop, guard_block, value_map);
 
                 // std::cout << "LoopRotate applied to loop " << loop->loop_id << " (header: " << loop->header->block_id
                 //           << ")" << std::endl;
@@ -52,11 +53,13 @@ namespace StructuralTransform
             return false;
         }
 
+        /*
         if (loop->exiting_nodes.size() != 1)
         {
             std::cout << "LoopRotatePass: multiple exiting nodes" << std::endl;
             return false;
         }
+        */
 
         auto* latch = *loop->latches.begin();
         if (latch->insts.empty()) return false;
@@ -121,7 +124,7 @@ namespace StructuralTransform
         for (auto* use_inst : body_uses) use_inst->Rename(reg_mapping);
     }
 
-    LLVMIR::IRBlock* LoopRotatePass::createGuardBlock(CFG* cfg, NaturalLoop* loop)
+    LLVMIR::IRBlock* LoopRotatePass::createGuardBlock(CFG* cfg, NaturalLoop* loop, std::map<int, int>& value_map)
     {
         auto* guard_block                             = cfg->func->createBlock();
         cfg->block_id_to_block[guard_block->block_id] = guard_block;
@@ -186,7 +189,8 @@ namespace StructuralTransform
         return guard_block;
     }
 
-    void LoopRotatePass::restructureLoop(CFG* cfg, NaturalLoop* loop, LLVMIR::IRBlock* guard_block)
+    void LoopRotatePass::restructureLoop(
+        CFG* cfg, NaturalLoop* loop, LLVMIR::IRBlock* guard_block, const std::map<int, int>& value_map)
     {
         auto* exit_block = *loop->exit_nodes.begin();
         auto* latch      = *loop->latches.begin();
