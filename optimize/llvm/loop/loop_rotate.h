@@ -17,9 +17,10 @@ namespace StructuralTransform
         void resolveConflict(CFG* cfg, NaturalLoop* loop, LLVMIR::Instruction* header_def, int new_reg,
             std::set<LLVMIR::Instruction*> body_uses);
 
-        LLVMIR::IRBlock* createGuardBlock(CFG* cfg, NaturalLoop* loop);
+        LLVMIR::IRBlock* createGuardBlock(CFG* cfg, NaturalLoop* loop, std::map<int, int>& value_map);
 
-        void restructureLoop(CFG* cfg, NaturalLoop* loop, LLVMIR::IRBlock* condition_block);
+        void restructureLoop(
+            CFG* cfg, NaturalLoop* loop, LLVMIR::IRBlock* condition_block, const std::map<int, int>& value_map);
 
       public:
         explicit LoopRotatePass(LLVMIR::IR* ir);

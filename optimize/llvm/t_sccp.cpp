@@ -1700,8 +1700,8 @@ namespace Transform
 
         if (!current_cfg_->LoopForest || current_cfg_->LoopForest->loop_set.empty())
         {
-            DBGINFO("\tNo loop information available, assuming not in loop");
-            return false;
+            DBGINFO("\tNo loop information available, being conservative and assuming in loop");
+            return true;
         }
 
         for (auto* loop : current_cfg_->LoopForest->loop_set)

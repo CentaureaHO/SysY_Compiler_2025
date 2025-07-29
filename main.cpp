@@ -33,6 +33,7 @@
 #include "optimize/llvm/loop/loop_simplify.h"
 #include "optimize/llvm/loop/lcssa.h"
 #include "optimize/llvm/loop/licm.h"
+#include "optimize/llvm/loop/loop_rotate.h"
 #include "optimize/llvm/function_inline.h"
 // Unify Return
 #include "optimize/llvm/unify_return.h"
@@ -277,15 +278,23 @@ int main(int argc, char** argv)
         // std::cout << "After Function Inline" << std::endl;
         // phiPrecursor.Execute();
 
+        StructuralTransform::LoopRotatePass loopRotate(&builder);
+
         loopAnalysis.Execute();
         loopSimplify.Execute();
         lcssa.Execute();
+        loopRotate.Execute();
         // 已修复
+        makecfg.Execute();
+        makedom.Execute();
+
         Analysis::AliasAnalyser aa(&builder);
         aa.run();
         StructuralTransform::LICMPass licm(&builder, &aa);
         licm.Execute();
 
+        makecfg.Execute();
+        makedom.Execute();
         aa.run();
         Analysis::MemoryDependenceAnalyser md(&builder, &aa);
         md.run();
@@ -296,6 +305,8 @@ int main(int argc, char** argv)
         StructuralTransform::BranchCSEPass branchCSE(&builder);
         branchCSE.Execute();
 
+        makecfg.Execute();
+        makedom.Execute();
         // TSCCP - Sparse Conditional Constant Propagation
         Transform::TSCCPPass tsccp(&builder, &aa);
         tsccp.Execute();
