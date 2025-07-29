@@ -13,9 +13,9 @@ namespace StructuralTransform
     {
       private:
         bool                                            canRotate(NaturalLoop* loop);
-        std::pair<std::set<LLVMIR::Instruction*>, bool> checkHeaderUse(NaturalLoop* loop, int result_reg);
+        std::pair<std::set<LLVMIR::Instruction*>, bool> checkHeaderUse(CFG* cfg, NaturalLoop* loop, int result_reg);
         void resolveConflict(CFG* cfg, NaturalLoop* loop, LLVMIR::Instruction* header_def, int new_reg,
-            std::set<LLVMIR::Instruction*> body_uses);
+            std::set<LLVMIR::Instruction*> body_uses, const std::map<int, int>& value_map);
 
         LLVMIR::IRBlock* createGuardBlock(CFG* cfg, NaturalLoop* loop, std::map<int, int>& value_map);
 

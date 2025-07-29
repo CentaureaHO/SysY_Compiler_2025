@@ -724,11 +724,13 @@ namespace Analysis
 
         if (is_simple_loop)
         {
-            std::cout << "Enhanced For Loop Analysis:" << std::endl;
+            std::cout << "Loop Analysis:" << std::endl;
             std::cout << "\tLoop structure recognized" << std::endl;
             auto trip_count = getConstantTripCount();
             if (trip_count) { std::cout << "\tConstant trip count: " << *trip_count << std::endl; }
         }
+        else
+            std::cout << "\tLoop structure not recognized" << std::endl;
 
         std::cout << "======================================" << std::endl;
     }

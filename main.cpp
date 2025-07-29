@@ -49,6 +49,8 @@
 #include "optimize/llvm/strength_reduction/gep_strength_reduce.h"
 // SCEV Analysis
 #include "optimize/llvm/loop/scev_analysis.h"
+// IndVars Simplify
+// #include "optimize/llvm/loop/indvars_simplify.h"
 // Constant Loop Unroll
 // #include "optimize/llvm/loop/constant_loop_unroll.h"
 // GVN GCM
@@ -312,6 +314,13 @@ int main(int argc, char** argv)
         makecfg.Execute();
         makedom.Execute();
 
+        loopAnalysis.Execute();
+        loopSimplify.Execute();
+        lcssa.Execute();
+        loopRotate.Execute();
+        makecfg.Execute();
+        makedom.Execute();
+
         Transform::ConstBranchReduce constBranchReduce(&builder);
         constBranchReduce.Execute();
 
@@ -358,12 +367,6 @@ int main(int argc, char** argv)
         makecfg.Execute();
         makedom.Execute();
         makeredom.Execute(true);
-        loopAnalysis.Execute();
-
-        // std::cout << "TSCCP completed" << std::endl;
-
-        makecfg.Execute();
-        makedom.Execute();
 
         Transform::ArithInstReduce arithInstReduce(&builder);
         arithInstReduce.Execute();
@@ -378,6 +381,15 @@ int main(int argc, char** argv)
         makedom.Execute();
         loopAnalysis.Execute();
         loopSimplify.Execute();
+        loopRotate.Execute();
+
+        for (const auto& [func_def, cfg] : builder.cfg)
+        {
+            std::cout << "Function: " << func_def->func_name << std::endl;
+            if (!cfg || !cfg->LoopForest) continue;
+            for (auto* loop : cfg->LoopForest->loop_set)
+                loop->printLoopInfo();
+        }
 
         tsccp.Execute();
 
@@ -385,11 +397,7 @@ int main(int argc, char** argv)
         scevAnalyser.run();
         scevAnalyser.printAllResults();
 
-        if (optimizeLevel >= 2)
-        {
-            // StructuralTransform::ConstantLoopFullyUnrollPass constantUnroll(&builder, &scevAnalyser);
-            // constantUnroll.Execute();
-        }
+        if (optimizeLevel >= 2) {}
         makecfg.Execute();
         makedom.Execute();
     }
