@@ -285,6 +285,7 @@ int main(int argc, char** argv)
         // 已修复
         makecfg.Execute();
         makedom.Execute();
+
         Analysis::AliasAnalyser aa(&builder);
         aa.run();
         StructuralTransform::LICMPass licm(&builder, &aa);
@@ -328,6 +329,7 @@ int main(int argc, char** argv)
         loopAnalysis.Execute();
 
         // TSCCP - Sparse Conditional Constant Propagation
+
         Transform::TSCCPPass tsccp(&builder, &aa);
         tsccp.Execute();
         // std::cout << "TSCCP completed" << std::endl;
@@ -353,6 +355,7 @@ int main(int argc, char** argv)
         loopSimplify.Execute();
 
         tsccp.Execute();
+
         Analysis::SCEVAnalyser scevAnalyser(&builder);
         scevAnalyser.run();
         scevAnalyser.printAllResults();
@@ -364,7 +367,7 @@ int main(int argc, char** argv)
         }
         makecfg.Execute();
         makedom.Execute();
-        loopAnalysis.Execute();
+        // loopAnalysis.Execute();
 
         // tsccp.Execute();
     }

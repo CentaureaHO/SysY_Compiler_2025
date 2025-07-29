@@ -109,20 +109,18 @@ namespace Analysis
     class ForLoopInfo
     {
       public:
-        CROperand        lowerbound;            ///< 下界
-        CROperand        upperbound;            ///< 上界
-        CROperand        step;                  ///< 步长
-        LLVMIR::IcmpCond cond;                  ///< 比较条件
-        bool             is_upperbound_closed;  ///< 上界是否闭合
-        ChainOfRecurrences* selected_iv_cr;     ///< 选中的归纳变量CR
+        CROperand           lowerbound;            ///< 下界
+        CROperand           upperbound;            ///< 上界
+        CROperand           step;                  ///< 步长
+        LLVMIR::IcmpCond    cond;                  ///< 比较条件
+        bool                is_upperbound_closed;  ///< 上界是否闭合
+        ChainOfRecurrences* selected_iv_cr;        ///< 选中的归纳变量CR
 
       public:
         ForLoopInfo() : cond(LLVMIR::IcmpCond::SLT), is_upperbound_closed(false), selected_iv_cr(nullptr) {}
-        
+
         /// 判断是否为乘法递增的归纳变量
-        bool isMultiplicativeInductionVar() const {
-            return selected_iv_cr && selected_iv_cr->isPureProduct();
-        }
+        bool isMultiplicativeInductionVar() const { return selected_iv_cr && selected_iv_cr->isPureProduct(); }
     };
 
     class LoopCRInfo

@@ -218,11 +218,10 @@ namespace Analysis
 
         if (operators[0] == CROperator::ADD)
         {
-            ChainOfRecurrences result = *this;
-            if (result.operands[0].type == CROperand::CONSTANT && constant.type == CROperand::CONSTANT)
-            {
-                result.operands[0] = CROperand(result.operands[0].const_val + constant.const_val);
-            }
+            ChainOfRecurrences result       = *this;
+            auto               result_val   = result.operands[0].getConstantValue();
+            auto               constant_val = constant.getConstantValue();
+            if (result_val && constant_val) { result.operands[0] = CROperand(*result_val + *constant_val); }
             return result;
         }
 
@@ -233,12 +232,14 @@ namespace Analysis
     {
         if (isPureSum())
         {
-            ChainOfRecurrences result = *this;
-            for (auto& operand : result.operands)
+            ChainOfRecurrences result       = *this;
+            auto               constant_val = constant.getConstantValue();
+            if (constant_val)
             {
-                if (operand.type == CROperand::CONSTANT && constant.type == CROperand::CONSTANT)
+                for (auto& operand : result.operands)
                 {
-                    operand = CROperand(operand.const_val * constant.const_val);
+                    auto operand_val = operand.getConstantValue();
+                    if (operand_val) { operand = CROperand(*operand_val * *constant_val); }
                 }
             }
             return result;
@@ -1056,15 +1057,9 @@ namespace Analysis
                 upperbound_operand = CROperand(op1);
                 normalized_cond    = getSwapIcmpCond(cond);
             }
-            else
-            {
-                return;
-            }
+            else { return; }
         }
-        else
-        {
-            return;
-        }
+        else { return; }
 
         if (!selected_cr) return;
 
@@ -1093,14 +1088,8 @@ namespace Analysis
 
         if (is_do_while_form && current_start && step_val)
         {
-            if (selected_cr->isPureSum())
-            {
-                true_lowerbound = CROperand(*current_start - *step_val);
-            }
-            else if (selected_cr->isPureProduct())
-            {
-                true_lowerbound = CROperand(*current_start / *step_val);
-            }
+            if (selected_cr->isPureSum()) { true_lowerbound = CROperand(*current_start - *step_val); }
+            else if (selected_cr->isPureProduct()) { true_lowerbound = CROperand(*current_start / *step_val); }
         }
 
         info->loop_info.lowerbound     = true_lowerbound;
