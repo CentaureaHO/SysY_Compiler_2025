@@ -23,7 +23,45 @@ namespace LLVMIR
         Operand(OperandType t = OperandType::UNKNOWN);
         virtual ~Operand() = default;
 
-        virtual std::string getName() = 0;
+        virtual std::string getName()         = 0;
+        virtual int         GetRegNum() const = 0;
+        virtual std::string GetGlobal() const = 0;
+        virtual int         GetImm() const    = 0;
+        virtual float       GetImmF() const   = 0;
+    };
+
+    struct OperandPtrHash
+    {
+        std::size_t operator()(const Operand* op) const
+        {
+            if (!op) return 0;
+            switch (op->type)
+            {
+                case OperandType::REG: return std::hash<int>()(op->GetRegNum());
+                case OperandType::IMMEI32: return std::hash<int>()(op->GetImm());
+                case OperandType::IMMEF32: return std::hash<float>()(op->GetImmF());
+                case OperandType::GLOBAL: return std::hash<std::string>()(op->GetGlobal());
+                default: return std::hash<int>()(static_cast<int>(op->type));
+            }
+        }
+    };
+
+    struct OperandPtrEqual
+    {
+        bool operator()(const Operand* lhs, const Operand* rhs) const
+        {
+            if (!lhs || !rhs) return lhs == rhs;
+            if (lhs->type != rhs->type) return false;
+
+            switch (lhs->type)
+            {
+                case OperandType::REG: return lhs->GetRegNum() == rhs->GetRegNum();
+                case OperandType::IMMEI32: return lhs->GetImm() == rhs->GetImm();
+                case OperandType::IMMEF32: return lhs->GetImmF() == rhs->GetImmF();
+                case OperandType::GLOBAL: return lhs->GetGlobal() == rhs->GetGlobal();
+                default: return false;
+            }
+        }
     };
 
     class RegOperand : public Operand
@@ -35,6 +73,10 @@ namespace LLVMIR
         virtual ~RegOperand() = default;
 
         virtual std::string getName();
+        virtual int         GetRegNum() const;
+        virtual std::string GetGlobal() const;
+        virtual int         GetImm() const;
+        virtual float       GetImmF() const;
     };
 
     class ImmeI32Operand : public Operand
@@ -46,6 +88,10 @@ namespace LLVMIR
         virtual ~ImmeI32Operand() = default;
 
         virtual std::string getName();
+        virtual int         GetRegNum() const;
+        virtual std::string GetGlobal() const;
+        virtual int         GetImm() const;
+        virtual float       GetImmF() const;
     };
 
     class ImmeF32Operand : public Operand
@@ -57,6 +103,10 @@ namespace LLVMIR
         virtual ~ImmeF32Operand() = default;
 
         virtual std::string getName();
+        virtual int         GetRegNum() const;
+        virtual std::string GetGlobal() const;
+        virtual int         GetImm() const;
+        virtual float       GetImmF() const;
     };
 
     class LabelOperand : public Operand
@@ -68,6 +118,10 @@ namespace LLVMIR
         virtual ~LabelOperand() = default;
 
         virtual std::string getName();
+        virtual int         GetRegNum() const;
+        virtual std::string GetGlobal() const;
+        virtual int         GetImm() const;
+        virtual float       GetImmF() const;
     };
 
     class GlobalOperand : public Operand
@@ -79,6 +133,10 @@ namespace LLVMIR
         virtual ~GlobalOperand() = default;
 
         virtual std::string getName();
+        virtual int         GetRegNum() const;
+        virtual std::string GetGlobal() const;
+        virtual int         GetImm() const;
+        virtual float       GetImmF() const;
     };
 
     class Instruction
@@ -104,6 +162,9 @@ namespace LLVMIR
         virtual Instruction* CloneWithMapping(
             const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const = 0;
         virtual std::vector<Operand*> GetCSEOperands() const                              = 0;
+
+        virtual std::vector<Operand*> GetUsedOperands()  = 0;
+        virtual Operand*              GetResultOperand() = 0;
     };
 
     class LoadInst : public Instruction
@@ -127,6 +188,9 @@ namespace LLVMIR
         virtual Instruction*     CloneWithMapping(
                 const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+
+        virtual std::vector<Operand*> GetUsedOperands() override;
+        virtual Operand*              GetResultOperand() override;
     };
 
     class StoreInst : public Instruction
@@ -150,6 +214,9 @@ namespace LLVMIR
         virtual Instruction*     CloneWithMapping(
                 const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+
+        virtual std::vector<Operand*> GetUsedOperands() override;
+        virtual Operand*              GetResultOperand() override;
     };
 
     class ArithmeticInst : public Instruction
@@ -174,6 +241,9 @@ namespace LLVMIR
         virtual Instruction*     CloneWithMapping(
                 const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+
+        virtual std::vector<Operand*> GetUsedOperands() override;
+        virtual Operand*              GetResultOperand() override;
     };
 
     class IcmpInst : public Instruction
@@ -199,6 +269,9 @@ namespace LLVMIR
         virtual Instruction*     CloneWithMapping(
                 const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+
+        virtual std::vector<Operand*> GetUsedOperands() override;
+        virtual Operand*              GetResultOperand() override;
     };
 
     class FcmpInst : public Instruction
@@ -224,6 +297,9 @@ namespace LLVMIR
         virtual Instruction*     CloneWithMapping(
                 const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+
+        virtual std::vector<Operand*> GetUsedOperands() override;
+        virtual Operand*              GetResultOperand() override;
     };
 
     class AllocInst : public Instruction
@@ -247,6 +323,9 @@ namespace LLVMIR
         virtual Instruction*     CloneWithMapping(
                 const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+
+        virtual std::vector<Operand*> GetUsedOperands() override;
+        virtual Operand*              GetResultOperand() override;
     };
 
     class BranchCondInst : public Instruction
@@ -270,6 +349,9 @@ namespace LLVMIR
         virtual Instruction*     CloneWithMapping(
                 const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+
+        virtual std::vector<Operand*> GetUsedOperands() override;
+        virtual Operand*              GetResultOperand() override;
     };
 
     class BranchUncondInst : public Instruction
@@ -291,6 +373,9 @@ namespace LLVMIR
         virtual Instruction*     CloneWithMapping(
                 const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+
+        virtual std::vector<Operand*> GetUsedOperands() override;
+        virtual Operand*              GetResultOperand() override;
     };
 
     class GlbvarDefInst : public Instruction
@@ -316,6 +401,9 @@ namespace LLVMIR
         virtual Instruction*     CloneWithMapping(
                 const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+
+        virtual std::vector<Operand*> GetUsedOperands() override;
+        virtual Operand*              GetResultOperand() override;
     };
 
     class CallInst : public Instruction
@@ -341,6 +429,9 @@ namespace LLVMIR
         virtual Instruction*     CloneWithMapping(
                 const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+
+        virtual std::vector<Operand*> GetUsedOperands() override;
+        virtual Operand*              GetResultOperand() override;
     };
 
     class RetInst : public Instruction
@@ -363,6 +454,9 @@ namespace LLVMIR
         virtual Instruction*     CloneWithMapping(
                 const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+
+        virtual std::vector<Operand*> GetUsedOperands() override;
+        virtual Operand*              GetResultOperand() override;
     };
 
     class GEPInst : public Instruction
@@ -390,6 +484,9 @@ namespace LLVMIR
         virtual Instruction*     CloneWithMapping(
                 const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+
+        virtual std::vector<Operand*> GetUsedOperands() override;
+        virtual Operand*              GetResultOperand() override;
     };
 
     class FuncDeclareInst : public Instruction
@@ -413,6 +510,9 @@ namespace LLVMIR
         virtual Instruction*     CloneWithMapping(
                 const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+
+        virtual std::vector<Operand*> GetUsedOperands() override;
+        virtual Operand*              GetResultOperand() override;
     };
 
     class FuncDefInst : public FuncDeclareInst
@@ -434,6 +534,9 @@ namespace LLVMIR
         virtual Instruction*     CloneWithMapping(
                 const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+
+        virtual std::vector<Operand*> GetUsedOperands() override;
+        virtual Operand*              GetResultOperand() override;
     };
 
     class SI2FPInst : public Instruction
@@ -456,6 +559,9 @@ namespace LLVMIR
         virtual Instruction*     CloneWithMapping(
                 const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+
+        virtual std::vector<Operand*> GetUsedOperands() override;
+        virtual Operand*              GetResultOperand() override;
     };
 
     class FP2SIInst : public Instruction
@@ -478,6 +584,9 @@ namespace LLVMIR
         virtual Instruction*     CloneWithMapping(
                 const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+
+        virtual std::vector<Operand*> GetUsedOperands() override;
+        virtual Operand*              GetResultOperand() override;
     };
 
     class ZextInst : public Instruction
@@ -502,6 +611,9 @@ namespace LLVMIR
         virtual Instruction*     CloneWithMapping(
                 const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+
+        virtual std::vector<Operand*> GetUsedOperands() override;
+        virtual Operand*              GetResultOperand() override;
     };
 
     class FPExtInst : public Instruction
@@ -524,6 +636,9 @@ namespace LLVMIR
         virtual Instruction*     CloneWithMapping(
                 const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+
+        virtual std::vector<Operand*> GetUsedOperands() override;
+        virtual Operand*              GetResultOperand() override;
     };
 
     class PhiInst : public Instruction  // phi valsa_for_labels.first valsa_for_labels.second val在前 label在后
@@ -549,6 +664,9 @@ namespace LLVMIR
         virtual Instruction*     CloneWithMapping(
                 const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+
+        virtual std::vector<Operand*> GetUsedOperands() override;
+        virtual Operand*              GetResultOperand() override;
 
         void Insert_into_PHI(ValOp val, LabelOp label)
         {

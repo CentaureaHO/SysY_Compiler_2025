@@ -1,0 +1,45 @@
+#pragma once
+
+#include "dom_analyzer.h"
+#include "llvm/def_use.h"
+#include "llvm_ir/instruction.h"
+#include "llvm/pass.h"
+#include <unordered_set>
+#include "unordered_map"
+
+namespace LLVMIR
+{
+    class GCM : Pass
+    {
+      private:
+        Cele::Algo::DomAnalyzer*         domAnalyzer;                           // 支配关系分析器
+        Cele::Algo::DomAnalyzer*         postdomAnalyzer;                       // 后支配关系分析器
+        DefUseAnalysisPass*              defuseAnalysis;                        // 定义使用分析
+        std::unordered_set<Instruction*> erase_set;                             // 用于存储需要删除的指令
+        std::unordered_map<int, std::multimap<int, Instruction*> > latest_map;  // 用于存储每个块的最新指令队列
+        std::unordered_map<Instruction*, int> instorder;                        // 用于存储指令的顺序
+        std::unordered_set<Operand*, OperandPtrHash, OperandPtrEqual>
+            cannot_move;  // 用于存储不能移动的操作数，主要是因为这里的一些操作数会涉及到全局变量
+
+        // 记录指令最早和最迟的位置
+        std::unordered_map<Instruction*, int> earliestBlockId;
+        std::unordered_map<Instruction*, int> latestBlockId;
+
+        bool IsSafeInst(Instruction* inst);
+
+        int  ComputeEarliestBlockId(CFG* func_cfg, Instruction* inst);
+        int  ComputeLatestBlockId(CFG* func_cfg, Instruction* inst);
+        void EraseInstructions(CFG* func_cfg);
+        void MoveInstructions(CFG* func_cfg);
+
+        // 生成辅助信息
+        void GenerateInformation(CFG* func_cfg);
+
+      public:
+        GCM(LLVMIR::IR* ir, DefUseAnalysisPass* DefUseAnalysis) : Pass(ir) { defuseAnalysis = DefUseAnalysis; }
+
+        void Execute() override;
+
+        void ExecuteInSingleCFG(CFG* func_cfg);
+    };
+}  // namespace LLVMIR

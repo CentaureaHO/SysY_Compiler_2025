@@ -39,18 +39,39 @@ string LabelOperand::getName() { return "%Block" + to_string(label_num); }
 GlobalOperand::GlobalOperand(string name) : Operand(OT::GLOBAL), global_name(name) {}
 string GlobalOperand::getName() { return "@" + global_name; }
 
+// Followed Get functions
+// RegOp
+int    RegOperand::GetRegNum() const { return reg_num; }
+string RegOperand::GetGlobal() const { return ""; }
+int    RegOperand::GetImm() const { return -1; }
+float  RegOperand::GetImmF() const { return -1.0f; }
+// ImmeI32Op
+int    ImmeI32Operand::GetRegNum() const { return -1; }
+string ImmeI32Operand::GetGlobal() const { return ""; }
+int    ImmeI32Operand::GetImm() const { return value; }
+float  ImmeI32Operand::GetImmF() const { return -1.0f; }
+// ImmeF32Op
+int    ImmeF32Operand::GetRegNum() const { return -1; }
+string ImmeF32Operand::GetGlobal() const { return ""; }
+int    ImmeF32Operand::GetImm() const { return -1; }
+float  ImmeF32Operand::GetImmF() const { return value; }
+// LabelOp
+string LabelOperand::GetGlobal() const { return ""; }
+int    LabelOperand::GetRegNum() const { return -1; }
+int    LabelOperand::GetImm() const { return -1; }
+float  LabelOperand::GetImmF() const { return -1.0f; }
+// GlobalOp
+string GlobalOperand::GetGlobal() const { return global_name; }
+int    GlobalOperand::GetRegNum() const { return -1; }
+int    GlobalOperand::GetImm() const { return -1; }
+float  GlobalOperand::GetImmF() const { return -1.0f; }
 /*
     Followed insts
  */
 Instruction::Instruction(IROpCode op) : opcode(op) {}
 
 LoadInst::LoadInst(DataType t, Operand* p, Operand* r) : Instruction(IROpCode::LOAD), type(t), ptr(p), res(r) {}
-void LoadInst::printIR(ostream& s)
-{
-    s << res << " = load " << type << ", ptr " << ptr;
-    if (!comment.empty()) s << " ; " << comment;
-    s << "\n";
-}
+void LoadInst::printIR(ostream& s) { s << res << " = load " << type << ", ptr " << ptr << "\n"; }
 
 int LoadInst::GetResultReg()
 {
@@ -65,6 +86,15 @@ std::vector<int> LoadInst::GetUsedRegs()
     ret.push_back(((RegOperand*)(this->ptr))->reg_num);
     return ret;
 }
+
+std::vector<Operand*> LoadInst::GetUsedOperands()
+{
+    std::vector<Operand*> ret{};
+    if (this->ptr) { ret.push_back(this->ptr); }
+    return ret;
+}
+
+Operand* LoadInst::GetResultOperand() { return this->res; }
 
 void LoadInst::Rename(std::map<int, int>& replace)
 {
@@ -88,12 +118,7 @@ void LoadInst::Rename(std::map<int, int>& replace)
 }
 
 StoreInst::StoreInst(DataType t, Operand* p, Operand* r) : Instruction(IROpCode::STORE), type(t), ptr(p), val(r) {}
-void StoreInst::printIR(ostream& s)
-{
-    s << "store " << type << " " << val << ", ptr " << ptr;
-    if (!comment.empty()) s << " ; " << comment;
-    s << "\n";
-}
+void StoreInst::printIR(ostream& s) { s << "store " << type << " " << val << ", ptr " << ptr << "\n"; }
 
 int StoreInst::GetResultReg() { return -1; }
 
@@ -104,6 +129,15 @@ std::vector<int> StoreInst::GetUsedRegs()
     if (this->val->type == OperandType::REG) { ret.push_back(((RegOperand*)(this->val))->reg_num); }
     return ret;
 }
+
+std::vector<Operand*> StoreInst::GetUsedOperands()
+{
+    std::vector<Operand*> ret{};
+    if (this->ptr) { ret.push_back(this->ptr); }
+    if (this->val) { ret.push_back(this->val); }
+    return ret;
+}
+Operand* StoreInst::GetResultOperand() { return nullptr; }
 
 void StoreInst::Rename(std::map<int, int>& replace)
 {
@@ -131,9 +165,7 @@ ArithmeticInst::ArithmeticInst(IROpCode op, DataType t, Operand* l, Operand* r, 
 {}
 void ArithmeticInst::printIR(ostream& s)
 {
-    s << res << " = " << opcode << " " << type << " " << lhs << ", " << rhs;
-    if (!comment.empty()) s << " ; " << comment;
-    s << "\n";
+    s << res << " = " << opcode << " " << type << " " << lhs << ", " << rhs << "\n";
 }
 
 int ArithmeticInst::GetResultReg()
@@ -149,6 +181,16 @@ std::vector<int> ArithmeticInst::GetUsedRegs()
     if (this->rhs->type == OperandType::REG) { ret.push_back(((RegOperand*)(this->rhs))->reg_num); }
     return ret;
 }
+
+std::vector<Operand*> ArithmeticInst::GetUsedOperands()
+{
+    std::vector<Operand*> ret{};
+    if (this->lhs) { ret.push_back(this->lhs); }
+    if (this->rhs) { ret.push_back(this->rhs); }
+    return ret;
+}
+
+Operand* ArithmeticInst::GetResultOperand() { return this->res; }
 
 void ArithmeticInst::Rename(std::map<int, int>& replace)
 {
@@ -178,9 +220,7 @@ IcmpInst::IcmpInst(DataType t, IcmpCond c, Operand* l, Operand* r, Operand* res)
 {}
 void IcmpInst::printIR(ostream& s)
 {
-    s << res << " = icmp " << cond << " " << type << " " << lhs << ", " << rhs;
-    if (!comment.empty()) s << " ; " << comment;
-    s << "\n";
+    s << res << " = icmp " << cond << " " << type << " " << lhs << ", " << rhs << "\n";
 }
 
 int IcmpInst::GetResultReg()
@@ -196,6 +236,16 @@ std::vector<int> IcmpInst::GetUsedRegs()
     if (this->rhs->type == OperandType::REG) { ret.push_back(((RegOperand*)(this->rhs))->reg_num); }
     return ret;
 }
+
+std::vector<Operand*> IcmpInst::GetUsedOperands()
+{
+    std::vector<Operand*> ret{};
+    if (this->lhs) { ret.push_back(this->lhs); }
+    if (this->rhs) { ret.push_back(this->rhs); }
+    return ret;
+}
+
+Operand* IcmpInst::GetResultOperand() { return this->res; }
 
 void IcmpInst::Rename(std::map<int, int>& replace)
 {
@@ -220,9 +270,7 @@ FcmpInst::FcmpInst(DataType t, FcmpCond c, Operand* l, Operand* r, Operand* res)
 {}
 void FcmpInst::printIR(ostream& s)
 {
-    s << res << " = fcmp " << cond << " " << type << " " << lhs << ", " << rhs;
-    if (!comment.empty()) s << " ; " << comment;
-    s << "\n";
+    s << res << " = fcmp " << cond << " " << type << " " << lhs << ", " << rhs << "\n";
 }
 int FcmpInst::GetResultReg()
 {
@@ -237,6 +285,16 @@ std::vector<int> FcmpInst::GetUsedRegs()
     if (this->rhs->type == OperandType::REG) { ret.push_back(((RegOperand*)(this->rhs))->reg_num); }
     return ret;
 }
+
+std::vector<Operand*> FcmpInst::GetUsedOperands()
+{
+    std::vector<Operand*> ret{};
+    if (this->lhs) { ret.push_back(this->lhs); }
+    if (this->rhs) { ret.push_back(this->rhs); }
+    return ret;
+}
+
+Operand* FcmpInst::GetResultOperand() { return this->res; }
 
 void FcmpInst::Rename(std::map<int, int>& replace)
 {
@@ -267,9 +325,7 @@ void AllocInst::printIR(ostream& s)
     }
 
     for (int& dim : dims) s << "[" << dim << " x ";
-    s << type << string(dims.size(), ']');
-    if (!comment.empty()) s << " ; " << comment;
-    s << "\n";
+    s << type << string(dims.size(), ']') << "\n";
 }
 
 int AllocInst::GetResultReg()
@@ -284,6 +340,14 @@ std::vector<int> AllocInst::GetUsedRegs()
     return ret;
 }
 
+std::vector<Operand*> AllocInst::GetUsedOperands()
+{
+    std::vector<Operand*> ret{};
+    return ret;
+}
+
+Operand* AllocInst::GetResultOperand() { return this->res; }
+
 void AllocInst::Rename(std::map<int, int>& replace) {}
 
 BranchCondInst::BranchCondInst(Operand* c, Operand* t, Operand* f)
@@ -291,9 +355,7 @@ BranchCondInst::BranchCondInst(Operand* c, Operand* t, Operand* f)
 {}
 void BranchCondInst::printIR(ostream& s)
 {
-    s << "br i1 " << cond << ", label " << true_label << ", label " << false_label;
-    if (!comment.empty()) s << " ; " << comment;
-    s << "\n";
+    s << "br i1 " << cond << ", label " << true_label << ", label " << false_label << "\n";
 }
 
 int BranchCondInst::GetResultReg() { return -1; }
@@ -304,6 +366,17 @@ std::vector<int> BranchCondInst::GetUsedRegs()
     if (this->cond->type == OperandType::REG) { ret.push_back(((RegOperand*)(this->cond))->reg_num); }
     return ret;
 }
+
+std::vector<Operand*> BranchCondInst::GetUsedOperands()
+{
+    std::vector<Operand*> ret{};
+    if (this->cond) { ret.push_back(this->cond); }
+    if (this->true_label) { ret.push_back(this->true_label); }
+    if (this->false_label) { ret.push_back(this->false_label); }
+    return ret;
+}
+
+Operand* BranchCondInst::GetResultOperand() { return nullptr; }
 
 void BranchCondInst::Rename(std::map<int, int>& replace)
 {  // 其实这里是cmp出来的寄存器，不会被mem2reg波及
@@ -318,19 +391,22 @@ void BranchCondInst::Rename(std::map<int, int>& replace)
 }
 
 BranchUncondInst::BranchUncondInst(Operand* t) : Instruction(IROpCode::BR_UNCOND), target_label(t) {}
-void BranchUncondInst::printIR(ostream& s)
-{
-    s << "br label " << target_label;
-    if (!comment.empty()) s << " ; " << comment;
-    s << "\n";
-}
-int BranchUncondInst::GetResultReg() { return -1; }
+void BranchUncondInst::printIR(ostream& s) { s << "br label " << target_label << "\n"; }
+int  BranchUncondInst::GetResultReg() { return -1; }
 
 std::vector<int> BranchUncondInst::GetUsedRegs()
 {
     std::vector<int> ret{};
     return ret;
 }
+
+std::vector<Operand*> BranchUncondInst::GetUsedOperands()
+{
+    std::vector<Operand*> ret{};
+    if (this->target_label) { ret.push_back(this->target_label); }
+    return ret;
+}
+Operand* BranchUncondInst::GetResultOperand() { return nullptr; }
 
 void BranchUncondInst::Rename(std::map<int, int>& replace) {}
 
@@ -408,7 +484,6 @@ void GlbvarDefInst::printIR(ostream& s)
 
     glb_arr_init(s, type, arr_init, 0, 0, step - 1);
 
-    if (!comment.empty()) s << " ; " << comment;
     s << "\n";
 }
 int GlbvarDefInst::GetResultReg() { return -1; }
@@ -418,6 +493,14 @@ std::vector<int> GlbvarDefInst::GetUsedRegs()
     std::vector<int> ret{};
     return ret;
 }
+
+std::vector<Operand*> GlbvarDefInst::GetUsedOperands()
+{
+    std::vector<Operand*> ret{};
+    return ret;
+}
+
+Operand* GlbvarDefInst::GetResultOperand() { return nullptr; }
 
 void GlbvarDefInst::Rename(std::map<int, int>& replace) {}
 
@@ -440,9 +523,7 @@ void CallInst::printIR(ostream& s)
         ++cp;
         if (cp != args.end()) s << ", ";
     }
-    s << ")";
-    if (!comment.empty()) s << " ; " << comment;
-    s << "\n";
+    s << ")\n";
 }
 int CallInst::GetResultReg()
 {
@@ -462,6 +543,15 @@ std::vector<int> CallInst::GetUsedRegs()
     return ret;
 }
 
+std::vector<Operand*> CallInst::GetUsedOperands()
+{
+    std::vector<Operand*> ret{};
+    for (auto iter : args) { ret.push_back(iter.second); }
+    return ret;
+}
+
+Operand* CallInst::GetResultOperand() { return this->res; }
+
 void CallInst::Rename(std::map<int, int>& replace)
 {
     for (auto& iter : args)
@@ -480,7 +570,6 @@ void RetInst::printIR(ostream& s)
 {
     s << "ret " << ret_type;
     if (ret) s << " " << ret;
-    if (!comment.empty()) s << " ; " << comment;
     s << "\n";
 }
 
@@ -494,6 +583,15 @@ std::vector<int> RetInst::GetUsedRegs()
 
     return retvec;
 }
+
+std::vector<Operand*> RetInst::GetUsedOperands()
+{
+    std::vector<Operand*> retvec{};
+    if (ret) { retvec.push_back(ret); }
+    return retvec;
+}
+
+Operand* RetInst::GetResultOperand() { return nullptr; }
 
 void RetInst::Rename(std::map<int, int>& replace)
 {
@@ -520,7 +618,6 @@ void GEPInst::printIR(ostream& s)
 
     s << ", ptr " << base_ptr;
     for (auto& idx : idxs) s << ", " << idx_type << " " << idx;
-    if (!comment.empty()) s << " ; " << comment;
     s << "\n";
 }
 
@@ -540,6 +637,16 @@ std::vector<int> GEPInst::GetUsedRegs()
     }
     return retvec;
 }
+
+std::vector<Operand*> GEPInst::GetUsedOperands()
+{
+    std::vector<Operand*> retvec{};
+    if (base_ptr) { retvec.push_back(base_ptr); }
+    for (auto& iter : idxs) { retvec.push_back(iter); }
+    return retvec;
+}
+
+Operand* GEPInst::GetResultOperand() { return this->res; }
 
 void GEPInst::Rename(std::map<int, int>& replace)
 {
@@ -573,9 +680,7 @@ void FuncDeclareInst::printIR(ostream& s)
         ++cp;
         if (cp != arg_types.end()) s << ", ";
     }
-    s << ")";
-    if (!comment.empty()) s << " ; " << comment;
-    s << "\n";
+    s << ")\n";
 }
 
 int FuncDeclareInst::GetResultReg() { return -1; }
@@ -586,10 +691,19 @@ std::vector<int> FuncDeclareInst::GetUsedRegs()
     return retvec;
 }
 
+std::vector<Operand*> FuncDeclareInst::GetUsedOperands()
+{
+    std::vector<Operand*> retvec{};
+    return retvec;
+}
+
+Operand* FuncDeclareInst::GetResultOperand() { return nullptr; }
+
 void FuncDeclareInst::Rename(std::map<int, int>& replace) {}
 
 FuncDefInst::FuncDefInst(DataType rt, string fn, vector<DataType> at) : FuncDeclareInst(rt, fn, at), arg_regs({})
 {
+    // 设置函数定义时的block_id为-1，表示不在所有block内
     block_id = -1;
 }
 void FuncDefInst::printIR(ostream& s)
@@ -606,9 +720,7 @@ void FuncDefInst::printIR(ostream& s)
         if (i != arg_num - 1) s << ", ";
     }
 
-    s << ")";
-    if (!comment.empty()) s << " ; " << comment;
-    s << "\n";
+    s << ")\n";
 }
 
 int FuncDefInst::GetResultReg() { return -1; }
@@ -619,16 +731,20 @@ std::vector<int> FuncDefInst::GetUsedRegs()
     return retvec;
 }
 
+std::vector<Operand*> FuncDefInst::GetUsedOperands()
+{
+    std::vector<Operand*> retvec{};
+    for (auto& op : arg_regs) { retvec.push_back(op); }
+    return retvec;
+}
+
+Operand* FuncDefInst::GetResultOperand() { return nullptr; }
+
 void FuncDefInst::Rename(std::map<int, int>& replace) {}
 
 SI2FPInst::SI2FPInst(Operand* f, Operand* t) : Instruction(IROpCode::SITOFP), f_si(f), t_fp(t) {}
-void SI2FPInst::printIR(ostream& s)
-{
-    s << t_fp << " = sitofp i32 " << f_si << " to float";
-    if (!comment.empty()) s << " ; " << comment;
-    s << "\n";
-}
-int SI2FPInst::GetResultReg()
+void SI2FPInst::printIR(ostream& s) { s << t_fp << " = sitofp i32 " << f_si << " to float\n"; }
+int  SI2FPInst::GetResultReg()
 {
     if (this->t_fp->type != OperandType::REG) { return -1; }
     return ((RegOperand*)t_fp)->reg_num;
@@ -641,6 +757,15 @@ std::vector<int> SI2FPInst::GetUsedRegs()
     return retvec;
 }
 
+std::vector<Operand*> SI2FPInst::GetUsedOperands()
+{
+    std::vector<Operand*> retvec{};
+    if (f_si) { retvec.push_back(f_si); }
+    return retvec;
+}
+
+Operand* SI2FPInst::GetResultOperand() { return this->t_fp; }
+
 void SI2FPInst::Rename(std::map<int, int>& replace)
 {
     if (f_si->type == OperandType::REG)
@@ -651,13 +776,8 @@ void SI2FPInst::Rename(std::map<int, int>& replace)
 }
 
 FP2SIInst::FP2SIInst(Operand* f, Operand* t) : Instruction(IROpCode::FPTOSI), f_fp(f), t_si(t) {}
-void FP2SIInst::printIR(ostream& s)
-{
-    s << t_si << " = fptosi float " << f_fp << " to i32";
-    if (!comment.empty()) s << " ; " << comment;
-    s << "\n";
-}
-int FP2SIInst::GetResultReg()
+void FP2SIInst::printIR(ostream& s) { s << t_si << " = fptosi float " << f_fp << " to i32\n"; }
+int  FP2SIInst::GetResultReg()
 {
     if (this->t_si->type != OperandType::REG) { return -1; }
     return ((RegOperand*)t_si)->reg_num;
@@ -669,6 +789,15 @@ std::vector<int> FP2SIInst::GetUsedRegs()
     if (f_fp->type == OperandType::REG) { retvec.push_back(((RegOperand*)f_fp)->reg_num); }
     return retvec;
 }
+
+std::vector<Operand*> FP2SIInst::GetUsedOperands()
+{
+    std::vector<Operand*> retvec{};
+    if (f_fp) { retvec.push_back(f_fp); }
+    return retvec;
+}
+
+Operand* FP2SIInst::GetResultOperand() { return this->t_si; }
 
 void FP2SIInst::Rename(std::map<int, int>& replace)
 {
@@ -682,12 +811,7 @@ void FP2SIInst::Rename(std::map<int, int>& replace)
 ZextInst::ZextInst(DataType f, DataType t, Operand* s, Operand* d)
     : Instruction(IROpCode::ZEXT), from(f), to(t), src(s), dest(d)
 {}
-void ZextInst::printIR(ostream& s)
-{
-    s << dest << " = zext " << from << " " << src << " to " << to;
-    if (!comment.empty()) s << " ; " << comment;
-    s << "\n";
-}
+void ZextInst::printIR(ostream& s) { s << dest << " = zext " << from << " " << src << " to " << to << "\n"; }
 
 int ZextInst::GetResultReg()
 {
@@ -702,6 +826,15 @@ std::vector<int> ZextInst::GetUsedRegs()
     return retvec;
 }
 
+std::vector<Operand*> ZextInst::GetUsedOperands()
+{
+    std::vector<Operand*> retvec{};
+    if (src) { retvec.push_back(src); }
+    return retvec;
+}
+
+Operand* ZextInst::GetResultOperand() { return this->dest; }
+
 void ZextInst::Rename(std::map<int, int>& replace)
 {
     if (src->type == OperandType::REG)
@@ -712,13 +845,8 @@ void ZextInst::Rename(std::map<int, int>& replace)
 }
 
 FPExtInst::FPExtInst(Operand* s, Operand* d) : Instruction(IROpCode::FPEXT), src(s), dest(d) {}
-void FPExtInst::printIR(ostream& s)
-{
-    s << dest << " = fpext float" << " " << src << " to " << "double";
-    if (!comment.empty()) s << " ; " << comment;
-    s << "\n";
-}
-int FPExtInst::GetResultReg()
+void FPExtInst::printIR(ostream& s) { s << dest << " = fpext float" << " " << src << " to " << "double" << "\n"; }
+int  FPExtInst::GetResultReg()
 {
     if (this->dest->type != OperandType::REG) { return -1; }
     return ((RegOperand*)dest)->reg_num;
@@ -730,6 +858,15 @@ std::vector<int> FPExtInst::GetUsedRegs()
     if (src->type == OperandType::REG) { retvec.push_back(((RegOperand*)src)->reg_num); }
     return retvec;
 }
+
+std::vector<Operand*> FPExtInst::GetUsedOperands()
+{
+    std::vector<Operand*> retvec{};
+    if (src) { retvec.push_back(src); }
+    return retvec;
+}
+
+Operand* FPExtInst::GetResultOperand() { return this->dest; }
 
 void FPExtInst::Rename(std::map<int, int>& replace)
 {
@@ -756,7 +893,6 @@ void PhiInst::printIR(ostream& s)
         ++cp;
         if (cp != vals_for_labels.end()) s << ", ";
     }
-    if (!comment.empty()) s << " ; " << comment;
     s << "\n";
 }
 int PhiInst::GetResultReg()
@@ -774,6 +910,19 @@ std::vector<int> PhiInst::GetUsedRegs()
     }
     return retvec;
 }
+
+std::vector<Operand*> PhiInst::GetUsedOperands()
+{
+    std::vector<Operand*> retvec{};
+    for (auto iter : vals_for_labels)
+    {
+        retvec.push_back(iter.first);
+        retvec.push_back(iter.second);
+    }
+    return retvec;
+}
+
+Operand* PhiInst::GetResultOperand() { return this->res; }
 
 void PhiInst::Rename(std::map<int, int>& replace)
 {
