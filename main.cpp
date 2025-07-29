@@ -376,6 +376,22 @@ int main(int argc, char** argv)
 
         makecfg.Execute();
         makedom.Execute();
+        loopAnalysis.Execute();
+        loopSimplify.Execute();
+
+        tsccp.Execute();
+
+        Analysis::SCEVAnalyser scevAnalyser(&builder);
+        scevAnalyser.run();
+        scevAnalyser.printAllResults();
+
+        if (optimizeLevel >= 2)
+        {
+            // StructuralTransform::ConstantLoopFullyUnrollPass constantUnroll(&builder, &scevAnalyser);
+            // constantUnroll.Execute();
+        }
+        makecfg.Execute();
+        makedom.Execute();
     }
 
     if (step == "-llvm")
