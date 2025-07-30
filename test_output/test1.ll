@@ -12,123 +12,272 @@ declare void @_sysy_starttime(i32)
 declare void @_sysy_stoptime(i32)
 declare void @llvm.memset.p0.i32(ptr, i8, i32, i1)
 
+@V = global i32 4
+@space = global i32 32
+@LF = global i32 10
 
-define i32 @uniquePaths(i32 %reg_0, i32 %reg_1)
+define void @printSolution(ptr %reg_0)
 {
 Block0:
-	%reg_11 = alloca [9 x i32]
 	br label %Block1
 Block1:
-	%reg_6 = icmp eq i32 %reg_0, 1
-	br i1 %reg_6, label %Block2, label %Block4
-Block2:
-	br label %Block17
-Block3:
-	call void @llvm.memset.p0.i32(ptr %reg_11, i8 0, i32 36, i1 1)
-	br label %Block21
-Block4:
-	%reg_9 = icmp eq i32 %reg_1, 1
-	br i1 %reg_9, label %Block2, label %Block3
-Block5: ; Loop 0 header
-	%reg_97 = phi i32 [ %reg_31, %Block6 ], [ 0, %Block22 ]
-	br label %Block6
-Block6: ; Loop 0 latch
-	%reg_22 = mul i32 %reg_97, 3
-	%reg_24 = add i32 %reg_22, %reg_1
-	%reg_26 = sub i32 %reg_24, 1
-	%reg_27 = getelementptr [9 x i32], ptr %reg_11, i32 0, i32 %reg_26
-	store i32 1, ptr %reg_27
-	%reg_31 = add i32 %reg_97, 1
-	%reg_123 = icmp slt i32 %reg_31, %reg_0
-	br i1 %reg_123, label %Block5, label %Block23
-Block7:
-	br label %Block20
-Block8: ; Loop 1 header
-	%reg_98 = phi i32 [ %reg_47, %Block9 ], [ 0, %Block28 ]
-	br label %Block9
-Block9: ; Loop 1 latch
-	%reg_38 = sub i32 %reg_0, 1
-	%reg_40 = mul i32 %reg_38, 3
-	%reg_42 = add i32 %reg_40, %reg_98
-	%reg_43 = getelementptr [9 x i32], ptr %reg_11, i32 0, i32 %reg_42
-	store i32 1, ptr %reg_43
-	%reg_47 = add i32 %reg_98, 1
-	%reg_120 = icmp slt i32 %reg_47, %reg_1
-	br i1 %reg_120, label %Block8, label %Block29
-Block10:
-	%reg_50 = sub i32 %reg_0, 2
-	br label %Block18
-Block11: ; Loop 3 header
-	%reg_99 = phi i32 [ %reg_92, %Block16 ], [ %reg_50, %Block26 ]
-	br label %Block12
-Block12: ; Loop 3 body
-	%reg_57 = sub i32 %reg_1, 2
-	br label %Block19
-Block13:
-	%reg_94 = getelementptr [9 x i32], ptr %reg_11, i32 0, i32 0
-	%reg_95 = load i32, ptr %reg_94
-	br label %Block17
-Block14: ; Loop 2 header (nested depth: 1)
-	%reg_101 = phi i32 [ %reg_89, %Block15 ], [ %reg_57, %Block24 ]
-	br label %Block15
-Block15: ; Loop 2 latch (nested depth: 1)
-	%reg_64 = mul i32 %reg_99, 3
-	%reg_66 = add i32 %reg_64, %reg_101
-	%reg_67 = getelementptr [9 x i32], ptr %reg_11, i32 0, i32 %reg_66
-	%reg_70 = add i32 %reg_99, 1
-	%reg_72 = mul i32 %reg_70, 3
-	%reg_74 = add i32 %reg_72, %reg_101
-	%reg_75 = getelementptr [9 x i32], ptr %reg_11, i32 0, i32 %reg_74
-	%reg_76 = load i32, ptr %reg_75
-	%reg_84 = getelementptr i32, ptr %reg_67, i32 1
-	%reg_85 = load i32, ptr %reg_84
-	%reg_86 = add i32 %reg_76, %reg_85
-	store i32 %reg_86, ptr %reg_67
-	%reg_89 = sub i32 %reg_101, 1
-	%reg_117 = icmp sgt i32 %reg_89, -1
-	br i1 %reg_117, label %Block14, label %Block25
-Block16: ; Loop 3 latch
-	%reg_92 = sub i32 %reg_99, 1
-	%reg_110 = icmp sgt i32 %reg_92, -1
-	br i1 %reg_110, label %Block11, label %Block27
-Block17:
-	%reg_96 = phi i32 [ 1, %Block2 ], [ %reg_95, %Block13 ]
-	ret i32 %reg_96
-Block18:
-	%reg_107 = icmp sgt i32 %reg_50, -1
-	br i1 %reg_107, label %Block26, label %Block13
-Block19: ; Loop 3 body
-	%reg_114 = icmp sgt i32 %reg_57, -1
-	br i1 %reg_114, label %Block24, label %Block16
-Block20:
-	%reg_119 = icmp slt i32 0, %reg_1
-	br i1 %reg_119, label %Block28, label %Block10
-Block21:
-	%reg_122 = icmp slt i32 0, %reg_0
-	br i1 %reg_122, label %Block22, label %Block7
-Block22: ; Loop 0 preheader
 	br label %Block5
-Block23: ; Loop 0 exit target
-	br label %Block7
-Block24: ; Loop 2 preheader (nested depth: 1)
-	br label %Block14
-Block25: ; Loop 3 body
-	br label %Block16
-Block26: ; Loop 3 preheader
+Block2: ; Loop 0 header
+	%reg_24 = phi ptr [ %reg_23, %Block6 ], [ %reg_25, %Block3 ]
+	%reg_14 = phi i32 [ %reg_12, %Block3 ], [ 0, %Block6 ]
+	br label %Block3
+Block3: ; Loop 0 latch
+	%reg_8 = load i32, ptr %reg_24
+	call void @putint(i32 %reg_8)
+	%reg_9 = load i32, ptr @space
+	call void @putch(i32 %reg_9)
+	%reg_12 = add i32 %reg_14, 1
+	%reg_18 = load i32, ptr @V
+	%reg_19 = icmp slt i32 %reg_12, %reg_18
+	%reg_25 = getelementptr i32, ptr %reg_24, i32 1
+	br i1 %reg_19, label %Block2, label %Block7
+Block4:
+	%reg_13 = load i32, ptr @LF
+	call void @putch(i32 %reg_13)
+	ret void
+Block5:
+	%reg_16 = load i32, ptr @V
+	%reg_17 = icmp slt i32 0, %reg_16
+	br i1 %reg_17, label %Block6, label %Block4
+Block6: ; Loop 0 preheader
+	%reg_23 = getelementptr i32, ptr %reg_0, i32 0
+	br label %Block2
+Block7: ; Loop 0 exit target
+	br label %Block4
+}
+
+define void @printMessage()
+{
+Block0:
+	br label %Block1
+Block1:
+	call void @putch(i32 78)
+	call void @putch(i32 111)
+	call void @putch(i32 116)
+	%reg_3 = load i32, ptr @space
+	call void @putch(i32 %reg_3)
+	call void @putch(i32 101)
+	call void @putch(i32 120)
+	call void @putch(i32 105)
+	call void @putch(i32 115)
+	call void @putch(i32 116)
+	ret void
+}
+
+define i32 @isSafe(ptr %reg_0, ptr %reg_1)
+{
+Block0:
+	br label %Block1
+Block1: ; Loop 0 preheader
+	br label %Block2
+Block2: ; Loop 0 header
+	%reg_35 = phi i32 [ 0, %Block1 ], [ %reg_10, %Block7 ]
+	%reg_5 = load i32, ptr @V
+	%reg_6 = icmp slt i32 %reg_35, %reg_5
+	br i1 %reg_6, label %Block3, label %Block4
+Block3: ; Loop 0 body
+	%reg_10 = add i32 %reg_35, 1
+	br label %Block5
+Block4: ; Loop 0 exit target
 	br label %Block11
-Block27: ; Loop 3 exit target
+Block5: ; Loop 0 body
+	%reg_37 = phi i32 [ %reg_10, %Block3 ], [ %reg_29, %Block9 ]
+	%reg_38 = phi i32 [ 0, %Block3 ], [ %reg_39, %Block9 ]
+	%reg_12 = load i32, ptr @V
+	%reg_13 = icmp slt i32 %reg_37, %reg_12
+	br i1 %reg_13, label %Block6, label %Block7
+Block6: ; Loop 0 body
+	%reg_16 = getelementptr [4 x i32], ptr %reg_0, i32 %reg_35, i32 %reg_37
+	%reg_17 = load i32, ptr %reg_16
+	%reg_18 = icmp ne i32 %reg_17, 0
+	br i1 %reg_18, label %Block10, label %Block9
+Block7: ; Loop 0 latch
+	br label %Block2
+Block8: ; Loop 0 exit target
+	br label %Block11
+Block9: ; Loop 0 body
+	%reg_29 = add i32 %reg_37, 1
+	%reg_39 = add i32 %reg_38, 1
+	br label %Block5
+Block10: ; Loop 0 exiting block
+	%reg_20 = getelementptr i32, ptr %reg_1, i32 %reg_37
+	%reg_21 = load i32, ptr %reg_20
+	%reg_23 = getelementptr i32, ptr %reg_1, i32 %reg_35
+	%reg_24 = load i32, ptr %reg_23
+	%reg_25 = icmp eq i32 %reg_21, %reg_24
+	br i1 %reg_25, label %Block8, label %Block9
+Block11:
+	%reg_34 = phi i32 [ 1, %Block4 ], [ 0, %Block8 ]
+	ret i32 %reg_34
+}
+
+define i32 @graphColoring(ptr %reg_0, i32 %reg_1, i32 %reg_2, ptr %reg_3)
+{
+Block0:
+	br label %Block1
+Block1:
+	%reg_7 = load i32, ptr @V
+	%reg_8 = icmp eq i32 %reg_2, %reg_7
+	br i1 %reg_8, label %Block2, label %Block3
+Block2:
+	%reg_9 = getelementptr [4 x i32], ptr %reg_0
+	%reg_10 = getelementptr i32, ptr %reg_3
+	%reg_11 = call i32 @isSafe(ptr %reg_9, ptr %reg_10)
+	%reg_12 = icmp ne i32 %reg_11, 0
+	br i1 %reg_12, label %Block4, label %Block5
+Block3: ; Loop 0 preheader
+	br label %Block6
+Block4:
 	br label %Block13
-Block28: ; Loop 1 preheader
-	br label %Block8
-Block29: ; Loop 1 exit target
-	br label %Block10
+Block5:
+	br label %Block11
+Block6: ; Loop 0 header
+	%reg_64 = phi i32 [ 0, %Block3 ], [ %reg_65, %Block10 ]
+	%reg_66 = add i32 %reg_64, 1
+	%reg_20 = icmp sle i32 %reg_66, %reg_1
+	br i1 %reg_20, label %Block7, label %Block8
+Block7: ; Loop 0 exiting block
+	%reg_22 = getelementptr i32, ptr %reg_3, i32 %reg_2
+	store i32 %reg_66, ptr %reg_22
+	%reg_24 = getelementptr [4 x i32], ptr %reg_0
+	%reg_28 = add i32 %reg_2, 1
+	%reg_29 = getelementptr i32, ptr %reg_3
+	%reg_30 = call i32 @graphColoring(ptr %reg_24, i32 %reg_1, i32 %reg_28, ptr %reg_29)
+	%reg_31 = icmp ne i32 %reg_30, 0
+	br i1 %reg_31, label %Block9, label %Block10
+Block8: ; Loop 0 exit target
+	br label %Block11
+Block9: ; Loop 0 exit target
+	br label %Block11
+Block10: ; Loop 0 latch
+	store i32 0, ptr %reg_22
+	%reg_65 = add i32 %reg_64, 1
+	br label %Block6
+Block11:
+	%reg_40 = phi i32 [ 0, %Block5 ], [ 0, %Block8 ], [ 1, %Block9 ], [ 1, %Block12 ]
+	ret i32 %reg_40
+Block12:
+	br label %Block11
+Block13:
+	br label %Block21
+Block14: ; Loop 1 header
+	%reg_68 = phi ptr [ %reg_67, %Block22 ], [ %reg_69, %Block15 ]
+	%reg_55 = phi i32 [ %reg_53, %Block15 ], [ 0, %Block22 ]
+	br label %Block15
+Block15: ; Loop 1 latch
+	%reg_49 = load i32, ptr %reg_68
+	call void @putint(i32 %reg_49)
+	%reg_50 = load i32, ptr @space
+	call void @putch(i32 %reg_50)
+	%reg_53 = add i32 %reg_55, 1
+	%reg_59 = load i32, ptr @V
+	%reg_60 = icmp slt i32 %reg_53, %reg_59
+	%reg_69 = getelementptr i32, ptr %reg_68, i32 1
+	br i1 %reg_60, label %Block14, label %Block23
+Block16:
+	%reg_54 = load i32, ptr @LF
+	call void @putch(i32 %reg_54)
+	br label %Block12
+Block21:
+	%reg_57 = load i32, ptr @V
+	%reg_58 = icmp slt i32 0, %reg_57
+	br i1 %reg_58, label %Block22, label %Block16
+Block22: ; Loop 1 preheader
+	%reg_67 = getelementptr i32, ptr %reg_10, i32 0
+	br label %Block14
+Block23: ; Loop 1 exit target
+	br label %Block16
 }
 
 define i32 @main()
 {
 Block0:
+	%reg_35 = alloca [4 x i32]
+	%reg_0 = alloca [4 x [4 x i32]]
 	br label %Block1
 Block1:
-	%reg_7 = call i32 @uniquePaths(i32 3, i32 3)
-	ret i32 %reg_7
+	call void @llvm.memset.p0.i32(ptr %reg_0, i8 0, i32 64, i1 1)
+	%reg_2 = getelementptr [4 x [4 x i32]], ptr %reg_0, i32 0, i32 0, i32 0
+	store i32 0, ptr %reg_2
+	%reg_4 = getelementptr i32, ptr %reg_2, i32 1
+	store i32 1, ptr %reg_4
+	%reg_6 = getelementptr i32, ptr %reg_4, i32 1
+	store i32 1, ptr %reg_6
+	%reg_8 = getelementptr i32, ptr %reg_6, i32 1
+	store i32 1, ptr %reg_8
+	%reg_10 = getelementptr i32, ptr %reg_8, i32 1
+	store i32 1, ptr %reg_10
+	%reg_12 = getelementptr i32, ptr %reg_10, i32 1
+	store i32 0, ptr %reg_12
+	%reg_14 = getelementptr i32, ptr %reg_12, i32 1
+	store i32 1, ptr %reg_14
+	%reg_16 = getelementptr i32, ptr %reg_14, i32 1
+	store i32 0, ptr %reg_16
+	%reg_18 = getelementptr i32, ptr %reg_16, i32 1
+	store i32 1, ptr %reg_18
+	%reg_20 = getelementptr i32, ptr %reg_18, i32 1
+	store i32 1, ptr %reg_20
+	%reg_22 = getelementptr i32, ptr %reg_20, i32 1
+	store i32 0, ptr %reg_22
+	%reg_24 = getelementptr i32, ptr %reg_22, i32 1
+	store i32 1, ptr %reg_24
+	%reg_26 = getelementptr i32, ptr %reg_24, i32 1
+	store i32 1, ptr %reg_26
+	%reg_28 = getelementptr i32, ptr %reg_26, i32 1
+	store i32 0, ptr %reg_28
+	%reg_30 = getelementptr i32, ptr %reg_28, i32 1
+	store i32 1, ptr %reg_30
+	%reg_32 = getelementptr i32, ptr %reg_30, i32 1
+	store i32 0, ptr %reg_32
+	call void @llvm.memset.p0.i32(ptr %reg_35, i8 0, i32 16, i1 1)
+	br label %Block10
+Block2: ; Loop 0 header
+	%reg_73 = phi ptr [ %reg_72, %Block11 ], [ %reg_74, %Block3 ]
+	%reg_54 = phi i32 [ %reg_46, %Block3 ], [ 0, %Block11 ]
+	br label %Block3
+Block3: ; Loop 0 latch
+	store i32 0, ptr %reg_73
+	%reg_46 = add i32 %reg_54, 1
+	%reg_67 = load i32, ptr @V
+	%reg_68 = icmp slt i32 %reg_46, %reg_67
+	%reg_74 = getelementptr i32, ptr %reg_73, i32 1
+	br i1 %reg_68, label %Block2, label %Block12
+Block4:
+	%reg_47 = getelementptr [4 x [4 x i32]], ptr %reg_0, i32 0
+	%reg_50 = getelementptr [4 x i32], ptr %reg_35, i32 0
+	%reg_51 = call i32 @graphColoring(ptr %reg_47, i32 3, i32 0, ptr %reg_50)
+	%reg_52 = icmp eq i32 %reg_51, 0
+	br i1 %reg_52, label %Block5, label %Block6
+Block5:
+	br label %Block8
+Block6:
+	ret i32 0
+Block7:
+	br label %Block6
+Block8:
+	call void @putch(i32 78)
+	call void @putch(i32 111)
+	call void @putch(i32 116)
+	%reg_58 = load i32, ptr @space
+	call void @putch(i32 %reg_58)
+	call void @putch(i32 101)
+	call void @putch(i32 120)
+	call void @putch(i32 105)
+	call void @putch(i32 115)
+	call void @putch(i32 116)
+	br label %Block7
+Block10:
+	%reg_65 = load i32, ptr @V
+	%reg_66 = icmp slt i32 0, %reg_65
+	br i1 %reg_66, label %Block11, label %Block4
+Block11: ; Loop 0 preheader
+	%reg_72 = getelementptr [4 x i32], ptr %reg_35, i32 0, i32 0
+	br label %Block2
+Block12: ; Loop 0 exit target
+	br label %Block4
 }

@@ -394,34 +394,9 @@ int main(int argc, char** argv)
 
         Analysis::SCEVAnalyser scevAnalyser(&builder);
         scevAnalyser.run();
-        scevAnalyser.printAllResults();
-
-<<<<<<< HEAD
-        Transform::StrengthReducePass lsr(&builder,&scevAnalyser) ;
-        //lsr.Execute();
-        DCEDefUse.Execute();
-        dce.Execute();
-        scevAnalyser.run();
+        //scevAnalyser.printAllResults();
 
 
-
-        if (optimizeLevel >= 2)
-        {
-            // IndVars Simplify - 归纳变量简化
-            Transform::IndVarsSimplifyPass indVarsPass(&builder, &scevAnalyser);
-            indVarsPass.Execute();
-
-            // 重新构建CFG和支配树，因为IndVars可能改变了循环结构
-            makecfg.Execute();
-            makedom.Execute();
-            loopAnalysis.Execute();
-            loopSimplify.Execute();
-            loopRotate.Execute();
-            scevAnalyser.run();
-            scevAnalyser.printAllResults();
-        }
-        
-=======
         Transform::IndVarsSimplifyPass indVarsPass(&builder, &scevAnalyser);
         indVarsPass.Execute();
 
@@ -431,12 +406,18 @@ int main(int argc, char** argv)
         loopSimplify.Execute();
         loopRotate.Execute();
         scevAnalyser.run();
-        scevAnalyser.printAllResults();
+        //scevAnalyser.printAllResults();
+
+        Transform::StrengthReducePass lsr(&builder,&scevAnalyser) ;
+        lsr.Execute();
+        DCEDefUse.Execute();
+        dce.Execute();
+        scevAnalyser.run();
 
         if (optimizeLevel >= 2) {}
 
         makecfg.Execute();
->>>>>>> 4afb416c7372706565d434947f7c8385d03dac61
+
     }
 
     if (step == "-llvm")

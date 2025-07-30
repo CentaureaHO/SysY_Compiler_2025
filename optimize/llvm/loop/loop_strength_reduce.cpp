@@ -178,7 +178,7 @@ std::pair<GEPInst*,Operand*> StrengthReduce::checkGEP(GEPInst* ins){
 
     //要求最多一个SCEV变量 {start,+,step}
 
-    std::cout<<"call checkGEP"<<std::endl;
+    //std::cout<<"call checkGEP"<<std::endl;
     int invar_cnt = 0;
     Operand* iv = nullptr;
     int iv_idx = -1;
@@ -210,7 +210,7 @@ std::pair<GEPInst*,Operand*> StrengthReduce::checkGEP(GEPInst* ins){
     auto start=scevexp->operands[0];
     auto step=scevexp->operands[1];
 
-    std::cout<<ins->GetResultReg()<<std::endl;
+    //std::cout<<ins->GetResultReg()<<std::endl;
     //if(step.type!=Analysis::CROperand::Type::CONSTANT){return {nullptr,nullptr};}
     int step_val;
     if(step.type==Analysis::CROperand::Type::CONSTANT){
@@ -234,7 +234,16 @@ std::pair<GEPInst*,Operand*> StrengthReduce::checkGEP(GEPInst* ins){
     if(start.type==Analysis::CROperand::Type::CONSTANT){
         start_irop=new ImmeI32Operand(start.const_val);
     }else if(start.type==Analysis::CROperand::Type::LLVM_OPERAND){
-        start_irop=start.llvm_op;
+
+        if(//不知道为什么循环不变量也不行 标记
+           //(start.llvm_op->type==OperandType::REG&&scev->isLoopInvariant(loop,start.llvm_op->GetRegNum()))||
+            start.llvm_op->type==OperandType::IMMEI32
+        ){
+            start_irop=start.llvm_op;
+        }else{
+            return {nullptr,nullptr};
+        }
+        
     }else{
         return {nullptr,nullptr};
     }
@@ -358,7 +367,7 @@ void StrengthReducePass::Execute(){
             //std::cout<<"on loop "<<loop->loop_id<<":"<<std::endl;
             StrengthReduce s{this->scev,loop,ir};
             s.doMulStrengthReduce();
-            //s.doGEPStrengthReduce();
+            s.doGEPStrengthReduce();
         }
     }
 }
