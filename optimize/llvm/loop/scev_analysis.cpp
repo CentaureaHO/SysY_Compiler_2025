@@ -381,6 +381,20 @@ namespace Analysis
         {
             case LLVMIR::IROpCode::ADD: return crAdd(*lhs_cr, *rhs_cr);
             case LLVMIR::IROpCode::MUL: return crMul(*lhs_cr, *rhs_cr);
+            case LLVMIR::IROpCode::SUB:
+            {
+                if (rhs_cr->operators.empty() && rhs_cr->operands.size() == 1)
+                {
+                    auto rhs_val = rhs_cr->operands[0].getConstantValue();
+                    if (rhs_val)
+                    {
+                        auto neg_rhs_cr = std::make_unique<ChainOfRecurrences>(
+                            std::vector<CROperand>{CROperand(-*rhs_val)}, std::vector<CROperator>{});
+                        return crAdd(*lhs_cr, *neg_rhs_cr);
+                    }
+                }
+                return nullptr;
+            }
             default:
                 // TODO: 处理其他运算符
                 return nullptr;
@@ -629,42 +643,73 @@ namespace Analysis
                   << ", upper: " << (upper ? std::to_string(*upper) : "runtime")
                   << ", step_val: " << (step_val ? std::to_string(*step_val) : "runtime") << std::endl;
 
-        if (lower && upper && step_val && *step_val > 0)
+        if (lower && upper && step_val && *step_val != 0)
         {
             // 使用保存的选中归纳变量CR来判断是否为乘法递增
             bool is_multiplicative = loop_info.isMultiplicativeInductionVar();
 
             int count = 0;
-            if (is_multiplicative && *step_val > 1)
-            {
-                // 乘法递增：计算 start * step^n >= upper 的最小n
-                // 即：n = ceil(log(upper/start) / log(step))
-                double ratio    = static_cast<double>(*upper) / static_cast<double>(*lower);
-                double log_step = std::log(static_cast<double>(*step_val));
 
-                if (log_step > 0)
+            if (*step_val > 0)
+            {
+                if (is_multiplicative && *step_val > 1)
                 {
-                    double n = std::log(ratio) / log_step;
-                    count    = static_cast<int>(std::ceil(n));
+                    // 乘法递增：计算 start * step^n >= upper 的最小n
+                    // 即：n = ceil(log(upper/start) / log(step))
+                    double ratio    = static_cast<double>(*upper) / static_cast<double>(*lower);
+                    double log_step = std::log(static_cast<double>(*step_val));
+
+                    if (log_step > 0)
+                    {
+                        double n = std::log(ratio) / log_step;
+                        count    = static_cast<int>(std::ceil(n));
+                    }
+                    else { return std::nullopt; }
                 }
-                else { return std::nullopt; }
+                else
+                {
+                    // 加法递增：修正的计算方式
+                    // 对于 i < upper: count = floor((upper - lower) / step) + 1
+                    // 对于 i <= upper: count = floor((upper - lower) / step) + 1
+                    count    = 0;
+                    int lb   = *lower;
+                    int ub   = *upper;
+                    int step = *step_val;
+                    while (lb < ub)
+                    {
+                        lb += step;
+                        ++count;
+                    }
+
+                    if (loop_info.is_upperbound_closed && lb == ub) ++count;
+                }
             }
-            else
+            else  // 递减循环 (*step_val < 0)
             {
-                // 加法递增：修正的计算方式
-                // 对于 i < upper: count = floor((upper - lower) / step) + 1
-                // 对于 i <= upper: count = floor((upper - lower) / step) + 1
-                count    = 0;
-                int lb   = *lower;
-                int ub   = *upper;
-                int step = *step_val;
-                while (lb < ub)
-                {
-                    lb += step;
-                    ++count;
-                }
+                // 递减循环：从 lower 开始，每次减去 |step|，直到 <= upper
+                count       = 0;
+                int current = *lower;
+                int ub      = *upper;
+                int step    = *step_val;
 
-                if (loop_info.is_upperbound_closed && lb == ub) ++count;
+                if (loop_info.cond == LLVMIR::IcmpCond::SGE)  // current >= upper
+                {
+                    while (current >= ub)
+                    {
+                        current += step;
+                        ++count;
+                    }
+                }
+                else if (loop_info.cond == LLVMIR::IcmpCond::SGT)  // current > upper
+                {
+                    while (current > ub)
+                    {
+                        current += step;
+                        ++count;
+                    }
+                }
+                else
+                    return std::nullopt;
             }
 
             // 对于闭合上界，不需要额外调整（已经在上面的公式中处理）

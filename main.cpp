@@ -50,7 +50,7 @@
 // SCEV Analysis
 #include "optimize/llvm/loop/scev_analysis.h"
 // IndVars Simplify
-// #include "optimize/llvm/loop/indvars_simplify.h"
+#include "optimize/llvm/loop/indvars_simplify.h"
 // Constant Loop Unroll
 // #include "optimize/llvm/loop/constant_loop_unroll.h"
 // GVN GCM
@@ -396,7 +396,16 @@ int main(int argc, char** argv)
         scevAnalyser.run();
         scevAnalyser.printAllResults();
 
-        if (optimizeLevel >= 2) {}
+        if (optimizeLevel >= 2)
+        {
+            // IndVars Simplify - 归纳变量简化
+            Transform::IndVarsSimplifyPass indVarsPass(&builder, &scevAnalyser);
+            indVarsPass.Execute();
+
+            // 重新构建CFG和支配树，因为IndVars可能改变了循环结构
+            makecfg.Execute();
+            makedom.Execute();
+        }
         makecfg.Execute();
         makedom.Execute();
     }
