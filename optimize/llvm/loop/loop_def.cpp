@@ -458,3 +458,38 @@ bool judgeLoopContain(const NaturalLoop* outer, const NaturalLoop* inner)
         return outer->loop_nodes.find(const_cast<LLVMIR::IRBlock*>(node)) != outer->loop_nodes.end();
     });
 }
+
+void NaturalLoop::printLoopInfo(int bi)
+{
+    std::string indent(bi, '\t');
+
+    std::cout << indent << "Loop " << loop_id;
+
+    std::cout << indent << "\tPreheader: " << (preheader ? std::to_string(preheader->block_id) : "None") << std::endl;
+    std::cout << indent << "\tHeader: " << (header ? std::to_string(header->block_id) : "None") << std::endl;
+    std::cout << indent << "\tGuard: " << (guard ? std::to_string(guard->block_id) : "None") << std::endl;
+
+    std::cout << indent << "\tLatch: [";
+    for (auto* latch : latches)
+    {
+        std::cout << latch->block_id;
+        if (latch != *latches.rbegin()) std::cout << ", ";
+    }
+    std::cout << "]" << std::endl;
+
+    std::cout << indent << "\tExit: [";
+    for (auto* exit : exit_nodes)
+    {
+        std::cout << exit->block_id;
+        if (exit != *exit_nodes.rbegin()) std::cout << ", ";
+    }
+    std::cout << "]" << std::endl;
+
+    std::cout << indent << "\tExiting: [";
+    for (auto* exiting : exiting_nodes)
+    {
+        std::cout << exiting->block_id;
+        if (exiting != *exiting_nodes.rbegin()) std::cout << ", ";
+    }
+    std::cout << "]" << std::endl;
+}

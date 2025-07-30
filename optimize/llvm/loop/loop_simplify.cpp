@@ -37,7 +37,7 @@ namespace StructuralTransform
             if (isLoopSimplified(loop, config)) return;
 
             loop->simplify(config);
-            // simplifyExitNodes(loop, config);
+            simplifyExitNodes(loop, config);
 
             ++loops_modified;
         };

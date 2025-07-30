@@ -31,14 +31,23 @@ namespace StructuralTransform
 
         for (int var_reg : var_set)
         {
+            if (hasExistingPhiForVariable(exit_bb, var_reg)) continue;
+
             std::vector<std::pair<LLVMIR::Operand*, LLVMIR::Operand*>> phi_vals;
+            std::set<int>                                              seen_predecessors;
 
             if (static_cast<size_t>(exit_bb->block_id) < cfg->invG.size())
             {
                 for (auto* pred_bb : cfg->invG[exit_bb->block_id])
                 {
                     if (loop->loop_nodes.find(pred_bb) != loop->loop_nodes.end())
-                        phi_vals.push_back({getRegOperand(var_reg), getLabelOperand(pred_bb->block_id)});
+                    {
+                        if (seen_predecessors.find(pred_bb->block_id) == seen_predecessors.end())
+                        {
+                            phi_vals.push_back({getRegOperand(var_reg), getLabelOperand(pred_bb->block_id)});
+                            seen_predecessors.insert(pred_bb->block_id);
+                        }
+                    }
                 }
             }
 
@@ -68,6 +77,26 @@ namespace StructuralTransform
                 inst->Rename(replace_map);
             }
         }
+    }
+
+    bool LCSSAPass::hasExistingPhiForVariable(LLVMIR::IRBlock* exit_bb, int var_reg)
+    {
+        for (auto* inst : exit_bb->insts)
+        {
+            if (inst->opcode != LLVMIR::IROpCode::PHI) break;
+
+            LLVMIR::PhiInst* phi_inst = static_cast<LLVMIR::PhiInst*>(inst);
+
+            for (const auto& phi_val : phi_inst->vals_for_labels)
+            {
+                if (phi_val.first->type == LLVMIR::OperandType::REG)
+                {
+                    LLVMIR::RegOperand* reg_op = static_cast<LLVMIR::RegOperand*>(phi_val.first);
+                    if (reg_op->reg_num == var_reg) { return true; }
+                }
+            }
+        }
+        return false;
     }
 
     std::tuple<std::set<int>, std::map<int, LLVMIR::DataType>> LCSSAPass::getUsedOperandOutOfLoop(

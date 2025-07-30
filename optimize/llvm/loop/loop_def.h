@@ -46,6 +46,8 @@ class NaturalLoop
     void simplify(CFG* cfg);
     bool isSimplified(CFG* cfg) const;
 
+    void printLoopInfo(int basic_indent = 0);
+
   private:
     void addPreheader(CFG* cfg);
     void insertSingleLatch(CFG* cfg);
