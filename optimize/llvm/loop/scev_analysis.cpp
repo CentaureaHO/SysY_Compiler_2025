@@ -352,6 +352,7 @@ namespace Analysis
         LLVMIR::ArithmeticInst* inst, const std::map<int, std::unique_ptr<ChainOfRecurrences>>& cr_map)
     {
         if (!inst) return nullptr;
+        std::cout<<"inst reg: "<<inst->GetResultReg()<<std::endl;
 
         auto lhs_cr = [&]() -> std::unique_ptr<ChainOfRecurrences> {
             if (inst->lhs->type == LLVMIR::OperandType::REG)
@@ -359,6 +360,7 @@ namespace Analysis
                 auto* reg = static_cast<LLVMIR::RegOperand*>(inst->lhs);
                 auto  it  = cr_map.find(reg->reg_num);
                 if (it != cr_map.end()) { return std::make_unique<ChainOfRecurrences>(*it->second); }
+                //else {return nullptr;}
             }
             return std::make_unique<ChainOfRecurrences>(
                 std::vector<CROperand>{CROperand(inst->lhs)}, std::vector<CROperator>{});
@@ -370,6 +372,7 @@ namespace Analysis
                 auto* reg = static_cast<LLVMIR::RegOperand*>(inst->rhs);
                 auto  it  = cr_map.find(reg->reg_num);
                 if (it != cr_map.end()) { return std::make_unique<ChainOfRecurrences>(*it->second); }
+                //else {return nullptr;}
             }
             return std::make_unique<ChainOfRecurrences>(
                 std::vector<CROperand>{CROperand(inst->rhs)}, std::vector<CROperator>{});
@@ -855,6 +858,7 @@ namespace Analysis
 
     void SCEVAnalyser::analyzeLoop(CFG* cfg, NaturalLoop* loop)
     {
+        std::cout<<"on loop: "<<loop->loop_id<<std::endl;
         auto info = std::make_unique<LoopCRInfo>(loop);
 
         findInvariantVars(info.get(), cfg);
@@ -983,6 +987,7 @@ namespace Analysis
 
     void SCEVAnalyser::findCRRecurrences(LoopCRInfo* info, CFG* cfg)
     {
+        
         bool changed = true;
         while (changed)
         {
@@ -1000,9 +1005,10 @@ namespace Analysis
                     {
                         auto* arith_inst = static_cast<LLVMIR::ArithmeticInst*>(inst);
                         auto  result_cr  = CRBuilder::createFromArithmeticExpr(arith_inst, info->cr_map);
-
+                        
                         if (result_cr)
                         {
+                            std::cout<<result_cr->length()<<std::endl;
                             result_cr = CRBuilder::simplify(std::move(result_cr));
                             if (result_cr)
                             {

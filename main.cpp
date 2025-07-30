@@ -398,6 +398,14 @@ int main(int argc, char** argv)
         scevAnalyser.run();
         scevAnalyser.printAllResults();
 
+        Transform::StrengthReducePass lsr(&builder,&scevAnalyser) ;
+        lsr.Execute();
+        DCEDefUse.Execute();
+        dce.Execute();
+        scevAnalyser.run();
+
+
+
         if (optimizeLevel >= 2) {}
         makecfg.Execute();
         makedom.Execute();
