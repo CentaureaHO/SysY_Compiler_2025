@@ -1087,15 +1087,37 @@ namespace Analysis
         if (!selected_exiting_node) return;
         if (selected_exiting_node->insts.size() < 2) return;
 
-        auto* cmp_inst = selected_exiting_node->insts[selected_exiting_node->insts.size() - 2];
-        auto* br_inst  = selected_exiting_node->insts[selected_exiting_node->insts.size() - 1];
+        LLVMIR::BranchCondInst* br_cond_inst = nullptr;
+        for (auto* inst : selected_exiting_node->insts)
+        {
+            if (inst->opcode == LLVMIR::IROpCode::RET || inst->opcode == LLVMIR::IROpCode::BR_UNCOND) return;
+            if (inst->opcode != LLVMIR::IROpCode::BR_COND) continue;
 
+            br_cond_inst = static_cast<LLVMIR::BranchCondInst*>(inst);
+            break;
+        }
+
+        if (!br_cond_inst) return;
+
+        LLVMIR::Instruction* cmp_inst = nullptr;
+        if (br_cond_inst->cond->type == LLVMIR::OperandType::REG)
+        {
+            auto* cond_reg = static_cast<LLVMIR::RegOperand*>(br_cond_inst->cond);
+            for (auto* inst : selected_exiting_node->insts)
+            {
+                if (inst->GetResultReg() == cond_reg->reg_num)
+                {
+                    cmp_inst = inst;
+                    break;
+                }
+            }
+        }
+
+        if (!cmp_inst) return;
         if (cmp_inst->opcode == LLVMIR::IROpCode::FCMP) return;
         if (cmp_inst->opcode != LLVMIR::IROpCode::ICMP) return;
-        assert(br_inst->opcode == LLVMIR::IROpCode::BR_COND);
 
-        auto* icmp_inst    = static_cast<LLVMIR::IcmpInst*>(cmp_inst);
-        auto* br_cond_inst = static_cast<LLVMIR::BranchCondInst*>(br_inst);
+        auto* icmp_inst = static_cast<LLVMIR::IcmpInst*>(cmp_inst);
 
         auto* false_label = static_cast<LLVMIR::LabelOperand*>(br_cond_inst->false_label);
         auto* true_label  = static_cast<LLVMIR::LabelOperand*>(br_cond_inst->true_label);

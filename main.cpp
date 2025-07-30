@@ -405,9 +405,12 @@ int main(int argc, char** argv)
             // 重新构建CFG和支配树，因为IndVars可能改变了循环结构
             makecfg.Execute();
             makedom.Execute();
+            loopAnalysis.Execute();
+            loopSimplify.Execute();
+            loopRotate.Execute();
+            scevAnalyser.run();
+            scevAnalyser.printAllResults();
         }
-        makecfg.Execute();
-        makedom.Execute();
     }
 
     if (step == "-llvm")
