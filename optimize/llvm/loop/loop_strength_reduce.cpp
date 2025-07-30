@@ -358,7 +358,7 @@ void StrengthReducePass::Execute(){
             //std::cout<<"on loop "<<loop->loop_id<<":"<<std::endl;
             StrengthReduce s{this->scev,loop,ir};
             s.doMulStrengthReduce();
-            s.doGEPStrengthReduce();
+            //s.doGEPStrengthReduce();
         }
     }
 }

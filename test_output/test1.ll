@@ -30,12 +30,11 @@ Block4:
 	%reg_9 = icmp eq i32 %reg_1, 1
 	br i1 %reg_9, label %Block2, label %Block3
 Block5: ; Loop 0 header
-	%reg_137 = phi i32 [ 0, %Block22 ], [ %reg_138, %Block6 ]
 	%reg_97 = phi i32 [ %reg_31, %Block6 ], [ 0, %Block22 ]
 	br label %Block6
 Block6: ; Loop 0 latch
-	%reg_138 = add i32 %reg_137, 3
-	%reg_24 = add i32 %reg_137, %reg_1
+	%reg_22 = mul i32 %reg_97, 3
+	%reg_24 = add i32 %reg_22, %reg_1
 	%reg_26 = sub i32 %reg_24, 1
 	%reg_27 = getelementptr [9 x i32], ptr %reg_11, i32 0, i32 %reg_26
 	store i32 1, ptr %reg_27
@@ -70,20 +69,23 @@ Block13:
 	%reg_95 = load i32, ptr %reg_94
 	br label %Block17
 Block14: ; Loop 2 header (nested depth: 1)
-	%reg_143 = phi ptr [ %reg_142, %Block24 ], [ %reg_144, %Block15 ]
-	%reg_140 = phi ptr [ %reg_139, %Block24 ], [ %reg_141, %Block15 ]
 	%reg_101 = phi i32 [ %reg_89, %Block15 ], [ %reg_57, %Block24 ]
 	br label %Block15
 Block15: ; Loop 2 latch (nested depth: 1)
-	%reg_76 = load i32, ptr %reg_143
-	%reg_84 = getelementptr i32, ptr %reg_140, i32 1
+	%reg_64 = mul i32 %reg_99, 3
+	%reg_66 = add i32 %reg_64, %reg_101
+	%reg_67 = getelementptr [9 x i32], ptr %reg_11, i32 0, i32 %reg_66
+	%reg_70 = add i32 %reg_99, 1
+	%reg_72 = mul i32 %reg_70, 3
+	%reg_74 = add i32 %reg_72, %reg_101
+	%reg_75 = getelementptr [9 x i32], ptr %reg_11, i32 0, i32 %reg_74
+	%reg_76 = load i32, ptr %reg_75
+	%reg_84 = getelementptr i32, ptr %reg_67, i32 1
 	%reg_85 = load i32, ptr %reg_84
 	%reg_86 = add i32 %reg_76, %reg_85
-	store i32 %reg_86, ptr %reg_140
+	store i32 %reg_86, ptr %reg_67
 	%reg_89 = sub i32 %reg_101, 1
 	%reg_117 = icmp sgt i32 %reg_89, -1
-	%reg_141 = getelementptr i32, ptr %reg_140, i32 -1
-	%reg_144 = getelementptr i32, ptr %reg_143, i32 -1
 	br i1 %reg_117, label %Block14, label %Block25
 Block16: ; Loop 3 latch
 	%reg_92 = sub i32 %reg_99, 1
@@ -109,8 +111,6 @@ Block22: ; Loop 0 preheader
 Block23: ; Loop 0 exit target
 	br label %Block7
 Block24: ; Loop 2 preheader (nested depth: 1)
-	%reg_139 = getelementptr [9 x i32], ptr %reg_11, i32 0, i32 %reg_99
-	%reg_142 = getelementptr [9 x i32], ptr %reg_11, i32 0, i32 %reg_99
 	br label %Block14
 Block25: ; Loop 3 body
 	br label %Block16

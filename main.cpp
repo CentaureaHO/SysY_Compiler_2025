@@ -399,7 +399,7 @@ int main(int argc, char** argv)
         scevAnalyser.printAllResults();
 
         Transform::StrengthReducePass lsr(&builder,&scevAnalyser) ;
-        lsr.Execute();
+        //lsr.Execute();
         DCEDefUse.Execute();
         dce.Execute();
         scevAnalyser.run();
@@ -421,6 +421,7 @@ int main(int argc, char** argv)
             scevAnalyser.run();
             scevAnalyser.printAllResults();
         }
+        
     }
 
     if (step == "-llvm")
