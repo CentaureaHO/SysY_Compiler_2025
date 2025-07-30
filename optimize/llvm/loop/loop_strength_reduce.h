@@ -19,7 +19,9 @@ namespace Transform
 
         std::map<int,int> replace;
         std::map<int,int> todel;
+        std::vector<LLVMIR::Instruction*> new_add_insts;
 
+        std::pair<LLVMIR::GEPInst*,LLVMIR::Operand*> checkGEP(LLVMIR::GEPInst* ins);
         void doMulStrengthReduce();
         void doGEPStrengthReduce();
         bool checkDom(int dom,int node);
@@ -30,6 +32,7 @@ namespace Transform
             this->ir=ir;
             replace.clear();
             todel.clear();
+            new_add_insts.clear();
         }
 
         

@@ -390,6 +390,7 @@ int main(int argc, char** argv)
         strength_reduce.Execute();
         DCEDefUse.Execute();
         dce.Execute();
+        scevAnalyser.run();
 
         if (optimizeLevel >= 2)
         {
