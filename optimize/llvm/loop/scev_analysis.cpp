@@ -13,8 +13,157 @@ namespace Analysis
     LLVMIR::IcmpCond getInverseIcmpCond(LLVMIR::IcmpCond cond);
     LLVMIR::IcmpCond getSwapIcmpCond(LLVMIR::IcmpCond cond);
 
+    std::optional<int32_t> ArithmeticExpr::getConstantValue() const
+    {
+        auto lhs_val = lhs->getConstantValue();
+        auto rhs_val = rhs->getConstantValue();
+
+        if (lhs_val && rhs_val)
+        {
+            switch (op)
+            {
+                case ArithOp::ADD: return *lhs_val + *rhs_val;
+                case ArithOp::SUB: return *lhs_val - *rhs_val;
+                case ArithOp::MUL: return *lhs_val * *rhs_val;
+            }
+        }
+        return std::nullopt;
+    }
+
+    LLVMIR::Instruction* ArithmeticExpr::generateInstruction(CFG* cfg) const
+    {
+        auto* lhs_inst = lhs->generateInstruction(cfg);
+        auto* rhs_inst = rhs->generateInstruction(cfg);
+
+        if (!lhs_inst || !rhs_inst) return nullptr;
+
+        LLVMIR::IROpCode opcode;
+        switch (op)
+        {
+            case ArithOp::ADD: opcode = LLVMIR::IROpCode::ADD; break;
+            case ArithOp::SUB: opcode = LLVMIR::IROpCode::SUB; break;
+            case ArithOp::MUL: opcode = LLVMIR::IROpCode::MUL; break;
+            default: return nullptr;
+        }
+
+        return new LLVMIR::ArithmeticInst(opcode,
+            LLVMIR::DataType::I32,
+            lhs_inst->GetResultOperand(),
+            rhs_inst->GetResultOperand(),
+            getRegOperand(++cfg->func->max_reg));
+    }
+
+    bool ArithmeticExpr::isLoopInvariant(const std::set<int>& invariant_set) const
+    {
+        return lhs->isLoopInvariant(invariant_set) && rhs->isLoopInvariant(invariant_set);
+    }
+
+    void ArithmeticExpr::print() const
+    {
+        std::cout << "(";
+        lhs->print();
+        switch (op)
+        {
+            case ArithOp::ADD: std::cout << " + "; break;
+            case ArithOp::SUB: std::cout << " - "; break;
+            case ArithOp::MUL: std::cout << " * "; break;
+        }
+        rhs->print();
+        std::cout << ")";
+    }
+
+    bool ArithmeticExpr::operator==(const ArithmeticExpr& other) const
+    {
+        return op == other.op && *lhs == *other.lhs && *rhs == *other.rhs;
+    }
+
+    std::unique_ptr<CROperand> ArithmeticExpr::simplify() const
+    {
+        auto simplified_lhs = lhs->type == CROperand::ARITHMETIC_EXPR && lhs->arith_expr
+                                  ? lhs->arith_expr->simplify()
+                                  : std::make_unique<CROperand>(*lhs);
+        auto simplified_rhs = rhs->type == CROperand::ARITHMETIC_EXPR && rhs->arith_expr
+                                  ? rhs->arith_expr->simplify()
+                                  : std::make_unique<CROperand>(*rhs);
+
+        auto lhs_val = simplified_lhs->getConstantValue();
+        auto rhs_val = simplified_rhs->getConstantValue();
+
+        if (lhs_val && rhs_val)
+        {
+            switch (op)
+            {
+                case ArithOp::ADD: return std::make_unique<CROperand>(*lhs_val + *rhs_val);
+                case ArithOp::SUB: return std::make_unique<CROperand>(*lhs_val - *rhs_val);
+                case ArithOp::MUL: return std::make_unique<CROperand>(*lhs_val * *rhs_val);
+            }
+        }
+
+        switch (op)
+        {
+            case ArithOp::ADD:
+                // x + 0 = x
+                if (rhs_val && *rhs_val == 0) return simplified_lhs;
+                // 0 + x = x
+                if (lhs_val && *lhs_val == 0) return simplified_rhs;
+
+                // (x + c1) + c2 = x + (c1 + c2)
+                if (rhs_val && simplified_lhs->type == CROperand::ARITHMETIC_EXPR && simplified_lhs->arith_expr &&
+                    simplified_lhs->arith_expr->op == ArithOp::ADD)
+                {
+                    auto inner_rhs_val = simplified_lhs->arith_expr->rhs->getConstantValue();
+                    if (inner_rhs_val)
+                    {
+                        int combined_const = *inner_rhs_val + *rhs_val;
+                        if (combined_const == 0)
+                            return std::make_unique<CROperand>(*simplified_lhs->arith_expr->lhs);
+                        else
+                            return std::make_unique<CROperand>(
+                                CROperand::createAdd(*simplified_lhs->arith_expr->lhs, CROperand(combined_const)));
+                    }
+                }
+                break;
+
+            case ArithOp::MUL:
+                // x * 0 = 0
+                if ((lhs_val && *lhs_val == 0) || (rhs_val && *rhs_val == 0)) { return std::make_unique<CROperand>(0); }
+                // x * 1 = x
+                if (rhs_val && *rhs_val == 1) return simplified_lhs;
+                // 1 * x = x
+                if (lhs_val && *lhs_val == 1) return simplified_rhs;
+                break;
+
+            case ArithOp::SUB:
+                // x - 0 = x
+                if (rhs_val && *rhs_val == 0) return simplified_lhs;
+                // x - x = 0
+                if (*simplified_lhs == *simplified_rhs) { return std::make_unique<CROperand>(0); }
+                break;
+        }
+
+        auto expr = std::make_unique<ArithmeticExpr>(op, std::move(simplified_lhs), std::move(simplified_rhs));
+        return std::make_unique<CROperand>(std::move(expr));
+    }
+
+    ArithmeticExpr::ArithmeticExpr(const ArithmeticExpr& other)
+        : op(other.op), lhs(std::make_unique<CROperand>(*other.lhs)), rhs(std::make_unique<CROperand>(*other.rhs))
+    {}
+
+    ArithmeticExpr& ArithmeticExpr::operator=(const ArithmeticExpr& other)
+    {
+        if (this != &other)
+        {
+            op  = other.op;
+            lhs = std::make_unique<CROperand>(*other.lhs);
+            rhs = std::make_unique<CROperand>(*other.rhs);
+        }
+        return *this;
+    }
+
     CROperand::CROperand(std::unique_ptr<ChainOfRecurrences> cr) : type(CHAIN_OF_RECURRENCES), nested_cr(std::move(cr))
     {}
+
+    CROperand::CROperand(std::unique_ptr<ArithmeticExpr> expr) : type(ARITHMETIC_EXPR), arith_expr(std::move(expr)) {}
 
     CROperand::CROperand(const CROperand& other) : type(other.type)
     {
@@ -24,6 +173,9 @@ namespace Analysis
             case LLVM_OPERAND: llvm_op = other.llvm_op; break;
             case CHAIN_OF_RECURRENCES:
                 if (other.nested_cr) { nested_cr = std::make_unique<ChainOfRecurrences>(*other.nested_cr); }
+                break;
+            case ARITHMETIC_EXPR:
+                if (other.arith_expr) { arith_expr = std::make_unique<ArithmeticExpr>(*other.arith_expr); }
                 break;
         }
     }
@@ -41,6 +193,10 @@ namespace Analysis
                     if (other.nested_cr) { nested_cr = std::make_unique<ChainOfRecurrences>(*other.nested_cr); }
                     else { nested_cr.reset(); }
                     break;
+                case ARITHMETIC_EXPR:
+                    if (other.arith_expr) { arith_expr = std::make_unique<ArithmeticExpr>(*other.arith_expr); }
+                    else { arith_expr.reset(); }
+                    break;
             }
         }
         return *this;
@@ -53,6 +209,7 @@ namespace Analysis
             case CONSTANT: const_val = other.const_val; break;
             case LLVM_OPERAND: llvm_op = other.llvm_op; break;
             case CHAIN_OF_RECURRENCES: nested_cr = std::move(other.nested_cr); break;
+            case ARITHMETIC_EXPR: arith_expr = std::move(other.arith_expr); break;
         }
     }
 
@@ -66,6 +223,7 @@ namespace Analysis
                 case CONSTANT: const_val = other.const_val; break;
                 case LLVM_OPERAND: llvm_op = other.llvm_op; break;
                 case CHAIN_OF_RECURRENCES: nested_cr = std::move(other.nested_cr); break;
+                case ARITHMETIC_EXPR: arith_expr = std::move(other.arith_expr); break;
             }
         }
         return *this;
@@ -84,6 +242,7 @@ namespace Analysis
                 }
                 break;
             case CHAIN_OF_RECURRENCES: break;
+            case ARITHMETIC_EXPR: return arith_expr->getConstantValue();
         }
         return std::nullopt;
     }
@@ -111,6 +270,7 @@ namespace Analysis
                     return insts.empty() ? nullptr : insts.back();
                 }
                 break;
+            case ARITHMETIC_EXPR: return arith_expr->generateInstruction(cfg);
         }
         return nullptr;
     }
@@ -128,6 +288,7 @@ namespace Analysis
                 }
                 return true;
             case CHAIN_OF_RECURRENCES: return false;
+            case ARITHMETIC_EXPR: return arith_expr->isLoopInvariant(invariant_set);
         }
         return false;
     }
@@ -145,6 +306,7 @@ namespace Analysis
                 if (nested_cr) { nested_cr->print(); }
                 else { std::cout << "null_cr"; }
                 break;
+            case ARITHMETIC_EXPR: arith_expr->print(); break;
         }
     }
 
@@ -157,8 +319,57 @@ namespace Analysis
             case CONSTANT: return const_val == other.const_val;
             case LLVM_OPERAND: return llvm_op == other.llvm_op;
             case CHAIN_OF_RECURRENCES: return (nested_cr == nullptr) == (other.nested_cr == nullptr);
+            case ARITHMETIC_EXPR:
+                return (arith_expr == nullptr) == (other.arith_expr == nullptr) &&
+                       (arith_expr ? *arith_expr == *other.arith_expr : true);
         }
         return false;
+    }
+
+    CROperand CROperand::createAdd(const CROperand& lhs, const CROperand& rhs)
+    {
+        auto lhs_val = lhs.getConstantValue();
+        auto rhs_val = rhs.getConstantValue();
+        if (lhs_val && rhs_val) { return CROperand(*lhs_val + *rhs_val); }
+
+        if (rhs_val && *rhs_val == 0) return lhs;
+        if (lhs_val && *lhs_val == 0) return rhs;
+
+        auto expr = std::make_unique<ArithmeticExpr>(
+            ArithOp::ADD, std::make_unique<CROperand>(lhs), std::make_unique<CROperand>(rhs));
+        auto simplified = expr->simplify();
+        return *simplified;
+    }
+
+    CROperand CROperand::createMul(const CROperand& lhs, const CROperand& rhs)
+    {
+        auto lhs_val = lhs.getConstantValue();
+        auto rhs_val = rhs.getConstantValue();
+        if (lhs_val && rhs_val) { return CROperand(*lhs_val * *rhs_val); }
+
+        if ((lhs_val && *lhs_val == 0) || (rhs_val && *rhs_val == 0)) { return CROperand(0); }
+        if (rhs_val && *rhs_val == 1) return lhs;
+        if (lhs_val && *lhs_val == 1) return rhs;
+
+        auto expr = std::make_unique<ArithmeticExpr>(
+            ArithOp::MUL, std::make_unique<CROperand>(lhs), std::make_unique<CROperand>(rhs));
+        auto simplified = expr->simplify();
+        return *simplified;
+    }
+
+    CROperand CROperand::createSub(const CROperand& lhs, const CROperand& rhs)
+    {
+        auto lhs_val = lhs.getConstantValue();
+        auto rhs_val = rhs.getConstantValue();
+        if (lhs_val && rhs_val) { return CROperand(*lhs_val - *rhs_val); }
+
+        if (rhs_val && *rhs_val == 0) return lhs;
+        if (lhs == rhs) return CROperand(0);
+
+        auto expr = std::make_unique<ArithmeticExpr>(
+            ArithOp::SUB, std::make_unique<CROperand>(lhs), std::make_unique<CROperand>(rhs));
+        auto simplified = expr->simplify();
+        return *simplified;
     }
 
     ChainOfRecurrences::ChainOfRecurrences(const CROperand& start, CROperator op, const CROperand& step)
@@ -232,31 +443,44 @@ namespace Analysis
 
      ChainOfRecurrences ChainOfRecurrences::operator*(const CROperand& constant) const
     {
+        auto constant_val = constant.getConstantValue();
+
         if (isPureSum())
         {
-            ChainOfRecurrences result       = *this;
-            auto               constant_val = constant.getConstantValue();
-            if (constant_val)
-            {
-                for (auto& operand : result.operands)
-                {
-                    auto operand_val = operand.getConstantValue();
-                    if (operand_val) { operand = CROperand(*operand_val * *constant_val); }
-                }
-            }
+            ChainOfRecurrences result = *this;
+
+            for (size_t i = 0; i < result.operands.size(); ++i)
+                result.operands[i] = CROperand::createMul(result.operands[i], constant);
+
             return result;
         }
 
         if (operators.size() > 0 && operators[0] == CROperator::MUL)
         {
-            ChainOfRecurrences result       = *this;
-            auto               result_val   = result.operands[0].getConstantValue();
-            auto               constant_val = constant.getConstantValue();
-            if (result_val && constant_val) { result.operands[0] = CROperand(*result_val * *constant_val); }
+            ChainOfRecurrences result = *this;
+            if (constant_val)
+            {
+                auto result_val = result.operands[0].getConstantValue();
+                if (result_val)
+                    result.operands[0] = CROperand(*result_val * *constant_val);
+                else
+                    result.operands[0] = CROperand::createMul(result.operands[0], constant);
+            }
+            else
+                result.operands[0] = CROperand::createMul(result.operands[0], constant);
+
             return result;
         }
 
-        return *this;
+        if (operators.empty())
+        {
+            CROperand new_operand = CROperand::createMul(operands[0], constant);
+            return ChainOfRecurrences(std::vector<CROperand>{new_operand}, std::vector<CROperator>{});
+        }
+
+        ChainOfRecurrences result = *this;
+        result.operands[0]        = CROperand::createMul(result.operands[0], constant);
+        return result;
     }
 
     CROperand ChainOfRecurrences::evaluateClosedForm(int iteration) const
@@ -362,8 +586,9 @@ namespace Analysis
                 if (it != cr_map.end()) { return std::make_unique<ChainOfRecurrences>(*it->second); }
                 //else {return nullptr;}
             }
-            return std::make_unique<ChainOfRecurrences>(
+            auto result = std::make_unique<ChainOfRecurrences>(
                 std::vector<CROperand>{CROperand(inst->lhs)}, std::vector<CROperator>{});
+            return result;
         }();
 
         auto rhs_cr = [&]() -> std::unique_ptr<ChainOfRecurrences> {
@@ -374,8 +599,9 @@ namespace Analysis
                 if (it != cr_map.end()) { return std::make_unique<ChainOfRecurrences>(*it->second); }
                 //else {return nullptr;}
             }
-            return std::make_unique<ChainOfRecurrences>(
+            auto result = std::make_unique<ChainOfRecurrences>(
                 std::vector<CROperand>{CROperand(inst->rhs)}, std::vector<CROperator>{});
+            return result;
         }();
 
         if (!lhs_cr || !rhs_cr) return nullptr;
@@ -415,6 +641,12 @@ namespace Analysis
                 return std::make_unique<ChainOfRecurrences>(
                     std::vector<CROperand>{CROperand(*lhs_val + *rhs_val)}, std::vector<CROperator>{});
             }
+            else
+            {
+                CROperand add_expr = CROperand::createAdd(lhs.operands[0], rhs.operands[0]);
+                return std::make_unique<ChainOfRecurrences>(
+                    std::vector<CROperand>{add_expr}, std::vector<CROperator>{});
+            }
         }
 
         if (lhs.isPureSum() && rhs.isPureSum())
@@ -429,10 +661,7 @@ namespace Analysis
 
                 if (i < lhs.operands.size() && i < rhs.operands.size())
                 {
-                    auto lhs_val = lhs.operands[i].getConstantValue();
-                    auto rhs_val = rhs.operands[i].getConstantValue();
-                    if (lhs_val && rhs_val) { result_op = CROperand(*lhs_val + *rhs_val); }
-                    else { result_op = lhs.operands[i]; }
+                    result_op = CROperand::createAdd(lhs.operands[i], rhs.operands[i]);
                 }
                 else if (i < lhs.operands.size()) { result_op = lhs.operands[i]; }
                 else if (i < rhs.operands.size()) { result_op = rhs.operands[i]; }
@@ -447,18 +676,58 @@ namespace Analysis
         return nullptr;
     }
 
+    ChainOfRecurrences ChainOfRecurrences::createWithArithmeticExpr(
+        const ChainOfRecurrences& base, const CROperand& operand, CROperator op)
+    {
+        std::vector<CROperand>  result_operands;
+        std::vector<CROperator> result_operators;
+
+        if (op == CROperator::ADD) { result_operands.push_back(CROperand::createAdd(base.operands[0], operand)); }
+        else if (op == CROperator::MUL) { result_operands.push_back(CROperand::createMul(base.operands[0], operand)); }
+        else { result_operands.push_back(base.operands[0]); }
+
+        for (size_t i = 1; i < base.operands.size(); ++i) { result_operands.push_back(base.operands[i]); }
+        result_operators = base.operators;
+
+        return ChainOfRecurrences(result_operands, result_operators);
+    }
+
     std::unique_ptr<ChainOfRecurrences> CRBuilder::crMul(const ChainOfRecurrences& lhs, const ChainOfRecurrences& rhs)
     {
         if (rhs.operators.empty())
         {
             auto rhs_val = rhs.operands[0].getConstantValue();
-            if (rhs_val) { return std::make_unique<ChainOfRecurrences>(lhs * CROperand(*rhs_val)); }
+            if (rhs_val)
+            {
+                if (lhs.operators.empty())
+                {
+                    auto lhs_val = lhs.operands[0].getConstantValue();
+                    if (lhs_val)
+                    {
+                        return std::make_unique<ChainOfRecurrences>(
+                            std::vector<CROperand>{CROperand(*lhs_val * *rhs_val)}, std::vector<CROperator>{});
+                    }
+                    else
+                    {
+                        CROperand mul_expr = CROperand::createMul(lhs.operands[0], rhs.operands[0]);
+                        return std::make_unique<ChainOfRecurrences>(
+                            std::vector<CROperand>{mul_expr}, std::vector<CROperator>{});
+                    }
+                }
+                else if (lhs.isPureSum()) { return std::make_unique<ChainOfRecurrences>(lhs * CROperand(*rhs_val)); }
+                else { return nullptr; }
+            }
         }
 
         if (lhs.operators.empty())
         {
             auto lhs_val = lhs.operands[0].getConstantValue();
-            if (lhs_val) { return std::make_unique<ChainOfRecurrences>(rhs * CROperand(*lhs_val)); }
+            if (lhs_val)
+            {
+                if (rhs.operators.empty()) { return nullptr; }
+                else if (rhs.isPureSum()) { return std::make_unique<ChainOfRecurrences>(rhs * CROperand(*lhs_val)); }
+                else { return nullptr; }
+            }
         }
 
         if (lhs.isPureProduct() && rhs.isPureProduct())
@@ -476,6 +745,7 @@ namespace Analysis
                     auto lhs_val = lhs.operands[i].getConstantValue();
                     auto rhs_val = rhs.operands[i].getConstantValue();
                     if (lhs_val && rhs_val) { result_op = CROperand(*lhs_val * *rhs_val); }
+                    else { result_op = CROperand::createMul(lhs.operands[i], rhs.operands[i]); }
                 }
                 else if (i < lhs.operands.size()) { result_op = lhs.operands[i]; }
                 else if (i < rhs.operands.size()) { result_op = rhs.operands[i]; }
@@ -601,6 +871,16 @@ namespace Analysis
     std::unique_ptr<ChainOfRecurrences> CRBuilder::simplify(std::unique_ptr<ChainOfRecurrences> cr)
     {
         if (!cr) return nullptr;
+
+        for (auto& operand : cr->operands)
+        {
+            if (operand.type == CROperand::ARITHMETIC_EXPR && operand.arith_expr)
+            {
+                auto simplified = operand.arith_expr->simplify();
+                operand         = *simplified;
+            }
+        }
+
         cr = constantFold(std::move(cr));
         return cr;
     }
@@ -1037,6 +1317,7 @@ namespace Analysis
         while (changed)
         {
             changed = false;
+
             for (auto* bb : info->loop->loop_nodes)
             {
                 for (auto* inst : bb->insts)

@@ -51,8 +51,6 @@
 #include "optimize/llvm/loop/scev_analysis.h"
 // IndVars Simplify
 #include "optimize/llvm/loop/indvars_simplify.h"
-// Constant Loop Unroll
-// #include "optimize/llvm/loop/constant_loop_unroll.h"
 // GVN GCM
 #include "optimize/llvm/gvn_gcm/gcm.h"
 // Blockid Set
@@ -398,6 +396,7 @@ int main(int argc, char** argv)
         scevAnalyser.run();
         scevAnalyser.printAllResults();
 
+<<<<<<< HEAD
         Transform::StrengthReducePass lsr(&builder,&scevAnalyser) ;
         //lsr.Execute();
         DCEDefUse.Execute();
@@ -422,6 +421,22 @@ int main(int argc, char** argv)
             scevAnalyser.printAllResults();
         }
         
+=======
+        Transform::IndVarsSimplifyPass indVarsPass(&builder, &scevAnalyser);
+        indVarsPass.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
+        loopAnalysis.Execute();
+        loopSimplify.Execute();
+        loopRotate.Execute();
+        scevAnalyser.run();
+        scevAnalyser.printAllResults();
+
+        if (optimizeLevel >= 2) {}
+
+        makecfg.Execute();
+>>>>>>> 4afb416c7372706565d434947f7c8385d03dac61
     }
 
     if (step == "-llvm")
