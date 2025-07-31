@@ -75,11 +75,21 @@ namespace LLVMIR
                     auto use = *uses.begin();
                     uses.erase(use);
                     visited.insert(use);
-                    if (use->opcode == IROpCode::LOAD || use->opcode == IROpCode::CALL)
+                    if (use->opcode == IROpCode::LOAD)
                     {
                         // 说明这个数组被访问了
                         accessed_arrays.insert(array);
                         break;
+                    }
+                    else if (use->opcode == IROpCode::CALL)
+                    {
+                        auto call_inst = dynamic_cast<CallInst*>(use);
+                        if (call_inst && call_inst->func_name != "llvm.memset.p0.i32")
+                        {
+                            // 说明调用了其他函数，可能会访问这个数组
+                            accessed_arrays.insert(array);
+                            break;
+                        }
                     }
                     else if (use->opcode == IROpCode::GETELEMENTPTR)
                     {
