@@ -69,7 +69,6 @@ namespace LLVMIR
       public:
         int reg_num;
 
-        RegOperand(int num);
         virtual ~RegOperand() = default;
 
         virtual std::string getName();
@@ -77,6 +76,10 @@ namespace LLVMIR
         virtual std::string GetGlobal() const;
         virtual int         GetImm() const;
         virtual float       GetImmF() const;
+        static RegOperand*  get(int num);
+
+      private:
+        RegOperand(int num);
     };
 
     class ImmeI32Operand : public Operand
@@ -84,14 +87,17 @@ namespace LLVMIR
       public:
         int value;
 
-        ImmeI32Operand(int v);
         virtual ~ImmeI32Operand() = default;
 
-        virtual std::string getName();
-        virtual int         GetRegNum() const;
-        virtual std::string GetGlobal() const;
-        virtual int         GetImm() const;
-        virtual float       GetImmF() const;
+        virtual std::string    getName();
+        virtual int            GetRegNum() const;
+        virtual std::string    GetGlobal() const;
+        virtual int            GetImm() const;
+        virtual float          GetImmF() const;
+        static ImmeI32Operand* get(int value);
+
+      private:
+        ImmeI32Operand(int v);
     };
 
     class ImmeF32Operand : public Operand
@@ -99,14 +105,17 @@ namespace LLVMIR
       public:
         float value;
 
-        ImmeF32Operand(float v);
         virtual ~ImmeF32Operand() = default;
 
-        virtual std::string getName();
-        virtual int         GetRegNum() const;
-        virtual std::string GetGlobal() const;
-        virtual int         GetImm() const;
-        virtual float       GetImmF() const;
+        virtual std::string    getName();
+        virtual int            GetRegNum() const;
+        virtual std::string    GetGlobal() const;
+        virtual int            GetImm() const;
+        virtual float          GetImmF() const;
+        static ImmeF32Operand* get(float value);
+
+      private:
+        ImmeF32Operand(float v);
     };
 
     class LabelOperand : public Operand
@@ -114,14 +123,17 @@ namespace LLVMIR
       public:
         int label_num;
 
-        LabelOperand(int num);
         virtual ~LabelOperand() = default;
 
-        virtual std::string getName();
-        virtual int         GetRegNum() const;
-        virtual std::string GetGlobal() const;
-        virtual int         GetImm() const;
-        virtual float       GetImmF() const;
+        virtual std::string  getName();
+        virtual int          GetRegNum() const;
+        virtual std::string  GetGlobal() const;
+        virtual int          GetImm() const;
+        virtual float        GetImmF() const;
+        static LabelOperand* get(int num);
+
+      private:
+        LabelOperand(int num);
     };
 
     class GlobalOperand : public Operand
@@ -129,14 +141,17 @@ namespace LLVMIR
       public:
         std::string global_name;
 
-        GlobalOperand(std::string name);
         virtual ~GlobalOperand() = default;
 
-        virtual std::string getName();
-        virtual int         GetRegNum() const;
-        virtual std::string GetGlobal() const;
-        virtual int         GetImm() const;
-        virtual float       GetImmF() const;
+        virtual std::string   getName();
+        virtual int           GetRegNum() const;
+        virtual std::string   GetGlobal() const;
+        virtual int           GetImm() const;
+        virtual float         GetImmF() const;
+        static GlobalOperand* get(std::string name);
+
+      private:
+        GlobalOperand(const std::string name);
     };
 
     class Instruction

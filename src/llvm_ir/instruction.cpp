@@ -103,7 +103,7 @@ void LoadInst::Rename(std::map<int, int>& replace)
         int reg = ((RegOperand*)(this->ptr))->reg_num;
         if (replace.find(reg) != replace.end())
         {  // 保证在替换表中
-            ptr = new RegOperand(replace[reg]);
+            ptr = getRegOperand(replace[reg]);
         }
     }
 
@@ -112,7 +112,7 @@ void LoadInst::Rename(std::map<int, int>& replace)
         int reg = ((RegOperand*)(this->res))->reg_num;
         if (replace.find(reg) != replace.end())
         {  // 保证在替换表中
-            res = new RegOperand(replace[reg]);
+            res = getRegOperand(replace[reg]);
         }
     }
 }
@@ -146,7 +146,7 @@ void StoreInst::Rename(std::map<int, int>& replace)
         int reg = ((RegOperand*)(this->ptr))->reg_num;
         if (replace.find(reg) != replace.end())
         {  // 保证在替换表中
-            ptr = new RegOperand(replace[reg]);
+            ptr = getRegOperand(replace[reg]);
         }
     }
 
@@ -155,7 +155,7 @@ void StoreInst::Rename(std::map<int, int>& replace)
         int reg = ((RegOperand*)(this->val))->reg_num;
         if (replace.find(reg) != replace.end())
         {  // 保证在替换表中
-            val = new RegOperand(replace[reg]);
+            val = getRegOperand(replace[reg]);
         }
     }
 }
@@ -204,14 +204,14 @@ void ArithmeticInst::Rename(std::map<int, int>& replace)
         int reg = ((RegOperand*)(this->lhs))->reg_num;
         if (replace.find(reg) != replace.end())
         {  // 保证在替换表中
-            lhs = new RegOperand(replace[reg]);
+            lhs = getRegOperand(replace[reg]);
         }
     }
 
     if (this->rhs->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->rhs))->reg_num;
-        if (replace.find(reg) != replace.end()) { rhs = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { rhs = getRegOperand(replace[reg]); }
     }
 }
 
@@ -254,14 +254,14 @@ void IcmpInst::Rename(std::map<int, int>& replace)
         int reg = ((RegOperand*)(this->lhs))->reg_num;
         if (replace.find(reg) != replace.end())
         {  // 保证在替换表中
-            lhs = new RegOperand(replace[reg]);
+            lhs = getRegOperand(replace[reg]);
         }
     }
 
     if (this->rhs->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->rhs))->reg_num;
-        if (replace.find(reg) != replace.end()) { rhs = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { rhs = getRegOperand(replace[reg]); }
     }
 }
 
@@ -303,14 +303,14 @@ void FcmpInst::Rename(std::map<int, int>& replace)
         int reg = ((RegOperand*)(this->lhs))->reg_num;
         if (replace.find(reg) != replace.end())
         {  // 保证在替换表中
-            lhs = new RegOperand(replace[reg]);
+            lhs = getRegOperand(replace[reg]);
         }
     }
 
     if (this->rhs->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->rhs))->reg_num;
-        if (replace.find(reg) != replace.end()) { rhs = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { rhs = getRegOperand(replace[reg]); }
     }
 }
 
@@ -385,7 +385,7 @@ void BranchCondInst::Rename(std::map<int, int>& replace)
         int reg = ((RegOperand*)(this->cond))->reg_num;
         if (replace.find(reg) != replace.end())
         {  // 保证在替换表中
-            cond = new RegOperand(replace[reg]);
+            cond = getRegOperand(replace[reg]);
         }
     }
 }
@@ -560,7 +560,7 @@ void CallInst::Rename(std::map<int, int>& replace)
         if (op->type == OperandType::REG)
         {
             int regno = ((RegOperand*)op)->reg_num;
-            if (replace.find(regno) != replace.end()) { iter.second = new RegOperand(replace[regno]); }
+            if (replace.find(regno) != replace.end()) { iter.second = getRegOperand(replace[regno]); }
         }
     }
 }
@@ -598,7 +598,7 @@ void RetInst::Rename(std::map<int, int>& replace)
     if (ret != nullptr && ret->type == OperandType::REG)
     {
         int regno = ((RegOperand*)ret)->reg_num;
-        if (replace.find(regno) != replace.end()) ret = new RegOperand(replace[regno]);
+        if (replace.find(regno) != replace.end()) ret = getRegOperand(replace[regno]);
     }
 }
 
@@ -653,7 +653,7 @@ void GEPInst::Rename(std::map<int, int>& replace)
     if (base_ptr->type == OperandType::REG)
     {
         int regno = ((RegOperand*)base_ptr)->reg_num;
-        if (replace.find(regno) != replace.end()) { base_ptr = new RegOperand(replace[regno]); }
+        if (replace.find(regno) != replace.end()) { base_ptr = getRegOperand(replace[regno]); }
     }
     for (auto& iter : idxs)
     {
@@ -661,7 +661,7 @@ void GEPInst::Rename(std::map<int, int>& replace)
         {
             // std::cout<<"'!!!!!!!!!!!!!!!!!!!!!!!!!!!'"<<std::endl;
             int regno = ((RegOperand*)iter)->reg_num;
-            if (replace.find(regno) != replace.end()) { iter = new RegOperand(replace[regno]); }
+            if (replace.find(regno) != replace.end()) { iter = getRegOperand(replace[regno]); }
         }
     }
 }
@@ -771,7 +771,7 @@ void SI2FPInst::Rename(std::map<int, int>& replace)
     if (f_si->type == OperandType::REG)
     {
         int regno = ((RegOperand*)f_si)->reg_num;
-        if (replace.find(regno) != replace.end()) { f_si = new RegOperand(replace[regno]); }
+        if (replace.find(regno) != replace.end()) { f_si = getRegOperand(replace[regno]); }
     }
 }
 
@@ -804,7 +804,7 @@ void FP2SIInst::Rename(std::map<int, int>& replace)
     if (f_fp->type == OperandType::REG)
     {
         int regno = ((RegOperand*)f_fp)->reg_num;
-        if (replace.find(regno) != replace.end()) { f_fp = new RegOperand(replace[regno]); }
+        if (replace.find(regno) != replace.end()) { f_fp = getRegOperand(replace[regno]); }
     }
 }
 
@@ -840,7 +840,7 @@ void ZextInst::Rename(std::map<int, int>& replace)
     if (src->type == OperandType::REG)
     {
         int regno = ((RegOperand*)src)->reg_num;
-        if (replace.find(regno) != replace.end()) { src = new RegOperand(replace[regno]); }
+        if (replace.find(regno) != replace.end()) { src = getRegOperand(replace[regno]); }
     }
 }
 
@@ -873,7 +873,7 @@ void FPExtInst::Rename(std::map<int, int>& replace)
     if (src->type == OperandType::REG)
     {
         int regno = ((RegOperand*)src)->reg_num;
-        if (replace.find(regno) != replace.end()) { src = new RegOperand(replace[regno]); }
+        if (replace.find(regno) != replace.end()) { src = getRegOperand(replace[regno]); }
     }
 }
 
@@ -931,7 +931,7 @@ void PhiInst::Rename(std::map<int, int>& replace)
         if (iter.first->type == OperandType::REG)
         {
             int regno = ((RegOperand*)iter.first)->reg_num;
-            if (replace.find(regno) != replace.end()) { iter.first = new RegOperand(replace[regno]); }
+            if (replace.find(regno) != replace.end()) { iter.first = getRegOperand(replace[regno]); }
         }
     }
 }
@@ -994,60 +994,65 @@ namespace
     } cleaner;
 }  // namespace
 
+ImmeI32Operand* ImmeI32Operand::get(int value) { return new ImmeI32Operand(value); }
 ImmeI32Operand* getImmeI32Operand(int num)
 {
     auto it = ImmeI32OperandMap.find(num);
     if (it == ImmeI32OperandMap.end())
     {
-        ImmeI32Operand* op     = new ImmeI32Operand(num);
+        ImmeI32Operand* op     = ImmeI32Operand::get(num);
         ImmeI32OperandMap[num] = op;
         return op;
     }
     return it->second;
 }
 
+ImmeF32Operand* ImmeF32Operand::get(float value) { return new ImmeF32Operand(value); }
 ImmeF32Operand* getImmeF32Operand(float num)
 {
     auto it = ImmeF32OperandMap.find(num);
     if (it == ImmeF32OperandMap.end())
     {
-        ImmeF32Operand* op     = new ImmeF32Operand(num);
+        ImmeF32Operand* op     = ImmeF32Operand::get(num);
         ImmeF32OperandMap[num] = op;
         return op;
     }
     return it->second;
 }
 
+RegOperand* RegOperand::get(int num) { return new RegOperand(num); }
 RegOperand* getRegOperand(int num)
 {
     auto it = RegOperandMap.find(num);
     if (it == RegOperandMap.end())
     {
-        RegOperand* op     = new RegOperand(num);
+        RegOperand* op     = RegOperand::get(num);
         RegOperandMap[num] = op;
         return op;
     }
     return it->second;
 }
 
+LabelOperand* LabelOperand::get(int num) { return new LabelOperand(num); }
 LabelOperand* getLabelOperand(int num)
 {
     auto it = LabelOperandMap.find(num);
     if (it == LabelOperandMap.end())
     {
-        LabelOperand* op     = new LabelOperand(num);
+        LabelOperand* op     = LabelOperand::get(num);
         LabelOperandMap[num] = op;
         return op;
     }
     return it->second;
 }
 
+GlobalOperand* GlobalOperand::get(string name) { return new GlobalOperand(name); }
 GlobalOperand* getGlobalOperand(string name)
 {
     auto it = GlobalOperandMap.find(name);
     if (it == GlobalOperandMap.end())
     {
-        GlobalOperand* op      = new GlobalOperand(name);
+        GlobalOperand* op      = GlobalOperand::get(name);
         GlobalOperandMap[name] = op;
         return op;
     }
@@ -1667,13 +1672,13 @@ void LoadInst::ReplaceAllOperands(std::map<int, int>& replace)
     if (this->ptr->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->ptr))->reg_num;
-        if (replace.find(reg) != replace.end()) { ptr = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { ptr = getRegOperand(replace[reg]); }
     }
 
     if (this->res->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->res))->reg_num;
-        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { res = getRegOperand(replace[reg]); }
     }
 }
 
@@ -1682,13 +1687,13 @@ void StoreInst::ReplaceAllOperands(std::map<int, int>& replace)
     if (this->ptr->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->ptr))->reg_num;
-        if (replace.find(reg) != replace.end()) { ptr = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { ptr = getRegOperand(replace[reg]); }
     }
 
     if (this->val->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->val))->reg_num;
-        if (replace.find(reg) != replace.end()) { val = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { val = getRegOperand(replace[reg]); }
     }
 }
 
@@ -1697,19 +1702,19 @@ void ArithmeticInst::ReplaceAllOperands(std::map<int, int>& replace)
     if (this->lhs->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->lhs))->reg_num;
-        if (replace.find(reg) != replace.end()) { lhs = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { lhs = getRegOperand(replace[reg]); }
     }
 
     if (this->rhs->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->rhs))->reg_num;
-        if (replace.find(reg) != replace.end()) { rhs = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { rhs = getRegOperand(replace[reg]); }
     }
 
     if (this->res->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->res))->reg_num;
-        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { res = getRegOperand(replace[reg]); }
     }
 }
 
@@ -1718,19 +1723,19 @@ void IcmpInst::ReplaceAllOperands(std::map<int, int>& replace)
     if (this->lhs->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->lhs))->reg_num;
-        if (replace.find(reg) != replace.end()) { lhs = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { lhs = getRegOperand(replace[reg]); }
     }
 
     if (this->rhs->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->rhs))->reg_num;
-        if (replace.find(reg) != replace.end()) { rhs = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { rhs = getRegOperand(replace[reg]); }
     }
 
     if (this->res->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->res))->reg_num;
-        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { res = getRegOperand(replace[reg]); }
     }
 }
 
@@ -1739,19 +1744,19 @@ void FcmpInst::ReplaceAllOperands(std::map<int, int>& replace)
     if (this->lhs->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->lhs))->reg_num;
-        if (replace.find(reg) != replace.end()) { lhs = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { lhs = getRegOperand(replace[reg]); }
     }
 
     if (this->rhs->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->rhs))->reg_num;
-        if (replace.find(reg) != replace.end()) { rhs = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { rhs = getRegOperand(replace[reg]); }
     }
 
     if (this->res->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->res))->reg_num;
-        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { res = getRegOperand(replace[reg]); }
     }
 }
 
@@ -1760,7 +1765,7 @@ void AllocInst::ReplaceAllOperands(std::map<int, int>& replace)
     if (this->res->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->res))->reg_num;
-        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { res = getRegOperand(replace[reg]); }
     }
 }
 
@@ -1769,7 +1774,7 @@ void BranchCondInst::ReplaceAllOperands(std::map<int, int>& replace)
     if (this->cond->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->cond))->reg_num;
-        if (replace.find(reg) != replace.end()) { cond = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { cond = getRegOperand(replace[reg]); }
     }
 }
 
@@ -1780,7 +1785,7 @@ void GlbvarDefInst::ReplaceAllOperands(std::map<int, int>& replace)
     if (this->init && this->init->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->init))->reg_num;
-        if (replace.find(reg) != replace.end()) { init = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { init = getRegOperand(replace[reg]); }
     }
 }
 
@@ -1791,14 +1796,14 @@ void CallInst::ReplaceAllOperands(std::map<int, int>& replace)
         if (arg.second && arg.second->type == OperandType::REG)
         {
             int reg = ((RegOperand*)(arg.second))->reg_num;
-            if (replace.find(reg) != replace.end()) { arg.second = new RegOperand(replace[reg]); }
+            if (replace.find(reg) != replace.end()) { arg.second = getRegOperand(replace[reg]); }
         }
     }
 
     if (this->res && this->res->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->res))->reg_num;
-        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { res = getRegOperand(replace[reg]); }
     }
 }
 
@@ -1807,7 +1812,7 @@ void RetInst::ReplaceAllOperands(std::map<int, int>& replace)
     if (this->ret && this->ret->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->ret))->reg_num;
-        if (replace.find(reg) != replace.end()) { ret = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { ret = getRegOperand(replace[reg]); }
     }
 }
 
@@ -1816,7 +1821,7 @@ void GEPInst::ReplaceAllOperands(std::map<int, int>& replace)
     if (this->base_ptr->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->base_ptr))->reg_num;
-        if (replace.find(reg) != replace.end()) { base_ptr = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { base_ptr = getRegOperand(replace[reg]); }
     }
 
     for (auto& idx : idxs)
@@ -1824,14 +1829,14 @@ void GEPInst::ReplaceAllOperands(std::map<int, int>& replace)
         if (idx && idx->type == OperandType::REG)
         {
             int reg = ((RegOperand*)(idx))->reg_num;
-            if (replace.find(reg) != replace.end()) { idx = new RegOperand(replace[reg]); }
+            if (replace.find(reg) != replace.end()) { idx = getRegOperand(replace[reg]); }
         }
     }
 
     if (this->res->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->res))->reg_num;
-        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { res = getRegOperand(replace[reg]); }
     }
 }
 
@@ -1844,13 +1849,13 @@ void SI2FPInst::ReplaceAllOperands(std::map<int, int>& replace)
     if (this->f_si->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->f_si))->reg_num;
-        if (replace.find(reg) != replace.end()) { f_si = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { f_si = getRegOperand(replace[reg]); }
     }
 
     if (this->t_fp->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->t_fp))->reg_num;
-        if (replace.find(reg) != replace.end()) { t_fp = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { t_fp = getRegOperand(replace[reg]); }
     }
 }
 
@@ -1859,13 +1864,13 @@ void FP2SIInst::ReplaceAllOperands(std::map<int, int>& replace)
     if (this->f_fp->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->f_fp))->reg_num;
-        if (replace.find(reg) != replace.end()) { f_fp = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { f_fp = getRegOperand(replace[reg]); }
     }
 
     if (this->t_si->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->t_si))->reg_num;
-        if (replace.find(reg) != replace.end()) { t_si = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { t_si = getRegOperand(replace[reg]); }
     }
 }
 
@@ -1874,13 +1879,13 @@ void ZextInst::ReplaceAllOperands(std::map<int, int>& replace)
     if (this->src->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->src))->reg_num;
-        if (replace.find(reg) != replace.end()) { src = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { src = getRegOperand(replace[reg]); }
     }
 
     if (this->dest->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->dest))->reg_num;
-        if (replace.find(reg) != replace.end()) { dest = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { dest = getRegOperand(replace[reg]); }
     }
 }
 
@@ -1889,13 +1894,13 @@ void FPExtInst::ReplaceAllOperands(std::map<int, int>& replace)
     if (this->src->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->src))->reg_num;
-        if (replace.find(reg) != replace.end()) { src = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { src = getRegOperand(replace[reg]); }
     }
 
     if (this->dest->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->dest))->reg_num;
-        if (replace.find(reg) != replace.end()) { dest = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { dest = getRegOperand(replace[reg]); }
     }
 }
 
@@ -1906,14 +1911,14 @@ void PhiInst::ReplaceAllOperands(std::map<int, int>& replace)
         if (val_label.first && val_label.first->type == OperandType::REG)
         {
             int reg = ((RegOperand*)(val_label.first))->reg_num;
-            if (replace.find(reg) != replace.end()) { val_label.first = new RegOperand(replace[reg]); }
+            if (replace.find(reg) != replace.end()) { val_label.first = getRegOperand(replace[reg]); }
         }
     }
 
     if (this->res->type == OperandType::REG)
     {
         int reg = ((RegOperand*)(this->res))->reg_num;
-        if (replace.find(reg) != replace.end()) { res = new RegOperand(replace[reg]); }
+        if (replace.find(reg) != replace.end()) { res = getRegOperand(replace[reg]); }
     }
 }
 

@@ -55,7 +55,7 @@
 #include "optimize/llvm/gvn_gcm/gcm.h"
 // Blockid Set
 #include "optimize/llvm/setid.h"
-//loop_strength_reduce
+// loop_strength_reduce
 #include "llvm/loop/loop_strength_reduce.h"
 
 #define STR_PW 30
@@ -394,8 +394,7 @@ int main(int argc, char** argv)
 
         Analysis::SCEVAnalyser scevAnalyser(&builder);
         scevAnalyser.run();
-        //scevAnalyser.printAllResults();
-
+        // scevAnalyser.printAllResults();
 
         Transform::IndVarsSimplifyPass indVarsPass(&builder, &scevAnalyser);
         indVarsPass.Execute();
@@ -406,9 +405,9 @@ int main(int argc, char** argv)
         loopSimplify.Execute();
         loopRotate.Execute();
         scevAnalyser.run();
-        //scevAnalyser.printAllResults();
+        // scevAnalyser.printAllResults();
 
-        Transform::StrengthReducePass lsr(&builder,&scevAnalyser) ;
+        Transform::StrengthReducePass lsr(&builder, &scevAnalyser);
         lsr.Execute();
         DCEDefUse.Execute();
         dce.Execute();
@@ -417,7 +416,6 @@ int main(int argc, char** argv)
         if (optimizeLevel >= 2) {}
 
         makecfg.Execute();
-
     }
 
     if (step == "-llvm")

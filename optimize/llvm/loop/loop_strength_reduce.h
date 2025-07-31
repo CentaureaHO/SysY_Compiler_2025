@@ -11,41 +11,40 @@
 
 namespace Transform
 {
-    class StrengthReduce{
-    public:
-        Analysis::SCEVAnalyser* scev;//循环的SCEV分析器
-        NaturalLoop* loop; //要优化的循环
-        LLVMIR::IR* ir;//获取支配树用
+    class StrengthReduce
+    {
+      public:
+        Analysis::SCEVAnalyser* scev;  // 循环的SCEV分析器
+        NaturalLoop*            loop;  // 要优化的循环
+        LLVMIR::IR*             ir;    // 获取支配树用
 
-        std::map<int,int> replace;
-        std::map<int,int> todel;
+        std::map<int, int>                replace;
+        std::map<int, int>                todel;
         std::vector<LLVMIR::Instruction*> new_add_insts;
 
-        std::pair<LLVMIR::GEPInst*,LLVMIR::Operand*> checkGEP(LLVMIR::GEPInst* ins);
-        void doMulStrengthReduce();
-        void doGEPStrengthReduce();
-        bool checkDom(int dom,int node);
+        std::pair<LLVMIR::GEPInst*, LLVMIR::Operand*> checkGEP(LLVMIR::GEPInst* ins);
+        void                                          doMulStrengthReduce();
+        void                                          doGEPStrengthReduce();
+        bool                                          checkDom(int dom, int node);
 
-        StrengthReduce(Analysis::SCEVAnalyser* scev,NaturalLoop* loop,LLVMIR::IR* ir){
-            this->scev=scev;
-            this->loop=loop;
-            this->ir=ir;
+        StrengthReduce(Analysis::SCEVAnalyser* scev, NaturalLoop* loop, LLVMIR::IR* ir)
+        {
+            this->scev = scev;
+            this->loop = loop;
+            this->ir   = ir;
             replace.clear();
             todel.clear();
             new_add_insts.clear();
         }
-
-        
     };
 
-    class StrengthReducePass: public Pass{
-    public:
-        //循环信息在ir的cfg里
+    class StrengthReducePass : public Pass
+    {
+      public:
+        // 循环信息在ir的cfg里
         Analysis::SCEVAnalyser* scev;
 
-        StrengthReducePass(LLVMIR::IR* ir,Analysis::SCEVAnalyser* scev): Pass(ir){
-            this->scev=scev;
-        }
+        StrengthReducePass(LLVMIR::IR* ir, Analysis::SCEVAnalyser* scev) : Pass(ir) { this->scev = scev; }
         void Execute();
     };
 
