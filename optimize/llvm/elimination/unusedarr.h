@@ -5,7 +5,7 @@
 #include "llvm/defuse_analysis/edefuse.h"
 #include "llvm/pass.h"
 #include <unordered_set>
-#define DEBUG
+// #define DEBUG
 namespace LLVMIR
 {
     class UnusedArrEliminator : Pass
