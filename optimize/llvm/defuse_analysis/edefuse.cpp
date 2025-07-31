@@ -60,27 +60,9 @@ namespace Analysis
                 auto used_ops = inst->GetUsedOperands();
                 for (auto& op : used_ops)
                 {
-
-                    if (op->getName() == "%reg_342")
-                    {
-                        std::cout << std::endl;
-                        std::cout << "op address is " << (void*)op << std::endl;
-                        std::cout << "Found load instruction using operand %reg_342" << std::endl;
-                        std::cout << "Instruction opcode: " << inst->opcode << std::endl;
-                        std::cout << "op type is "
-                                  << (op->type == LLVMIR::OperandType::REG         ? "REG"
-                                         : op->type == LLVMIR::OperandType::GLOBAL ? "GLOBAL"
-                                                                                   : "UNKNOWN")
-                                  << std::endl;
-                        std::cout << "In table %reg_342 addr is " << (void*)getRegOperand(342) << std::endl;
-                    }
                     if (op->type == LLVMIR::OperandType::REG || op->type == LLVMIR::OperandType::GLOBAL)
                     {  // 说明使用了一个操作数
                         UseMaps[op].insert(inst);
-                    }
-                    if (op->getName() == "%reg_342")
-                    {
-                        std::cout << "UseMap[op] size is " << UseMaps[op].size() << std::endl;
                     }
                 }
             }

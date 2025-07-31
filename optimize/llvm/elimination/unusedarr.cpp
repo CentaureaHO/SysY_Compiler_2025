@@ -68,30 +68,26 @@ namespace LLVMIR
             {
                 // 局部数组
                 // 我们检查所有的use，如果都是store、getelementptr等指令，则认为没有意义，因为往局部变量只写不读，没有意义
-                for (auto use : edefUseAnalysis->getUses(array))
+                std::unordered_set<Instruction*> uses = edefUseAnalysis->getUses(array);
+                std::unordered_set<Instruction*> visited;
+                while (!uses.empty())
                 {
-                    // 由于call和load指令不是直接使用数组,而是load的,所以我们检查是否存在getelementptr指令后的resultOp被call了
-                    if (use->opcode == IROpCode::GETELEMENTPTR)
+                    auto use = *uses.begin();
+                    uses.erase(use);
+                    visited.insert(use);
+                    if (use->opcode == IROpCode::LOAD || use->opcode == IROpCode::CALL)
                     {
-                        // 检查是否有call指令使用了这个结果
+                        // 说明这个数组被访问了
+                        accessed_arrays.insert(array);
+                        break;
+                    }
+                    else if (use->opcode == IROpCode::GETELEMENTPTR)
+                    {
+                        // 继续查找这个getelementptr的结果是否有其他use
                         auto result_op = use->GetResultOperand();
-                        for (auto use : edefUseAnalysis->getUses(result_op))
+                        for (auto use2 : edefUseAnalysis->getUses(result_op))
                         {
-#ifdef DEBUG
-                            if (result_op->getName() == "%reg_342")
-                            {
-                                std::cout << "Checking op is " << result_op->getName() << " for use: " << use->opcode
-                                          << std::endl;
-                                std::cout << "Checking use: " << use->opcode << " for array " << array->getName()
-                                          << std::endl;
-                            }
-#endif
-                            if (use->opcode == IROpCode::CALL || use->opcode == IROpCode::LOAD)
-                            {
-                                // 说明这个数组被访问了
-                                accessed_arrays.insert(array);
-                                break;
-                            }
+                            if (!visited.count(use2)) { uses.insert(use2); }
                         }
                     }
                 }

@@ -341,117 +341,117 @@ int main(int argc, char** argv)
         edefUseAnalysis.run();
         // edefUseAnalysis.print();
         UnusedArrEliminator unusedelimator(&builder, &edefUseAnalysis);
-        // unusedelimator.Execute();
+        unusedelimator.Execute();
 
-        // DCE
-        DefUseAnalysisPass DCEDefUse(&builder);
-        DCEDefUse.Execute();
-        DCEPass dce(&builder, &DCEDefUse);
-        dce.Execute();
-        // std::cout << "DCE completed" << std::endl;
+        // // DCE
+        // DefUseAnalysisPass DCEDefUse(&builder);
+        // DCEDefUse.Execute();
+        // DCEPass dce(&builder, &DCEDefUse);
+        // dce.Execute();
+        // // std::cout << "DCE completed" << std::endl;
 
-        // ADCE
-        makeredom.Execute(true);
-        // std::cout << "Reversed dom tree completed" << std::endl;
-        CDGAnalyzer cdg(&builder);
-        cdg.Execute();
-        // std::cout << "CDG completed" << std::endl;
-        DefUseAnalysisPass ADCEDefUse(&builder);
-        ADCEDefUse.Execute();
-        ADCEPass adce(&builder, &ADCEDefUse, &cdg);
-        adce.Execute();
-        // std::cout << "ADCE completed" << std::endl;
+        // // ADCE
+        // makeredom.Execute(true);
+        // // std::cout << "Reversed dom tree completed" << std::endl;
+        // CDGAnalyzer cdg(&builder);
+        // cdg.Execute();
+        // // std::cout << "CDG completed" << std::endl;
+        // DefUseAnalysisPass ADCEDefUse(&builder);
+        // ADCEDefUse.Execute();
+        // ADCEPass adce(&builder, &ADCEDefUse, &cdg);
+        // adce.Execute();
+        // // std::cout << "ADCE completed" << std::endl;
 
-        // GCM
-        DefUseAnalysisPass GCMDefUse(&builder);
-        GCMDefUse.Execute();
-        MakeDomTreePass GCMmakeredom(&builder);
-        GCMmakeredom.Execute(true);
-        GCMmakeredom.Execute(false);
-        // Used to set all instructions with the block they are in.
-        SetIdAnalysis setIdAnalysis(&builder);
-        setIdAnalysis.Execute();
-        aa.run();
-        licm.Execute();
-        md.run();
-        Analysis::ReadOnlyGlobalAnalysis readOnlyGlobalAnalysis(&builder, &aa);
-        readOnlyGlobalAnalysis.run();
-        // readOnlyGlobalAnalysis.print();
-        GCM gcm(&builder, &GCMDefUse, &aa, &md, &readOnlyGlobalAnalysis);
-        gcm.Execute();
-        // std::cout << "GCM completed" << std::endl;
+        // // GCM
+        // DefUseAnalysisPass GCMDefUse(&builder);
+        // GCMDefUse.Execute();
+        // MakeDomTreePass GCMmakeredom(&builder);
+        // GCMmakeredom.Execute(true);
+        // GCMmakeredom.Execute(false);
+        // // Used to set all instructions with the block they are in.
+        // SetIdAnalysis setIdAnalysis(&builder);
+        // setIdAnalysis.Execute();
+        // aa.run();
+        // licm.Execute();
+        // md.run();
+        // Analysis::ReadOnlyGlobalAnalysis readOnlyGlobalAnalysis(&builder, &aa);
+        // readOnlyGlobalAnalysis.run();
+        // // readOnlyGlobalAnalysis.print();
+        // GCM gcm(&builder, &GCMDefUse, &aa, &md, &readOnlyGlobalAnalysis);
+        // gcm.Execute();
+        // // std::cout << "GCM completed" << std::endl;
 
-        makecfg.Execute();
-        makedom.Execute();
-        makeredom.Execute(true);
+        // makecfg.Execute();
+        // makedom.Execute();
+        // makeredom.Execute(true);
 
-        aa.run();
-        licm.Execute();
-        md.run();
+        // aa.run();
+        // licm.Execute();
+        // md.run();
 
-        Analysis::ArrAliasAnalysis arrAliasAnalysis(&builder);
-        arrAliasAnalysis.run();
-        // arrAliasAnalysis.print();
-        Analysis::EDefUseAnalysis eDefUse(&builder);
-        eDefUse.run();
-        // eDefUse.print();
+        // Analysis::ArrAliasAnalysis arrAliasAnalysis(&builder);
+        // arrAliasAnalysis.run();
+        // // arrAliasAnalysis.print();
+        // Analysis::EDefUseAnalysis eDefUse(&builder);
+        // eDefUse.run();
+        // // eDefUse.print();
 
-        makecfg.Execute();
-        makedom.Execute();
-        makeredom.Execute(true);
-        loopAnalysis.Execute();
+        // makecfg.Execute();
+        // makedom.Execute();
+        // makeredom.Execute(true);
+        // loopAnalysis.Execute();
 
-        makecfg.Execute();
-        makedom.Execute();
+        // makecfg.Execute();
+        // makedom.Execute();
 
-        Transform::ArithInstReduce arithInstReduce(&builder);
-        arithInstReduce.Execute();
+        // Transform::ArithInstReduce arithInstReduce(&builder);
+        // arithInstReduce.Execute();
 
-        makecfg.Execute();
-        makedom.Execute();
+        // makecfg.Execute();
+        // makedom.Execute();
 
-        Transform::GEPStrengthReduce gepStrengthReduce(&builder);
-        gepStrengthReduce.Execute();
+        // Transform::GEPStrengthReduce gepStrengthReduce(&builder);
+        // gepStrengthReduce.Execute();
 
-        makecfg.Execute();
-        makedom.Execute();
-        loopAnalysis.Execute();
-        loopSimplify.Execute();
-        loopRotate.Execute();
+        // makecfg.Execute();
+        // makedom.Execute();
+        // loopAnalysis.Execute();
+        // loopSimplify.Execute();
+        // loopRotate.Execute();
 
-        for (const auto& [func_def, cfg] : builder.cfg)
-        {
-            std::cout << "Function: " << func_def->func_name << std::endl;
-            if (!cfg || !cfg->LoopForest) continue;
-            for (auto* loop : cfg->LoopForest->loop_set) loop->printLoopInfo();
-        }
+        // // for (const auto& [func_def, cfg] : builder.cfg)
+        // // {
+        // //     std::cout << "Function: " << func_def->func_name << std::endl;
+        // //     if (!cfg || !cfg->LoopForest) continue;
+        // //     for (auto* loop : cfg->LoopForest->loop_set) loop->printLoopInfo();
+        // // }
 
-        tsccp.Execute();
+        // tsccp.Execute();
 
-        Analysis::SCEVAnalyser scevAnalyser(&builder);
-        scevAnalyser.run();
-        // scevAnalyser.printAllResults();
+        // Analysis::SCEVAnalyser scevAnalyser(&builder);
+        // scevAnalyser.run();
+        // // scevAnalyser.printAllResults();
 
-        Transform::IndVarsSimplifyPass indVarsPass(&builder, &scevAnalyser);
-        indVarsPass.Execute();
+        // Transform::IndVarsSimplifyPass indVarsPass(&builder, &scevAnalyser);
+        // indVarsPass.Execute();
 
-        makecfg.Execute();
-        makedom.Execute();
-        loopAnalysis.Execute();
-        loopSimplify.Execute();
-        loopRotate.Execute();
-        scevAnalyser.run();
-        // scevAnalyser.printAllResults();
+        // makecfg.Execute();
+        // makedom.Execute();
+        // loopAnalysis.Execute();
+        // loopSimplify.Execute();
+        // loopRotate.Execute();
+        // scevAnalyser.run();
+        // // scevAnalyser.printAllResults();
 
-        Transform::StrengthReducePass lsr(&builder, &scevAnalyser);
-        lsr.Execute();
-        DCEDefUse.Execute();
-        dce.Execute();
-        scevAnalyser.run();
+        // Transform::StrengthReducePass lsr(&builder, &scevAnalyser);
+        // lsr.Execute();
+        // DCEDefUse.Execute();
+        // dce.Execute();
+        // scevAnalyser.run();
 
-        if (optimizeLevel >= 2) {}
+        // if (optimizeLevel >= 2) {}
 
-        makecfg.Execute();
+        // makecfg.Execute();
     }
 
     if (step == "-llvm")
