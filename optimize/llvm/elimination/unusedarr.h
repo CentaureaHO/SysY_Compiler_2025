@@ -14,11 +14,11 @@ namespace LLVMIR
         Analysis::EDefUseAnalysis* edefUseAnalysis;
 
         // 记录数组定义
-        std::unordered_set<Operand*> array_defs;
+        std::unordered_map<CFG*, std::unordered_set<Operand*>> array_defs;
         // 记录数组定义到指令的映射
-        std::unordered_map<Operand*, Instruction*> array2def;
+        std::unordered_map<CFG*, std::unordered_map<Operand*, Instruction*>> array2def;
         // 记录被访问的数组
-        std::unordered_set<Operand*> accessed_arrays;
+        std::unordered_map<CFG*, std::unordered_set<Operand*>> accessed_arrays;
 
         // 收集所有arr的定义
         void collectArrayDefinitions();

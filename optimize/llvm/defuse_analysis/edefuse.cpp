@@ -28,18 +28,13 @@ namespace Analysis
             if (global_inst)
             {
                 auto global_op = getGlobalOperand(global_inst->name);
-                if (global_op) { DefMaps[global_op] = global_inst; }
+                if (global_op)
+                {
+                    for (auto [_, cfg] : ir->cfg) { DefMaps[cfg][global_op] = global_inst; }
+                }
             }
         }
-        for (auto& [func, cfg] : ir->cfg)
-        {
-            // 加入函数参数
-            for (auto& param : func->arg_regs)
-            {
-                DefMaps[param] = func;  // 参数没有定义指令
-            }
-            ExecuteInSingleCFG(cfg);
-        }
+        for (auto& [func, cfg] : ir->cfg) { ExecuteInSingleCFG(cfg); }
     }
 
     void EDefUseAnalysis::ExecuteInSingleCFG(CFG* cfg)
@@ -53,7 +48,7 @@ namespace Analysis
                 {
                     if (def_op->type == LLVMIR::OperandType::REG || def_op->type == LLVMIR::OperandType::GLOBAL)
                     {  // 说明定义了一个操作数
-                        DefMaps[def_op] = inst;
+                        DefMaps[cfg][def_op] = inst;
                     }
                 }
 
@@ -62,7 +57,7 @@ namespace Analysis
                 {
                     if (op->type == LLVMIR::OperandType::REG || op->type == LLVMIR::OperandType::GLOBAL)
                     {  // 说明使用了一个操作数
-                        UseMaps[op].insert(inst);
+                        UseMaps[cfg][op].insert(inst);
                     }
                 }
             }
