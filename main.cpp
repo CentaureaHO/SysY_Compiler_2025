@@ -316,6 +316,7 @@ int main(int argc, char** argv)
         // TSCCP - Sparse Conditional Constant Propagation
         Transform::TSCCPPass tsccp(&builder, &aa);
         tsccp.Execute();
+        // std::cout << "TSCCP completed" << std::endl;
 
         makecfg.Execute();
         makedom.Execute();
@@ -329,6 +330,7 @@ int main(int argc, char** argv)
         // Eliminate unused array
         Analysis::EDefUseAnalysis edefUseAnalysis(&builder);
         edefUseAnalysis.run();
+        // edefUseAnalysis.print();
         UnusedArrEliminator unusedelimator(&builder, &edefUseAnalysis);
         unusedelimator.Execute();
 
@@ -368,6 +370,7 @@ int main(int argc, char** argv)
         // readOnlyGlobalAnalysis.print();
         GCM gcm(&builder, &GCMDefUse, &aa, &md, &readOnlyGlobalAnalysis);
         gcm.Execute();
+        // std::cout << "GCM completed" << std::endl;
 
         makecfg.Execute();
         makedom.Execute();
@@ -388,8 +391,6 @@ int main(int argc, char** argv)
         makedom.Execute();
         makeredom.Execute(true);
         loopAnalysis.Execute();
-
-        // std::cout << "TSCCP completed" << std::endl;
 
         makecfg.Execute();
         makedom.Execute();

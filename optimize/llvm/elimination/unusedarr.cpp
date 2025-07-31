@@ -1,6 +1,7 @@
 #include "unusedarr.h"
 #include "llvm_ir/defs.h"
 #include "llvm_ir/instruction.h"
+#include <deque>
 #include <unordered_set>
 
 namespace LLVMIR
@@ -54,10 +55,46 @@ namespace LLVMIR
     {
         for (auto array : array_defs)
         {
-            if (!edefUseAnalysis->getUses(array).empty())
+            if (array->type == OperandType::GLOBAL)
             {
-                // 标记为被访问
-                accessed_arrays.insert(array);
+                // 全局数组
+                if (!edefUseAnalysis->getUses(array).empty())
+                {
+                    // 标记为被访问
+                    accessed_arrays.insert(array);
+                }
+            }
+            else
+            {
+                // 局部数组
+                // 我们检查所有的use，如果都是store、getelementptr等指令，则认为没有意义，因为往局部变量只写不读，没有意义
+                for (auto use : edefUseAnalysis->getUses(array))
+                {
+                    // 由于call和load指令不是直接使用数组,而是load的,所以我们检查是否存在getelementptr指令后的resultOp被call了
+                    if (use->opcode == IROpCode::GETELEMENTPTR)
+                    {
+                        // 检查是否有call指令使用了这个结果
+                        auto result_op = use->GetResultOperand();
+                        for (auto use : edefUseAnalysis->getUses(result_op))
+                        {
+#ifdef DEBUG
+                            if (result_op->getName() == "%reg_342")
+                            {
+                                std::cout << "Checking op is " << result_op->getName() << " for use: " << use->opcode
+                                          << std::endl;
+                                std::cout << "Checking use: " << use->opcode << " for array " << array->getName()
+                                          << std::endl;
+                            }
+#endif
+                            if (use->opcode == IROpCode::CALL || use->opcode == IROpCode::LOAD)
+                            {
+                                // 说明这个数组被访问了
+                                accessed_arrays.insert(array);
+                                break;
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -76,7 +113,15 @@ namespace LLVMIR
             }
         }
 
-        // 删除未使用的
+        // 打印未使用的数组
+#ifdef DEBUG
+        std::cout << "Dead arrays: " << dead_array.size() << std::endl
+                  << "Global dead arrays: " << global_dead_array.size() << std::endl;
+        for (auto array : dead_array) { std::cout << "Dead array: " << array->getName() << std::endl; }
+        for (auto array : global_dead_array) { std::cout << "Global dead array: " << array->getName() << std::endl; }
+#endif
+
+        // 删除未使用的全局数组
         auto it = ir->global_def.begin();
         while (it != ir->global_def.end())
         {
@@ -91,14 +136,72 @@ namespace LLVMIR
             }
             ++it;
         }
+        // 删除未使用的局部数组及其uses
+        std::unordered_set<Instruction*> to_remove;
+        for (auto array : dead_array)
+        {
+            auto                             def_inst = array2def[array];
+            std::unordered_set<Instruction*> defs;
+            defs.insert(def_inst);
+            while (!defs.empty())
+            {
+                auto inst = *defs.begin();
+                defs.erase(inst);
+                to_remove.insert(inst);
+                // 删除所有的use
+                for (auto use : edefUseAnalysis->getUses(inst->GetResultOperand()))
+                {
+                    if (use->opcode == IROpCode::GETELEMENTPTR)
+                    {
+                        // 继续查找这个getelementptr的结果是否有其他use
+                        auto result_op = use->GetResultOperand();
+#ifdef DEBUG
+                        std::cout << "result is of instruction " << use->opcode << "" << " result op is " << result_op
+                                  << std::endl;
+#endif
+                        for (auto use2 : edefUseAnalysis->getUses(result_op))
+                        {
+#ifdef DEBUG
+                            std::cout << "Removing use: " << use2->opcode << " for array " << array->getName()
+                                      << std::endl;
+#endif
+                            defs.insert(use2);
+                        }
+                    }
+                    to_remove.insert(use);
+                }
+            }
+        }
+        // 进行删除
+        for (auto [func, cfg] : ir->cfg)
+        {
+            for (auto& [id, block] : cfg->block_id_to_block)
+            {
+                std::deque<Instruction*> new_insts;
+                for (auto inst : block->insts)
+                {
+                    if (to_remove.count(inst) == 0) { new_insts.push_back(inst); }
+                }
+                block->insts = std::move(new_insts);
+            }
+        }
     }
 
     void UnusedArrEliminator::Execute()
     {
         collectArrayDefinitions();
-
+#ifdef DEBUG
+        std::cout << "Collected array definitions: " << array_defs.size() << std::endl;
+        for (auto array : array_defs) { std::cout << "Array: " << array << std::endl; }
+#endif
         markAccessedArrays();
-
+#ifdef DEBUG
+        std::cout << "Marked accessed arrays: " << accessed_arrays.size() << std::endl;
+        for (auto array : accessed_arrays) { std::cout << "Accessed Array: " << array << std::endl; }
+#endif
         eliminateDeadArrays();
+#ifdef DEBUG
+        std::cout << "Eliminated dead arrays." << std::endl;
+#endif
     }
 }  // namespace LLVMIR

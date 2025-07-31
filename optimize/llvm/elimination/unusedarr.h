@@ -2,6 +2,7 @@
 
 #include "llvm_ir/instruction.h"
 #include "llvm_ir/ir_builder.h"
+#include "llvm/alias_analysis/alias_analysis.h"
 #include "llvm/defuse_analysis/edefuse.h"
 #include "llvm/pass.h"
 #include <unordered_set>
