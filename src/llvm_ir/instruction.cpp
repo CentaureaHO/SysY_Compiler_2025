@@ -1,3 +1,4 @@
+#include "llvm_ir/defs.h"
 #include <llvm_ir/instruction.h>
 #include <llvm_ir/ir_block.h>
 #include <cassert>

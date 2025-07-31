@@ -15,6 +15,7 @@
 // MEM2REG
 #include "llvm/cdg.h"
 #include "llvm/def_use.h"
+#include "llvm/elimination/unusedarr.h"
 #include "llvm/make_cfg.h"
 #include "llvm/make_domtree.h"
 #include "llvm/mem2reg.h"
@@ -57,6 +58,11 @@
 #include "optimize/llvm/setid.h"
 // Global Analysis
 #include "optimize/llvm/global_analysis/readonly.h"
+// Array Alias Analysis
+#include "optimize/llvm/alias_analysis/arralias_analysis.h"
+// EDefUse Analysis
+#include "optimize/llvm/defuse_analysis/edefuse.h"
+// Elimination
 
 #define STR_PW 30
 #define INT_PW 8
@@ -320,6 +326,12 @@ int main(int argc, char** argv)
         makecfg.Execute();
         makedom.Execute();
 
+        // Eliminate unused array
+        Analysis::EDefUseAnalysis edefUseAnalysis(&builder);
+        edefUseAnalysis.run();
+        UnusedArrEliminator unusedelimator(&builder, &edefUseAnalysis);
+        unusedelimator.Execute();
+
         // DCE
         DefUseAnalysisPass DCEDefUse(&builder);
         DCEDefUse.Execute();
@@ -364,6 +376,14 @@ int main(int argc, char** argv)
         aa.run();
         licm.Execute();
         md.run();
+
+        Analysis::ArrAliasAnalysis arrAliasAnalysis(&builder);
+        arrAliasAnalysis.run();
+        // arrAliasAnalysis.print();
+        Analysis::EDefUseAnalysis eDefUse(&builder);
+        eDefUse.run();
+        // eDefUse.print();
+
         makecfg.Execute();
         makedom.Execute();
         makeredom.Execute(true);

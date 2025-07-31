@@ -22,39 +22,39 @@
     X(LABEL, 5)    \
     X(IMMEI64, 6)
 
-#define IR_OPCODE              \
-    X(OTHER, other, 0)         \
-    X(LOAD, load, 1)           \
-    X(STORE, store, 2)         \
-    X(ADD, add, 3)             \
-    X(SUB, sub, 4)             \
-    X(ICMP, icmp, 5)           \
-    X(PHI, phi, 6)             \
-    X(ALLOCA, alloca, 7)       \
-    X(MUL, mul, 8)             \
-    X(DIV, sdiv, 9)            \
-    X(BR_COND, br, 10)         \
-    X(BR_UNCOND, br, 11)       \
-    X(FADD, fadd, 12)          \
-    X(FSUB, fsub, 13)          \
-    X(FMUL, fmul, 14)          \
-    X(FDIV, fdiv, 15)          \
-    X(FCMP, fcmp, 16)          \
-    X(MOD, srem, 17)           \
-    X(BITXOR, xor, 18)         \
-    X(BITAND, and, 31)         \
-    X(RET, NONE, 19)           \
-    X(ZEXT, NONE, 20)          \
-    X(SHL, shl, 21)            \
-    X(ASHR, ashr, 22)          \
-    X(LSHR, lshr, 23)          \
-    X(FPTOSI, NONE, 24)        \
-    X(GETELEMENTPTR, NONE, 25) \
-    X(CALL, NONE, 26)          \
-    X(SITOFP, NONE, 27)        \
-    X(GLOBAL_VAR, NONE, 28)    \
-    X(GLOBAL_STR, NONE, 29)    \
-    X(FPEXT, NONE, 30)
+#define IR_OPCODE                       \
+    X(OTHER, other, 0)                  \
+    X(LOAD, load, 1)                    \
+    X(STORE, store, 2)                  \
+    X(ADD, add, 3)                      \
+    X(SUB, sub, 4)                      \
+    X(ICMP, icmp, 5)                    \
+    X(PHI, phi, 6)                      \
+    X(ALLOCA, alloca, 7)                \
+    X(MUL, mul, 8)                      \
+    X(DIV, sdiv, 9)                     \
+    X(BR_COND, br, 10)                  \
+    X(BR_UNCOND, br, 11)                \
+    X(FADD, fadd, 12)                   \
+    X(FSUB, fsub, 13)                   \
+    X(FMUL, fmul, 14)                   \
+    X(FDIV, fdiv, 15)                   \
+    X(FCMP, fcmp, 16)                   \
+    X(MOD, srem, 17)                    \
+    X(BITXOR, xor, 18)                  \
+    X(BITAND, and, 31)                  \
+    X(RET, ret, 19)                     \
+    X(ZEXT, zext, 20)                   \
+    X(SHL, shl, 21)                     \
+    X(ASHR, ashr, 22)                   \
+    X(LSHR, lshr, 23)                   \
+    X(FPTOSI, fptosi, 24)               \
+    X(GETELEMENTPTR, getelementptr, 25) \
+    X(CALL, call, 26)                   \
+    X(SITOFP, sitofp, 27)               \
+    X(GLOBAL_VAR, global_var, 28)       \
+    X(GLOBAL_STR, global_str, 29)       \
+    X(FPEXT, fpext, 30)
 
 #define IR_ICMP    \
     X(EQ, eq, 1)   \
