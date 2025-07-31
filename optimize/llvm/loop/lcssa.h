@@ -22,6 +22,8 @@ namespace StructuralTransform
         void transformLoopToLCSSA(CFG* cfg, NaturalLoop* loop);
 
         std::tuple<std::set<int>, std::map<int, LLVMIR::DataType>> getUsedOperandOutOfLoop(CFG* cfg, NaturalLoop* loop);
+
+        bool hasExistingPhiForVariable(LLVMIR::IRBlock* exit_bb, int var_reg);
     };
 
 }  // namespace StructuralTransform

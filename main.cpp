@@ -50,8 +50,8 @@
 #include "optimize/llvm/strength_reduction/gep_strength_reduce.h"
 // SCEV Analysis
 #include "optimize/llvm/loop/scev_analysis.h"
-// Constant Loop Unroll
-// #include "optimize/llvm/loop/constant_loop_unroll.h"
+// IndVars Simplify
+#include "optimize/llvm/loop/indvars_simplify.h"
 // GVN GCM
 #include "optimize/llvm/gvn_gcm/gcm.h"
 // Blockid Set
@@ -63,6 +63,8 @@
 // EDefUse Analysis
 #include "optimize/llvm/defuse_analysis/edefuse.h"
 // Elimination
+// loop_strength_reduce
+#include "llvm/loop/loop_strength_reduce.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -321,6 +323,13 @@ int main(int argc, char** argv)
         makecfg.Execute();
         makedom.Execute();
 
+        loopAnalysis.Execute();
+        loopSimplify.Execute();
+        lcssa.Execute();
+        loopRotate.Execute();
+        makecfg.Execute();
+        makedom.Execute();
+
         Transform::ConstBranchReduce constBranchReduce(&builder);
         constBranchReduce.Execute();
 
@@ -332,7 +341,7 @@ int main(int argc, char** argv)
         edefUseAnalysis.run();
         // edefUseAnalysis.print();
         UnusedArrEliminator unusedelimator(&builder, &edefUseAnalysis);
-        unusedelimator.Execute();
+        // unusedelimator.Execute();
 
         // DCE
         DefUseAnalysisPass DCEDefUse(&builder);
@@ -406,6 +415,43 @@ int main(int argc, char** argv)
 
         makecfg.Execute();
         makedom.Execute();
+        loopAnalysis.Execute();
+        loopSimplify.Execute();
+        loopRotate.Execute();
+
+        for (const auto& [func_def, cfg] : builder.cfg)
+        {
+            std::cout << "Function: " << func_def->func_name << std::endl;
+            if (!cfg || !cfg->LoopForest) continue;
+            for (auto* loop : cfg->LoopForest->loop_set) loop->printLoopInfo();
+        }
+
+        tsccp.Execute();
+
+        Analysis::SCEVAnalyser scevAnalyser(&builder);
+        scevAnalyser.run();
+        // scevAnalyser.printAllResults();
+
+        Transform::IndVarsSimplifyPass indVarsPass(&builder, &scevAnalyser);
+        indVarsPass.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
+        loopAnalysis.Execute();
+        loopSimplify.Execute();
+        loopRotate.Execute();
+        scevAnalyser.run();
+        // scevAnalyser.printAllResults();
+
+        Transform::StrengthReducePass lsr(&builder, &scevAnalyser);
+        lsr.Execute();
+        DCEDefUse.Execute();
+        dce.Execute();
+        scevAnalyser.run();
+
+        if (optimizeLevel >= 2) {}
+
+        makecfg.Execute();
     }
 
     if (step == "-llvm")

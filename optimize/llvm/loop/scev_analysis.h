@@ -21,6 +21,39 @@ namespace Analysis
         MUL   ///< 乘法运算 *
     };
 
+    enum class ArithOp
+    {
+        ADD,
+        SUB,
+        MUL
+    };
+
+    class ArithmeticExpr
+    {
+      public:
+        ArithOp                          op;
+        std::unique_ptr<class CROperand> lhs;
+        std::unique_ptr<class CROperand> rhs;
+
+      public:
+        ArithmeticExpr(ArithOp operation, std::unique_ptr<CROperand> left, std::unique_ptr<CROperand> right)
+            : op(operation), lhs(std::move(left)), rhs(std::move(right))
+        {}
+
+        ArithmeticExpr(const ArithmeticExpr& other);
+        ArithmeticExpr& operator=(const ArithmeticExpr& other);
+        ArithmeticExpr(ArithmeticExpr&& other) noexcept            = default;
+        ArithmeticExpr& operator=(ArithmeticExpr&& other) noexcept = default;
+
+        std::optional<int32_t> getConstantValue() const;
+        LLVMIR::Instruction*   generateInstruction(CFG* cfg) const;
+        bool                   isLoopInvariant(const std::set<int>& invariant_set) const;
+        void                   print() const;
+        bool                   operator==(const ArithmeticExpr& other) const;
+
+        std::unique_ptr<CROperand> simplify() const;
+    };
+
     class CROperand
     {
       public:
@@ -28,7 +61,8 @@ namespace Analysis
         {
             CONSTANT,
             LLVM_OPERAND,
-            CHAIN_OF_RECURRENCES
+            CHAIN_OF_RECURRENCES,
+            ARITHMETIC_EXPR
         };
 
         Type type;
@@ -38,12 +72,14 @@ namespace Analysis
             LLVMIR::Operand* llvm_op;
         };
         std::unique_ptr<class ChainOfRecurrences> nested_cr;
+        std::unique_ptr<class ArithmeticExpr>     arith_expr;
 
       public:
         CROperand() : type(CONSTANT), const_val(0) {}
         explicit CROperand(int32_t val) : type(CONSTANT), const_val(val) {}
         explicit CROperand(LLVMIR::Operand* op) : type(LLVM_OPERAND), llvm_op(op) {}
         explicit CROperand(std::unique_ptr<ChainOfRecurrences> cr);
+        explicit CROperand(std::unique_ptr<class ArithmeticExpr> expr);
 
         CROperand(const CROperand& other);
         CROperand& operator=(const CROperand& other);
@@ -56,6 +92,10 @@ namespace Analysis
         bool                   isLoopInvariant(const std::set<int>& invariant_set) const;
         void                   print() const;
         bool                   operator==(const CROperand& other) const;
+
+        static CROperand createAdd(const CROperand& lhs, const CROperand& rhs);
+        static CROperand createMul(const CROperand& lhs, const CROperand& rhs);
+        static CROperand createSub(const CROperand& lhs, const CROperand& rhs);
     };
 
     class ChainOfRecurrences
@@ -79,6 +119,9 @@ namespace Analysis
         ChainOfRecurrences operator*(const ChainOfRecurrences& other) const;
         ChainOfRecurrences operator+(const CROperand& constant) const;
         ChainOfRecurrences operator*(const CROperand& constant) const;
+
+        static ChainOfRecurrences createWithArithmeticExpr(
+            const ChainOfRecurrences& base, const CROperand& operand, CROperator op);
 
         CROperand evaluateClosedForm(int iteration) const;
 

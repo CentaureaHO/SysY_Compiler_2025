@@ -69,7 +69,8 @@ namespace StructuralTransform
         return has_uncond_branch;
     }
 
-    std::pair<std::set<LLVMIR::Instruction*>, bool> LoopRotatePass::checkHeaderUse(NaturalLoop* loop, int result_reg)
+    std::pair<std::set<LLVMIR::Instruction*>, bool> LoopRotatePass::checkHeaderUse(
+        CFG* cfg, NaturalLoop* loop, int result_reg)
     {
         std::set<LLVMIR::Instruction*> body_uses;
         auto*                          latch = *loop->latches.begin();
@@ -90,7 +91,8 @@ namespace StructuralTransform
             }
         }
 
-        for (auto* bb : loop->loop_nodes)
+        // for (auto* bb : loop->loop_nodes)
+        for (auto& [id, bb] : cfg->block_id_to_block)
         {
             if (bb == loop->header) continue;
 
@@ -107,7 +109,7 @@ namespace StructuralTransform
     }
 
     void LoopRotatePass::resolveConflict(CFG* cfg, NaturalLoop* loop, LLVMIR::Instruction* header_def, int new_reg,
-        std::set<LLVMIR::Instruction*> body_uses)
+        std::set<LLVMIR::Instruction*> body_uses, const std::map<int, int>& value_map)
     {
         if (header_def->GetResultReg() == -1) return;
 
@@ -115,7 +117,12 @@ namespace StructuralTransform
 
         LLVMIR::DataType phi_type       = header_def->GetResultType();
         auto*            resolution_phi = new LLVMIR::PhiInst(phi_type, getRegOperand(++cfg->func->max_reg));
-        resolution_phi->Insert_into_PHI(getRegOperand(old_reg), getLabelOperand(loop->guard->block_id));
+
+        int  guard_reg = old_reg;
+        auto it        = value_map.find(old_reg);
+        if (it != value_map.end()) { guard_reg = it->second; }
+
+        resolution_phi->Insert_into_PHI(getRegOperand(guard_reg), getLabelOperand(loop->guard->block_id));
         resolution_phi->Insert_into_PHI(getRegOperand(new_reg), getLabelOperand((*loop->latches.begin())->block_id));
 
         loop->header->insts.insert(loop->header->insts.begin(), resolution_phi);
@@ -186,6 +193,7 @@ namespace StructuralTransform
             if (cloned_inst) guard_block->insts.push_back(cloned_inst);
         }
 
+        value_map = reg_remapping;
         return guard_block;
     }
 
@@ -281,7 +289,7 @@ namespace StructuralTransform
         {
             if (inst->opcode == LLVMIR::IROpCode::PHI || inst->GetResultReg() == -1) continue;
 
-            auto [body_uses, can_proceed] = checkHeaderUse(loop, inst->GetResultReg());
+            auto [body_uses, can_proceed] = checkHeaderUse(cfg, loop, inst->GetResultReg());
             if (!can_proceed) continue;
 
             if (!body_uses.empty())
@@ -326,13 +334,29 @@ namespace StructuralTransform
                 for (auto& [val, label] : phi->vals_for_labels)
                 {
                     auto* label_op = dynamic_cast<LLVMIR::LabelOperand*>(label);
-                    if (label_op && label_op->label_num == loop->preheader->block_id)
+                    if (label_op && (label_op->label_num == loop->preheader->block_id ||
+                                        label_op->label_num == guard_block->block_id))
                     {
+                        if (val->type == LLVMIR::OperandType::REG)
+                        {
+                            auto* reg_val = dynamic_cast<LLVMIR::RegOperand*>(val);
+                            if (reg_val)
+                            {
+                                auto it = value_map.find(reg_val->reg_num);
+                                if (it != value_map.end()) { val = getRegOperand(it->second); }
+                            }
+                        }
+
                         label = getLabelOperand(guard_block->block_id);
                         break;
                     }
                 }
             }
+        }
+
+        for (auto* inst : loop->header->insts)
+        {
+            if (inst->opcode == LLVMIR::IROpCode::PHI) { continue; }
             else if (inst->opcode != LLVMIR::IROpCode::BR_COND && inst->opcode != LLVMIR::IROpCode::BR_UNCOND &&
                      inst->opcode != LLVMIR::IROpCode::RET)
             {
@@ -390,7 +414,8 @@ namespace StructuralTransform
                     auto it = def_use_map.find(def_inst);
                     if (it != def_use_map.end())
                     {
-                        resolveConflict(cfg, loop, def_inst, latch_reg_mapping[def_inst->GetResultReg()], it->second);
+                        resolveConflict(
+                            cfg, loop, def_inst, latch_reg_mapping[def_inst->GetResultReg()], it->second, value_map);
                     }
                 }
                 break;
@@ -457,6 +482,46 @@ namespace StructuralTransform
                 it = loop->header->insts.erase(it);
             }
             else { ++it; }
+        }
+
+        for (const auto& [id, bb] : cfg->block_id_to_block)
+        {
+            for (auto* inst : bb->insts)
+            {
+                if (inst->opcode != LLVMIR::IROpCode::PHI) break;
+
+                auto* phi = dynamic_cast<LLVMIR::PhiInst*>(inst);
+                if (!phi) continue;
+
+                for (auto& [val, label] : phi->vals_for_labels)
+                {
+                    auto* label_op = dynamic_cast<LLVMIR::LabelOperand*>(label);
+                    if (label_op && label_op->label_num != guard_block->block_id) continue;
+
+                    if (val->type != LLVMIR::OperandType::REG) continue;
+
+                    auto* reg_val = dynamic_cast<LLVMIR::RegOperand*>(val);
+                    if (!reg_val) continue;
+
+                    for (auto* header_inst : loop->header->insts)
+                    {
+                        if (header_inst->opcode != LLVMIR::IROpCode::PHI) break;
+
+                        auto* header_phi = dynamic_cast<LLVMIR::PhiInst*>(header_inst);
+                        if (header_phi && header_phi->GetResultReg() != reg_val->reg_num) continue;
+
+                        for (const auto& [h_val, h_label] : header_phi->vals_for_labels)
+                        {
+                            auto* h_label_op = dynamic_cast<LLVMIR::LabelOperand*>(h_label);
+                            if (h_label_op && h_label_op->label_num != guard_block->block_id) continue;
+
+                            val = h_val;
+                            break;
+                        }
+                        break;
+                    }
+                }
+            }
         }
     }
 

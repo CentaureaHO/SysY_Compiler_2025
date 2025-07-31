@@ -6,13 +6,164 @@
 #include <functional>
 #include <cmath>
 
+#define ALLOW_MULTI_EXITING
+
 namespace Analysis
 {
     LLVMIR::IcmpCond getInverseIcmpCond(LLVMIR::IcmpCond cond);
     LLVMIR::IcmpCond getSwapIcmpCond(LLVMIR::IcmpCond cond);
 
+    std::optional<int32_t> ArithmeticExpr::getConstantValue() const
+    {
+        auto lhs_val = lhs->getConstantValue();
+        auto rhs_val = rhs->getConstantValue();
+
+        if (lhs_val && rhs_val)
+        {
+            switch (op)
+            {
+                case ArithOp::ADD: return *lhs_val + *rhs_val;
+                case ArithOp::SUB: return *lhs_val - *rhs_val;
+                case ArithOp::MUL: return *lhs_val * *rhs_val;
+            }
+        }
+        return std::nullopt;
+    }
+
+    LLVMIR::Instruction* ArithmeticExpr::generateInstruction(CFG* cfg) const
+    {
+        auto* lhs_inst = lhs->generateInstruction(cfg);
+        auto* rhs_inst = rhs->generateInstruction(cfg);
+
+        if (!lhs_inst || !rhs_inst) return nullptr;
+
+        LLVMIR::IROpCode opcode;
+        switch (op)
+        {
+            case ArithOp::ADD: opcode = LLVMIR::IROpCode::ADD; break;
+            case ArithOp::SUB: opcode = LLVMIR::IROpCode::SUB; break;
+            case ArithOp::MUL: opcode = LLVMIR::IROpCode::MUL; break;
+            default: return nullptr;
+        }
+
+        return new LLVMIR::ArithmeticInst(opcode,
+            LLVMIR::DataType::I32,
+            lhs_inst->GetResultOperand(),
+            rhs_inst->GetResultOperand(),
+            getRegOperand(++cfg->func->max_reg));
+    }
+
+    bool ArithmeticExpr::isLoopInvariant(const std::set<int>& invariant_set) const
+    {
+        return lhs->isLoopInvariant(invariant_set) && rhs->isLoopInvariant(invariant_set);
+    }
+
+    void ArithmeticExpr::print() const
+    {
+        std::cout << "(";
+        lhs->print();
+        switch (op)
+        {
+            case ArithOp::ADD: std::cout << " + "; break;
+            case ArithOp::SUB: std::cout << " - "; break;
+            case ArithOp::MUL: std::cout << " * "; break;
+        }
+        rhs->print();
+        std::cout << ")";
+    }
+
+    bool ArithmeticExpr::operator==(const ArithmeticExpr& other) const
+    {
+        return op == other.op && *lhs == *other.lhs && *rhs == *other.rhs;
+    }
+
+    std::unique_ptr<CROperand> ArithmeticExpr::simplify() const
+    {
+        auto simplified_lhs = lhs->type == CROperand::ARITHMETIC_EXPR && lhs->arith_expr
+                                  ? lhs->arith_expr->simplify()
+                                  : std::make_unique<CROperand>(*lhs);
+        auto simplified_rhs = rhs->type == CROperand::ARITHMETIC_EXPR && rhs->arith_expr
+                                  ? rhs->arith_expr->simplify()
+                                  : std::make_unique<CROperand>(*rhs);
+
+        auto lhs_val = simplified_lhs->getConstantValue();
+        auto rhs_val = simplified_rhs->getConstantValue();
+
+        if (lhs_val && rhs_val)
+        {
+            switch (op)
+            {
+                case ArithOp::ADD: return std::make_unique<CROperand>(*lhs_val + *rhs_val);
+                case ArithOp::SUB: return std::make_unique<CROperand>(*lhs_val - *rhs_val);
+                case ArithOp::MUL: return std::make_unique<CROperand>(*lhs_val * *rhs_val);
+            }
+        }
+
+        switch (op)
+        {
+            case ArithOp::ADD:
+                // x + 0 = x
+                if (rhs_val && *rhs_val == 0) return simplified_lhs;
+                // 0 + x = x
+                if (lhs_val && *lhs_val == 0) return simplified_rhs;
+
+                // (x + c1) + c2 = x + (c1 + c2)
+                if (rhs_val && simplified_lhs->type == CROperand::ARITHMETIC_EXPR && simplified_lhs->arith_expr &&
+                    simplified_lhs->arith_expr->op == ArithOp::ADD)
+                {
+                    auto inner_rhs_val = simplified_lhs->arith_expr->rhs->getConstantValue();
+                    if (inner_rhs_val)
+                    {
+                        int combined_const = *inner_rhs_val + *rhs_val;
+                        if (combined_const == 0)
+                            return std::make_unique<CROperand>(*simplified_lhs->arith_expr->lhs);
+                        else
+                            return std::make_unique<CROperand>(
+                                CROperand::createAdd(*simplified_lhs->arith_expr->lhs, CROperand(combined_const)));
+                    }
+                }
+                break;
+
+            case ArithOp::MUL:
+                // x * 0 = 0
+                if ((lhs_val && *lhs_val == 0) || (rhs_val && *rhs_val == 0)) { return std::make_unique<CROperand>(0); }
+                // x * 1 = x
+                if (rhs_val && *rhs_val == 1) return simplified_lhs;
+                // 1 * x = x
+                if (lhs_val && *lhs_val == 1) return simplified_rhs;
+                break;
+
+            case ArithOp::SUB:
+                // x - 0 = x
+                if (rhs_val && *rhs_val == 0) return simplified_lhs;
+                // x - x = 0
+                if (*simplified_lhs == *simplified_rhs) { return std::make_unique<CROperand>(0); }
+                break;
+        }
+
+        auto expr = std::make_unique<ArithmeticExpr>(op, std::move(simplified_lhs), std::move(simplified_rhs));
+        return std::make_unique<CROperand>(std::move(expr));
+    }
+
+    ArithmeticExpr::ArithmeticExpr(const ArithmeticExpr& other)
+        : op(other.op), lhs(std::make_unique<CROperand>(*other.lhs)), rhs(std::make_unique<CROperand>(*other.rhs))
+    {}
+
+    ArithmeticExpr& ArithmeticExpr::operator=(const ArithmeticExpr& other)
+    {
+        if (this != &other)
+        {
+            op  = other.op;
+            lhs = std::make_unique<CROperand>(*other.lhs);
+            rhs = std::make_unique<CROperand>(*other.rhs);
+        }
+        return *this;
+    }
+
     CROperand::CROperand(std::unique_ptr<ChainOfRecurrences> cr) : type(CHAIN_OF_RECURRENCES), nested_cr(std::move(cr))
     {}
+
+    CROperand::CROperand(std::unique_ptr<ArithmeticExpr> expr) : type(ARITHMETIC_EXPR), arith_expr(std::move(expr)) {}
 
     CROperand::CROperand(const CROperand& other) : type(other.type)
     {
@@ -22,6 +173,9 @@ namespace Analysis
             case LLVM_OPERAND: llvm_op = other.llvm_op; break;
             case CHAIN_OF_RECURRENCES:
                 if (other.nested_cr) { nested_cr = std::make_unique<ChainOfRecurrences>(*other.nested_cr); }
+                break;
+            case ARITHMETIC_EXPR:
+                if (other.arith_expr) { arith_expr = std::make_unique<ArithmeticExpr>(*other.arith_expr); }
                 break;
         }
     }
@@ -39,6 +193,10 @@ namespace Analysis
                     if (other.nested_cr) { nested_cr = std::make_unique<ChainOfRecurrences>(*other.nested_cr); }
                     else { nested_cr.reset(); }
                     break;
+                case ARITHMETIC_EXPR:
+                    if (other.arith_expr) { arith_expr = std::make_unique<ArithmeticExpr>(*other.arith_expr); }
+                    else { arith_expr.reset(); }
+                    break;
             }
         }
         return *this;
@@ -51,6 +209,7 @@ namespace Analysis
             case CONSTANT: const_val = other.const_val; break;
             case LLVM_OPERAND: llvm_op = other.llvm_op; break;
             case CHAIN_OF_RECURRENCES: nested_cr = std::move(other.nested_cr); break;
+            case ARITHMETIC_EXPR: arith_expr = std::move(other.arith_expr); break;
         }
     }
 
@@ -64,6 +223,7 @@ namespace Analysis
                 case CONSTANT: const_val = other.const_val; break;
                 case LLVM_OPERAND: llvm_op = other.llvm_op; break;
                 case CHAIN_OF_RECURRENCES: nested_cr = std::move(other.nested_cr); break;
+                case ARITHMETIC_EXPR: arith_expr = std::move(other.arith_expr); break;
             }
         }
         return *this;
@@ -82,6 +242,7 @@ namespace Analysis
                 }
                 break;
             case CHAIN_OF_RECURRENCES: break;
+            case ARITHMETIC_EXPR: return arith_expr->getConstantValue();
         }
         return std::nullopt;
     }
@@ -109,6 +270,7 @@ namespace Analysis
                     return insts.empty() ? nullptr : insts.back();
                 }
                 break;
+            case ARITHMETIC_EXPR: return arith_expr->generateInstruction(cfg);
         }
         return nullptr;
     }
@@ -126,6 +288,7 @@ namespace Analysis
                 }
                 return true;
             case CHAIN_OF_RECURRENCES: return false;
+            case ARITHMETIC_EXPR: return arith_expr->isLoopInvariant(invariant_set);
         }
         return false;
     }
@@ -143,6 +306,7 @@ namespace Analysis
                 if (nested_cr) { nested_cr->print(); }
                 else { std::cout << "null_cr"; }
                 break;
+            case ARITHMETIC_EXPR: arith_expr->print(); break;
         }
     }
 
@@ -155,8 +319,57 @@ namespace Analysis
             case CONSTANT: return const_val == other.const_val;
             case LLVM_OPERAND: return llvm_op == other.llvm_op;
             case CHAIN_OF_RECURRENCES: return (nested_cr == nullptr) == (other.nested_cr == nullptr);
+            case ARITHMETIC_EXPR:
+                return (arith_expr == nullptr) == (other.arith_expr == nullptr) &&
+                       (arith_expr ? *arith_expr == *other.arith_expr : true);
         }
         return false;
+    }
+
+    CROperand CROperand::createAdd(const CROperand& lhs, const CROperand& rhs)
+    {
+        auto lhs_val = lhs.getConstantValue();
+        auto rhs_val = rhs.getConstantValue();
+        if (lhs_val && rhs_val) { return CROperand(*lhs_val + *rhs_val); }
+
+        if (rhs_val && *rhs_val == 0) return lhs;
+        if (lhs_val && *lhs_val == 0) return rhs;
+
+        auto expr = std::make_unique<ArithmeticExpr>(
+            ArithOp::ADD, std::make_unique<CROperand>(lhs), std::make_unique<CROperand>(rhs));
+        auto simplified = expr->simplify();
+        return *simplified;
+    }
+
+    CROperand CROperand::createMul(const CROperand& lhs, const CROperand& rhs)
+    {
+        auto lhs_val = lhs.getConstantValue();
+        auto rhs_val = rhs.getConstantValue();
+        if (lhs_val && rhs_val) { return CROperand(*lhs_val * *rhs_val); }
+
+        if ((lhs_val && *lhs_val == 0) || (rhs_val && *rhs_val == 0)) { return CROperand(0); }
+        if (rhs_val && *rhs_val == 1) return lhs;
+        if (lhs_val && *lhs_val == 1) return rhs;
+
+        auto expr = std::make_unique<ArithmeticExpr>(
+            ArithOp::MUL, std::make_unique<CROperand>(lhs), std::make_unique<CROperand>(rhs));
+        auto simplified = expr->simplify();
+        return *simplified;
+    }
+
+    CROperand CROperand::createSub(const CROperand& lhs, const CROperand& rhs)
+    {
+        auto lhs_val = lhs.getConstantValue();
+        auto rhs_val = rhs.getConstantValue();
+        if (lhs_val && rhs_val) { return CROperand(*lhs_val - *rhs_val); }
+
+        if (rhs_val && *rhs_val == 0) return lhs;
+        if (lhs == rhs) return CROperand(0);
+
+        auto expr = std::make_unique<ArithmeticExpr>(
+            ArithOp::SUB, std::make_unique<CROperand>(lhs), std::make_unique<CROperand>(rhs));
+        auto simplified = expr->simplify();
+        return *simplified;
     }
 
     ChainOfRecurrences::ChainOfRecurrences(const CROperand& start, CROperator op, const CROperand& step)
@@ -230,31 +443,44 @@ namespace Analysis
 
     ChainOfRecurrences ChainOfRecurrences::operator*(const CROperand& constant) const
     {
+        auto constant_val = constant.getConstantValue();
+
         if (isPureSum())
         {
-            ChainOfRecurrences result       = *this;
-            auto               constant_val = constant.getConstantValue();
-            if (constant_val)
-            {
-                for (auto& operand : result.operands)
-                {
-                    auto operand_val = operand.getConstantValue();
-                    if (operand_val) { operand = CROperand(*operand_val * *constant_val); }
-                }
-            }
+            ChainOfRecurrences result = *this;
+
+            for (size_t i = 0; i < result.operands.size(); ++i)
+                result.operands[i] = CROperand::createMul(result.operands[i], constant);
+
             return result;
         }
 
         if (operators.size() > 0 && operators[0] == CROperator::MUL)
         {
-            ChainOfRecurrences result       = *this;
-            auto               result_val   = result.operands[0].getConstantValue();
-            auto               constant_val = constant.getConstantValue();
-            if (result_val && constant_val) { result.operands[0] = CROperand(*result_val * *constant_val); }
+            ChainOfRecurrences result = *this;
+            if (constant_val)
+            {
+                auto result_val = result.operands[0].getConstantValue();
+                if (result_val)
+                    result.operands[0] = CROperand(*result_val * *constant_val);
+                else
+                    result.operands[0] = CROperand::createMul(result.operands[0], constant);
+            }
+            else
+                result.operands[0] = CROperand::createMul(result.operands[0], constant);
+
             return result;
         }
 
-        return *this;
+        if (operators.empty())
+        {
+            CROperand new_operand = CROperand::createMul(operands[0], constant);
+            return ChainOfRecurrences(std::vector<CROperand>{new_operand}, std::vector<CROperator>{});
+        }
+
+        ChainOfRecurrences result = *this;
+        result.operands[0]        = CROperand::createMul(result.operands[0], constant);
+        return result;
     }
 
     CROperand ChainOfRecurrences::evaluateClosedForm(int iteration) const
@@ -350,6 +576,7 @@ namespace Analysis
         LLVMIR::ArithmeticInst* inst, const std::map<int, std::unique_ptr<ChainOfRecurrences>>& cr_map)
     {
         if (!inst) return nullptr;
+        // std::cout<<"inst reg: "<<inst->GetResultReg()<<std::endl;
 
         auto lhs_cr = [&]() -> std::unique_ptr<ChainOfRecurrences> {
             if (inst->lhs->type == LLVMIR::OperandType::REG)
@@ -358,8 +585,9 @@ namespace Analysis
                 auto  it  = cr_map.find(reg->reg_num);
                 if (it != cr_map.end()) { return std::make_unique<ChainOfRecurrences>(*it->second); }
             }
-            return std::make_unique<ChainOfRecurrences>(
+            auto result = std::make_unique<ChainOfRecurrences>(
                 std::vector<CROperand>{CROperand(inst->lhs)}, std::vector<CROperator>{});
+            return result;
         }();
 
         auto rhs_cr = [&]() -> std::unique_ptr<ChainOfRecurrences> {
@@ -369,8 +597,9 @@ namespace Analysis
                 auto  it  = cr_map.find(reg->reg_num);
                 if (it != cr_map.end()) { return std::make_unique<ChainOfRecurrences>(*it->second); }
             }
-            return std::make_unique<ChainOfRecurrences>(
+            auto result = std::make_unique<ChainOfRecurrences>(
                 std::vector<CROperand>{CROperand(inst->rhs)}, std::vector<CROperator>{});
+            return result;
         }();
 
         if (!lhs_cr || !rhs_cr) return nullptr;
@@ -379,6 +608,20 @@ namespace Analysis
         {
             case LLVMIR::IROpCode::ADD: return crAdd(*lhs_cr, *rhs_cr);
             case LLVMIR::IROpCode::MUL: return crMul(*lhs_cr, *rhs_cr);
+            case LLVMIR::IROpCode::SUB:
+            {
+                if (rhs_cr->operators.empty() && rhs_cr->operands.size() == 1)
+                {
+                    auto rhs_val = rhs_cr->operands[0].getConstantValue();
+                    if (rhs_val)
+                    {
+                        auto neg_rhs_cr = std::make_unique<ChainOfRecurrences>(
+                            std::vector<CROperand>{CROperand(-*rhs_val)}, std::vector<CROperator>{});
+                        return crAdd(*lhs_cr, *neg_rhs_cr);
+                    }
+                }
+                return nullptr;
+            }
             default:
                 // TODO: 处理其他运算符
                 return nullptr;
@@ -396,6 +639,12 @@ namespace Analysis
                 return std::make_unique<ChainOfRecurrences>(
                     std::vector<CROperand>{CROperand(*lhs_val + *rhs_val)}, std::vector<CROperator>{});
             }
+            else
+            {
+                CROperand add_expr = CROperand::createAdd(lhs.operands[0], rhs.operands[0]);
+                return std::make_unique<ChainOfRecurrences>(
+                    std::vector<CROperand>{add_expr}, std::vector<CROperator>{});
+            }
         }
 
         if (lhs.isPureSum() && rhs.isPureSum())
@@ -410,10 +659,7 @@ namespace Analysis
 
                 if (i < lhs.operands.size() && i < rhs.operands.size())
                 {
-                    auto lhs_val = lhs.operands[i].getConstantValue();
-                    auto rhs_val = rhs.operands[i].getConstantValue();
-                    if (lhs_val && rhs_val) { result_op = CROperand(*lhs_val + *rhs_val); }
-                    else { result_op = lhs.operands[i]; }
+                    result_op = CROperand::createAdd(lhs.operands[i], rhs.operands[i]);
                 }
                 else if (i < lhs.operands.size()) { result_op = lhs.operands[i]; }
                 else if (i < rhs.operands.size()) { result_op = rhs.operands[i]; }
@@ -428,18 +674,58 @@ namespace Analysis
         return nullptr;
     }
 
+    ChainOfRecurrences ChainOfRecurrences::createWithArithmeticExpr(
+        const ChainOfRecurrences& base, const CROperand& operand, CROperator op)
+    {
+        std::vector<CROperand>  result_operands;
+        std::vector<CROperator> result_operators;
+
+        if (op == CROperator::ADD) { result_operands.push_back(CROperand::createAdd(base.operands[0], operand)); }
+        else if (op == CROperator::MUL) { result_operands.push_back(CROperand::createMul(base.operands[0], operand)); }
+        else { result_operands.push_back(base.operands[0]); }
+
+        for (size_t i = 1; i < base.operands.size(); ++i) { result_operands.push_back(base.operands[i]); }
+        result_operators = base.operators;
+
+        return ChainOfRecurrences(result_operands, result_operators);
+    }
+
     std::unique_ptr<ChainOfRecurrences> CRBuilder::crMul(const ChainOfRecurrences& lhs, const ChainOfRecurrences& rhs)
     {
         if (rhs.operators.empty())
         {
             auto rhs_val = rhs.operands[0].getConstantValue();
-            if (rhs_val) { return std::make_unique<ChainOfRecurrences>(lhs * CROperand(*rhs_val)); }
+            if (rhs_val)
+            {
+                if (lhs.operators.empty())
+                {
+                    auto lhs_val = lhs.operands[0].getConstantValue();
+                    if (lhs_val)
+                    {
+                        return std::make_unique<ChainOfRecurrences>(
+                            std::vector<CROperand>{CROperand(*lhs_val * *rhs_val)}, std::vector<CROperator>{});
+                    }
+                    else
+                    {
+                        CROperand mul_expr = CROperand::createMul(lhs.operands[0], rhs.operands[0]);
+                        return std::make_unique<ChainOfRecurrences>(
+                            std::vector<CROperand>{mul_expr}, std::vector<CROperator>{});
+                    }
+                }
+                else if (lhs.isPureSum()) { return std::make_unique<ChainOfRecurrences>(lhs * CROperand(*rhs_val)); }
+                else { return nullptr; }
+            }
         }
 
         if (lhs.operators.empty())
         {
             auto lhs_val = lhs.operands[0].getConstantValue();
-            if (lhs_val) { return std::make_unique<ChainOfRecurrences>(rhs * CROperand(*lhs_val)); }
+            if (lhs_val)
+            {
+                if (rhs.operators.empty()) { return nullptr; }
+                else if (rhs.isPureSum()) { return std::make_unique<ChainOfRecurrences>(rhs * CROperand(*lhs_val)); }
+                else { return nullptr; }
+            }
         }
 
         if (lhs.isPureProduct() && rhs.isPureProduct())
@@ -457,6 +743,7 @@ namespace Analysis
                     auto lhs_val = lhs.operands[i].getConstantValue();
                     auto rhs_val = rhs.operands[i].getConstantValue();
                     if (lhs_val && rhs_val) { result_op = CROperand(*lhs_val * *rhs_val); }
+                    else { result_op = CROperand::createMul(lhs.operands[i], rhs.operands[i]); }
                 }
                 else if (i < lhs.operands.size()) { result_op = lhs.operands[i]; }
                 else if (i < rhs.operands.size()) { result_op = rhs.operands[i]; }
@@ -582,6 +869,16 @@ namespace Analysis
     std::unique_ptr<ChainOfRecurrences> CRBuilder::simplify(std::unique_ptr<ChainOfRecurrences> cr)
     {
         if (!cr) return nullptr;
+
+        for (auto& operand : cr->operands)
+        {
+            if (operand.type == CROperand::ARITHMETIC_EXPR && operand.arith_expr)
+            {
+                auto simplified = operand.arith_expr->simplify();
+                operand         = *simplified;
+            }
+        }
+
         cr = constantFold(std::move(cr));
         return cr;
     }
@@ -622,44 +919,78 @@ namespace Analysis
         auto lower    = loop_info.lowerbound.getConstantValue();
         auto upper    = loop_info.upperbound.getConstantValue();
         auto step_val = loop_info.step.getConstantValue();
-        std::cout << "lower: " << *lower << ", upper: " << *upper << ", step_val: " << *step_val << std::endl;
 
-        if (lower && upper && step_val && *step_val > 0)
+        std::cout << "lower: " << (lower ? std::to_string(*lower) : "runtime")
+                  << ", upper: " << (upper ? std::to_string(*upper) : "runtime")
+                  << ", step_val: " << (step_val ? std::to_string(*step_val) : "runtime") << std::endl;
+
+        if (lower && upper && step_val && *step_val != 0)
         {
             // 使用保存的选中归纳变量CR来判断是否为乘法递增
             bool is_multiplicative = loop_info.isMultiplicativeInductionVar();
 
             int count = 0;
-            if (is_multiplicative && *step_val > 1)
-            {
-                // 乘法递增：计算 start * step^n >= upper 的最小n
-                // 即：n = ceil(log(upper/start) / log(step))
-                double ratio    = static_cast<double>(*upper) / static_cast<double>(*lower);
-                double log_step = std::log(static_cast<double>(*step_val));
 
-                if (log_step > 0)
+            if (*step_val > 0)
+            {
+                if (is_multiplicative && *step_val > 1)
                 {
-                    double n = std::log(ratio) / log_step;
-                    count    = static_cast<int>(std::ceil(n));
+                    // 乘法递增：计算 start * step^n >= upper 的最小n
+                    // 即：n = ceil(log(upper/start) / log(step))
+                    double ratio    = static_cast<double>(*upper) / static_cast<double>(*lower);
+                    double log_step = std::log(static_cast<double>(*step_val));
+
+                    if (log_step > 0)
+                    {
+                        double n = std::log(ratio) / log_step;
+                        count    = static_cast<int>(std::ceil(n));
+                    }
+                    else { return std::nullopt; }
                 }
-                else { return std::nullopt; }
+                else
+                {
+                    // 加法递增：修正的计算方式
+                    // 对于 i < upper: count = floor((upper - lower) / step) + 1
+                    // 对于 i <= upper: count = floor((upper - lower) / step) + 1
+                    count    = 0;
+                    int lb   = *lower;
+                    int ub   = *upper;
+                    int step = *step_val;
+                    while (lb < ub)
+                    {
+                        lb += step;
+                        ++count;
+                    }
+
+                    if (loop_info.is_upperbound_closed && lb == ub) ++count;
+                }
             }
-            else
+            else  // 递减循环 (*step_val < 0)
             {
-                // 加法递增：修正的计算方式
-                // 对于 i < upper: count = floor((upper - lower) / step) + 1
-                // 对于 i <= upper: count = floor((upper - lower) / step) + 1
-                count    = 0;
-                int lb   = *lower;
-                int ub   = *upper;
-                int step = *step_val;
-                while (lb < ub)
-                {
-                    lb += step;
-                    ++count;
-                }
+                // 递减循环：从 lower 开始，每次减去 |step|，直到 <= upper
+                count       = 0;
+                int current = *lower;
+                int ub      = *upper;
+                int step    = *step_val;
 
-                if (loop_info.is_upperbound_closed && lb == ub) ++count;
+                if (loop_info.cond == LLVMIR::IcmpCond::SGE)  // current >= upper
+                {
+                    while (current >= ub)
+                    {
+                        current += step;
+                        ++count;
+                    }
+                }
+                else if (loop_info.cond == LLVMIR::IcmpCond::SGT)  // current > upper
+                {
+                    while (current > ub)
+                    {
+                        current += step;
+                        ++count;
+                    }
+                }
+                else
+                    return std::nullopt;
             }
 
             // 对于闭合上界，不需要额外调整（已经在上面的公式中处理）
@@ -724,11 +1055,62 @@ namespace Analysis
 
         if (is_simple_loop)
         {
-            std::cout << "Enhanced For Loop Analysis:" << std::endl;
+            std::cout << "Loop Analysis:" << std::endl;
             std::cout << "\tLoop structure recognized" << std::endl;
+
+            auto lower_val = loop_info.lowerbound.getConstantValue();
+            auto upper_val = loop_info.upperbound.getConstantValue();
+            auto step_val  = loop_info.step.getConstantValue();
+
+            std::cout << "\tLower bound: ";
+            if (lower_val) { std::cout << *lower_val; }
+            else
+            {
+                std::cout << "runtime (";
+                loop_info.lowerbound.print();
+                std::cout << ")";
+            }
+            std::cout << std::endl;
+
+            std::cout << "\tUpper bound: ";
+            if (upper_val) { std::cout << *upper_val; }
+            else
+            {
+                std::cout << "runtime (";
+                loop_info.upperbound.print();
+                std::cout << ")";
+            }
+            std::cout << std::endl;
+
+            std::cout << "\tStep: ";
+            if (step_val) { std::cout << *step_val; }
+            else
+            {
+                std::cout << "runtime (";
+                loop_info.step.print();
+                std::cout << ")";
+            }
+            std::cout << std::endl;
+
+            std::cout << "\tCondition: ";
+            switch (loop_info.cond)
+            {
+                case LLVMIR::IcmpCond::SLT: std::cout << "signed less than"; break;
+                case LLVMIR::IcmpCond::SLE: std::cout << "signed less or equal"; break;
+                case LLVMIR::IcmpCond::SGT: std::cout << "signed greater than"; break;
+                case LLVMIR::IcmpCond::SGE: std::cout << "signed greater or equal"; break;
+                case LLVMIR::IcmpCond::EQ: std::cout << "equal"; break;
+                case LLVMIR::IcmpCond::NE: std::cout << "not equal"; break;
+                default: std::cout << "unknown"; break;
+            }
+            std::cout << std::endl;
+
             auto trip_count = getConstantTripCount();
             if (trip_count) { std::cout << "\tConstant trip count: " << *trip_count << std::endl; }
+            else { std::cout << "\tTrip count: runtime dependent" << std::endl; }
         }
+        else
+            std::cout << "\tLoop structure not recognized" << std::endl;
 
         std::cout << "======================================" << std::endl;
     }
@@ -799,6 +1181,7 @@ namespace Analysis
 
     void SCEVAnalyser::analyzeLoop(CFG* cfg, NaturalLoop* loop)
     {
+        // std::cout<<"on loop: "<<loop->loop_id<<std::endl;
         auto info = std::make_unique<LoopCRInfo>(loop);
 
         findInvariantVars(info.get(), cfg);
@@ -927,10 +1310,12 @@ namespace Analysis
 
     void SCEVAnalyser::findCRRecurrences(LoopCRInfo* info, CFG* cfg)
     {
+
         bool changed = true;
         while (changed)
         {
             changed = false;
+
             for (auto* bb : info->loop->loop_nodes)
             {
                 for (auto* inst : bb->insts)
@@ -947,6 +1332,7 @@ namespace Analysis
 
                         if (result_cr)
                         {
+                            // std::cout<<result_cr->length()<<std::endl;
                             result_cr = CRBuilder::simplify(std::move(result_cr));
                             if (result_cr)
                             {
@@ -965,25 +1351,58 @@ namespace Analysis
         info->is_simple_loop = false;
 
         if (info->loop->exit_nodes.size() != 1) return;
+
+#ifndef ALLOW_MULTI_EXITING
         if (info->loop->exiting_nodes.size() != 1) return;
+#endif
 
-        auto* exit_node    = *info->loop->exit_nodes.begin();
-        auto* exiting_node = *info->loop->exiting_nodes.begin();
-        auto* latch        = *info->loop->latches.begin();
+        auto* exit_node = *info->loop->exit_nodes.begin();
+        auto* latch     = *info->loop->latches.begin();
 
-        bool is_latch_eq_exiting = (exiting_node == latch);
-        if (!is_latch_eq_exiting) return;
-        if (exiting_node->insts.size() < 2) return;
+        LLVMIR::IRBlock* selected_exiting_node = nullptr;
 
-        auto* cmp_inst = exiting_node->insts[exiting_node->insts.size() - 2];
-        auto* br_inst  = exiting_node->insts[exiting_node->insts.size() - 1];
+        // do-while form: latch is exiting node
+        if (info->loop->exiting_nodes.find(latch) != info->loop->exiting_nodes.end()) selected_exiting_node = latch;
+        // while form: header is exiting node
+        else if (info->loop->exiting_nodes.find(info->loop->header) != info->loop->exiting_nodes.end())
+            selected_exiting_node = info->loop->header;
+        else if (!info->loop->exiting_nodes.empty())
+            selected_exiting_node = *info->loop->exiting_nodes.begin();
 
+        if (!selected_exiting_node) return;
+        if (selected_exiting_node->insts.size() < 2) return;
+
+        LLVMIR::BranchCondInst* br_cond_inst = nullptr;
+        for (auto* inst : selected_exiting_node->insts)
+        {
+            if (inst->opcode == LLVMIR::IROpCode::RET || inst->opcode == LLVMIR::IROpCode::BR_UNCOND) return;
+            if (inst->opcode != LLVMIR::IROpCode::BR_COND) continue;
+
+            br_cond_inst = static_cast<LLVMIR::BranchCondInst*>(inst);
+            break;
+        }
+
+        if (!br_cond_inst) return;
+
+        LLVMIR::Instruction* cmp_inst = nullptr;
+        if (br_cond_inst->cond->type == LLVMIR::OperandType::REG)
+        {
+            auto* cond_reg = static_cast<LLVMIR::RegOperand*>(br_cond_inst->cond);
+            for (auto* inst : selected_exiting_node->insts)
+            {
+                if (inst->GetResultReg() == cond_reg->reg_num)
+                {
+                    cmp_inst = inst;
+                    break;
+                }
+            }
+        }
+
+        if (!cmp_inst) return;
         if (cmp_inst->opcode == LLVMIR::IROpCode::FCMP) return;
         if (cmp_inst->opcode != LLVMIR::IROpCode::ICMP) return;
-        assert(br_inst->opcode == LLVMIR::IROpCode::BR_COND);
 
-        auto* icmp_inst    = static_cast<LLVMIR::IcmpInst*>(cmp_inst);
-        auto* br_cond_inst = static_cast<LLVMIR::BranchCondInst*>(br_inst);
+        auto* icmp_inst = static_cast<LLVMIR::IcmpInst*>(cmp_inst);
 
         auto* false_label = static_cast<LLVMIR::LabelOperand*>(br_cond_inst->false_label);
         auto* true_label  = static_cast<LLVMIR::LabelOperand*>(br_cond_inst->true_label);
@@ -1066,20 +1485,34 @@ namespace Analysis
         CROperand true_lowerbound = selected_cr->operands[0];
         CROperand step_operand    = (selected_cr->operands.size() > 1) ? selected_cr->operands[1] : CROperand(1);
 
-        // 对 do-while 形式循环，真正的下界为比较语句使用的归纳变量再前推一步的值
-        // do-while的特征：latch块有条件跳转到header
-        // 其它形式循环：latch块无条件跳转到header
-        bool is_do_while_form = true;
+        // 根据选中的 exiting 节点判断循环形式
+        // do-while的特征：latch块是exiting节点且有条件跳转
+        // while的特征：header块是exiting节点
+        bool is_do_while_form = false;
 
-        if (!latch->insts.empty())
+        if (selected_exiting_node == latch)
         {
-            auto* last_inst = latch->insts.back();
-
-            if (last_inst->opcode == LLVMIR::IROpCode::BR_UNCOND)
+            // latch 是 exiting 节点，这是 do-while 形式
+            is_do_while_form = true;
+        }
+        else if (selected_exiting_node == info->loop->header)
+        {
+            // header 是 exiting 节点，这是 while 形式
+            is_do_while_form = false;
+        }
+        else
+        {
+            // 其他情况，根据 latch 的跳转指令判断
+            if (!latch->insts.empty())
             {
-                auto* br_uncond    = static_cast<LLVMIR::BranchUncondInst*>(last_inst);
-                auto* target_label = static_cast<LLVMIR::LabelOperand*>(br_uncond->target_label);
-                if (target_label->label_num == info->loop->header->block_id) { is_do_while_form = false; }
+                auto* last_inst = latch->insts.back();
+                if (last_inst->opcode == LLVMIR::IROpCode::BR_UNCOND)
+                {
+                    auto* br_uncond    = static_cast<LLVMIR::BranchUncondInst*>(last_inst);
+                    auto* target_label = static_cast<LLVMIR::LabelOperand*>(br_uncond->target_label);
+                    is_do_while_form   = (target_label->label_num != info->loop->header->block_id);
+                }
+                else { is_do_while_form = true; }
             }
         }
 

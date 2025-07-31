@@ -13,10 +13,11 @@ namespace Analysis
       private:
         LLVMIR::IR* ir;
         //   通过一个operand找到其def
-        std::unordered_map<CFG*, std::unordered_map<LLVMIR::Operand*, LLVMIR::Instruction*>> DefMaps;
+        std::unordered_map<LLVMIR::Operand*, LLVMIR::Instruction*>
+            DefMaps;
         // 通过一个use找到对应的use指令
-        std::unordered_map<CFG*, std::unordered_map<LLVMIR::Operand*, std::unordered_set<LLVMIR::Instruction*>>>
-             UseMaps;
+        std::unordered_map<LLVMIR::Operand*, std::unordered_set<LLVMIR::Instruction*>>
+            UseMaps;
         void ExecuteInSingleCFG(CFG* cfg);
 
       public:

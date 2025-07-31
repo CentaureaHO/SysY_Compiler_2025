@@ -118,5 +118,6 @@
         "shared_mutex": "cpp",
         "syncstream": "cpp",
         "span_ext": "cpp"
-    }
+    },
+    "C_Cpp.errorSquiggles": "disabled"
 }

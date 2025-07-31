@@ -1,4 +1,5 @@
 #include "llvm/mem2reg.h"
+#include "llvm_ir/instruction.h"
 #include <iostream>
 #include <queue>
 // #define DEBUG_PRINT
@@ -188,7 +189,7 @@ void Mem2Reg::InsertPhi(CFG* cfg)
                 visited[iter2] = 1;
                 // 插入phi
                 LLVMIR::PhiInst* phi =
-                    new LLVMIR::PhiInst(allocaid2inst[iter]->type, new LLVMIR::RegOperand(++cfg->func->max_reg));
+                    new LLVMIR::PhiInst(allocaid2inst[iter]->type, getRegOperand(++cfg->func->max_reg));
                 cfg->block_id_to_block[iter2]->insts.push_front(phi);
 #ifdef DEBUG_PRINT
                 std::cout << "insert phi to block " << iter2 << " for reg " << iter << "inst type is " << phi->opcode
@@ -284,8 +285,8 @@ void Mem2Reg::Rename(CFG* cfg)
                 int alloca_reg = new_phis[phi_ins];
                 if (incoming_values[block_id].find(alloca_reg) != incoming_values[block_id].end())
                 {
-                    LLVMIR::RegOperand*   regop   = new LLVMIR::RegOperand(incoming_values[block_id][alloca_reg]);
-                    LLVMIR::LabelOperand* labelop = new LLVMIR::LabelOperand(block_id);
+                    LLVMIR::RegOperand*   regop   = getRegOperand(incoming_values[block_id][alloca_reg]);
+                    LLVMIR::LabelOperand* labelop = getLabelOperand(block_id);
                     phi_ins->Insert_into_PHI(regop, labelop);
                 }
                 else { todel[phi_ins] = 1; }
