@@ -363,8 +363,7 @@ int main(int argc, char** argv)
         // std::cout << "ADCE completed" << std::endl;
 
         // GCM
-        DefUseAnalysisPass GCMDefUse(&builder);
-        GCMDefUse.Execute();
+        edefUseAnalysis.run();
         MakeDomTreePass GCMmakeredom(&builder);
         GCMmakeredom.Execute(true);
         GCMmakeredom.Execute(false);
@@ -376,8 +375,9 @@ int main(int argc, char** argv)
         md.run();
         Analysis::ReadOnlyGlobalAnalysis readOnlyGlobalAnalysis(&builder, &aa);
         readOnlyGlobalAnalysis.run();
+        cdg.Execute();
         // readOnlyGlobalAnalysis.print();
-        GCM gcm(&builder, &GCMDefUse, &aa, &md, &readOnlyGlobalAnalysis);
+        GCM gcm(&builder, &edefUseAnalysis, &aa, &md, &readOnlyGlobalAnalysis, &cdg);
         gcm.Execute();
         // std::cout << "GCM completed" << std::endl;
 

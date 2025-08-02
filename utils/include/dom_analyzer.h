@@ -24,6 +24,7 @@ namespace Cele
                 bool reverse = false, bool gen_frontier = false);
             void clear();
             int  LCA(int u, int v);
+            bool isDomate(int src, int dest);
 
           private:
             void build(const std::vector<std::vector<int>>& working_graph, int node_count, int virtual_source);

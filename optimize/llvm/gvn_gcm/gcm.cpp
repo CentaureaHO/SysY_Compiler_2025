@@ -1,33 +1,93 @@
 #include "gcm.h"
+#include "cfg.h"
+#include "dom_analyzer.h"
 #include "llvm_ir/defs.h"
 #include "llvm_ir/instruction.h"
 #include "llvm_ir/ir_block.h"
+#include "llvm_ir/ir_builder.h"
 #include <cassert>
+#include <cstddef>
 #include <deque>
+#include <iostream>
 #include <ostream>
 #include <unordered_set>
-// #define DEBUG_GCM
-// #define DEBUG_PHI
-// #define DEBUG_CALL
+#include <functional>
+
 namespace LLVMIR
 {
-    bool GCM::isSafeLoad(Instruction* inst)
+    static CFG* get_cfg_by_name(IR* ir, const std::string& name)
     {
-        auto load_inst = dynamic_cast<LoadInst*>(inst);
-        auto load_op   = load_inst->ptr;
-        // 只读的全局变量的加载是安全的
-        if (load_op->type == OperandType::GLOBAL && readOnlyGlobalAnalysis->isReadOnly(load_op))
+        for (auto& func : ir->functions)
         {
-            // 说明是load一个只读全局变量
-            return true;
+            if (func->func_def->func_name == name)
+            {
+                if (ir->cfg.count(func->func_def)) return ir->cfg.at(func->func_def);
+            }
         }
-        // 说明是通过如getelementptr加载的只读全局变量
-        auto traced = readOnlyGlobalAnalysis->traceToGlobal(load_op);
-        if (traced && readOnlyGlobalAnalysis->isReadOnly(traced)) { return true; }
-        // 前面没有 write 或 call 会写到同一地址
+        return nullptr;
     }
 
-    bool GCM::IsSafeInst(Instruction* inst)
+    // 得到支配树的后序遍历
+    static std::vector<IRBlock*> get_post_order(CFG* cfg, Cele::Algo::DomAnalyzer* dom_tree)
+    {
+        std::vector<IRBlock*>         post_order;
+        std::unordered_set<IRBlock*>  visited;
+        std::function<void(IRBlock*)> dfs = [&](IRBlock* block) {
+            if (visited.count(block)) return;
+            visited.insert(block);
+            for (auto& succ : dom_tree->dom_tree[block->block_id]) { dfs(cfg->block_id_to_block[succ]); }
+            post_order.push_back(block);
+        };
+        dfs(cfg->block_id_to_block[0]);  // 从入口块开始遍历
+        return post_order;
+    }
+
+    bool GCM::isControlDependent(CFG* cfg, Instruction* inst, int target_id)
+    {
+        auto origin_id      = inst->block_id;
+        auto control_blocks = cdgAnalyzer->GetCDGPre(cfg, origin_id);
+        for (auto pre : control_blocks)
+        {
+            if (!domAnalyzer->isDomate(pre->block_id, target_id)) { return false; }
+        }
+        return true;
+    }
+
+    void GCM::CollectPhiVals(CFG* cfg)
+    {
+        for (auto [id, block] : cfg->block_id_to_block)
+        {
+            for (auto inst : block->insts)
+            {
+                if (inst->opcode != IROpCode::PHI) { continue; }
+                auto phi_inst = dynamic_cast<PhiInst*>(inst);
+                if (phi_inst)
+                {
+                    for (auto [val, label] : phi_inst->vals_for_labels)
+                    {
+                        if (!PhiVals.count(val)) { PhiVals.insert(val); }
+                    }
+                }
+            }
+        }
+    }
+
+    bool GCM::isSafeCall(Instruction* inst)
+    {
+        auto call_inst = dynamic_cast<CallInst*>(inst);
+        if (call_inst)
+        {
+            auto func_cfg = get_cfg_by_name(ir, call_inst->func_name);
+            // 说明这个函数没有副作用
+            if ((func_cfg && aliasAnalyser->isNoSideEffect(func_cfg)) || call_inst->func_name == "llvm.memset.p0.i32")
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool GCM::IsSafeInst(CFG* cfg, Instruction* inst)
     {
         switch (inst->opcode)
         {
@@ -52,62 +112,70 @@ namespace LLVMIR
             case IROpCode::SITOFP:
             case IROpCode::FPEXT:
             {
-#ifdef DEBUG_CALL
-                if (inst->opcode == IROpCode::CALL)
-                {
-                    std::cout << "In IsSafeInst, inst is " << inst->opcode << " in block " << inst->block_id
-                              << std::endl;
-                    std::cout << inst->GetUsedOperands().size() << std::endl;
-                    for (auto& op : inst->GetUsedOperands()) { std::cout << "Operand: " << op->getName() << std::endl; }
-                }
-#endif
-                for (auto& op : inst->GetUsedOperands())
-                {
-                    if (op->type == OperandType::GLOBAL)
-                    {
-                        if (inst->GetResultOperand()) { cannot_move.insert(inst->GetResultOperand()); }
-                        return false;  // 如果有全局变量，不能处理
-                    }
-                }
+                // 因为我们这些指令根本不会涉及到全局变量，所以可以直接返回 true
                 return true;
+            }
+            case IROpCode::ALLOCA:
+            {
+                return false;  // ALLOCA 指令不能移动
+            }
+            case IROpCode::CALL:
+            {
+                if (isSafeCall(inst)) { return true; }
+                else
+                {
+                    // 如果别的情况是调用函数，不能移动
+                    if (inst->GetResultOperand()) { cannot_move.insert(inst->GetResultOperand()); }
+                    for (auto arg : inst->GetUsedOperands())
+                    {
+                        if (arg->type == OperandType::REG && params.find(arg) == params.end())
+                        {
+                            cannot_move.insert(arg);  // 如果是寄存器参数，不能移动
+                            // 如果这样,参数之前已经处理了,所以我们需要注意的是,需要删除已经处理过了的
+                            auto def = defuseAnalysis->getDef(cfg, arg);
+                            if (earliestBlockId.find(def) != earliestBlockId.end())
+                            {
+                                earliestBlockId.erase(def);
+                                latestBlockId.erase(def);
+                                instorder.erase(def);
+                            }
+                        }
+                    }
+                    return false;
+                }
             }
             case IROpCode::GETELEMENTPTR:
             {
-                auto gep_inst = dynamic_cast<GEPInst*>(inst);
-                bool is_safe  = true;
-                if (gep_inst->base_ptr->type == OperandType::GLOBAL &&
-                    !readOnlyGlobalAnalysis->isReadOnly(gep_inst->base_ptr))
-                {
-                    // 如果是非只读的全局变量的 GEP，不能移动
-                    cannot_move.insert(gep_inst->GetResultOperand());
-                    is_safe = false;
-                }
-                for (auto& idx : gep_inst->idxs)
-                {
-                    if (idx->type == OperandType::GLOBAL && !readOnlyGlobalAnalysis->isReadOnly(idx))
-                    {
-                        // 如果索引是非只读的全局变量，不能移动
-                        cannot_move.insert(gep_inst->GetResultOperand());
-                        is_safe = false;
-                    }
-                }
-                return is_safe;
             }
             case IROpCode::LOAD:
             {
             }
             case IROpCode::STORE:
             {
-                auto store_inst = dynamic_cast<StoreInst*>(inst);
-                auto store_op   = store_inst->ptr;
-            }
-            case IROpCode::CALL:
-            {
             }
             // PHI不能移动,所以这里用到PHI的也不能移动
             default:
             {
                 if (inst->GetResultOperand()) { cannot_move.insert(inst->GetResultOperand()); }
+                // 对于br指令，使用的也不能移动
+                switch (inst->opcode)
+                {
+                    case IROpCode::BR_COND:
+                    {
+                        auto br_condinst = dynamic_cast<BranchCondInst*>(inst);
+                        cannot_move.insert(br_condinst->cond);
+                    }
+                    break;
+                    case IROpCode::PHI:
+                    {
+
+                        return false;
+                    }
+                    break;
+                    default:
+                    {
+                    }
+                }
                 return false;
             }
         }
@@ -115,96 +183,97 @@ namespace LLVMIR
 
     int GCM::ComputeEarliestBlockId(CFG* cfg, Instruction* inst)
     {
-        int currentBlockId = inst->block_id;
-
-        // 所有操作数的定义块
-        std::set<int> def_blocks;
-#ifdef DEBUG_GCM
-        std::cout << "Processing instruction: " << inst->opcode << " in block " << currentBlockId << std::endl;
-        std::cout << "used operands size: " << inst->GetUsedOperands().size() << std::endl;
-#endif
-        for (auto* op : inst->GetUsedOperands())
+        int  currentBlockId = inst->block_id;
+        auto result_op      = inst->GetResultOperand();
+        if (result_op)
         {
-#ifdef DEBUG_GCM
-            std::cout << op->getName() << std::endl;
-#endif
-            if (cannot_move.find(op) != cannot_move.end())
+            if (PhiVals.count(result_op)) { return -1; }
+        }
+
+        // 所有用到这条def的指令块
+        std::unordered_set<int> def_blocks;
+        // 首先得到所有用到这条指令的
+        auto all_use = defuseAnalysis->getUses(cfg, inst->GetResultOperand());
+        for (auto* use : all_use)
+        {
+            // 我们需要所有考虑所有的使用
+            if (use) { def_blocks.insert(use->block_id); }
+        }
+
+        int E = -1;
+        if (def_blocks.empty())
+        {
+            // 如果没有被使用，那么说明这个def没用,或者没有返回resultop
+            if (inst->opcode == IROpCode::CALL)
             {
-#ifdef DEBUG_GCM
-                std::cout << "Cannot move operand: " << op->getName() << std::endl;
-#endif
-                cannot_move.insert(inst->GetResultOperand());
-                return -1;  // 如果操作数不能移动，返回 -1
+                auto call_inst = dynamic_cast<CallInst*>(inst);
+                if (call_inst && call_inst->func_name == "llvm.memset.p0.i32") { return 0; }
             }
-            if (op->type == OperandType::REG)
+            E = 0;
+        }
+        else
+        {  // 找所有定义块的最近共同祖先（LCA）
+            E = *def_blocks.begin();
+            for (int blk : def_blocks) { E = domAnalyzer->LCA(E, blk); }
+            if (E == -1)
             {
-                auto         reg_op   = dynamic_cast<RegOperand*>(op);
-                int          reg_num  = reg_op->reg_num;
-                Instruction* def_inst = defuseAnalysis->GetDefMap(cfg)[reg_num];
-#ifdef DEBUG_GCM
-                if (def_inst) { std::cout << def_inst->opcode << std::endl; }
-                else { std::cout << "No def_inst found for reg: " << reg_num << std::endl; }
-#endif
-                if (def_inst) { def_blocks.insert(def_inst->block_id); }
+                E = currentBlockId;  // 如果没有找到有效的E，返回当前块ID
+            }
+        }
+        // 基于该指令使用的所有操作数，进行判断
+        for (auto op : inst->GetUsedOperands())
+        {
+            auto def_inst = defuseAnalysis->getDef(cfg, op);
+            if (def_inst)
+            {
+                if (def_inst->opcode == IROpCode::PHI)
+                {
+                    // 我们先不处理phi
+                    return -1;
+                }
+                auto def_id = earliestBlockId.count(def_inst) ? earliestBlockId[def_inst] : def_inst->block_id;
+                if (!domAnalyzer->isDomate(def_id, E))
+                {
+                    E = currentBlockId;
+                    break;
+                }
             }
         }
 
-#ifdef DEBUG_GCM
-        std::cout << "Def blocks: ";
-        for (int blk : def_blocks) std::cout << blk << " ";
-        std::cout << "here" << std::endl;
-#endif
-        // 找所有定义块的最近共同祖先（LCA）
-        int E = *def_blocks.begin();
-#ifdef DEBUG_GCM
-        std::cout << "Initial E: " << E << std::endl;
-#endif
-        for (int blk : def_blocks) { E = domAnalyzer->LCA(E, blk); }
+        // 判断是否满足控制依赖
+        if (!isControlDependent(cfg, inst, E)) { E = currentBlockId; }
 
+        if (domAnalyzer->isDomate(inst->block_id, E)) { return -1; }
         return E;
     }
 
     int GCM::ComputeLatestBlockId(CFG* cfg, Instruction* inst)
     {
-        std::set<int> use_blocks;
-        auto          result_op = inst->GetResultOperand();
-        if (cannot_move.find(result_op) != cannot_move.end())
-        {
-#ifdef DEBUG_GCM
-            std::cout << "Cannot move result operand: " << result_op->getName() << std::endl;
-#endif
-            cannot_move.insert(result_op);  // 如果结果操作数不能移动，记录下来
-            return -1;                      // 如果结果操作数不能移动，返回 -1
-        }
-        auto reg_op = dynamic_cast<RegOperand*>(result_op)->reg_num;
-        if (reg_op == -1) { return -1; }                          // 如果没有结果寄存器，直接返回 -1
-        for (auto& use : defuseAnalysis->GetUseMap(cfg)[reg_op])  // 你应该有 use 集合
-        {
-            // if (reg_op == 24)
-            // {
-            //     std::cout << use->GetResultReg() << std::endl;
-            //     std::cout << "In ComputeLatestBlockId, use is " << use->opcode << " in block " << use->block_id
-            //               << std::endl;
-            // }
-            use_blocks.insert(use->block_id);
-        }
+        // std::set<int> use_blocks;
+        // auto          result_op = inst->GetResultOperand();
+        // if (cannot_move.find(result_op) != cannot_move.end())
+        // {
+        //     cannot_move.insert(result_op);  // 如果结果操作数不能移动，记录下来
+        //     return -1;                      // 如果结果操作数不能移动，返回 -1
+        // }
+        // if (result_op == nullptr) { return -1; }
+        // for (auto& use : defuseAnalysis->getUses(cfg, result_op)) { use_blocks.insert(use->block_id); }
 
-        // 求 use block 的最近公共后支配点（post-dominator）
-        int L = *use_blocks.begin();
-        for (int blk : use_blocks)
-        {
-            L = postdomAnalyzer->LCA(L, blk);  // 后支配树中的 LCA
-        }
+        // // 求 use block 的最近公共后支配点（post-dominator）
+        // int L = *use_blocks.begin();
+        // for (int blk : use_blocks)
+        // {
+        //     L = postdomAnalyzer->LCA(L, blk);  // 后支配树中的 LCA
+        // }
 
-        return L;
+        // return L;
     }
 
     void GCM::GenerateInformation(CFG* func_cfg)
     {
         for (auto& [inst, E] : earliestBlockId)
         {
-            int L = latestBlockId[inst];
-            if (E == L) continue;               // 已在最优位置，无需移动
+            // int L = latestBlockId[inst];
             if (E == inst->block_id) continue;  // 如果 E 是当前块，说明不需要移动
 
             // 记录下删除的指令
@@ -218,19 +287,10 @@ namespace LLVMIR
             }
             latest_map[E].insert({instorder[inst], inst});
         }
-#ifdef DEBUG_GCM
-        std::cout << "Generate information completed" << std::endl;
-        std::cout << "Erase set size: " << erase_set.size() << std::endl;
-        std::cout << "Latest map size: " << latest_map.size() << std::endl;
-#endif
     }
 
     void GCM::EraseInstructions(CFG* func_cfg)
     {
-#ifdef DEBUG_GCM
-        std::cout << "Erase: func is " << func_cfg->func->func_def->func_name << std::endl;
-#endif
-
         for (auto [id, block] : func_cfg->block_id_to_block)
         {
             std::deque<Instruction*> new_insts;
@@ -241,23 +301,17 @@ namespace LLVMIR
             }
             block->insts = std::move(new_insts);
         }
-#ifdef DEBUG_GCM
-        std::cout << "Erase instructions of " << func_cfg->func->func_def->func_name << " completed" << std::endl;
-#endif
     }
 
     void GCM::MoveInstructions(CFG* func_cfg)
     {
-#ifdef DEBUG_GCM
-        std::cout << "Move: func is " << func_cfg->func->func_def->func_name << std::endl;
-#endif
         // 接下来进行重新处理
         for (auto [id, block] : func_cfg->block_id_to_block)
         {
             std::deque<Instruction*> new_insts;
             for (auto& inst : block->insts)
             {
-                // 如果到达了结尾
+                // 如果到达barrier
                 if (inst->opcode == IROpCode::BR_COND || inst->opcode == IROpCode::BR_UNCOND ||
                     inst->opcode == IROpCode::RET)
                 {
@@ -266,6 +320,10 @@ namespace LLVMIR
                     {
                         for (auto& [_, moved_inst] : latest_map[id])
                         {
+                            if (moved_inst->opcode == IROpCode::CALL)
+                            {
+                                auto call_inst = dynamic_cast<CallInst*>(moved_inst);
+                            }
                             new_insts.push_back(moved_inst);
                             moved_inst->block_id = id;
                         }
@@ -276,18 +334,13 @@ namespace LLVMIR
             }
             block->insts = std::move(new_insts);
         }
-#ifdef DEBUG_GCM
-        std::cout << "Move instructions of " << func_cfg->func->func_def->func_name << " completed" << std::endl;
-#endif
     }
 
     void GCM::Execute()
     {
         for (auto& [func, cfg] : ir->cfg)
         {
-#ifdef DEBUG_GCM
-            std::cout << "Processing GCM for function: " << func->func_name << std::endl;
-#endif
+            CollectPhiVals(cfg);
             ExecuteInSingleCFG(cfg);
             // 生成移动辅助信息
             GenerateInformation(cfg);
@@ -302,10 +355,8 @@ namespace LLVMIR
             latest_map.clear();
             cannot_move.clear();
             instorder.clear();
+            params.clear();
         }
-#ifdef DEBUG_GCM
-        std::cout << "GCM completed" << std::endl;
-#endif
     }
 
     void GCM::ExecuteInSingleCFG(CFG* func_cfg)
@@ -315,35 +366,28 @@ namespace LLVMIR
         // 记录下指令的顺序
         int order = 0;
 
-#ifdef DEBUG_GCM
-        std::cout << "Processing GCM for function: " << func_cfg->func->func_def->func_name << std::endl;
-#endif
-        for (auto& [id, block] : func_cfg->block_id_to_block)
+        // 记录下函数参数
+        for (auto arg : func_cfg->func->func_def->arg_regs) { params.insert(arg); }
+        auto post_order = get_post_order(func_cfg, domAnalyzer);
+        for (size_t i = 0; i < post_order.size(); i++)
         {
-#ifdef DEBUG_GCM
-            int cnt = 0;
-            std::cout << "Processing block: " << id << std::endl;
-#endif
+            auto block = post_order[i];
             for (auto& inst : block->insts)
             {
-#ifdef DEBUG_GCM
-                std::cout << "In processing instruction NO is " << ++cnt << std::endl;
-#endif
-                if (!IsSafeInst(inst)) { continue; }
-// 是可以处理的
-#ifdef DEBUG_CALL
-                std::cout << "In ExecuteInSingleCFG, inst is " << inst->opcode << " in block " << inst->block_id
-                          << std::endl;
-#endif
-                int E = ComputeEarliestBlockId(func_cfg, inst);
-                int L = ComputeLatestBlockId(func_cfg, inst);
+                if (!IsSafeInst(func_cfg, inst)) { continue; }
 
-                if (E != -1 && L != -1)
+                int E = ComputeEarliestBlockId(func_cfg, inst);
+                // int L = ComputeLatestBlockId(func_cfg, inst);
+                int L = 0;
+
+                if (E != -1)
                 {
                     earliestBlockId[inst] = E;
                     latestBlockId[inst]   = L;
                     instorder[inst]       = order++;
-                    inst->block_id        = E;
+
+                    // inst->block_id           = E;               // 更新指令的基本块ID
+                    // original_block_ids[inst] = inst->block_id;  // 记录初始块ID
                 }
             }
         }

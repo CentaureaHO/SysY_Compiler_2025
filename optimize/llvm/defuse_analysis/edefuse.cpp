@@ -34,7 +34,11 @@ namespace Analysis
                 }
             }
         }
-        for (auto& [func, cfg] : ir->cfg) { ExecuteInSingleCFG(cfg); }
+        for (auto& [func, cfg] : ir->cfg)
+        {
+            for (auto arg : func->arg_regs) { DefMaps[cfg][arg] = func; }
+            ExecuteInSingleCFG(cfg);
+        }
     }
 
     void EDefUseAnalysis::ExecuteInSingleCFG(CFG* cfg)

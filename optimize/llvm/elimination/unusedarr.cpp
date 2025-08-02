@@ -109,7 +109,7 @@ namespace LLVMIR
                             if (call_inst && call_inst->func_name != "llvm.memset.p0.i32")
                             {
                                 // std::cout << call_inst->func_name << " is not memset, marking array as accessed."
-                                        //   << std::endl;
+                                //   << std::endl;
                                 // 说明调用了其他函数，可能会访问这个数组
                                 accessed_arrays[cfg].insert(array);
                                 break;

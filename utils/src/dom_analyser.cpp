@@ -1,3 +1,5 @@
+#include "backend/rv64/rv64_defs.h"
+#include <cassert>
 #include <dom_analyzer.h>
 
 #include <functional>
@@ -174,5 +176,15 @@ int DomAnalyzer::LCA(int u, int v)
         v = imm_dom[v];
     }
 
+    assert(false && "Should not reach here");
     return -1;  // 不存在共同祖先（理论上不应该发生）
+}
+
+bool DomAnalyzer::isDomate(int src, int dest)
+{
+    if (src == dest) { return true; }
+
+    int current = dest;
+    while (current != src && current != 0) { current = imm_dom[current]; }
+    return current == src;
 }
