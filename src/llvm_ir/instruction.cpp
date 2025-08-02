@@ -1999,20 +1999,20 @@ string Instruction::toString()
     return str;
 }
 
+void LoadInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
 
-void LoadInst::ReplaceLabels(const std::map<int, int>& label_mapping){}
+void StoreInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
 
-void StoreInst::ReplaceLabels(const std::map<int, int>& label_mapping){}
+void ArithmeticInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
 
-void ArithmeticInst::ReplaceLabels(const std::map<int, int>& label_mapping){}
+void IcmpInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
 
-void IcmpInst::ReplaceLabels(const std::map<int, int>& label_mapping){}
+void FcmpInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
 
-void FcmpInst::ReplaceLabels(const std::map<int, int>& label_mapping){}
+void AllocInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
 
-void AllocInst::ReplaceLabels(const std::map<int, int>& label_mapping){}
-
-void BranchCondInst::ReplaceLabels(const std::map<int, int>& label_mapping){
+void BranchCondInst::ReplaceLabels(const std::map<int, int>& label_mapping)
+{
     if (true_label && true_label->type == OperandType::LABEL)
     {
         auto* label_op = dynamic_cast<LabelOperand*>(true_label);
@@ -2027,7 +2027,8 @@ void BranchCondInst::ReplaceLabels(const std::map<int, int>& label_mapping){
     }
 }
 
-void BranchUncondInst::ReplaceLabels(const std::map<int, int>& label_mapping){
+void BranchUncondInst::ReplaceLabels(const std::map<int, int>& label_mapping)
+{
     if (target_label && target_label->type == OperandType::LABEL)
     {
         auto* label_op = dynamic_cast<LabelOperand*>(target_label);
@@ -2036,29 +2037,32 @@ void BranchUncondInst::ReplaceLabels(const std::map<int, int>& label_mapping){
     }
 }
 
-void GlbvarDefInst::ReplaceLabels(const std::map<int, int>& label_mapping){}
+void GlbvarDefInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
 
-void CallInst::ReplaceLabels(const std::map<int, int>& label_mapping){}
+void CallInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
 
-void RetInst::ReplaceLabels(const std::map<int, int>& label_mapping){}
+void RetInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
 
-void GEPInst::ReplaceLabels(const std::map<int, int>& label_mapping){}
+void GEPInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
 
-void FuncDeclareInst::ReplaceLabels(const std::map<int, int>& label_mapping){}
+void FuncDeclareInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
 
-void FuncDefInst::ReplaceLabels(const std::map<int, int>& label_mapping){}
+void FuncDefInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
 
-void SI2FPInst::ReplaceLabels(const std::map<int, int>& label_mapping){}
+void SI2FPInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
 
-void FP2SIInst::ReplaceLabels(const std::map<int, int>& label_mapping){}
+void FP2SIInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
 
-void ZextInst::ReplaceLabels(const std::map<int, int>& label_mapping){}
+void ZextInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
 
-void FPExtInst::ReplaceLabels(const std::map<int, int>& label_mapping){}
+void FPExtInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
 
-void PhiInst::ReplaceLabels(const std::map<int, int>& label_mapping){
-    for (auto& val_label : vals_for_labels){
-        if (val_label.second && val_label.second->type == OperandType::LABEL){
+void PhiInst::ReplaceLabels(const std::map<int, int>& label_mapping)
+{
+    for (auto& val_label : vals_for_labels)
+    {
+        if (val_label.second && val_label.second->type == OperandType::LABEL)
+        {
             auto* label_op = dynamic_cast<LabelOperand*>(val_label.second);
             auto  it       = label_mapping.find(label_op->label_num);
             if (it != label_mapping.end()) { val_label.second = getLabelOperand(it->second); }
@@ -2066,8 +2070,10 @@ void PhiInst::ReplaceLabels(const std::map<int, int>& label_mapping){
     }
 }
 
-Operand* PhiInst::GetValOperandOfBlock(int block_id){
-    for(auto [val,label]:vals_for_labels){
+Operand* PhiInst::GetValOperandOfBlock(int block_id)
+{
+    for (auto [val, label] : vals_for_labels)
+    {
         if (label && label->type == OperandType::LABEL)
         {
             auto* label_op = dynamic_cast<LabelOperand*>(label);
@@ -2078,36 +2084,46 @@ Operand* PhiInst::GetValOperandOfBlock(int block_id){
     return nullptr;  // 如果没有找到对应的块ID，返回nullptr
 }
 
-void PhiInst::SetValOperandOfBlock(int block_id, int reg_id){
-    for(auto& [val,label]:vals_for_labels){
-        if (label && label->type == OperandType::LABEL){
+void PhiInst::SetValOperandOfBlock(int block_id, int reg_id)
+{
+    for (auto& [val, label] : vals_for_labels)
+    {
+        if (label && label->type == OperandType::LABEL)
+        {
             auto* label_op = dynamic_cast<LabelOperand*>(label);
-            if (label_op->label_num == block_id) {
+            if (label_op->label_num == block_id)
+            {
                 val = getRegOperand(reg_id);  // 更新对应块ID的值为新的寄存器操作数
                 return;
             }
         }
-    } 
+    }
     assert(false && "Block ID not found in PhiInst operands for setting value");
 }
 
-void PhiInst::ErasePhiWithBlock(int block_id) {
-    for(auto it=vals_for_labels.begin(); it!=vals_for_labels.end();++it){
-        auto [val,label] = *it;
-        if(((LabelOperand*)label)->label_num == block_id) {
+void PhiInst::ErasePhiWithBlock(int block_id)
+{
+    for (auto it = vals_for_labels.begin(); it != vals_for_labels.end(); ++it)
+    {
+        auto [val, label] = *it;
+        if (((LabelOperand*)label)->label_num == block_id)
+        {
             vals_for_labels.erase(it);  // 删除对应块ID的操作数
             return;
         }
     }
 }
 
-void PhiInst::SetNewFrom(int old_from, int new_from){
-    for(auto& [val,label]:vals_for_labels){
+void PhiInst::SetNewFrom(int old_from, int new_from)
+{
+    for (auto& [val, label] : vals_for_labels)
+    {
         if (val && val->type == OperandType::REG)
         {
             auto* reg_op = dynamic_cast<RegOperand*>(val);
-            if (reg_op->reg_num == old_from) {
-                label= getLabelOperand(new_from);  // 更新对应寄存器操作数的标签
+            if (reg_op->reg_num == old_from)
+            {
+                label = getLabelOperand(new_from);  // 更新对应寄存器操作数的标签
                 return;
             }
         }

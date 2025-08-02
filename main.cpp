@@ -58,7 +58,10 @@
 #include "optimize/llvm/loop/loop_full_unroll.h"
 // loop_strength_reduce
 #include "llvm/loop/loop_strength_reduce.h"
-
+// Single Source Phi Elimination
+#include "optimize/llvm/utils/single_source_phi_elimination.h"
+// Constant Branch Folding
+#include "optimize/llvm/utils/constant_branch_folding.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -458,10 +461,48 @@ int main(int argc, char** argv)
             aa.run();
             tsccp.Execute();
         }
-        if (optimizeLevel >= 2) {}
+        // SCCP after constant full unroll
+        {
+            Transform::SingleSourcePhiEliminationPass singleSourcePhiElim(&builder);
+            Transform::ConstantBranchFoldingPass      constantBranchFolding(&builder);
+            singleSourcePhiElim.setPreserveLCSSA(true);
+
+            bool      changed        = true;
+            int       exec_cnt       = 0;
+            const int MAX_ITERATIONS = 10;
+
+            while (changed && exec_cnt < MAX_ITERATIONS)
+            {
+                changed = false;
+                exec_cnt++;
+
+                constantBranchFolding.Execute();
+                changed |= constantBranchFolding.wasModified();
+
+                makecfg.Execute();
+                loopAnalysis.Execute();
+                loopSimplify.Execute();
+
+                singleSourcePhiElim.Execute();
+                changed |= singleSourcePhiElim.wasModified();
+
+                makecfg.Execute();
+                makedom.Execute();
+                aa.run();
+
+                tsccp.Execute();
+
+                makecfg.Execute();
+                makedom.Execute();
+
+                std::cout << "Iteration " << exec_cnt << ": " << (changed ? "modifications made" : "no changes")
+                          << std::endl;
+            }
+        }
+
+        // TODO: partially unroll loop
 
         makecfg.Execute();
-        
     }
 
     if (step == "-llvm")

@@ -12,36 +12,36 @@
 
 namespace StructuralTransform
 {
-    class LoopUnroll{
-    public:
-        Analysis::SCEVAnalyser* scev;//循环的SCEV分析器
-        NaturalLoop* loop; //要优化的循环
-        LLVMIR::IR* ir;//获取支配树用
-        
-        
+    class LoopUnroll
+    {
+      public:
+        Analysis::SCEVAnalyser* scev;  // 循环的SCEV分析器
+        NaturalLoop*            loop;  // 要优化的循环
+        LLVMIR::IR*             ir;    // 获取支配树用
 
         bool ConstantLoopUnroll();
 
-        LoopUnroll(Analysis::SCEVAnalyser* scev,NaturalLoop* loop,LLVMIR::IR* ir){
-            this->scev=scev;
-            this->loop=loop;
-            this->ir=ir;
+        LoopUnroll(Analysis::SCEVAnalyser* scev, NaturalLoop* loop, LLVMIR::IR* ir)
+        {
+            this->scev = scev;
+            this->loop = loop;
+            this->ir   = ir;
         }
-
     };
 
     class LoopUnrollPass : public Pass
     {
       public:
         Analysis::SCEVAnalyser* scev;
-        MakeDomTreePass* makedom;
+        MakeDomTreePass*        makedom;
 
-        LoopUnrollPass(LLVMIR::IR* ir, Analysis::SCEVAnalyser* scev,MakeDomTreePass* makedom ) : Pass(ir) { 
-            this->scev = scev;
-            this->makedom=makedom;
+        LoopUnrollPass(LLVMIR::IR* ir, Analysis::SCEVAnalyser* scev, MakeDomTreePass* makedom) : Pass(ir)
+        {
+            this->scev    = scev;
+            this->makedom = makedom;
         }
         void Execute() override;
-    };   
+    };
 
 }  // namespace StructuralTransform
 

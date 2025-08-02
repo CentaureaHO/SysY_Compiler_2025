@@ -1475,7 +1475,13 @@ namespace Transform
                     }
 
                     int total_offset = base_loc.element_offset + current_offset;
-                    DBGINFO("\tTotal offset: ", total_offset, " (base: ", base_loc.element_offset, " + current: ", current_offset, ")");
+                    DBGINFO("\tTotal offset: ",
+                        total_offset,
+                        " (base: ",
+                        base_loc.element_offset,
+                        " + current: ",
+                        current_offset,
+                        ")");
 
                     return MemoryLocation(base_loc.base_ptr, total_offset);
                 }

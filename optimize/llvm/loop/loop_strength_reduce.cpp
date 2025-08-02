@@ -236,7 +236,7 @@ namespace Transform
         {
 
             if (  // 不知道为什么循环不变量也不行 标记
-                //(start.llvm_op->type==OperandType::REG&&scev->isLoopInvariant(loop,start.llvm_op->GetRegNum()))||
+                  //(start.llvm_op->type==OperandType::REG&&scev->isLoopInvariant(loop,start.llvm_op->GetRegNum()))||
                 start.llvm_op->type == OperandType::IMMEI32)
             {
                 start_irop = start.llvm_op;

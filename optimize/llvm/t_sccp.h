@@ -21,8 +21,8 @@ namespace Transform
      */
     struct MemoryLocation
     {
-        LLVMIR::Operand* base_ptr;      ///< 基址指针 (alloca 或全局变量)
-        int element_offset;             ///< 从基址开始的元素偏移量
+        LLVMIR::Operand* base_ptr;        ///< 基址指针 (alloca 或全局变量)
+        int              element_offset;  ///< 从基址开始的元素偏移量
 
         MemoryLocation() : base_ptr(nullptr), element_offset(0) {}
         MemoryLocation(LLVMIR::Operand* base) : base_ptr(base), element_offset(0) {}
