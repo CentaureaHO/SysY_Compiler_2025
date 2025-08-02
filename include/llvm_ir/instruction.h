@@ -179,6 +179,9 @@ namespace LLVMIR
         virtual Instruction* CloneWithMapping(
             const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const = 0;
         virtual std::vector<Operand*> GetCSEOperands() const                              = 0;
+
+        std::string  toString();
+        virtual void ReplaceLabels(const std::map<int, int>& label_map) = 0;
     };
 
     class LoadInst : public Instruction
@@ -204,6 +207,7 @@ namespace LLVMIR
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+        void                          ReplaceLabels(const std::map<int, int>& label_map) override;
     };
 
     class StoreInst : public Instruction
@@ -229,6 +233,7 @@ namespace LLVMIR
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+        void                          ReplaceLabels(const std::map<int, int>& label_map) override;
     };
 
     class ArithmeticInst : public Instruction
@@ -255,6 +260,7 @@ namespace LLVMIR
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+        void                          ReplaceLabels(const std::map<int, int>& label_map) override;
     };
 
     class IcmpInst : public Instruction
@@ -282,6 +288,7 @@ namespace LLVMIR
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+        void                          ReplaceLabels(const std::map<int, int>& label_map) override;
     };
 
     class FcmpInst : public Instruction
@@ -309,6 +316,7 @@ namespace LLVMIR
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+        void                          ReplaceLabels(const std::map<int, int>& label_map) override;
     };
 
     class AllocInst : public Instruction
@@ -334,6 +342,7 @@ namespace LLVMIR
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+        void                          ReplaceLabels(const std::map<int, int>& label_map) override;
     };
 
     class BranchCondInst : public Instruction
@@ -359,6 +368,7 @@ namespace LLVMIR
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+        void                          ReplaceLabels(const std::map<int, int>& label_map) override;
     };
 
     class BranchUncondInst : public Instruction
@@ -382,6 +392,7 @@ namespace LLVMIR
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+        void                          ReplaceLabels(const std::map<int, int>& label_map) override;
     };
 
     class GlbvarDefInst : public Instruction
@@ -409,6 +420,7 @@ namespace LLVMIR
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+        void                          ReplaceLabels(const std::map<int, int>& label_map) override;
     };
 
     class CallInst : public Instruction
@@ -436,6 +448,7 @@ namespace LLVMIR
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+        void                          ReplaceLabels(const std::map<int, int>& label_map) override;
     };
 
     class RetInst : public Instruction
@@ -460,6 +473,7 @@ namespace LLVMIR
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+        void                          ReplaceLabels(const std::map<int, int>& label_map) override;
     };
 
     class GEPInst : public Instruction
@@ -489,6 +503,7 @@ namespace LLVMIR
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+        void                          ReplaceLabels(const std::map<int, int>& label_map) override;
     };
 
     class FuncDeclareInst : public Instruction
@@ -514,6 +529,7 @@ namespace LLVMIR
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+        void                          ReplaceLabels(const std::map<int, int>& label_map) override;
     };
 
     class FuncDefInst : public FuncDeclareInst
@@ -537,6 +553,7 @@ namespace LLVMIR
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+        void                          ReplaceLabels(const std::map<int, int>& label_map) override;
     };
 
     class SI2FPInst : public Instruction
@@ -561,6 +578,7 @@ namespace LLVMIR
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+        void                          ReplaceLabels(const std::map<int, int>& label_map) override;
     };
 
     class FP2SIInst : public Instruction
@@ -585,6 +603,7 @@ namespace LLVMIR
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+        void                          ReplaceLabels(const std::map<int, int>& label_map) override;
     };
 
     class ZextInst : public Instruction
@@ -611,6 +630,7 @@ namespace LLVMIR
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+        void                          ReplaceLabels(const std::map<int, int>& label_map) override;
     };
 
     class FPExtInst : public Instruction
@@ -635,6 +655,7 @@ namespace LLVMIR
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
         virtual std::vector<Operand*> GetCSEOperands() const override;
+        void                          ReplaceLabels(const std::map<int, int>& label_map) override;
     };
 
     class PhiInst : public Instruction  // phi valsa_for_labels.first valsa_for_labels.second val在前 label在后
@@ -667,12 +688,21 @@ namespace LLVMIR
         {
             vals_for_labels.push_back(std::pair<ValOp, LabelOp>(val, label));
         }
+        void ReplaceLabels(const std::map<int, int>& label_map) override;
+
+        Operand* GetValOperandOfBlock(int block_id);
+        void     SetValOperandOfBlock(int block_id, int reg_id);
+        void     ErasePhiWithBlock(int block_id);
+        void     SetNewFrom(int old_from, int new_from);
     };
 }  // namespace LLVMIR
 
 // 操作数复制辅助函数声明
 LLVMIR::Operand* copyOperand(
     LLVMIR::Operand* operand, const std::map<int, int>& reg_map, const std::map<int, int>& label_map);
+
+// 根据数据类型创建中转指令的函数声明
+LLVMIR::Instruction* createCopyInst(LLVMIR::DataType type, LLVMIR::Operand* src, LLVMIR::Operand* dest);
 
 std::ostream& operator<<(std::ostream& s, LLVMIR::Operand* op);
 

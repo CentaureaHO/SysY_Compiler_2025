@@ -63,8 +63,13 @@
 // EDefUse Analysis
 #include "optimize/llvm/defuse_analysis/edefuse.h"
 // Elimination
+#include "optimize/llvm/loop/loop_full_unroll.h"
 // loop_strength_reduce
 #include "llvm/loop/loop_strength_reduce.h"
+// Single Source Phi Elimination
+#include "optimize/llvm/utils/single_source_phi_elimination.h"
+// Constant Branch Folding
+#include "optimize/llvm/utils/constant_branch_folding.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -81,7 +86,8 @@ extern vector<string> semanticErrMsgs;
 extern IR builder;
 size_t    errCnt = 0;
 
-bool no_reg_alloc = false;
+bool no_reg_alloc     = false;
+int  max_unroll_count = 100;
 
 string truncateString(const string& str, size_t width)
 {
@@ -110,6 +116,16 @@ int main(int argc, char** argv)
             else
             {
                 cerr << "Error: -o option requires a filename" << endl;
+                return 1;
+            }
+        }
+        else if (arg == "-uc")
+        {
+            if (i + 1 < argc)
+                max_unroll_count = stoi(argv[++i]);
+            else
+            {
+                cerr << "Error: -uc option requires a number" << endl;
                 return 1;
             }
         }
@@ -417,6 +433,7 @@ int main(int argc, char** argv)
         makedom.Execute();
         loopAnalysis.Execute();
         loopSimplify.Execute();
+        lcssa.Execute();
         loopRotate.Execute();
 
         // for (const auto& [func_def, cfg] : builder.cfg)
@@ -439,6 +456,7 @@ int main(int argc, char** argv)
         makedom.Execute();
         loopAnalysis.Execute();
         loopSimplify.Execute();
+        lcssa.Execute();
         loopRotate.Execute();
         scevAnalyser.run();
         // scevAnalyser.printAllResults();
@@ -449,7 +467,76 @@ int main(int argc, char** argv)
         dce.Execute();
         scevAnalyser.run();
 
-        if (optimizeLevel >= 2) {}
+        // Constant Loop Full Unroll
+        {
+            int unrolled_count = 0;
+            int total_unrolled = 0;
+
+            do {
+                Transform::LoopFullUnrollPass loopUnrollPass(&builder, &scevAnalyser);
+                loopUnrollPass.Execute();
+
+                auto stats     = loopUnrollPass.getUnrollStats();
+                unrolled_count = stats.second;
+                total_unrolled += unrolled_count;
+
+                makecfg.Execute();
+                makedom.Execute();
+                loopAnalysis.Execute();
+                loopSimplify.Execute();
+                lcssa.Execute();
+                loopRotate.Execute();
+                scevAnalyser.run();
+
+                std::cout << "Unrolled " << unrolled_count << " times" << std::endl;
+
+            } while (unrolled_count > 0 && total_unrolled < max_unroll_count);
+
+            makecfg.Execute();
+            makedom.Execute();
+            aa.run();
+            tsccp.Execute();
+        }
+        // SCCP after constant full unroll
+        {
+            Transform::SingleSourcePhiEliminationPass singleSourcePhiElim(&builder);
+            Transform::ConstantBranchFoldingPass      constantBranchFolding(&builder);
+            singleSourcePhiElim.setPreserveLCSSA(true);
+
+            bool      changed        = true;
+            int       exec_cnt       = 0;
+            const int MAX_ITERATIONS = 10;
+
+            while (changed && exec_cnt < MAX_ITERATIONS)
+            {
+                changed = false;
+                exec_cnt++;
+
+                constantBranchFolding.Execute();
+                changed |= constantBranchFolding.wasModified();
+
+                makecfg.Execute();
+                loopAnalysis.Execute();
+                loopSimplify.Execute();
+
+                singleSourcePhiElim.Execute();
+                changed |= singleSourcePhiElim.wasModified();
+
+                makecfg.Execute();
+                makedom.Execute();
+                aa.run();
+
+                tsccp.Execute();
+
+                makecfg.Execute();
+                makedom.Execute();
+
+                std::cout << "Iteration " << exec_cnt << ": " << (changed ? "modifications made" : "no changes")
+                          << std::endl;
+            }
+        }
+
+        // TODO: partially unroll loop
 
         makecfg.Execute();
     }

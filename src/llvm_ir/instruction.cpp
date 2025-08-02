@@ -1,4 +1,4 @@
-#include "llvm_ir/defs.h"
+#include <cstddef>
 #include <llvm_ir/instruction.h>
 #include <llvm_ir/ir_block.h>
 #include <cassert>
@@ -1955,5 +1955,177 @@ unsigned getInstructionCost(LLVMIR::Instruction* inst)
         case LLVMIR::IROpCode::ICMP:
         case LLVMIR::IROpCode::FCMP: return 1;  // 基本算术和比较指令
         default: return 1;                      // 其他指令的默认代价
+    }
+}
+
+// 根据数据类型创建中转指令的实现
+LLVMIR::Instruction* createCopyInst(LLVMIR::DataType type, LLVMIR::Operand* src, LLVMIR::Operand* dest)
+{
+    Instruction* inst = nullptr;
+
+    switch (type)
+    {
+        case LLVMIR::DataType::I1:
+        case LLVMIR::DataType::I8:
+        case LLVMIR::DataType::I32:
+            // 创建 add i32 src, 0 指令
+            inst = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::ADD, type, src, getImmeI32Operand(0), dest);
+            break;
+        case LLVMIR::DataType::F32:
+            // 创建 fadd float src, 0.0 指令
+            inst = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::FADD, type, src, getImmeF32Operand(0.0f), dest);
+            break;
+        case LLVMIR::DataType::PTR:
+            // 创建 getelementptr ptr src, i32 0 指令 (不添加偏移)
+            inst = new LLVMIR::GEPInst(type, LLVMIR::DataType::I32, src, dest, {}, {getImmeI32Operand(0)});
+            break;
+        default:
+            std::cout << "Unsupported data type for createCopyInst: " << type << std::endl;
+            assert(false && "Unsupported data type for createCopyInst");
+    }
+
+    inst->comment = "Created by createCopyInst";
+    return inst;
+}
+
+string Instruction::toString()
+{
+    stringstream ss;
+    printIR(ss);
+
+    string str = ss.str();
+
+    str.erase(remove(str.begin(), str.end(), '\n'), str.end());
+    return str;
+}
+
+void LoadInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
+
+void StoreInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
+
+void ArithmeticInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
+
+void IcmpInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
+
+void FcmpInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
+
+void AllocInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
+
+void BranchCondInst::ReplaceLabels(const std::map<int, int>& label_mapping)
+{
+    if (true_label && true_label->type == OperandType::LABEL)
+    {
+        auto* label_op = dynamic_cast<LabelOperand*>(true_label);
+        auto  it       = label_mapping.find(label_op->label_num);
+        if (it != label_mapping.end()) { true_label = getLabelOperand(it->second); }
+    }
+    if (false_label && false_label->type == OperandType::LABEL)
+    {
+        auto* label_op = dynamic_cast<LabelOperand*>(false_label);
+        auto  it       = label_mapping.find(label_op->label_num);
+        if (it != label_mapping.end()) { false_label = getLabelOperand(it->second); }
+    }
+}
+
+void BranchUncondInst::ReplaceLabels(const std::map<int, int>& label_mapping)
+{
+    if (target_label && target_label->type == OperandType::LABEL)
+    {
+        auto* label_op = dynamic_cast<LabelOperand*>(target_label);
+        auto  it       = label_mapping.find(label_op->label_num);
+        if (it != label_mapping.end()) { target_label = getLabelOperand(it->second); }
+    }
+}
+
+void GlbvarDefInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
+
+void CallInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
+
+void RetInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
+
+void GEPInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
+
+void FuncDeclareInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
+
+void FuncDefInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
+
+void SI2FPInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
+
+void FP2SIInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
+
+void ZextInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
+
+void FPExtInst::ReplaceLabels(const std::map<int, int>& label_mapping) {}
+
+void PhiInst::ReplaceLabels(const std::map<int, int>& label_mapping)
+{
+    for (auto& val_label : vals_for_labels)
+    {
+        if (val_label.second && val_label.second->type == OperandType::LABEL)
+        {
+            auto* label_op = dynamic_cast<LabelOperand*>(val_label.second);
+            auto  it       = label_mapping.find(label_op->label_num);
+            if (it != label_mapping.end()) { val_label.second = getLabelOperand(it->second); }
+        }
+    }
+}
+
+Operand* PhiInst::GetValOperandOfBlock(int block_id)
+{
+    for (auto [val, label] : vals_for_labels)
+    {
+        if (label && label->type == OperandType::LABEL)
+        {
+            auto* label_op = dynamic_cast<LabelOperand*>(label);
+            if (label_op->label_num == block_id) { return val; }
+        }
+    }
+    assert(false && "Block ID not found in PhiInst operands");
+    return nullptr;  // 如果没有找到对应的块ID，返回nullptr
+}
+
+void PhiInst::SetValOperandOfBlock(int block_id, int reg_id)
+{
+    for (auto& [val, label] : vals_for_labels)
+    {
+        if (label && label->type == OperandType::LABEL)
+        {
+            auto* label_op = dynamic_cast<LabelOperand*>(label);
+            if (label_op->label_num == block_id)
+            {
+                val = getRegOperand(reg_id);  // 更新对应块ID的值为新的寄存器操作数
+                return;
+            }
+        }
+    }
+    assert(false && "Block ID not found in PhiInst operands for setting value");
+}
+
+void PhiInst::ErasePhiWithBlock(int block_id)
+{
+    for (auto it = vals_for_labels.begin(); it != vals_for_labels.end(); ++it)
+    {
+        auto [val, label] = *it;
+        if (((LabelOperand*)label)->label_num == block_id)
+        {
+            vals_for_labels.erase(it);  // 删除对应块ID的操作数
+            return;
+        }
+    }
+}
+
+void PhiInst::SetNewFrom(int old_from, int new_from)
+{
+    for (auto& [val, label] : vals_for_labels)
+    {
+        if (val && val->type == OperandType::REG)
+        {
+            auto* reg_op = dynamic_cast<RegOperand*>(val);
+            if (reg_op->reg_num == old_from)
+            {
+                label = getLabelOperand(new_from);  // 更新对应寄存器操作数的标签
+                return;
+            }
+        }
     }
 }
