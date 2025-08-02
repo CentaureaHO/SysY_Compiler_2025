@@ -57,6 +57,8 @@
 #include "optimize/llvm/setid.h"
 // loop_strength_reduce
 #include "llvm/loop/loop_strength_reduce.h"
+//Loop Unroll
+#include "llvm/loop/loop_unroll.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -415,7 +417,11 @@ int main(int argc, char** argv)
 
         if (optimizeLevel >= 2) {}
 
+        StructuralTransform::LoopUnrollPass lu(&builder,&scevAnalyser,&makedom);
+        lu.Execute();
+
         makecfg.Execute();
+        
     }
 
     if (step == "-llvm")
