@@ -45,7 +45,7 @@ namespace StructuralTransform
         for (auto* loop : cfg->LoopForest->getRootLoops()) processLoop(cfg, *cfg->LoopForest, loop);
 
         cleanupInvalidPhiReferences(cfg);
-        eliminateUselessPhi(cfg);
+        // eliminateUselessPhi(cfg);
 
         // cfg->BuildCFG();
     }

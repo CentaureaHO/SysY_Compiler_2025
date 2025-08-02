@@ -164,6 +164,8 @@ namespace LLVMIR
         virtual Instruction* CloneWithMapping(
             const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const = 0;
         virtual std::vector<Operand*> GetCSEOperands() const                              = 0;
+
+        std::string toString();
     };
 
     class LoadInst : public Instruction
@@ -658,6 +660,9 @@ namespace LLVMIR
 // 操作数复制辅助函数声明
 LLVMIR::Operand* copyOperand(
     LLVMIR::Operand* operand, const std::map<int, int>& reg_map, const std::map<int, int>& label_map);
+
+// 根据数据类型创建中转指令的函数声明
+LLVMIR::Instruction* createCopyInst(LLVMIR::DataType type, LLVMIR::Operand* src, LLVMIR::Operand* dest);
 
 std::ostream& operator<<(std::ostream& s, LLVMIR::Operand* op);
 

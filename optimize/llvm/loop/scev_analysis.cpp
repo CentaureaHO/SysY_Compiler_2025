@@ -1124,7 +1124,7 @@ namespace Analysis
 
             buildResultMap(cfg);
 
-            for (auto* loop : cfg->LoopForest->loop_set) { analyzeLoop(cfg, loop); }
+            for (auto* loop : cfg->LoopForest->loop_set) analyzeLoop(cfg, loop);
         }
     }
 
@@ -1132,6 +1132,16 @@ namespace Analysis
     {
         loop_analysis_.clear();
         result_map_.clear();
+    }
+
+    void SCEVAnalyser::analyzeSingleLoop(NaturalLoop* loop)
+    {
+        if (!loop || !loop->cfg) return;
+
+        CFG* cfg = loop->cfg;
+
+        buildResultMap(cfg);
+        analyzeLoop(cfg, loop);
     }
 
     LoopCRInfo* SCEVAnalyser::getLoopInfo(NaturalLoop* loop) const

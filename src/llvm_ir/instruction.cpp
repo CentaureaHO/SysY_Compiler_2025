@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <llvm_ir/instruction.h>
 #include <llvm_ir/ir_block.h>
 #include <cassert>
@@ -1950,4 +1951,45 @@ unsigned getInstructionCost(LLVMIR::Instruction* inst)
         case LLVMIR::IROpCode::FCMP: return 1;  // 基本算术和比较指令
         default: return 1;                      // 其他指令的默认代价
     }
+}
+
+// 根据数据类型创建中转指令的实现
+LLVMIR::Instruction* createCopyInst(LLVMIR::DataType type, LLVMIR::Operand* src, LLVMIR::Operand* dest)
+{
+    Instruction* inst = nullptr;
+
+    switch (type)
+    {
+        case LLVMIR::DataType::I1:
+        case LLVMIR::DataType::I8:
+        case LLVMIR::DataType::I32:
+            // 创建 add i32 src, 0 指令
+            inst = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::ADD, type, src, getImmeI32Operand(0), dest);
+            break;
+        case LLVMIR::DataType::F32:
+            // 创建 fadd float src, 0.0 指令
+            inst = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::FADD, type, src, getImmeF32Operand(0.0f), dest);
+            break;
+        case LLVMIR::DataType::PTR:
+            // 创建 getelementptr ptr src, i32 0 指令 (不添加偏移)
+            inst = new LLVMIR::GEPInst(type, LLVMIR::DataType::I32, src, dest, {}, {getImmeI32Operand(0)});
+            break;
+        default:
+            std::cout << "Unsupported data type for createCopyInst: " << type << std::endl;
+            assert(false && "Unsupported data type for createCopyInst");
+    }
+
+    inst->comment = "Created by createCopyInst";
+    return inst;
+}
+
+string Instruction::toString()
+{
+    stringstream ss;
+    printIR(ss);
+
+    string str = ss.str();
+
+    str.erase(remove(str.begin(), str.end(), '\n'), str.end());
+    return str;
 }
