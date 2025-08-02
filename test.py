@@ -46,7 +46,7 @@ def execute_ir(input,output,opt,stdin,stdout,testout):
         print("\033[93mCompile Error on \033[0m"+input)
         return 0
     
-    result = execute(["clang-15",output,"-c","-o","tmp.o","-w"])
+    result = execute(["clang",output,"-c","-o","tmp.o","-w"])
     if(result.returncode != 0):
         print("\033[93mOutPut Error on \033[0m"+input)
         return 0

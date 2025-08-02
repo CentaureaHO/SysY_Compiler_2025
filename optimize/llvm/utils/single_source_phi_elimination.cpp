@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cassert>
 #include <algorithm>
+#include <unordered_set>
 
 namespace Transform
 {
@@ -23,8 +24,9 @@ namespace Transform
                 assert(cfg->LoopForest != nullptr && "Loop information is required when preserve_lcssa is enabled");
             }
 
-            bool                          changed = false;
-            std::vector<LLVMIR::PhiInst*> phis_to_remove;
+            bool                                 changed = false;
+            std::vector<LLVMIR::PhiInst*>        phis_to_remove;
+            std::unordered_set<LLVMIR::PhiInst*> processed_phis;
 
             for (const auto& [block_id, block] : cfg->block_id_to_block)
             {
@@ -35,9 +37,12 @@ namespace Transform
                     if (inst->opcode == LLVMIR::IROpCode::PHI)
                     {
                         auto* phi = static_cast<LLVMIR::PhiInst*>(inst);
+                        if (processed_phis.find(phi) != processed_phis.end()) continue;
+
                         if (processSingleSourcePhi(phi, block, cfg))
                         {
                             phis_to_remove.push_back(phi);
+                            processed_phis.insert(phi);
                             changed = true;
                         }
                     }
