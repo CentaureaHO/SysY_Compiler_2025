@@ -35,7 +35,6 @@ namespace LLVMIR
         std::unordered_set<Instruction*> erase_set;                            // 用于存储需要删除的指令
         std::unordered_map<int, std::multimap<int, Instruction*>> latest_map;  // 用于存储每个块的最新指令队列
         std::unordered_map<Instruction*, int> instorder;                       // 用于存储指令的顺序
-        std::unordered_set<Operand*>          cannot_move;                     // 用于存储不能移动的操作数
 
         std::unordered_set<Operand*> params;
 

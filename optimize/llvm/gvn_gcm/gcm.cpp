@@ -12,6 +12,7 @@
 #include <ostream>
 #include <unordered_set>
 #include <functional>
+#include <fstream>
 
 namespace LLVMIR
 {
@@ -111,6 +112,7 @@ namespace LLVMIR
             case IROpCode::FPTOSI:
             case IROpCode::SITOFP:
             case IROpCode::FPEXT:
+            case IROpCode::GETELEMENTPTR:
             {
                 // 因为我们这些指令根本不会涉及到全局变量，所以可以直接返回 true
                 return true;
@@ -122,60 +124,20 @@ namespace LLVMIR
             case IROpCode::CALL:
             {
                 if (isSafeCall(inst)) { return true; }
-                else
-                {
-                    // 如果别的情况是调用函数，不能移动
-                    if (inst->GetResultOperand()) { cannot_move.insert(inst->GetResultOperand()); }
-                    for (auto arg : inst->GetUsedOperands())
-                    {
-                        if (arg->type == OperandType::REG && params.find(arg) == params.end())
-                        {
-                            cannot_move.insert(arg);  // 如果是寄存器参数，不能移动
-                            // 如果这样,参数之前已经处理了,所以我们需要注意的是,需要删除已经处理过了的
-                            auto def = defuseAnalysis->getDef(cfg, arg);
-                            if (earliestBlockId.find(def) != earliestBlockId.end())
-                            {
-                                earliestBlockId.erase(def);
-                                latestBlockId.erase(def);
-                                instorder.erase(def);
-                            }
-                        }
-                    }
-                    return false;
-                }
-            }
-            case IROpCode::GETELEMENTPTR:
-            {
+                else { return false; }
             }
             case IROpCode::LOAD:
             {
+                // 其实可以,但是这里对samples没有意义了
+                return false;
             }
             case IROpCode::STORE:
             {
+                return true;
             }
             // PHI不能移动,所以这里用到PHI的也不能移动
             default:
             {
-                if (inst->GetResultOperand()) { cannot_move.insert(inst->GetResultOperand()); }
-                // 对于br指令，使用的也不能移动
-                switch (inst->opcode)
-                {
-                    case IROpCode::BR_COND:
-                    {
-                        auto br_condinst = dynamic_cast<BranchCondInst*>(inst);
-                        cannot_move.insert(br_condinst->cond);
-                    }
-                    break;
-                    case IROpCode::PHI:
-                    {
-
-                        return false;
-                    }
-                    break;
-                    default:
-                    {
-                    }
-                }
                 return false;
             }
         }
@@ -242,31 +204,24 @@ namespace LLVMIR
 
         // 判断是否满足控制依赖
         if (!isControlDependent(cfg, inst, E)) { E = currentBlockId; }
-
         if (domAnalyzer->isDomate(inst->block_id, E)) { return -1; }
         return E;
     }
 
     int GCM::ComputeLatestBlockId(CFG* cfg, Instruction* inst)
     {
-        // std::set<int> use_blocks;
-        // auto          result_op = inst->GetResultOperand();
-        // if (cannot_move.find(result_op) != cannot_move.end())
-        // {
-        //     cannot_move.insert(result_op);  // 如果结果操作数不能移动，记录下来
-        //     return -1;                      // 如果结果操作数不能移动，返回 -1
-        // }
-        // if (result_op == nullptr) { return -1; }
-        // for (auto& use : defuseAnalysis->getUses(cfg, result_op)) { use_blocks.insert(use->block_id); }
+        int L = -1;
 
-        // // 求 use block 的最近公共后支配点（post-dominator）
-        // int L = *use_blocks.begin();
-        // for (int blk : use_blocks)
-        // {
-        //     L = postdomAnalyzer->LCA(L, blk);  // 后支配树中的 LCA
-        // }
+        // 因为没有use,所以不用考虑
 
-        // return L;
+
+        // 这里只计算store指令
+        // auto store_inst = dynamic_cast<StoreInst*>(inst);
+        // auto ptr = store_inst->ptr;
+        // auto val = store_inst->val;
+        // auto def_ptr = defuseAnalysis->getDef(cfg, ptr);
+        // auto def_val = defuseAnalysis->getDef(cfg, val);
+        // if(!domAnalyzer->isDomate(def_ptr->block_id, ))
     }
 
     void GCM::GenerateInformation(CFG* func_cfg)
@@ -353,7 +308,6 @@ namespace LLVMIR
             latestBlockId.clear();
             erase_set.clear();
             latest_map.clear();
-            cannot_move.clear();
             instorder.clear();
             params.clear();
         }
