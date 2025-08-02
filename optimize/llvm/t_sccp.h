@@ -16,20 +16,21 @@ namespace Transform
 {
     /**
      * 表示一个精确的内存位置
-     * @details 由基址指针和一组索引构成，用于在SCCP中精确跟踪数组元素或结构体字段
+     * @details 由真正的基址指针和偏移量构成，用于在SCCP中精确跟踪数组元素或结构体字段
+     * 支持经过GEPStrengthReduce优化后的扁平化GEP指令
      */
     struct MemoryLocation
     {
-        LLVMIR::Operand* base_ptr;  ///< 基址指针 (通常是 alloca 或全局变量)
-        std::vector<int> indices;   ///< GEP指令的索引，用于定位到具体元素
+        LLVMIR::Operand* base_ptr;      ///< 基址指针 (alloca 或全局变量)
+        int element_offset;             ///< 从基址开始的元素偏移量
 
-        MemoryLocation() : base_ptr(nullptr) {}
-        MemoryLocation(LLVMIR::Operand* base) : base_ptr(base) {}
-        MemoryLocation(LLVMIR::Operand* base, const std::vector<int>& idx) : base_ptr(base), indices(idx) {}
+        MemoryLocation() : base_ptr(nullptr), element_offset(0) {}
+        MemoryLocation(LLVMIR::Operand* base) : base_ptr(base), element_offset(0) {}
+        MemoryLocation(LLVMIR::Operand* base, int offset) : base_ptr(base), element_offset(offset) {}
 
         bool operator==(const MemoryLocation& other) const
         {
-            return base_ptr == other.base_ptr && indices == other.indices;
+            return base_ptr == other.base_ptr && element_offset == other.element_offset;
         }
 
         bool operator!=(const MemoryLocation& other) const { return !(*this == other); }
@@ -47,7 +48,7 @@ namespace Transform
         size_t operator()(const MemoryLocation& loc) const
         {
             size_t hash = std::hash<void*>()(loc.base_ptr);
-            for (int idx : loc.indices) hash ^= std::hash<int>()(idx) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+            hash ^= std::hash<int>()(loc.element_offset) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
             return hash;
         }
     };
