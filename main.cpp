@@ -440,12 +440,14 @@ int main(int argc, char** argv)
                 loopRotate.Execute();
                 scevAnalyser.run();
 
+                std::cout << "Unrolled " << unrolled_count << " times" << std::endl;
+
             } while (unrolled_count > 0 && total_unrolled < max_unroll_count);
 
             makecfg.Execute();
             makedom.Execute();
             aa.run();
-            // tsccp.Execute();
+            tsccp.Execute();
         }
 
         makecfg.Execute();

@@ -31,15 +31,8 @@ namespace Transform
         if (!isValid()) return "INVALID";
 
         std::string result = "Base:" + std::to_string(reinterpret_cast<uintptr_t>(base_ptr));
-        if (indices.empty()) return result;
-
-        result += "[";
-        for (size_t i = 0; i < indices.size(); ++i)
-        {
-            if (i > 0) result += ",";
-            result += std::to_string(indices[i]);
-        }
-        result += "]";
+        result += "+";
+        result += std::to_string(element_offset);
 
         return result;
     }
@@ -109,8 +102,10 @@ namespace Transform
 
     void TSCCPPass::Execute()
     {
+        DBGINFO("=== TSCCP Pass Starting ===");
         for (const auto& [func_def, cfg] : ir->cfg)
         {
+            DBGINFO("Processing function: ", func_def->func_name);
             current_cfg_ = cfg;
 
             value_map_.clear();
@@ -1384,9 +1379,10 @@ namespace Transform
 
     /**
      * 解析指针操作数，获取内存位置
-     *   递归地处理GEP指令，直到找到基址指针（通常是alloca）。
-     *   将GEP的所有静态索引收集起来，形成一个精确的`MemoryLocation`。
+     *   递归地处理GEP指令链，直到找到真正的基址指针（alloca或全局变量）。
+     *   计算从基址开始的总元素偏移量，形成一个精确的`MemoryLocation`。
      *   如果任何索引是动态的（非常量），则认为地址无法确定，返回无效位置。
+     *   支持经过GEPStrengthReduce优化后的扁平化GEP指令链。
      */
     MemoryLocation TSCCPPass::getMemoryLocation(LLVMIR::Operand* ptr) const
     {
@@ -1431,7 +1427,7 @@ namespace Transform
                         return MemoryLocation();
                     }
 
-                    std::vector<int> indices = base_loc.indices;
+                    int current_offset = 0;
                     for (size_t i = 0; i < gep->idxs.size(); ++i)
                     {
                         auto* operand = gep->idxs[i];
@@ -1439,14 +1435,12 @@ namespace Transform
 
                         if (operand->type == LLVMIR::OperandType::IMMEI32)
                         {
-                            // 直接常量，可安全跟踪。初次运行pass时不会进入此分支
                             auto* imm = static_cast<LLVMIR::ImmeI32Operand*>(operand);
-                            indices.push_back(imm->value);
+                            current_offset += imm->value;
                             DBGINFO("\t\timmediate_value=", imm->value);
                         }
                         else if (operand->type == LLVMIR::OperandType::REG)
                         {
-                            // 对寄存器而言，需先检查其是否被确定为常量
                             auto* reg_operand = static_cast<LLVMIR::RegOperand*>(operand);
                             auto  def_it      = def_map_.find(reg_operand->reg_num);
                             if (def_it != def_map_.end())
@@ -1455,7 +1449,7 @@ namespace Transform
                                 LatticeValue reg_value     = getValue(defining_inst);
                                 if (reg_value.isConstant() && reg_value.getType() == LatticeValue::ValueType::INTEGER)
                                 {
-                                    indices.push_back(reg_value.getIntValue());
+                                    current_offset += reg_value.getIntValue();
                                     DBGINFO("\t\tregister_constant_value=", reg_value.getIntValue());
                                 }
                                 else
@@ -1480,27 +1474,17 @@ namespace Transform
                         }
                     }
 
-                    DBGINFO(
-                        "\tFinal indices: [",
-                        [&]() {
-                            std::string result;
-                            for (size_t i = 0; i < indices.size(); ++i)
-                            {
-                                if (i > 0) result += ",";
-                                result += std::to_string(indices[i]);
-                            }
-                            return result;
-                        }(),
-                        "]");
+                    int total_offset = base_loc.element_offset + current_offset;
+                    DBGINFO("\tTotal offset: ", total_offset, " (base: ", base_loc.element_offset, " + current: ", current_offset, ")");
 
-                    return MemoryLocation(base_loc.base_ptr, indices);
+                    return MemoryLocation(base_loc.base_ptr, total_offset);
                 }
 
-                if (defining_inst->opcode == LLVMIR::IROpCode::ALLOCA) return MemoryLocation(ptr);
+                if (defining_inst->opcode == LLVMIR::IROpCode::ALLOCA) return MemoryLocation(ptr, 0);
             }
         }
 
-        return MemoryLocation(ptr);
+        return MemoryLocation(ptr, 0);
     }
 
     /**
@@ -1912,8 +1896,7 @@ namespace Transform
             return true;
         }
 
-        if (loc1.indices == loc2.indices) return true;
-        if (!loc1.indices.empty() && !loc2.indices.empty()) return false;
+        if (loc1.element_offset == loc2.element_offset) return true;
 
         return true;
     }
