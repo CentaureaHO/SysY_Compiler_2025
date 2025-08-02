@@ -21,6 +21,7 @@ namespace StructuralTransform
             {
                 std::map<int, int> value_map;
                 auto*              guard_block = createGuardBlock(cfg, loop, value_map);
+                guard_block->comment           = "LoopRotateGuardBlock for loop " + std::to_string(loop->loop_id);
                 restructureLoop(cfg, loop, guard_block, value_map);
 
                 // std::cout << "LoopRotate applied to loop " << loop->loop_id << " (header: " << loop->header->block_id

@@ -199,6 +199,8 @@ namespace Analysis
         void run();
         void clear();
 
+        void analyzeSingleLoop(NaturalLoop* loop);
+
         LoopCRInfo*         getLoopInfo(NaturalLoop* loop) const;
         ChainOfRecurrences* getCR(NaturalLoop* loop, int reg_num) const;
         bool                isLoopInvariant(NaturalLoop* loop, int reg_num) const;

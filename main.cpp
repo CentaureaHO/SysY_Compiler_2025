@@ -55,10 +55,10 @@
 #include "optimize/llvm/gvn_gcm/gcm.h"
 // Blockid Set
 #include "optimize/llvm/setid.h"
+#include "optimize/llvm/loop/loop_full_unroll.h"
 // loop_strength_reduce
 #include "llvm/loop/loop_strength_reduce.h"
-//Loop Unroll
-#include "llvm/loop/loop_unroll.h"
+
 
 #define STR_PW 30
 #define INT_PW 8
@@ -75,7 +75,8 @@ extern vector<string> semanticErrMsgs;
 extern IR builder;
 size_t    errCnt = 0;
 
-bool no_reg_alloc = false;
+bool no_reg_alloc     = false;
+int  max_unroll_count = 100;
 
 string truncateString(const string& str, size_t width)
 {
@@ -104,6 +105,16 @@ int main(int argc, char** argv)
             else
             {
                 cerr << "Error: -o option requires a filename" << endl;
+                return 1;
+            }
+        }
+        else if (arg == "-uc")
+        {
+            if (i + 1 < argc)
+                max_unroll_count = stoi(argv[++i]);
+            else
+            {
+                cerr << "Error: -uc option requires a number" << endl;
                 return 1;
             }
         }
@@ -383,6 +394,7 @@ int main(int argc, char** argv)
         makedom.Execute();
         loopAnalysis.Execute();
         loopSimplify.Execute();
+        lcssa.Execute();
         loopRotate.Execute();
 
         for (const auto& [func_def, cfg] : builder.cfg)
@@ -405,6 +417,7 @@ int main(int argc, char** argv)
         makedom.Execute();
         loopAnalysis.Execute();
         loopSimplify.Execute();
+        lcssa.Execute();
         loopRotate.Execute();
         scevAnalyser.run();
         // scevAnalyser.printAllResults();
@@ -415,10 +428,35 @@ int main(int argc, char** argv)
         dce.Execute();
         scevAnalyser.run();
 
-        if (optimizeLevel >= 2) {}
+        // Constant Loop Full Unroll
+        {
+            int unrolled_count = 0;
+            int total_unrolled = 0;
 
-        StructuralTransform::LoopUnrollPass lu(&builder,&scevAnalyser,&makedom);
-        lu.Execute();
+            do {
+                Transform::LoopFullUnrollPass loopUnrollPass(&builder, &scevAnalyser);
+                loopUnrollPass.Execute();
+
+                auto stats     = loopUnrollPass.getUnrollStats();
+                unrolled_count = stats.second;
+                total_unrolled += unrolled_count;
+
+                makecfg.Execute();
+                makedom.Execute();
+                loopAnalysis.Execute();
+                loopSimplify.Execute();
+                lcssa.Execute();
+                loopRotate.Execute();
+                scevAnalyser.run();
+
+            } while (unrolled_count > 0 && total_unrolled < max_unroll_count);
+
+            makecfg.Execute();
+            makedom.Execute();
+            aa.run();
+            // tsccp.Execute();
+        }
+        if (optimizeLevel >= 2) {}
 
         makecfg.Execute();
         
