@@ -992,9 +992,7 @@ bool LinearScanRegisterAssigner::tryAssignRegister()
         phy_regs.occupyMem(mem, in.reg.data_type->getDataWidth(), in);
         regAlloc[vreg] = {true, mem};
 
-        /*
-                if (intervals.size() > 200)
-                    continue;*/
+        if (intervals.size() > 200) continue;
 
         double current_spill_weight = in.calculateSpillWeight();
 

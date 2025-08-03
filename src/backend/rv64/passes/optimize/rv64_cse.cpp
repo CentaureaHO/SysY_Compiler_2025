@@ -170,6 +170,7 @@ namespace Backend::RV64::Passes::Optimize
             {
                 case Backend::RV64::RV64InstType::ADD:
                 case Backend::RV64::RV64InstType::MUL:
+                case Backend::RV64::RV64InstType::ADDW:
                     return (
                         (rv1->rs1.reg_num == rv2->rs1.reg_num && rv1->rs2.reg_num == rv2->rs2.reg_num &&
                             rv1->rs1.is_virtual == rv2->rs1.is_virtual && rv1->rs2.is_virtual == rv2->rs2.is_virtual) ||
@@ -177,7 +178,6 @@ namespace Backend::RV64::Passes::Optimize
                             rv1->rs1.is_virtual == rv2->rs2.is_virtual && rv1->rs2.is_virtual == rv2->rs1.is_virtual));
 
                 case Backend::RV64::RV64InstType::ADDI:
-                case Backend::RV64::RV64InstType::ADDW:
                     if (rv1->use_label != rv2->use_label) return false;
                     if (rv1->use_label)
                     {
@@ -222,6 +222,11 @@ namespace Backend::RV64::Passes::Optimize
             {
                 case Backend::RV64::RV64InstType::ADD:
                     info.operand_list.push_back("ADD");
+                    info.operand_list.push_back(registerToString(rv_inst->rs1));
+                    info.operand_list.push_back(registerToString(rv_inst->rs2));
+                    break;
+                case Backend::RV64::RV64InstType::ADDW:
+                    info.operand_list.push_back("ADDW");
                     info.operand_list.push_back(registerToString(rv_inst->rs1));
                     info.operand_list.push_back(registerToString(rv_inst->rs2));
                     break;
