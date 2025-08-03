@@ -331,6 +331,17 @@ int main(int argc, char** argv)
 
         makecfg.Execute();
         makedom.Execute();
+
+        // Eliminate unused array
+        Analysis::EDefUseAnalysis edefUseAnalysis(&builder);
+        edefUseAnalysis.run();
+        // edefUseAnalysis.print();
+        UnusedArrEliminator unusedelimator(&builder, &edefUseAnalysis);
+        unusedelimator.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
+
         // TSCCP - Sparse Conditional Constant Propagation
         Transform::TSCCPPass tsccp(&builder, &aa);
         tsccp.Execute();
@@ -351,13 +362,6 @@ int main(int argc, char** argv)
 
         makecfg.Execute();
         makedom.Execute();
-
-        // Eliminate unused array
-        Analysis::EDefUseAnalysis edefUseAnalysis(&builder);
-        edefUseAnalysis.run();
-        // edefUseAnalysis.print();
-        UnusedArrEliminator unusedelimator(&builder, &edefUseAnalysis);
-        unusedelimator.Execute();
 
         // DCE
         DefUseAnalysisPass DCEDefUse(&builder);
