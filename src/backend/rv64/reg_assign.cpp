@@ -99,14 +99,8 @@ void Interval::mergeSegments()
 
     for (const auto& seg : segs)
     {
-        if (merged.empty() || merged.back().end < seg.start)
-        {
-            merged.push_back(seg);
-        }
-        else
-        {
-            merged.back().end = std::max(merged.back().end, seg.end);
-        }
+        if (merged.empty() || merged.back().end < seg.start) { merged.push_back(seg); }
+        else { merged.back().end = std::max(merged.back().end, seg.end); }
     }
 
     segs = std::move(merged);
@@ -133,14 +127,8 @@ std::pair<Interval, Interval> Interval::splitAt(int split_point) const
 
     for (const auto& seg : segs)
     {
-        if (seg.end <= split_point)
-        {
-            left.segs.push_back(seg);
-        }
-        else if (seg.start >= split_point)
-        {
-            right.segs.push_back(seg);
-        }
+        if (seg.end <= split_point) { left.segs.push_back(seg); }
+        else if (seg.start >= split_point) { right.segs.push_back(seg); }
         else
         {
             if (seg.start < split_point) { left.segs.emplace_back(seg.start, split_point); }
@@ -902,10 +890,7 @@ bool LinearScanRegisterAssigner::tryAssignRegister()
 
         for (const auto& copy_source : copy_sources[vreg])
         {
-            if (!copy_source.is_virtual)
-            {
-                preferred_regs.push_back(copy_source.reg_num);
-            }
+            if (!copy_source.is_virtual) { preferred_regs.push_back(copy_source.reg_num); }
             else
             {
                 if (regAlloc.find(copy_source) != regAlloc.end() && !regAlloc[copy_source].first)
@@ -1007,9 +992,9 @@ bool LinearScanRegisterAssigner::tryAssignRegister()
         phy_regs.occupyMem(mem, in.reg.data_type->getDataWidth(), in);
         regAlloc[vreg] = {true, mem};
 
-/*
-        if (intervals.size() > 200)
-            continue;*/
+        /*
+                if (intervals.size() > 200)
+                    continue;*/
 
         double current_spill_weight = in.calculateSpillWeight();
 
