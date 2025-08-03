@@ -133,7 +133,7 @@ namespace LLVMIR
             }
             case IROpCode::STORE:
             {
-                return true;
+                return false;
             }
             // PHI不能移动,所以这里用到PHI的也不能移动
             default:
