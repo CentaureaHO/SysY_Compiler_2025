@@ -1338,10 +1338,8 @@ namespace Transform
 
     /**
      * 处理load指令
-     *   1. 若`memory_state_`有相关记录 -> 顺序可达块上刚定义的store，可直接使用其值。
-     *   2. 如果在`memory_state_`中找不到，说明值可能在之前的某个基本块中定义。
-     *      此时调用`findDefiningStore`，利用支配树信息做后向查找。
-     *   3. 如果两种方法都找不到，则该值不明确，返回BOTTOM
+     *   使用reaching definitions分析，收集所有可能到达该load的store指令
+     *   并合并它们的值来确定load的结果
      */
     LatticeValue TSCCPPass::handleLoadInstruction(LLVMIR::LoadInst* load)
     {
@@ -1353,28 +1351,37 @@ namespace Transform
             return LatticeValue::createBottom();
         }
 
-        DBGINFO("LOAD: ", load_loc.toString(), " from memory state with ", memory_state_.size(), " entries");
+        DBGINFO("LOAD: ", load_loc.toString(), " using reaching definitions analysis");
 
-        auto it = memory_state_.find(load_loc);
-        if (it != memory_state_.end())
+        std::vector<LLVMIR::StoreInst*> reaching_stores = collectReachingStores(load, load_loc);
+
+        if (reaching_stores.empty())
         {
-            DBGINFO("\tFOUND in memory state: ", (it->second.isConstant() ? "CONSTANT" : ""));
-            return it->second;
+            DBGINFO("\tNo reaching stores found, returning BOTTOM");
+            return LatticeValue::createBottom();
         }
 
-        DBGINFO("\tNOT FOUND in memory state, trying dominance-based search");
+        LatticeValue result;
+        bool         first = true;
 
-        LLVMIR::StoreInst* defining_store = nullptr;
-        if (findDefiningStore(load, load_loc, defining_store))
+        for (auto* store : reaching_stores)
         {
-            LatticeValue stored_value = getValueForOperand(defining_store->val);
-            DBGINFO("\tFOUND defining store via dominance analysis: ",
-                (stored_value.isConstant() ? "CONSTANT" : "NON_CONSTANT"));
-            return stored_value;
+            LatticeValue store_value = getValueForOperand(store->val);
+            DBGINFO("\tReaching store in block ",
+                store->block_id,
+                " with value: ",
+                (store_value.isConstant() ? "CONSTANT" : "NON_CONSTANT"));
+
+            if (first)
+            {
+                result = store_value;
+                first  = false;
+            }
+            else { result = result.meet(store_value); }
         }
 
-        DBGINFO("\tCannot determine value safely, returning BOTTOM");
-        return LatticeValue::createBottom();
+        DBGINFO("\tFinal load result: ", (result.isConstant() ? "CONSTANT" : (result.isBottom() ? "BOTTOM" : "TOP")));
+        return result;
     }
 
     /**
@@ -1937,6 +1944,209 @@ namespace Transform
         }
 
         return false;
+    }
+
+    /**
+     * 分析指定路径上内存位置的值
+     * 从from_block向前追溯，查找最近的对指定内存位置的store
+     */
+    LatticeValue TSCCPPass::analyzePathValue(const MemoryLocation& loc, int from_block, int to_block)
+    {
+        if (from_block == to_block) return LatticeValue();
+
+        auto block_it = current_cfg_->block_id_to_block.find(from_block);
+        if (block_it == current_cfg_->block_id_to_block.end()) return LatticeValue();
+
+        auto* block = block_it->second;
+        DBGINFO("\tAnalyzing path value in block ", from_block, " for location ", loc.toString());
+
+        for (auto it = block->insts.rbegin(); it != block->insts.rend(); ++it)
+        {
+            auto* inst = *it;
+
+            if (inst->opcode == LLVMIR::IROpCode::STORE)
+            {
+                auto*          store     = static_cast<LLVMIR::StoreInst*>(inst);
+                MemoryLocation store_loc = getMemoryLocation(store->ptr);
+
+                if (store_loc.isValid() && store_loc == loc)
+                {
+                    LatticeValue stored_value = getValueForOperand(store->val);
+                    DBGINFO("\t\tFound defining store in block ",
+                        from_block,
+                        ", value: ",
+                        (stored_value.isConstant() ? "CONSTANT" : "NON_CONSTANT"));
+                    return stored_value;
+                }
+
+                if (store_loc.isValid() && mayAlias(store_loc, loc))
+                {
+                    DBGINFO("\t\tFound potentially aliasing store in block ", from_block);
+                    return LatticeValue::createBottom();
+                }
+            }
+            else if (inst->opcode == LLVMIR::IROpCode::CALL)
+            {
+                auto* call = static_cast<LLVMIR::CallInst*>(inst);
+                if (!isSafeFunction(call->func_name))
+                {
+                    DBGINFO("\t\tFound unsafe function call in block ", from_block);
+                    return LatticeValue::createBottom();
+                }
+            }
+        }
+
+        DBGINFO("\t\tNo defining store found in block ", from_block, ", trying dominance search");
+
+        auto dom_it = ir->DomTrees.find(current_cfg_);
+        if (dom_it == ir->DomTrees.end()) return LatticeValue();
+
+        auto* dom_analyzer = dom_it->second;
+        if (static_cast<size_t>(from_block) >= dom_analyzer->imm_dom.size()) return LatticeValue();
+
+        int dominator = dom_analyzer->imm_dom[from_block];
+        if (dominator == -1) return LatticeValue();
+
+        auto dom_block_it = current_cfg_->block_id_to_block.find(dominator);
+        if (dom_block_it == current_cfg_->block_id_to_block.end()) return LatticeValue();
+
+        auto* dom_block = dom_block_it->second;
+        for (auto it = dom_block->insts.rbegin(); it != dom_block->insts.rend(); ++it)
+        {
+            auto* inst = *it;
+
+            if (inst->opcode == LLVMIR::IROpCode::STORE)
+            {
+                auto*          store     = static_cast<LLVMIR::StoreInst*>(inst);
+                MemoryLocation store_loc = getMemoryLocation(store->ptr);
+
+                if (store_loc.isValid() && store_loc == loc)
+                {
+                    LatticeValue stored_value = getValueForOperand(store->val);
+                    DBGINFO("\t\tFound defining store in dominator block ",
+                        dominator,
+                        ", value: ",
+                        (stored_value.isConstant() ? "CONSTANT" : "NON_CONSTANT"));
+                    return stored_value;
+                }
+
+                if (store_loc.isValid() && mayAlias(store_loc, loc))
+                {
+                    DBGINFO("\t\tFound potentially aliasing store in dominator block ", dominator);
+                    return LatticeValue::createBottom();
+                }
+            }
+            else if (inst->opcode == LLVMIR::IROpCode::CALL)
+            {
+                auto* call = static_cast<LLVMIR::CallInst*>(inst);
+                if (!isSafeFunction(call->func_name))
+                {
+                    DBGINFO("\t\tFound unsafe function call in dominator block ", dominator);
+                    return LatticeValue::createBottom();
+                }
+            }
+        }
+
+        DBGINFO("\t\tNo value found for path analysis, returning TOP");
+        return LatticeValue();
+    }
+
+    /**
+     * 收集所有可能到达load指令的store指令
+     */
+    std::vector<LLVMIR::StoreInst*> TSCCPPass::collectReachingStores(LLVMIR::LoadInst* load, const MemoryLocation& loc)
+    {
+        std::vector<LLVMIR::StoreInst*> reaching_stores;
+        std::set<int>                   visited_blocks;
+
+        DBGINFO("\tStarting reaching definitions analysis for load in block ", load->block_id);
+
+        findReachingStoresRecursive(loc, load->block_id, reaching_stores, visited_blocks, load);
+
+        DBGINFO("\tFound ", reaching_stores.size(), " reaching stores");
+        return reaching_stores;
+    }
+
+    /**
+     * 递归查找可能到达指定基本块的所有store指令
+     */
+    void TSCCPPass::findReachingStoresRecursive(const MemoryLocation& loc, int block_id,
+        std::vector<LLVMIR::StoreInst*>& reaching_stores, std::set<int>& visited_blocks, LLVMIR::LoadInst* target_load)
+    {
+        if (visited_blocks.count(block_id)) return;
+        visited_blocks.insert(block_id);
+
+        auto block_it = current_cfg_->block_id_to_block.find(block_id);
+        if (block_it == current_cfg_->block_id_to_block.end()) return;
+
+        auto* block = block_it->second;
+        DBGINFO("\t\tSearching in block ", block_id);
+
+        bool found_defining_store        = false;
+        bool found_conflicting_operation = false;
+
+        auto start_it = block->insts.rbegin();
+        auto end_it   = block->insts.rend();
+
+        if (block_id == target_load->block_id)
+        {
+            auto load_pos = std::find(block->insts.begin(), block->insts.end(), target_load);
+            if (load_pos != block->insts.end())
+            {
+                end_it = std::reverse_iterator<std::deque<LLVMIR::Instruction*>::iterator>(load_pos);
+            }
+        }
+
+        for (auto it = start_it; it != end_it; ++it)
+        {
+            auto* inst = *it;
+
+            if (inst->opcode == LLVMIR::IROpCode::STORE)
+            {
+                auto*          store     = static_cast<LLVMIR::StoreInst*>(inst);
+                MemoryLocation store_loc = getMemoryLocation(store->ptr);
+
+                if (store_loc.isValid() && store_loc == loc)
+                {
+                    reaching_stores.push_back(store);
+                    found_defining_store = true;
+                    DBGINFO("\t\t\tFound defining store in block ", block_id);
+                }
+                else if (store_loc.isValid() && mayAlias(store_loc, loc))
+                {
+                    DBGINFO("\t\t\tFound potentially aliasing store in block ", block_id);
+                    found_conflicting_operation = true;
+                    break;
+                }
+            }
+            else if (inst->opcode == LLVMIR::IROpCode::CALL)
+            {
+                auto* call = static_cast<LLVMIR::CallInst*>(inst);
+                if (!isSafeFunction(call->func_name))
+                {
+                    DBGINFO("\t\t\tFound unsafe function call in block ", block_id);
+                    found_conflicting_operation = true;
+                    break;
+                }
+            }
+        }
+
+        if (found_conflicting_operation) return;
+
+        if (!found_defining_store || block_id != target_load->block_id)
+        {
+            if (block_id > 0 && static_cast<size_t>(block_id) < current_cfg_->invG_id.size())
+            {
+                for (int pred_id : current_cfg_->invG_id[block_id])
+                {
+                    if (isEdgeExecutable(pred_id, block_id))
+                    {
+                        DBGINFO("\t\t\tRecursing to predecessor block ", pred_id);
+                        findReachingStoresRecursive(loc, pred_id, reaching_stores, visited_blocks, target_load);
+                    }
+                }
+            }
+        }
     }
 
 }  // namespace Transform

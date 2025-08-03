@@ -170,6 +170,14 @@ namespace Transform
         MemoryLocation getMemoryLocation(LLVMIR::Operand* ptr) const;
         /// 当load的值不在memory_state_中时，通过支配树向上查找定义该值的store指令
         bool findDefiningStore(LLVMIR::LoadInst* load, const MemoryLocation& loc, LLVMIR::StoreInst*& defining_store);
+        /// 分析指定路径上内存位置的值
+        LatticeValue analyzePathValue(const MemoryLocation& loc, int from_block, int to_block);
+        /// 收集所有可能到达load指令的store指令
+        std::vector<LLVMIR::StoreInst*> collectReachingStores(LLVMIR::LoadInst* load, const MemoryLocation& loc);
+        /// 递归查找可能到达指定基本块的所有store指令
+        void findReachingStoresRecursive(const MemoryLocation& loc, int block_id,
+            std::vector<LLVMIR::StoreInst*>& reaching_stores, std::set<int>& visited_blocks,
+            LLVMIR::LoadInst* target_load);
 
         /// 判断一个函数调用是否"安全"（即不修改可被分析的内存）
         bool isSafeFunction(const std::string& func_name) const;
