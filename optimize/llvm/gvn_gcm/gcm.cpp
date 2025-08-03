@@ -220,7 +220,6 @@ namespace LLVMIR
     {
         if (op && (op->type == OperandType::REG || op->type == OperandType::GLOBAL))
         {
-            std::cout << "op is " << op->getName() << std::endl;
             if (Base_ptr)
             {
                 if (aliasAnalyser->queryAlias(Base_ptr, op, cfg))
@@ -259,6 +258,7 @@ namespace LLVMIR
             blocks.pop();
             visited.insert(curr_block);
             ret.insert(curr_block);
+            if (curr_block == end) { continue; }
             auto block        = cfg->block_id_to_block[curr_block];
             auto control_inst = block->insts.back();
             if (control_inst->opcode == IROpCode::BR_COND)
@@ -284,7 +284,6 @@ namespace LLVMIR
             else if (control_inst->opcode == IROpCode::RET) { continue; }
             else
             {
-                std::cout << "[Fatal]: Impossible case";
                 return std::unordered_set<int>{};
             }
         }
@@ -337,7 +336,6 @@ namespace LLVMIR
         // 处理postdominator
         if (used_blocks.empty())
         {
-            std::cout << "[warning]: seems impossable" << std::endl;
             return -1;
         }
         else
@@ -444,10 +442,6 @@ namespace LLVMIR
                     {
                         for (auto& [_, moved_inst] : latest_map[id])
                         {
-                            if (moved_inst->opcode == IROpCode::CALL)
-                            {
-                                auto call_inst = dynamic_cast<CallInst*>(moved_inst);
-                            }
                             new_insts.push_back(moved_inst);
                             moved_inst->block_id = id;
                         }
