@@ -53,11 +53,8 @@ namespace Analysis
                         array_alias[cfg][arg] = arg;
                     }
                 }
-                std::cout << "Processing CFG: " << cfg->func->func_def->func_name << std::endl;
                 processSingleCFG(cfg);
-                std::cout << "here" << std::endl;
                 processPHI(cfg);
-                std::cout << "here2" << std::endl;
             }
         }
     }

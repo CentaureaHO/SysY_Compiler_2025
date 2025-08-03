@@ -1,0 +1,10 @@
+int main()
+{
+    int cond = getint();
+    int a[2] = {1,2};
+    if(cond) {
+        a[0] = 2;
+    }
+    putint(a[0]);
+    return 0;
+}

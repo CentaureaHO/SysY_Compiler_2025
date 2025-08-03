@@ -413,10 +413,14 @@ void BranchUncondInst::Rename(std::map<int, int>& replace) {}
 
 GlbvarDefInst::GlbvarDefInst(DataType t, string n, Operand* v)
     : Instruction(IROpCode::GLOBAL_VAR), type(t), name(n), init(v)
-{}
+{
+    block_id = -1;
+}
 GlbvarDefInst::GlbvarDefInst(DataType t, string n, VarAttribute a)
     : Instruction(IROpCode::GLOBAL_VAR), type(t), name(n), arr_init(a)
-{}
+{
+    block_id = -1;
+}
 namespace
 {
     void glb_arr_init(ostream& s, DataType type, VarAttribute& v, int dimDph, int beginPos, int endPos)

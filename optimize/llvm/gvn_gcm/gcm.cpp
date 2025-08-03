@@ -13,7 +13,6 @@
 #include <queue>
 #include <unordered_set>
 #include <functional>
-#include <fstream>
 
 namespace LLVMIR
 {
@@ -219,28 +218,29 @@ namespace LLVMIR
 
     void GCM::handler(CFG* cfg, Operand* op, std::unordered_set<int>& used_blocks, Operand* Base_ptr, Operand* Base_val)
     {
-        if (op)
+        if (op && (op->type == OperandType::REG || op->type == OperandType::GLOBAL))
         {
             std::cout << "op is " << op->getName() << std::endl;
-            auto Base_result_op = arralias_analysis->traceToBase(cfg, op);
-            if (Base_result_op)
+            if (Base_ptr)
             {
-                std::cout << "Base ptr is " << Base_result_op << std::endl;
-                if (Base_ptr)
+                if (aliasAnalyser->queryAlias(Base_ptr, op, cfg))
                 {
-                    if (aliasAnalyser->queryAlias(Base_ptr, Base_result_op, cfg))
+                    auto def = defuseAnalysis->getDef(cfg, op);
+                    if (def)
                     {
-                        auto id = defuseAnalysis->getDef(cfg, Base_result_op)->block_id;
-                        if (!used_blocks.count(id)) { used_blocks.insert(id); }
+                        if (!used_blocks.count(def->block_id)) { used_blocks.insert(def->block_id); }
                     }
                 }
-                if (Base_val)
+            }
+            if (Base_val && Base_val->type == OperandType::REG)
+            {
+                // 如果是地址访问
+                if (aliasAnalyser->queryAlias(Base_val, op, cfg))
                 {
-                    // 如果是地址访问
-                    if (aliasAnalyser->queryAlias(Base_val, Base_result_op, cfg))
+                    auto def = defuseAnalysis->getDef(cfg, op);
+                    if (def)
                     {
-                        auto id = defuseAnalysis->getDef(cfg, Base_result_op)->block_id;
-                        if (!used_blocks.count(id)) { used_blocks.insert(id); }
+                        if (!used_blocks.count(def->block_id)) { used_blocks.insert(def->block_id); }
                     }
                 }
             }
@@ -251,11 +251,13 @@ namespace LLVMIR
     {
         std::unordered_set<int> ret    = {};
         std::queue<int>         blocks = {};
+        std::unordered_set<int> visited;
         blocks.push(start);
         while (!blocks.empty())
         {
             auto curr_block = blocks.front();
             blocks.pop();
+            visited.insert(curr_block);
             ret.insert(curr_block);
             auto block        = cfg->block_id_to_block[curr_block];
             auto control_inst = block->insts.back();
@@ -266,8 +268,8 @@ namespace LLVMIR
                 {
                     auto true_label  = dynamic_cast<LabelOperand*>(br_inst->true_label);
                     auto false_label = dynamic_cast<LabelOperand*>(br_inst->false_label);
-                    if (true_label) blocks.push(true_label->label_num);
-                    if (false_label) blocks.push(false_label->label_num);
+                    if (true_label && !visited.count(true_label->label_num)) blocks.push(true_label->label_num);
+                    if (false_label && !visited.count(false_label->label_num)) blocks.push(false_label->label_num);
                 }
             }
             else if (control_inst->opcode == IROpCode::BR_UNCOND)
@@ -276,7 +278,7 @@ namespace LLVMIR
                 if (brun_inst)
                 {
                     auto target_label = dynamic_cast<LabelOperand*>(brun_inst->target_label);
-                    if (target_label) blocks.push(target_label->label_num);
+                    if (target_label && !visited.count(target_label->label_num)) blocks.push(target_label->label_num);
                 }
             }
             else if (control_inst->opcode == IROpCode::RET) { continue; }
@@ -397,12 +399,17 @@ namespace LLVMIR
             erase_set.insert(inst);
 
             // 记录下需要放到最早可执行块E的指令,注意除去 terminator
-            if (E == -1)
-            {
-                std::cout << "Warning: E is -1 for instruction: " << inst->opcode << std::endl;
-                continue;  // 如果 E 是 -1，说明没有可执行的块，跳
-            }
             latest_map[E].insert({instorder[inst], inst});
+        }
+
+        // 处理sink的
+        for (auto& [inst, L] : latestBlockId)
+        {
+            if (L == inst->block_id) continue;
+
+            erase_set.insert(inst);
+
+            latest_map[L].insert({instorder[inst], inst});
         }
     }
 
@@ -461,8 +468,10 @@ namespace LLVMIR
             ExecuteInSingleCFG(cfg);
             // 生成移动辅助信息
             GenerateInformation(cfg);
+
             // 移除指令
             EraseInstructions(cfg);
+
             // 移动指令
             MoveInstructions(cfg);
 
@@ -495,7 +504,6 @@ namespace LLVMIR
                 if (!IsSafeInst(func_cfg, inst)) { continue; }
                 if (inst->opcode == IROpCode::STORE)
                 {
-                    std::cout << "Handling store is in block " << inst->block_id << std::endl;
                     int L = 0;
                     L     = ComputeLatestBlockId(func_cfg, inst);
                     if (L != -1)
