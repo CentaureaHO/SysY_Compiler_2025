@@ -11,7 +11,7 @@
 #include <fstream>   // 添加文件输出支持
 
 // #define DEBUG_DSE
-// #define LOG_DSE_REMOVAL  // 控制删除记录输出的开关
+#define LOG_DSE_REMOVAL  // 控制删除记录输出的开关
 
 namespace LLVMIR
 {
