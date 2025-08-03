@@ -120,7 +120,8 @@ namespace Backend::RV64::Passes::Optimize
                 case Backend::RV64::RV64InstType::ADDI:
                 case Backend::RV64::RV64InstType::ADD:
                 case Backend::RV64::RV64InstType::MUL:
-                case Backend::RV64::RV64InstType::ADDW: return true;
+                case Backend::RV64::RV64InstType::ADDW:
+                case Backend::RV64::RV64InstType::LA: return true;
                 default: return false;
             }
         }
@@ -191,6 +192,7 @@ namespace Backend::RV64::Passes::Optimize
                     }
 
                 case Backend::RV64::RV64InstType::LUI:
+                case Backend::RV64::RV64InstType::LA:
                     if (rv1->use_label != rv2->use_label) return false;
                     if (rv1->use_label) { return rv1->label.name == rv2->label.name; }
                     else { return rv1->imme == rv2->imme; }
@@ -233,6 +235,13 @@ namespace Backend::RV64::Passes::Optimize
                 case Backend::RV64::RV64InstType::ADDI:
                     info.operand_list.push_back("ADDI");
                     info.operand_list.push_back(registerToString(rv_inst->rs1));
+                    if (rv_inst->use_label)
+                        info.operand_list.push_back(rv_inst->label.name);
+                    else
+                        info.operand_list.push_back(std::to_string(rv_inst->imme));
+                    break;
+                case Backend::RV64::RV64InstType::LA:
+                    info.operand_list.push_back("LA");
                     if (rv_inst->use_label)
                         info.operand_list.push_back(rv_inst->label.name);
                     else
