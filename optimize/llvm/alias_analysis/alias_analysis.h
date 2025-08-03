@@ -86,6 +86,7 @@ namespace Analysis
         void handlePtrPropagation(CFG* cfg, std::unordered_map<int, MemLocation>& locations);
         void collectMemAccesses(CFG* cfg, const std::unordered_map<int, MemLocation>& locations);
         bool checkSameBaseWithDistinctOffset(LLVMIR::Operand* p1, LLVMIR::Operand* p2, CFG* cfg);
+        bool checkIdenticalGEP(LLVMIR::Operand* p1, LLVMIR::Operand* p2, CFG* cfg);
 
       public:
         AliasAnalyser(LLVMIR::IR* ir);

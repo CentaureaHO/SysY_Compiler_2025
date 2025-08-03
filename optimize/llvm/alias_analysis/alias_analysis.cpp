@@ -351,6 +351,74 @@ namespace Analysis
         return false;
     }
 
+    bool AliasAnalyser::checkIdenticalGEP(LLVMIR::Operand* p1, LLVMIR::Operand* p2, CFG* cfg)
+    {
+        // 必须都是寄存器操作数
+        if (p1->type != LLVMIR::OperandType::REG || p2->type != LLVMIR::OperandType::REG) { return false; }
+
+        // 获取寄存器编号
+        auto* r1 = static_cast<LLVMIR::RegOperand*>(p1);
+        auto* r2 = static_cast<LLVMIR::RegOperand*>(p2);
+
+        // 查找定义这些寄存器的指令
+        auto def_it1 = def_map[cfg].find(r1->reg_num);
+        auto def_it2 = def_map[cfg].find(r2->reg_num);
+
+        if (def_it1 == def_map[cfg].end() || def_it2 == def_map[cfg].end()) { return false; }
+
+        // 获取定义指令
+        auto* inst1 = def_it1->second;
+        auto* inst2 = def_it2->second;
+
+        // 检查两个定义都是GEP指令
+        if (!inst1 || !inst2 || inst1->opcode != LLVMIR::IROpCode::GETELEMENTPTR ||
+            inst2->opcode != LLVMIR::IROpCode::GETELEMENTPTR)
+        {
+            return false;
+        }
+
+        // 转换为GEP指令
+        auto* gep1 = static_cast<LLVMIR::GEPInst*>(inst1);
+        auto* gep2 = static_cast<LLVMIR::GEPInst*>(inst2);
+
+        // 检查基指针是否相同
+        if (gep1->base_ptr->getName() != gep2->base_ptr->getName()) { return false; }
+
+        // 检查索引数量是否相同
+        if (gep1->idxs.size() != gep2->idxs.size()) { return false; }
+
+        // 检查每个索引是否完全相同
+        for (size_t i = 0; i < gep1->idxs.size(); ++i)
+        {
+            auto* idx1 = gep1->idxs[i];
+            auto* idx2 = gep2->idxs[i];
+
+            // 如果都是常量索引
+            if (idx1->type == LLVMIR::OperandType::IMMEI32 && idx2->type == LLVMIR::OperandType::IMMEI32)
+            {
+                auto* imm1 = static_cast<LLVMIR::ImmeI32Operand*>(idx1);
+                auto* imm2 = static_cast<LLVMIR::ImmeI32Operand*>(idx2);
+                if (imm1->value != imm2->value) { return false; }
+            }
+            // 如果都是寄存器索引
+            else if (idx1->type == LLVMIR::OperandType::REG && idx2->type == LLVMIR::OperandType::REG)
+            {
+                auto* reg1 = static_cast<LLVMIR::RegOperand*>(idx1);
+                auto* reg2 = static_cast<LLVMIR::RegOperand*>(idx2);
+
+                // 需要递归检查这些寄存器是否相等(可能来自相同的计算)
+                if (reg1->reg_num != reg2->reg_num) { return false; }
+            }
+            // 索引类型不同
+            else if (idx1->type != idx2->type) { return false; }
+            // 其他类型的索引，直接比较名称
+            else if (idx1->getName() != idx2->getName()) { return false; }
+        }
+
+        // 所有条件都满足，确定是相同的GEP指令
+        return true;
+    }
+
     std::vector<LLVMIR::Operand*> AliasAnalyser::getWritePtrs(CFG* cfg)
     {
         std::vector<LLVMIR::Operand*> result;
@@ -445,6 +513,8 @@ namespace Analysis
 
     AliasAnalyser::AliasResult AliasAnalyser::queryAlias(LLVMIR::Operand* op1, LLVMIR::Operand* op2, CFG* cfg)
     {
+        if (checkIdenticalGEP(op1, op2, cfg)) { return MustAlias; }
+
         AliasResult result = NoAlias;
         if (reg_locations.count(cfg))
         {

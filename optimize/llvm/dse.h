@@ -2,9 +2,7 @@
 
 #include "cfg.h"
 #include "llvm_ir/instruction.h"
-#include "llvm_ir/ir_block.h"
 #include "llvm/alias_analysis/alias_analysis.h"
-#include "llvm/memdep/memdep.h"
 #include "llvm/pass.h"
 #include <unordered_map>
 #include <unordered_set>
