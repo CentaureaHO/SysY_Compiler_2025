@@ -13,7 +13,9 @@ namespace Transform
     class LoopFullUnrollPass : public Pass
     {
       private:
-        static constexpr int    MAX_UNROLLED_INSTRUCTIONS = 2048;
+        static constexpr int    MAX_UNROLLED_INSTRUCTIONS = 1024;  // 降低到1024，参考旧实现
+        static constexpr int    MAX_LOOP_BLOCKS           = 5;     // 循环基本块数量限制
+        static constexpr int    MAX_GLOBAL_INSTRUCTIONS   = 2048;  // 全局指令数限制
         Analysis::SCEVAnalyser* scev_analyser_;
         int                     loops_processed_;
         int                     loops_fully_unrolled_;
@@ -39,6 +41,7 @@ namespace Transform
         using BlockMap = std::map<LLVMIR::IRBlock*, LLVMIR::IRBlock*>;
 
         int  getLoopSize(NaturalLoop* loop) const;
+        int  getGlobalInstructionCount() const;  // 检查全局指令数
         void logResult(NaturalLoop* loop, bool success, const std::string& reason) const;
     };
 

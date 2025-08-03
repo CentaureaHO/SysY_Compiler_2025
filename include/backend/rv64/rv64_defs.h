@@ -302,9 +302,10 @@ namespace Backend::RV64
     {
         std::string _asm;
         RV64OpType type;
+        int        latency;  // Instruction latency for WAW optimization
 
         OpInfo();
-        OpInfo(std::string a, RV64OpType t);
+        OpInfo(std::string a, RV64OpType t, int lat = 1);
     };
 
     class Register
@@ -444,6 +445,7 @@ namespace Backend::RV64
         std::vector<Register*> getReadRegs() override;
         std::vector<Register*> getWriteRegs() override;
         void                   replaceAllOperands(const std::map<int, int>& reg_replace_map) override;
+        int                    getLatency() const;
     };
 
     class PhiInst : public Instruction

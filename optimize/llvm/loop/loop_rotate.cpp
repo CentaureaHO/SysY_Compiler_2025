@@ -38,19 +38,19 @@ namespace StructuralTransform
     {
         if (!loop)
         {
-            std::cout << "LoopRotatePass: loop is nullptr" << std::endl;
+            // std::cout << "LoopRotatePass: loop is nullptr" << std::endl;
             return false;
         }
 
         if (loop->exit_nodes.size() != 1 || loop->latches.size() != 1 || loop->loop_nodes.size() <= 1)
         {
-            std::cout << "LoopRotatePass: not single exit | not single latch | multiple nodes" << std::endl;
+            // std::cout << "LoopRotatePass: not single exit | not single latch | multiple nodes" << std::endl;
             return false;
         }
 
         if (loop->exiting_nodes.find(loop->header) == loop->exiting_nodes.end())
         {
-            std::cout << "LoopRotatePass: header is not exiting node" << std::endl;
+            // std::cout << "LoopRotatePass: header is not exiting node" << std::endl;
             return false;
         }
 

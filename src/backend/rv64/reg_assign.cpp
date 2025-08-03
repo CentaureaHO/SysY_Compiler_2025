@@ -1,6 +1,7 @@
 #include <backend/rv64/reg_assign.h>
 #include <iostream>
 #include <set>
+#include <unordered_set>
 #include <algorithm>
 #include <iterator>
 #include <queue>
@@ -14,7 +15,7 @@ Interval::Interval(Register r) : reg(r), ref_cnt(0) {}
 Interval::Segmant::Segmant(int s, int e) : start(s), end(e) {}
 
 bool Interval::Segmant::inside(int ins_id) const { return start <= ins_id && ins_id < end; }
-bool Interval::Segmant::intersect(Interval::Segmant s) const
+bool Interval::Segmant::intersect(const Interval::Segmant& s) const
 {
     return inside(s.start) || inside((s.end - 1 > s.start) ? s.end - 1 : s.start) || s.inside(start) ||
            s.inside((end - 1 > start) ? end - 1 : start);
@@ -64,6 +65,108 @@ bool Interval::intersect(const Interval& i) const
     }
 
     return false;
+}
+
+int Interval::getIntervalLength() const
+{
+    int total_length = 0;
+    for (const auto& seg : segs) { total_length += (seg.end - seg.start); }
+    return total_length;
+}
+
+double Interval::calculateSpillWeight() const
+{
+    int length = getIntervalLength();
+    if (length == 0) return 0.0;
+    return static_cast<double>(ref_cnt) / static_cast<double>(length);
+}
+
+void Interval::addSegment(int start, int end)
+{
+    if (start >= end) return;
+
+    segs.emplace_back(start, end);
+    std::sort(segs.begin(), segs.end());
+    mergeSegments();
+}
+
+void Interval::mergeSegments()
+{
+    if (segs.size() <= 1) return;
+
+    std::vector<Segmant> merged;
+    merged.reserve(segs.size());
+
+    for (const auto& seg : segs)
+    {
+        if (merged.empty() || merged.back().end < seg.start)
+        {
+            merged.push_back(seg);
+        }
+        else
+        {
+            merged.back().end = std::max(merged.back().end, seg.end);
+        }
+    }
+
+    segs = std::move(merged);
+}
+
+Interval Interval::unionWith(const Interval& other) const
+{
+    Interval result(reg);
+    result.ref_cnt = ref_cnt + other.ref_cnt;
+
+    result.segs.reserve(segs.size() + other.segs.size());
+    result.segs.insert(result.segs.end(), segs.begin(), segs.end());
+    result.segs.insert(result.segs.end(), other.segs.begin(), other.segs.end());
+
+    std::sort(result.segs.begin(), result.segs.end());
+    result.mergeSegments();
+
+    return result;
+}
+
+std::pair<Interval, Interval> Interval::splitAt(int split_point) const
+{
+    Interval left(reg), right(reg);
+
+    for (const auto& seg : segs)
+    {
+        if (seg.end <= split_point)
+        {
+            left.segs.push_back(seg);
+        }
+        else if (seg.start >= split_point)
+        {
+            right.segs.push_back(seg);
+        }
+        else
+        {
+            if (seg.start < split_point) { left.segs.emplace_back(seg.start, split_point); }
+            if (split_point < seg.end) { right.segs.emplace_back(split_point, seg.end); }
+        }
+    }
+
+    int left_length  = left.getIntervalLength();
+    int right_length = right.getIntervalLength();
+    int total_length = left_length + right_length;
+
+    if (total_length > 0)
+    {
+        left.ref_cnt  = (ref_cnt * left_length) / total_length;
+        right.ref_cnt = ref_cnt - left.ref_cnt;
+    }
+
+    return {left, right};
+}
+
+void Interval::print() const
+{
+    std::cerr << "Interval for reg " << reg.reg_num << (reg.is_virtual ? " (virtual)" : " (physical)")
+              << " ref_cnt=" << ref_cnt << " segments: ";
+    for (const auto& seg : segs) { std::cerr << "[" << seg.start << "," << seg.end << ") "; }
+    std::cerr << std::endl;
 }
 
 AssignRecord::AssignRecord() { phy_occupied.resize(64); }
@@ -169,6 +272,105 @@ int AssignRecord::getValidMem(Interval in)
     }
 
     return static_cast<int>(mem_occupied.size()) - free_cnt;
+}
+
+std::vector<Interval> AssignRecord::getConflictIntervals(const Interval& interval) const
+{
+    std::vector<Interval> result;
+
+    for (const auto& phy_intervals : phy_occupied)
+    {
+        for (const auto& other_interval : phy_intervals)
+        {
+            if (interval.reg.data_type->data_type == other_interval.reg.data_type->data_type &&
+                interval.intersect(other_interval))
+            {
+                result.push_back(other_interval);
+            }
+        }
+    }
+
+    return result;
+}
+
+bool AssignRecord::releaseReg(int phy_id, const Interval& interval)
+{
+    auto& intervals = phy_occupied[phy_id];
+    for (auto it = intervals.begin(); it != intervals.end(); ++it)
+    {
+        if (it->reg.reg_num == interval.reg.reg_num && it->reg.is_virtual == interval.reg.is_virtual)
+        {
+            intervals.erase(it);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool AssignRecord::releaseMem(int offset, int size, const Interval& interval)
+{
+    size /= 4;
+    bool released = false;
+
+    for (int i = offset; i < offset + size; ++i)
+    {
+        if (i < static_cast<int>(mem_occupied.size()))
+        {
+            auto& intervals = mem_occupied[i];
+            for (auto it = intervals.begin(); it != intervals.end(); ++it)
+            {
+                if (it->reg.reg_num == interval.reg.reg_num && it->reg.is_virtual == interval.reg.is_virtual)
+                {
+                    intervals.erase(it);
+                    released = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    return released;
+}
+
+int AssignRecord::getIdleReg(
+    const Interval& interval, const std::vector<int>& preferred_regs, const std::vector<int>& noprefer_regs, bool save)
+{
+    auto isRegAvailable = [&](int reg_id) -> bool {
+        const auto& occupied = phy_occupied[reg_id];
+
+        if (occupied.empty()) { return true; }
+
+        for (const auto& other_interval : occupied)
+        {
+            if (interval.intersect(other_interval)) { return false; }
+        }
+        return true;
+    };
+
+    for (int reg_id : preferred_regs)
+    {
+        if (isRegAvailable(reg_id)) { return reg_id; }
+    }
+
+    const auto&             valid_regs = getValidRegs(interval, save);
+    std::unordered_set<int> preferred_set(preferred_regs.begin(), preferred_regs.end());
+    std::unordered_set<int> noprefer_set(noprefer_regs.begin(), noprefer_regs.end());
+
+    for (int reg_id : valid_regs)
+    {
+        if (preferred_set.count(reg_id)) continue;
+        if (noprefer_set.count(reg_id)) continue;
+        if (isRegAvailable(reg_id)) { return reg_id; }
+    }
+
+    for (int reg_id : noprefer_regs)
+    {
+        if (std::find(valid_regs.begin(), valid_regs.end(), reg_id) == valid_regs.end()) { continue; }
+
+        if (isRegAvailable(reg_id)) { return reg_id; }
+    }
+
+    return -1;
 }
 
 void BaseRegisterAssigner::tagBFSID()
@@ -396,6 +598,7 @@ void LinearScanRegisterAssigner::assignRegisters(std::vector<Function*>& functio
         dfsOrderBlocks.clear();
         regAlloc.clear();
         phy_regs.clear();
+        copy_sources.clear();
 
         cur_func = worklist.front();
         worklist.pop();
@@ -409,6 +612,9 @@ void LinearScanRegisterAssigner::assignRegisters(std::vector<Function*>& functio
             sort(interval.segs.begin(),
                 interval.segs.end(),
                 [](const Interval::Segmant& a, const Interval::Segmant& b) { return a.start < b.start; });
+
+        collectCopyInformation();
+        coalesceRegisters();
 
         if (tryAssignRegister())
         {
@@ -691,34 +897,102 @@ bool LinearScanRegisterAssigner::tryAssignRegister()
             }
         }
 
-        const auto& valid_regs = phy_regs.getValidRegs(in, in_param);
+        std::vector<int> preferred_regs;
+        std::vector<int> noprefer_regs;
 
-        for (int reg : valid_regs)
+        for (const auto& copy_source : copy_sources[vreg])
         {
-            bool        conflict = false;
-            const auto& occupied = phy_regs.phy_occupied[reg];
-
-            if (occupied.empty())
+            if (!copy_source.is_virtual)
             {
-                phy_reg_id = reg;
-                break;
+                preferred_regs.push_back(copy_source.reg_num);
             }
-
-            for (const auto& oti : occupied)
+            else
             {
-                if (in.intersect(oti))
+                if (regAlloc.find(copy_source) != regAlloc.end() && !regAlloc[copy_source].first)
                 {
-                    conflict = true;
-                    break;
+                    preferred_regs.push_back(regAlloc[copy_source].second);
+                }
+            }
+        }
+
+        for (const auto& seg : in.segs)
+        {
+            int def_point = seg.start;
+
+            auto inst_it = insmap.find(def_point);
+            if (inst_it == insmap.end() || inst_it->second == nullptr) continue;
+
+            Instruction* current_inst = inst_it->second;
+            if (current_inst->inst_type != InstType::RV64) continue;
+
+            RV64Inst* rv_inst = static_cast<RV64Inst*>(current_inst);
+            int       latency = rv_inst->getLatency();
+
+            const int look_back = 5;
+            for (int i = 1; i <= look_back; ++i)
+            {
+                auto prev_it = insmap.find(def_point - i);
+                if (prev_it == insmap.end()) break;
+
+                if (prev_it->second == nullptr) break;
+
+                Instruction* prev_inst = prev_it->second;
+                if (prev_inst->inst_type != InstType::RV64) continue;
+
+                RV64Inst* prev_rv_inst = static_cast<RV64Inst*>(prev_inst);
+                int       prev_latency = prev_rv_inst->getLatency();
+
+                if (prev_latency >= i)
+                {
+                    auto write_regs = prev_inst->getWriteRegs();
+                    if (write_regs.size() == 1)
+                    {
+                        Register* written_reg = write_regs[0];
+                        if (!written_reg->is_virtual)
+                        {
+                            if (written_reg->reg_num != static_cast<int>(REG::x0))
+                            {
+                                noprefer_regs.push_back(written_reg->reg_num);
+                            }
+                        }
+                        else if (regAlloc.find(*written_reg) != regAlloc.end() && !regAlloc[*written_reg].first)
+                        {
+                            noprefer_regs.push_back(regAlloc[*written_reg].second);
+                        }
+                    }
                 }
             }
 
-            if (!conflict)
+            for (int i = 1; i <= latency && i <= 3; ++i)
             {
-                phy_reg_id = reg;
-                break;
+                auto next_it = insmap.find(def_point + i);
+                if (next_it == insmap.end()) break;
+
+                if (next_it->second == nullptr) break;
+
+                Instruction* next_inst = next_it->second;
+                if (next_inst->inst_type != InstType::RV64) continue;
+
+                auto write_regs = next_inst->getWriteRegs();
+                if (write_regs.size() == 1)
+                {
+                    Register* written_reg = write_regs[0];
+                    if (!written_reg->is_virtual)
+                    {
+                        if (written_reg->reg_num != static_cast<int>(REG::x0))
+                        {
+                            noprefer_regs.push_back(written_reg->reg_num);
+                        }
+                    }
+                    else if (regAlloc.find(*written_reg) != regAlloc.end() && !regAlloc[*written_reg].first)
+                    {
+                        noprefer_regs.push_back(regAlloc[*written_reg].second);
+                    }
+                }
             }
         }
+
+        phy_reg_id = phy_regs.getIdleReg(in, preferred_regs, noprefer_regs, in_param);
 
         if (phy_reg_id >= 0)
         {
@@ -727,14 +1001,187 @@ bool LinearScanRegisterAssigner::tryAssignRegister()
             continue;
         }
 
-        // assert(false);
         spilled = true;
+
         int mem = phy_regs.getValidMem(in);
         phy_regs.occupyMem(mem, in.reg.data_type->getDataWidth(), in);
         regAlloc[vreg] = {true, mem};
+
+/*
+        if (intervals.size() > 200)
+            continue;*/
+
+        double current_spill_weight = in.calculateSpillWeight();
+
+        const Interval* best_victim         = nullptr;
+        int             best_victim_phy_reg = -1;
+        double          best_victim_weight  = current_spill_weight;
+
+        const auto& valid_regs = phy_regs.getValidRegs(in, in_param);
+
+        for (int reg_id : valid_regs)
+        {
+            const auto& occupied = phy_regs.phy_occupied[reg_id];
+
+            for (const auto& other_interval : occupied)
+            {
+                if (!other_interval.reg.is_virtual) continue;
+
+                if (in.intersect(other_interval))
+                {
+                    double conflict_weight = other_interval.calculateSpillWeight();
+                    if (conflict_weight < best_victim_weight)
+                    {
+                        best_victim_weight  = conflict_weight;
+                        best_victim         = &other_interval;
+                        best_victim_phy_reg = reg_id;
+                    }
+                }
+            }
+        }
+
+        if (best_victim != nullptr && best_victim_phy_reg >= 0)
+        {
+            swapRegisterSpill(*best_victim, best_victim_phy_reg, in, mem);
+        }
     }
 
     return !spilled;
+}
+
+void LinearScanRegisterAssigner::swapRegisterSpill(
+    const Interval& victim_interval, int victim_phy_reg, const Interval& current_interval, int mem_offset)
+{
+    phy_regs.releaseReg(victim_phy_reg, victim_interval);
+    phy_regs.releaseMem(mem_offset, current_interval.reg.data_type->getDataWidth(), current_interval);
+
+    phy_regs.occupyReg(victim_phy_reg, current_interval);
+    regAlloc[current_interval.reg] = {false, victim_phy_reg};
+
+    int victim_mem = phy_regs.getValidMem(victim_interval);
+    phy_regs.occupyMem(victim_mem, victim_interval.reg.data_type->getDataWidth(), victim_interval);
+    regAlloc[victim_interval.reg] = {true, victim_mem};
+}
+
+Register LinearScanRegisterAssigner::findCoalescingRoot(std::map<Register, Register>& coal_result, Register vreg)
+{
+    Register ret = vreg;
+    while (!(ret.reg_num == coal_result[ret].reg_num && ret.is_virtual == coal_result[ret].is_virtual))
+    {
+        ret = coal_result[ret];
+    }
+    return coal_result[vreg] = ret;
+}
+
+void LinearScanRegisterAssigner::collectCopyInformation()
+{
+    copy_sources.clear();
+
+    for (auto& [block_id, block] : cur_func->cfg->blocks)
+    {
+        for (auto& inst : block->insts)
+        {
+            if (inst->inst_type == InstType::RV64)
+            {
+                RV64Inst* rv_inst = static_cast<RV64Inst*>(inst);
+
+                if (rv_inst->op == RV64InstType::ADD)
+                {
+                    auto read_regs  = inst->getReadRegs();
+                    auto write_regs = inst->getWriteRegs();
+
+                    if (read_regs.size() == 2 && write_regs.size() == 1)
+                    {
+                        Register* src1 = read_regs[0];
+                        Register* src2 = read_regs[1];
+                        Register* dst  = write_regs[0];
+
+                        if ((!src1->is_virtual && src1->reg_num == static_cast<int>(REG::x0)) ||
+                            (!src2->is_virtual && src2->reg_num == static_cast<int>(REG::x0)))
+                        {
+                            Register* real_src =
+                                (src1->is_virtual || src1->reg_num != static_cast<int>(REG::x0)) ? src1 : src2;
+
+                            copy_sources[*dst].push_back(*real_src);
+                            copy_sources[*real_src].push_back(*dst);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void LinearScanRegisterAssigner::coalesceRegisters()
+{
+    std::map<Register, Register> coal_result;
+
+    for (auto& [reg, interval] : intervals)
+    {
+        if (reg.is_virtual) { coal_result[reg] = reg; }
+    }
+
+    for (auto& [reg, interval] : intervals)
+    {
+        if (!reg.is_virtual) continue;
+
+        for (auto& other : copy_sources[reg])
+        {
+            if (!other.is_virtual) continue;
+
+            if (coal_result.find(reg) == coal_result.end()) continue;
+            if (coal_result.find(other) == coal_result.end()) continue;
+
+            Register root_reg       = findCoalescingRoot(coal_result, reg);
+            Register other_root_reg = findCoalescingRoot(coal_result, other);
+
+            if (root_reg.reg_num == other_root_reg.reg_num && root_reg.is_virtual == other_root_reg.is_virtual)
+                continue;
+
+            if (intervals[root_reg].intersect(intervals[other_root_reg])) continue;
+
+            for (const auto& seg : intervals[other_root_reg].segs) { intervals[root_reg].segs.push_back(seg); }
+            intervals[root_reg].ref_cnt += intervals[other_root_reg].ref_cnt;
+
+            std::sort(intervals[root_reg].segs.begin(),
+                intervals[root_reg].segs.end(),
+                [](const Interval::Segmant& a, const Interval::Segmant& b) { return a.start < b.start; });
+
+            for (auto& src : copy_sources[other_root_reg])
+            {
+                if (!src.is_virtual)
+                {
+                    copy_sources[src].push_back(root_reg);
+                    copy_sources[root_reg].push_back(src);
+                }
+            }
+
+            coal_result[other_root_reg] = root_reg;
+
+            intervals.erase(other_root_reg);
+        }
+    }
+
+    for (auto& [block_id, block] : cur_func->cfg->blocks)
+    {
+        for (auto& inst : block->insts)
+        {
+            for (auto& reg : inst->getReadRegs())
+            {
+                if (reg->is_virtual && coal_result.find(*reg) != coal_result.end())
+                {
+                    *reg = findCoalescingRoot(coal_result, *reg);
+                }
+            }
+            for (auto& reg : inst->getWriteRegs())
+            {
+                if (reg->is_virtual && coal_result.find(*reg) != coal_result.end())
+                {
+                    *reg = findCoalescingRoot(coal_result, *reg);
+                }
+            }
+        }
+    }
 }
 
 // GraphColoringRegisterAssigner实现
@@ -752,10 +1199,24 @@ void Liveness::UpdateDefUse()
     reverse_mapping.clear();
 
     size_t reg_index = 0;
-    MAX_REGISTERS    = 0;
 
+    std::unordered_set<Register> unique_registers;
     for (auto& [id, block] : current_func->cfg->blocks)
-        for (auto& inst : block->insts) MAX_REGISTERS += inst->getReadRegs().size() + inst->getWriteRegs().size();
+    {
+        for (auto& inst : block->insts)
+        {
+            for (auto& reg_r : inst->getReadRegs()) unique_registers.insert(*reg_r);
+            for (auto& reg_w : inst->getWriteRegs()) unique_registers.insert(*reg_w);
+        }
+    }
+
+    MAX_REGISTERS = unique_registers.size();
+
+    for (const auto& reg : unique_registers)
+    {
+        register_to_index[reg] = reg_index++;
+        reverse_mapping.push_back(reg);
+    }
 
     for (auto& [id, block] : current_func->cfg->blocks)
     {
@@ -766,21 +1227,11 @@ void Liveness::UpdateDefUse()
         {
             for (auto& reg_r : inst->getReadRegs())
             {
-                if (register_to_index.find(*reg_r) == register_to_index.end())
-                {
-                    register_to_index[*reg_r] = reg_index++;
-                    reverse_mapping.push_back(*reg_r);
-                }
                 size_t index = register_to_index[*reg_r];
                 if (!DEF[id].test(index)) { USE[id].set(index); }
             }
             for (auto& reg_w : inst->getWriteRegs())
             {
-                if (register_to_index.find(*reg_w) == register_to_index.end())
-                {
-                    register_to_index[*reg_w] = reg_index++;
-                    reverse_mapping.push_back(*reg_w);
-                }
                 size_t index = register_to_index[*reg_w];
                 if (!USE[id].test(index)) { DEF[id].set(index); }
             }
@@ -803,6 +1254,10 @@ void Liveness::Execute()
 
     bool changed = true;
 
+    Cele::dynamic_bitset temp_out(MAX_REGISTERS);
+    Cele::dynamic_bitset temp_in(MAX_REGISTERS);
+    Cele::dynamic_bitset temp_def_complement(MAX_REGISTERS);
+
     while (changed)
     {
         changed = false;
@@ -812,19 +1267,25 @@ void Liveness::Execute()
             auto& cur_block = block;
             auto  cur_id    = cur_block->label_num;
 
-            Cele::dynamic_bitset out(MAX_REGISTERS);
-            for (auto& succ : current_func->cfg->graph[cur_id]) { out |= IN[succ->label_num]; }
-            if (out != OUT[cur_id])
+            temp_out.reset();
+            for (auto& succ : current_func->cfg->graph[cur_id]) { temp_out |= IN[succ->label_num]; }
+
+            if (temp_out != OUT[cur_id])
             {
                 changed     = true;
-                OUT[cur_id] = out;
+                OUT[cur_id] = temp_out;
             }
 
-            Cele::dynamic_bitset in = USE[cur_id] | (OUT[cur_id] & ~DEF[cur_id]);
-            if (in != IN[cur_id])
+            temp_def_complement = DEF[cur_id];
+            temp_def_complement.flip();
+            temp_in = OUT[cur_id];
+            temp_in &= temp_def_complement;
+            temp_in |= USE[cur_id];
+
+            if (temp_in != IN[cur_id])
             {
                 changed    = true;
-                IN[cur_id] = in;
+                IN[cur_id] = temp_in;
             }
         }
     }

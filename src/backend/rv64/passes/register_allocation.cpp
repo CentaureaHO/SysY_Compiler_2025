@@ -17,9 +17,7 @@ namespace Backend::RV64::Passes
 
     std::unique_ptr<BaseRegisterAssigner> RegisterAllocationPass::createAllocator(const std::string& type)
     {
-        if (type == "linear_scan") { return std::make_unique<LinearScanRegisterAssigner>(); }
-        else if (type == "graph_coloring") { return std::make_unique<GraphColoringRegisterAssigner>(); }
-        return std::make_unique<LinearScanRegisterAssigner>();
+        return std::make_unique<RegisterAssigner>();
     }
 
 }  // namespace Backend::RV64::Passes
