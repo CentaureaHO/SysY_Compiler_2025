@@ -133,7 +133,7 @@ namespace LLVMIR
             }
             case IROpCode::STORE:
             {
-                return false;
+                return true;
             }
             // PHI不能移动,所以这里用到PHI的也不能移动
             default:
@@ -213,7 +213,6 @@ namespace LLVMIR
         int L = -1;
 
         // 因为没有use,所以不用考虑
-
 
         // 这里只计算store指令
         // auto store_inst = dynamic_cast<StoreInst*>(inst);
