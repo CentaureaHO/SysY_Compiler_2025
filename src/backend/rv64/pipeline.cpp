@@ -23,7 +23,7 @@ namespace Backend::RV64
         functions_.clear();
 
         std::vector<std::unique_ptr<Backend::BasePass>> passes =
-            PassSetGenerator::generate(ir_, functions_, ir_->global_def, out_);
+            PassSetGenerator::generate(ir_, functions_, ir_->global_def, out_, optLevel_);
 
         for (auto& pass : passes) { passManager_.addPass(std::move(pass)); }
     }

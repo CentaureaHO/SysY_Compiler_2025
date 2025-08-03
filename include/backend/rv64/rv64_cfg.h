@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <map>
 #include <vector>
+#include <memory>
+#include <dom_analyzer.h>
 
 namespace Backend::RV64
 {
@@ -18,6 +20,9 @@ namespace Backend::RV64
         Block* entry_block;
         Block* ret_block;
 
+        std::unique_ptr<Cele::Algo::DomAnalyzer> dom_tree;
+        std::unique_ptr<Cele::Algo::DomAnalyzer> post_dom_tree;
+
       public:
         CFG();
 
@@ -25,6 +30,8 @@ namespace Backend::RV64
         void addNewBlock(int id, Block* b);
         void makeEdge(int from, int to);
         void removeEdge(int from, int to);
+
+        std::vector<std::vector<int>> buildGraphAdjacencyList() const;
     };
 }  // namespace Backend::RV64
 

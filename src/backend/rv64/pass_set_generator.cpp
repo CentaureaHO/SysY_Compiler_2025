@@ -12,13 +12,21 @@ using namespace Backend::RV64::Passes;
 
 extern bool no_reg_alloc;
 
-std::vector<std::unique_ptr<Backend::BasePass>> PassSetGenerator::generate(
-    LLVMIR::IR* ir, std::vector<Function*>& functions, std::vector<LLVMIR::Instruction*>& glb_defs, std::ostream& out)
+std::vector<std::unique_ptr<Backend::BasePass>> PassSetGenerator::generate(LLVMIR::IR* ir,
+    std::vector<Function*>& functions, std::vector<LLVMIR::Instruction*>& glb_defs, std::ostream& out, int optLevel)
 {
     std::vector<std::unique_ptr<Backend::BasePass>> passes;
 
     passes.emplace_back(std::make_unique<InstructionSelectionPass>(ir, functions, glb_defs));
+    passes.emplace_back(std::make_unique<Optimize::RV64MakeDomTreePass>(functions));
     passes.emplace_back(std::make_unique<FrameLoweringPass>(functions));
+    if (optLevel)
+    {
+        passes.emplace_back(std::make_unique<ArithmeticStrengthReductionPass>(functions));
+        passes.emplace_back(std::make_unique<Optimize::Peehole::SSAPeepholePass>(functions));
+        passes.emplace_back(std::make_unique<Optimize::Peehole::SSADeadDefEliminatePass>(functions));
+        // passes.emplace_back(std::make_unique<Optimize::RV64CSEPass>(functions));
+    }
     passes.emplace_back(std::make_unique<PhiDestructionPass>(functions));
     passes.emplace_back(std::make_unique<ImmediateFMoveEliminationPass>(functions));
     passes.emplace_back(std::make_unique<ImmediateIMoveEliminationPass>(functions));

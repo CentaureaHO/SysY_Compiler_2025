@@ -24,7 +24,8 @@ namespace Backend::RV64
     {
       public:
         static std::vector<std::unique_ptr<Backend::BasePass>> generate(LLVMIR::IR* ir,
-            std::vector<Function*>& functions, std::vector<LLVMIR::Instruction*>& glb_defs, std::ostream& out);
+            std::vector<Function*>& functions, std::vector<LLVMIR::Instruction*>& glb_defs, std::ostream& out,
+            int optLevel);
 
       private:
         PassSetGenerator() = delete;

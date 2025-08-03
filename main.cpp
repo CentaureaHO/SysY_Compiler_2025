@@ -503,6 +503,11 @@ int main(int argc, char** argv)
         // TODO: partially unroll loop
 
         makecfg.Execute();
+        makedom.Execute();
+        loopAnalysis.Execute();
+        inlinePass.Execute();
+
+        makecfg.Execute();
     }
 
     if (step == "-llvm")

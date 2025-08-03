@@ -17,7 +17,7 @@ DataType *Backend::RV64::FLOAT32 = &FLOAT32OBJ, *Backend::RV64::FLOAT64 = &FLOAT
 OpInfo::OpInfo() : _asm("NULL") {}
 OpInfo::OpInfo(string a, RV64OpType t) : _asm(a), type(t) {}
 
-Register::Register() : reg_num(-1), data_type(INT32), is_virtual(false) {}
+Register::Register() : reg_num(-1), data_type(INT32), is_virtual(true) {}
 Register::Register(int reg, DataType* dt, bool is_v) : reg_num(reg), data_type(dt), is_virtual(is_v) {}
 bool Register::operator<(Register other) const
 {
@@ -87,6 +87,7 @@ vector<Register*> RV64Inst::getReadRegs()
         case RV64OpType::B: return {&rs1, &rs2};
         case RV64OpType::U: return {};
         case RV64OpType::J: return {};
+        case RV64OpType::R4: return {&rs1, &rs2, &rs3};
         case RV64OpType::CALL:
         {
             vector<Register*> res;
@@ -138,6 +139,7 @@ vector<Register*> RV64Inst::getWriteRegs()
         case RV64OpType::B: return {};
         case RV64OpType::U: return {&rd};
         case RV64OpType::J: return {&rd};
+        case RV64OpType::R4: return {&rd};
         case RV64OpType::CALL:
         {
             static bool              init = false;
@@ -158,6 +160,29 @@ vector<Register*> RV64Inst::getWriteRegs()
     return {};
 }
 
+void RV64Inst::replaceAllOperands(const std::map<int, int>& reg_replace_map)
+{
+    if (rd.is_virtual && reg_replace_map.find(rd.reg_num) != reg_replace_map.end())
+    {
+        rd.reg_num = reg_replace_map.at(rd.reg_num);
+    }
+
+    if (rs1.reg_num != -1 && rs1.is_virtual && reg_replace_map.find(rs1.reg_num) != reg_replace_map.end())
+    {
+        rs1.reg_num = reg_replace_map.at(rs1.reg_num);
+    }
+
+    if (rs2.reg_num != -1 && rs2.is_virtual && reg_replace_map.find(rs2.reg_num) != reg_replace_map.end())
+    {
+        rs2.reg_num = reg_replace_map.at(rs2.reg_num);
+    }
+
+    if (rs3.reg_num != -1 && rs3.is_virtual && reg_replace_map.find(rs3.reg_num) != reg_replace_map.end())
+    {
+        rs3.reg_num = reg_replace_map.at(rs3.reg_num);
+    }
+}
+
 PhiInst::PhiInst(Register r) : Instruction(InstType::PHI), res_reg(r) {}
 PhiInst::~PhiInst()
 {
@@ -165,15 +190,42 @@ PhiInst::~PhiInst()
 }
 vector<Register*> PhiInst::getReadRegs()
 {
-    cerr << "Not implemented" << endl;
-    assert(false);
-    return {};
+    vector<Register*> read_regs;
+    for (auto& [label, operand] : phi_list)
+    {
+        if (operand->operand_type == OperandType::REG)
+        {
+            RegOperand* reg_operand = (RegOperand*)operand;
+            read_regs.push_back(&reg_operand->reg);
+        }
+    }
+    return read_regs;
 }
 vector<Register*> PhiInst::getWriteRegs()
 {
-    cerr << "Not implemented" << endl;
-    assert(false);
-    return {};
+    vector<Register*> write_regs;
+    write_regs.push_back(&res_reg);
+    return write_regs;
+}
+
+void PhiInst::replaceAllOperands(const std::map<int, int>& reg_replace_map)
+{
+    if (res_reg.is_virtual && reg_replace_map.find(res_reg.reg_num) != reg_replace_map.end())
+    {
+        res_reg.reg_num = reg_replace_map.at(res_reg.reg_num);
+    }
+
+    for (auto& [label, operand] : phi_list)
+    {
+        if (operand->operand_type == OperandType::REG)
+        {
+            RegOperand* reg_operand = (RegOperand*)operand;
+            if (reg_operand->reg.is_virtual && reg_replace_map.find(reg_operand->reg.reg_num) != reg_replace_map.end())
+            {
+                reg_operand->reg.reg_num = reg_replace_map.at(reg_operand->reg.reg_num);
+            }
+        }
+    }
 }
 
 MoveInst::MoveInst(DataType* dt, Operand* s, Operand* d) : Instruction(InstType::MOVE), data_type(dt), src(s), dst(d) {}
@@ -184,15 +236,44 @@ MoveInst::~MoveInst()
 }
 vector<Register*> MoveInst::getReadRegs()
 {
-    cerr << "Not implemented" << endl;
-    assert(false);
-    return {};
+    vector<Register*> read_regs;
+    if (src->operand_type == OperandType::REG)
+    {
+        RegOperand* reg_src = (RegOperand*)src;
+        read_regs.push_back(&reg_src->reg);
+    }
+    return read_regs;
 }
 vector<Register*> MoveInst::getWriteRegs()
 {
-    cerr << "Not implemented" << endl;
-    assert(false);
-    return {};
+    vector<Register*> write_regs;
+    if (dst->operand_type == OperandType::REG)
+    {
+        RegOperand* reg_dst = (RegOperand*)dst;
+        write_regs.push_back(&reg_dst->reg);
+    }
+    return write_regs;
+}
+
+void MoveInst::replaceAllOperands(const std::map<int, int>& reg_replace_map)
+{
+    if (src->operand_type == OperandType::REG)
+    {
+        RegOperand* reg_src = (RegOperand*)src;
+        if (reg_src->reg.is_virtual && reg_replace_map.find(reg_src->reg.reg_num) != reg_replace_map.end())
+        {
+            reg_src->reg.reg_num = reg_replace_map.at(reg_src->reg.reg_num);
+        }
+    }
+
+    if (dst->operand_type == OperandType::REG)
+    {
+        RegOperand* reg_dst = (RegOperand*)dst;
+        if (reg_dst->reg.is_virtual && reg_replace_map.find(reg_dst->reg.reg_num) != reg_replace_map.end())
+        {
+            reg_dst->reg.reg_num = reg_replace_map.at(reg_dst->reg.reg_num);
+        }
+    }
 }
 
 map<RV64InstType, OpInfo> Backend::RV64::opInfoTable = {
