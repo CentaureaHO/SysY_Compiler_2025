@@ -10,6 +10,7 @@
 #include <deque>
 #include <iostream>
 #include <ostream>
+#include <queue>
 #include <unordered_set>
 #include <functional>
 #include <fstream>
@@ -54,21 +55,29 @@ namespace LLVMIR
         return true;
     }
 
-    void GCM::CollectPhiVals(CFG* cfg)
+    void GCM::CollectPhiValsAndMem(CFG* cfg)
     {
         for (auto [id, block] : cfg->block_id_to_block)
         {
             for (auto inst : block->insts)
             {
-                if (inst->opcode != IROpCode::PHI) { continue; }
-                auto phi_inst = dynamic_cast<PhiInst*>(inst);
-                if (phi_inst)
+                if (inst->opcode == IROpCode::PHI)
                 {
-                    for (auto [val, label] : phi_inst->vals_for_labels)
+                    auto phi_inst = dynamic_cast<PhiInst*>(inst);
+                    if (phi_inst)
                     {
-                        if (!PhiVals.count(val)) { PhiVals.insert(val); }
+                        for (auto [val, label] : phi_inst->vals_for_labels)
+                        {
+                            if (!PhiVals.count(val)) { PhiVals.insert(val); }
+                        }
                     }
                 }
+                if (inst->opcode == IROpCode::STORE || inst->opcode == IROpCode::LOAD ||
+                    inst->opcode == IROpCode::GETELEMENTPTR)
+                {
+                    MemSet.insert(inst);
+                }
+                else { continue; }
             }
         }
     }
@@ -208,19 +217,173 @@ namespace LLVMIR
         return E;
     }
 
+    void GCM::handler(CFG* cfg, Operand* op, std::unordered_set<int>& used_blocks, Operand* Base_ptr, Operand* Base_val)
+    {
+        if (op)
+        {
+            std::cout << "op is " << op->getName() << std::endl;
+            auto Base_result_op = arralias_analysis->traceToBase(cfg, op);
+            if (Base_result_op)
+            {
+                std::cout << "Base ptr is " << Base_result_op << std::endl;
+                if (Base_ptr)
+                {
+                    if (aliasAnalyser->queryAlias(Base_ptr, Base_result_op, cfg))
+                    {
+                        auto id = defuseAnalysis->getDef(cfg, Base_result_op)->block_id;
+                        if (!used_blocks.count(id)) { used_blocks.insert(id); }
+                    }
+                }
+                if (Base_val)
+                {
+                    // 如果是地址访问
+                    if (aliasAnalyser->queryAlias(Base_val, Base_result_op, cfg))
+                    {
+                        auto id = defuseAnalysis->getDef(cfg, Base_result_op)->block_id;
+                        if (!used_blocks.count(id)) { used_blocks.insert(id); }
+                    }
+                }
+            }
+        }
+    }
+
+    std::unordered_set<int> GCM::GetAllPaths(CFG* cfg, int start, int end)
+    {
+        std::unordered_set<int> ret    = {};
+        std::queue<int>         blocks = {};
+        blocks.push(start);
+        while (!blocks.empty())
+        {
+            auto curr_block = blocks.front();
+            blocks.pop();
+            ret.insert(curr_block);
+            auto block        = cfg->block_id_to_block[curr_block];
+            auto control_inst = block->insts.back();
+            if (control_inst->opcode == IROpCode::BR_COND)
+            {
+                auto br_inst = dynamic_cast<BranchCondInst*>(control_inst);
+                if (br_inst)
+                {
+                    auto true_label  = dynamic_cast<LabelOperand*>(br_inst->true_label);
+                    auto false_label = dynamic_cast<LabelOperand*>(br_inst->false_label);
+                    if (true_label) blocks.push(true_label->label_num);
+                    if (false_label) blocks.push(false_label->label_num);
+                }
+            }
+            else if (control_inst->opcode == IROpCode::BR_UNCOND)
+            {
+                auto brun_inst = dynamic_cast<BranchUncondInst*>(control_inst);
+                if (brun_inst)
+                {
+                    auto target_label = dynamic_cast<LabelOperand*>(brun_inst->target_label);
+                    if (target_label) blocks.push(target_label->label_num);
+                }
+            }
+            else if (control_inst->opcode == IROpCode::RET) { continue; }
+            else
+            {
+                std::cout << "[Fatal]: Impossible case";
+                return std::unordered_set<int>{};
+            }
+        }
+        return ret;
+    }
+
     int GCM::ComputeLatestBlockId(CFG* cfg, Instruction* inst)
     {
-        int L = -1;
+        int L              = -1;
+        int currentBlockId = inst->block_id;
 
-        // 因为没有use,所以不用考虑
+        // 对于store指令,我们进行sink,对于所有使用到ptr和val的指令,我们都要进行判断
+        auto store_inst = dynamic_cast<StoreInst*>(inst);
+        auto ptr        = store_inst ? store_inst->ptr : nullptr;
+        auto val        = store_inst ? store_inst->val : nullptr;
+        if (!ptr || !val) return -1;
+        std::unordered_set<int> used_blocks;
+        // 我们都需要考虑是否能够正确进行别名分析
 
-        // 这里只计算store指令
-        // auto store_inst = dynamic_cast<StoreInst*>(inst);
-        // auto ptr = store_inst->ptr;
-        // auto val = store_inst->val;
-        // auto def_ptr = defuseAnalysis->getDef(cfg, ptr);
-        // auto def_val = defuseAnalysis->getDef(cfg, val);
-        // if(!domAnalyzer->isDomate(def_ptr->block_id, ))
+        for (auto inst : MemSet)
+        {
+            if (inst->opcode == IROpCode::LOAD)
+            {
+                // 对于load,我们处理ptr
+                auto load_inst = dynamic_cast<LoadInst*>(inst);
+                if (load_inst) { handler(cfg, load_inst->ptr, used_blocks, ptr, val); }
+            }
+            if (inst->opcode == IROpCode::STORE)
+            {
+                // 对于store,处理ptr和val
+                auto store_inst = dynamic_cast<StoreInst*>(inst);
+                if (store_inst)
+                {
+                    handler(cfg, store_inst->ptr, used_blocks, ptr, val);
+                    handler(cfg, store_inst->val, used_blocks, ptr, val);
+                }
+            }
+            if (inst->opcode == IROpCode::GETELEMENTPTR)
+            {
+                // 对于getelementptr,处理所有参数
+                auto gep_inst = dynamic_cast<GEPInst*>(inst);
+                if (gep_inst)
+                {
+                    handler(cfg, gep_inst->base_ptr, used_blocks, ptr, val);
+                    for (auto& idx : gep_inst->idxs) { handler(cfg, idx, used_blocks, ptr, val); }
+                }
+            }
+        }
+
+        // 处理postdominator
+        if (used_blocks.empty())
+        {
+            std::cout << "[warning]: seems impossable" << std::endl;
+            return -1;
+        }
+        else
+        {
+            L = *used_blocks.begin();
+            for (int blk : used_blocks) { L = postdomAnalyzer->LCA(L, blk); }
+            if (L == -1)
+            {
+                L = currentBlockId;  // 如果没有找到有效的L，返回当前块ID
+            }
+        }
+
+        if (L == -1) { return L; }
+        if (postdomAnalyzer->isDomate(currentBlockId, L)) { return -1; }
+        // 判断所有路径上都没有再次使用
+        auto all_paths = GetAllPaths(cfg, currentBlockId, L);
+        // 先简单检查
+        for (auto inst : MemSet)
+        {
+            if (all_paths.count(inst->block_id))
+            {
+                // 说明存在内存操作
+                if (inst->opcode == IROpCode::LOAD)
+                {
+                    auto load_inst = dynamic_cast<LoadInst*>(inst);
+                    if (aliasAnalyser->queryAlias(load_inst->ptr, ptr, cfg))
+                    {
+                        // 存在别名关系
+                        // 不能sink
+                        L = -1;
+                        break;
+                    }
+                }
+                else if (inst->opcode == IROpCode::STORE)
+                {
+                    auto store_inst = dynamic_cast<StoreInst*>(inst);
+                    if (aliasAnalyser->queryAlias(store_inst->ptr, ptr, cfg) ||
+                        aliasAnalyser->queryAlias(store_inst->val, val, cfg))
+                    {
+                        // 存在别名关系
+                        // 不能sink
+                        L = -1;
+                        break;
+                    }
+                }
+            }
+        }
+        return L;
     }
 
     void GCM::GenerateInformation(CFG* func_cfg)
@@ -294,7 +457,7 @@ namespace LLVMIR
     {
         for (auto& [func, cfg] : ir->cfg)
         {
-            CollectPhiVals(cfg);
+            CollectPhiValsAndMem(cfg);
             ExecuteInSingleCFG(cfg);
             // 生成移动辅助信息
             GenerateInformation(cfg);
@@ -309,6 +472,8 @@ namespace LLVMIR
             latest_map.clear();
             instorder.clear();
             params.clear();
+            PhiVals.clear();
+            MemSet.clear();
         }
     }
 
@@ -328,15 +493,24 @@ namespace LLVMIR
             for (auto& inst : block->insts)
             {
                 if (!IsSafeInst(func_cfg, inst)) { continue; }
+                if (inst->opcode == IROpCode::STORE)
+                {
+                    std::cout << "Handling store is in block " << inst->block_id << std::endl;
+                    int L = 0;
+                    L     = ComputeLatestBlockId(func_cfg, inst);
+                    if (L != -1)
+                    {
+                        latestBlockId[inst] = L;
+                        instorder[inst]     = order++;
+                    }
+                    continue;
+                }
 
                 int E = ComputeEarliestBlockId(func_cfg, inst);
-                // int L = ComputeLatestBlockId(func_cfg, inst);
-                int L = 0;
 
                 if (E != -1)
                 {
                     earliestBlockId[inst] = E;
-                    latestBlockId[inst]   = L;
                     instorder[inst]       = order++;
 
                     // inst->block_id           = E;               // 更新指令的基本块ID

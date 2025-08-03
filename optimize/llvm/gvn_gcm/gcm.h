@@ -2,6 +2,7 @@
 
 #include "dom_analyzer.h"
 #include "llvm/alias_analysis/alias_analysis.h"
+#include "llvm/alias_analysis/arralias_analysis.h"
 #include "llvm/cdg.h"
 #include "llvm/defuse_analysis/edefuse.h"
 #include "llvm/global_analysis/readonly.h"
@@ -25,6 +26,8 @@ namespace LLVMIR
 
         // 别名分析
         Analysis::AliasAnalyser* aliasAnalyser;  // 别名分析器
+        // 数组别名分析
+        Analysis::ArrAliasAnalysis* arralias_analysis;  // 数组别名分析
         // 内存依赖分析
         Analysis::MemoryDependenceAnalyser* memdep;  // 内存依赖分析器
         // 只读全局变量
@@ -38,11 +41,16 @@ namespace LLVMIR
 
         std::unordered_set<Operand*> params;
 
-        std::unordered_set<Operand*> PhiVals;
+        std::unordered_set<Operand*>     PhiVals;
+        std::unordered_set<Instruction*> MemSet;
 
         // 记录指令最早和最迟的位置
         std::unordered_map<Instruction*, int> earliestBlockId;
         std::unordered_map<Instruction*, int> latestBlockId;
+
+        void handler(CFG* cfg, Operand* op, std::unordered_set<int>& used_blocks, Operand* Base_ptr, Operand* Base_val);
+
+        std::unordered_set<int> GetAllPaths(CFG* cfg, int start, int end);
 
         bool IsSafeInst(CFG* cfg, Instruction* inst);
 
@@ -50,7 +58,7 @@ namespace LLVMIR
         bool isControlDependent(CFG* cfg, Instruction* inst, int target_id);
 
         // 收集phi的vals
-        void CollectPhiVals(CFG* cfg);
+        void CollectPhiValsAndMem(CFG* cfg);
 
         int  ComputeEarliestBlockId(CFG* func_cfg, Instruction* inst);
         int  ComputeLatestBlockId(CFG* func_cfg, Instruction* inst);
@@ -67,12 +75,13 @@ namespace LLVMIR
 
       public:
         GCM(LLVMIR::IR* ir, Analysis::EDefUseAnalysis* DefUseAnalysis, Analysis::AliasAnalyser* AliasAnalyser,
-            Analysis::MemoryDependenceAnalyser* MemoryDependenceAnalyser,
+            Analysis::ArrAliasAnalysis* ArrAliasAnalysis, Analysis::MemoryDependenceAnalyser* MemoryDependenceAnalyser,
             Analysis::ReadOnlyGlobalAnalysis* ReadOnlyGlobalAnalysis, CDGAnalyzer* CDGAnalyzer)
             : Pass(ir)
         {
             defuseAnalysis         = DefUseAnalysis;
             aliasAnalyser          = AliasAnalyser;
+            arralias_analysis      = ArrAliasAnalysis;
             memdep                 = MemoryDependenceAnalyser;
             readOnlyGlobalAnalysis = ReadOnlyGlobalAnalysis;
             cdgAnalyzer            = CDGAnalyzer;

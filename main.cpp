@@ -332,16 +332,6 @@ int main(int argc, char** argv)
         makecfg.Execute();
         makedom.Execute();
 
-        // Eliminate unused array
-        Analysis::EDefUseAnalysis edefUseAnalysis(&builder);
-        edefUseAnalysis.run();
-        // edefUseAnalysis.print();
-        UnusedArrEliminator unusedelimator(&builder, &edefUseAnalysis);
-        unusedelimator.Execute();
-
-        makecfg.Execute();
-        makedom.Execute();
-
         // TSCCP - Sparse Conditional Constant Propagation
         Transform::TSCCPPass tsccp(&builder, &aa);
         tsccp.Execute();
@@ -359,6 +349,16 @@ int main(int argc, char** argv)
 
         Transform::ConstBranchReduce constBranchReduce(&builder);
         constBranchReduce.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
+
+        // Eliminate unused array
+        Analysis::EDefUseAnalysis edefUseAnalysis(&builder);
+        edefUseAnalysis.run();
+        // edefUseAnalysis.print();
+        UnusedArrEliminator unusedelimator(&builder, &edefUseAnalysis);
+        unusedelimator.Execute();
 
         makecfg.Execute();
         makedom.Execute();
@@ -395,9 +395,12 @@ int main(int argc, char** argv)
         md.run();
         Analysis::ReadOnlyGlobalAnalysis readOnlyGlobalAnalysis(&builder, &aa);
         readOnlyGlobalAnalysis.run();
+        Analysis::ArrAliasAnalysis arrAliasAnalysis(&builder);
+        arrAliasAnalysis.run();
+        // arrAliasAnalysis.print();
         cdg.Execute();
         // readOnlyGlobalAnalysis.print();
-        GCM gcm(&builder, &edefUseAnalysis, &aa, &md, &readOnlyGlobalAnalysis, &cdg);
+        GCM gcm(&builder, &edefUseAnalysis, &aa, &arrAliasAnalysis, &md, &readOnlyGlobalAnalysis, &cdg);
         gcm.Execute();
         // std::cout << "GCM completed" << std::endl;
 
@@ -409,11 +412,6 @@ int main(int argc, char** argv)
         licm.Execute();
         md.run();
 
-        Analysis::ArrAliasAnalysis arrAliasAnalysis(&builder);
-        arrAliasAnalysis.run();
-        // arrAliasAnalysis.print();
-        Analysis::EDefUseAnalysis eDefUse(&builder);
-        eDefUse.run();
         // eDefUse.print();
 
         makecfg.Execute();
