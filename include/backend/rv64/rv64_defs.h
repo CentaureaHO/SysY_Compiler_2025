@@ -31,14 +31,15 @@
     } while (0)
 #endif
 
-#define RV64_INST_TYPES          \
-    X(R)  /* R rd lhs rhs */     \
-    X(I)  /* I rd base imme */   \
-    X(S)  /* S val base shift */ \
-    X(B)  /* B lhs rhs tar */    \
-    X(U)  /* U rd val */         \
-    X(J)  /* J rd tar */         \
-    X(R2) /* R2 rd rs */         \
+#define RV64_INST_TYPES           \
+    X(R)  /* R rd lhs rhs */      \
+    X(I)  /* I rd base imme */    \
+    X(S)  /* S val base shift */  \
+    X(B)  /* B lhs rhs tar */     \
+    X(U)  /* U rd val */          \
+    X(J)  /* J rd tar */          \
+    X(R2) /* R2 rd rs */          \
+    X(R4) /* R4 rd rs1 rs2 rs3 */ \
     X(CALL)
 
 // (name, type, asm)
@@ -73,6 +74,9 @@
     X(SLLI, I, slli)          \
     X(SRLI, I, srli)          \
     X(SRAI, I, srai)          \
+    X(SLLIW, I, slliw)        \
+    X(SRLIW, I, srliw)        \
+    X(SRAIW, I, sraiw)        \
     X(ANDI, I, andi)          \
     X(ORI, I, ori)            \
     X(XORI, I, xori)          \
@@ -114,6 +118,18 @@
     X(FMV_D, R2, fmv.d)       \
     X(ZEXT_W, R2, zext.w)     \
     X(FNEG_S, R2, fneg.s)     \
+                              \
+    X(FMADD_S, R4, fmadd.s)   \
+    X(FMSUB_S, R4, fmsub.s)   \
+    X(FNMADD_S, R4, fnmadd.s) \
+    X(FNMSUB_S, R4, fnmsub.s) \
+                              \
+    X(SH1ADD, R, sh1add)      \
+    X(SH2ADD, R, sh2add)      \
+    X(SH3ADD, R, sh3add)      \
+    X(SH1ADDUW, R, sh1add.uw) \
+    X(SH2ADDUW, R, sh2add.uw) \
+    X(SH3ADDUW, R, sh3add.uw) \
                               \
     X(CALL, CALL, call)
 
@@ -286,9 +302,10 @@ namespace Backend::RV64
     {
         std::string _asm;
         RV64OpType type;
+        int        latency;  // Instruction latency for WAW optimization
 
         OpInfo();
-        OpInfo(std::string a, RV64OpType t);
+        OpInfo(std::string a, RV64OpType t, int lat = 1);
     };
 
     class Register
@@ -382,8 +399,9 @@ namespace Backend::RV64
         virtual ~Instruction() = default;
 
       public:
-        virtual std::vector<Register*> getReadRegs()  = 0;
-        virtual std::vector<Register*> getWriteRegs() = 0;
+        virtual std::vector<Register*> getReadRegs()                                                 = 0;
+        virtual std::vector<Register*> getWriteRegs()                                                = 0;
+        virtual void                   replaceAllOperands(const std::map<int, int>& reg_replace_map) = 0;
     };
 
     class RV64Label
@@ -409,7 +427,7 @@ namespace Backend::RV64
         bool         use_label;
         int          imme;
         RV64Label    label;
-        Register     rd, rs1, rs2;
+        Register     rd, rs1, rs2, rs3;
 
         int call_ireg_cnt, call_freg_cnt;
 
@@ -426,6 +444,8 @@ namespace Backend::RV64
       public:
         std::vector<Register*> getReadRegs() override;
         std::vector<Register*> getWriteRegs() override;
+        void                   replaceAllOperands(const std::map<int, int>& reg_replace_map) override;
+        int                    getLatency() const;
     };
 
     class PhiInst : public Instruction
@@ -442,6 +462,7 @@ namespace Backend::RV64
       public:
         std::vector<Register*> getReadRegs() override;
         std::vector<Register*> getWriteRegs() override;
+        void                   replaceAllOperands(const std::map<int, int>& reg_replace_map) override;
     };
 
     class MoveInst : public Instruction
@@ -457,6 +478,7 @@ namespace Backend::RV64
       public:
         std::vector<Register*> getReadRegs() override;
         std::vector<Register*> getWriteRegs() override;
+        void                   replaceAllOperands(const std::map<int, int>& reg_replace_map) override;
     };
 
     extern std::map<RV64InstType, OpInfo> opInfoTable;

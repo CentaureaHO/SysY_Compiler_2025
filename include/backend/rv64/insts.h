@@ -7,6 +7,7 @@ namespace Backend::RV64
 {
     RV64Inst* createRInst(RV64InstType op, Register rd, Register rs1, Register rs2);
     RV64Inst* createR2Inst(RV64InstType op, Register rd, Register rs);
+    RV64Inst* createR4Inst(RV64InstType op, Register rd, Register rs1, Register rs2, Register rs3);
 
     RV64Inst* createIInst(RV64InstType op, Register rd, Register rs1, int imme);
     RV64Inst* createIInst(RV64InstType op, Register rd, Register rs1, RV64Label label);

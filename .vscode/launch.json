@@ -17,7 +17,7 @@
                     "ignoreFailures": true
                 }
             ],
-            "args": ["-S", "-o", "test.ll", "test.sy", "-O2"],
+            "args": ["-S", "-o", "test.s", "test.sy", "-O2"],
             "preLaunchTask": "build"
         },
         {

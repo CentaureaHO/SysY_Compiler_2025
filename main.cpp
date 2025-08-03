@@ -89,6 +89,8 @@ size_t    errCnt = 0;
 bool no_reg_alloc     = false;
 int  max_unroll_count = 100;
 
+int opt_level = 0;
+
 string truncateString(const string& str, size_t width)
 {
     if (str.length() > width) return str.substr(0, width - 3) + "...";
@@ -261,6 +263,7 @@ int main(int argc, char** argv)
     // Analysis：仅分析，不改变 IR 结构，不需要重新构建 CFG 和 DomTree
     if (optimizeLevel)
     {
+        opt_level = optimizeLevel;
         // 构建CFG
         MakeCFGPass     makecfg(&builder);
         MakeDomTreePass makedom(&builder);
@@ -438,12 +441,14 @@ int main(int argc, char** argv)
         lcssa.Execute();
         loopRotate.Execute();
 
-        // for (const auto& [func_def, cfg] : builder.cfg)
-        // {
-        //     std::cout << "Function: " << func_def->func_name << std::endl;
-        //     if (!cfg || !cfg->LoopForest) continue;
-        //     for (auto* loop : cfg->LoopForest->loop_set) loop->printLoopInfo();
-        // }
+        /*
+        for (const auto& [func_def, cfg] : builder.cfg)
+        {
+            std::cout << "Function: " << func_def->func_name << std::endl;
+            if (!cfg || !cfg->LoopForest) continue;
+            for (auto* loop : cfg->LoopForest->loop_set) loop->printLoopInfo();
+        }
+        */
 
         tsccp.Execute();
 
@@ -493,7 +498,6 @@ int main(int argc, char** argv)
                 std::cout << "Unrolled " << unrolled_count << " times" << std::endl;
 
             } while (unrolled_count > 0 && total_unrolled < max_unroll_count);
-
             makecfg.Execute();
             makedom.Execute();
             aa.run();
@@ -539,6 +543,11 @@ int main(int argc, char** argv)
         }
 
         // TODO: partially unroll loop
+
+        makecfg.Execute();
+        makedom.Execute();
+        loopAnalysis.Execute();
+        inlinePass.Execute();
 
         makecfg.Execute();
     }

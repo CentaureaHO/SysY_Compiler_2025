@@ -405,19 +405,14 @@ namespace Transform
         const auto& caller_info = getFunctionInfo(caller);
         const auto& callee_info = getFunctionInfo(callee);
 
-        if (callee_info.instruction_count > 50)
-            return "Function too large (" + std::to_string(callee_info.instruction_count) + " instructions > 50)";
-
-        if (wouldCauseTooMuchGrowth(caller, callee)) return "Would cause excessive code growth";
-
         if (caller == callee) return "Direct recursive call";
-
         if (callee_info.is_recursive) return "Callee is recursive";
 
-        if (callee_info.instruction_count <= 10)
-            return "Very small function (" + std::to_string(callee_info.instruction_count) + " instructions <= 10)";
-
-        if (callee_info.has_pointer_params) return "Function has pointer parameters (good for optimization)";
+        // 按照新的激进内联策略检查各个条件
+        bool flag1 = callee_info.instruction_count <= 30;
+        bool flag2 = (caller_info.instruction_count + callee_info.instruction_count) <= 200;
+        bool flag3 = callee_info.has_pointer_params && (caller != callee);
+        bool flag5 = callee_info.instruction_count <= 15;
 
         CallSiteInfo call_site_info;
         for (const auto& cs : all_call_sites)
@@ -426,28 +421,25 @@ namespace Transform
                 call_site_info = cs;
                 break;
             }
+        bool flag4 = call_site_info.in_loop && callee_info.instruction_count <= 50;
 
-        if (call_site_info.in_loop && callee_info.instruction_count <= 20)
-            return "Call in loop with reasonable size (" + std::to_string(callee_info.instruction_count) +
-                   " instructions <= 20, frequency x" + std::to_string(call_site_info.estimated_frequency) + ")";
+        if (flag5)
+            return "Very small function (" + std::to_string(callee_info.instruction_count) + " instructions <= 15)";
 
-        int complexity_threshold = 15;
-        if (callee_info.has_loops) complexity_threshold = 10;
+        if (flag1) return "Small function (" + std::to_string(callee_info.instruction_count) + " instructions <= 30)";
 
-        if (callee_info.complexity_score <= complexity_threshold)
-            return "Low complexity function (score " + std::to_string(callee_info.complexity_score) +
-                   " <= " + std::to_string(complexity_threshold) + ")";
+        if (flag2)
+            return "Combined size acceptable (" + std::to_string(caller_info.instruction_count) + " + " +
+                   std::to_string(callee_info.instruction_count) + " = " +
+                   std::to_string(caller_info.instruction_count + callee_info.instruction_count) + " <= 200)";
 
-        int call_count = getCallCount(caller, callee);
-        if (call_count > 1 && callee_info.instruction_count <= 15)
-            return "Multiple calls (" + std::to_string(call_count) + "x) with small size (" +
-                   std::to_string(callee_info.instruction_count) + " instructions <= 15)";
+        if (flag3) return "Function has pointer parameters (good for optimization)";
 
-        if (callee_info.call_count == 0 && callee_info.instruction_count <= 25)
-            return "Leaf function with reasonable size (" + std::to_string(callee_info.instruction_count) +
-                   " instructions <= 25, no sub-calls)";
+        if (flag4)
+            return "Call in loop with acceptable size (" + std::to_string(callee_info.instruction_count) +
+                   " instructions <= 50, frequency x" + std::to_string(call_site_info.estimated_frequency) + ")";
 
-        return "Does not meet inlining criteria";
+        return "Does not meet aggressive inlining criteria";
     }
 
     bool FunctionInlineAnalyzer::shouldInline(
@@ -456,12 +448,12 @@ namespace Transform
         const auto& caller_info = getFunctionInfo(caller);
         const auto& callee_info = getFunctionInfo(callee);
 
-        if (callee_info.instruction_count > 50) return false;
-        if (wouldCauseTooMuchGrowth(caller, callee)) return false;
         if (caller == callee) return false;
         if (callee_info.is_recursive) return false;
-        if (callee_info.instruction_count <= 10) return true;
-        if (callee_info.has_pointer_params) return true;
+
+        bool flag1 = callee_info.instruction_count <= 30;
+        bool flag2 = (caller_info.instruction_count + callee_info.instruction_count) <= 200;
+        bool flag3 = callee_info.has_pointer_params && (caller != callee);
 
         CallSiteInfo call_site_info;
         for (const auto& cs : all_call_sites)
@@ -470,20 +462,11 @@ namespace Transform
                 call_site_info = cs;
                 break;
             }
+        bool flag4 = call_site_info.in_loop && callee_info.instruction_count <= 50;
 
-        if (call_site_info.in_loop && callee_info.instruction_count <= 20) return true;
+        bool flag5 = callee_info.instruction_count <= 15;
 
-        int complexity_threshold = 15;
-        if (callee_info.has_loops) complexity_threshold = 10;
-
-        if (callee_info.complexity_score <= complexity_threshold) return true;
-
-        int call_count = getCallCount(caller, callee);
-        if (call_count > 1 && callee_info.instruction_count <= 15) return true;
-
-        if (callee_info.call_count == 0 && callee_info.instruction_count <= 25) return true;
-
-        return false;
+        return flag1 || flag2 || flag3 || flag4 || flag5;
     }
 
     void FunctionInlineAnalyzer::analyze()

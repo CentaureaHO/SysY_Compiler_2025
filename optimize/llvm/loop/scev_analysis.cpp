@@ -920,9 +920,11 @@ namespace Analysis
         auto upper    = loop_info.upperbound.getConstantValue();
         auto step_val = loop_info.step.getConstantValue();
 
-        // std::cout << "lower: " << (lower ? std::to_string(*lower) : "runtime")
-        //           << ", upper: " << (upper ? std::to_string(*upper) : "runtime")
-        //           << ", step_val: " << (step_val ? std::to_string(*step_val) : "runtime") << std::endl;
+        /*
+        std::cout << "lower: " << (lower ? std::to_string(*lower) : "runtime")
+                  << ", upper: " << (upper ? std::to_string(*upper) : "runtime")
+                  << ", step_val: " << (step_val ? std::to_string(*step_val) : "runtime") << std::endl;
+        */
 
         if (lower && upper && step_val && *step_val != 0)
         {

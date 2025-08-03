@@ -32,6 +32,23 @@ RV64Inst* Backend::RV64::createR2Inst(RV64InstType op, Register rd, Register rs)
     return inst;
 }
 
+RV64Inst* Backend::RV64::createR4Inst(RV64InstType op, Register rd, Register rs1, Register rs2, Register rs3)
+{
+    RV64Inst* inst = new RV64Inst();
+
+    inst->op        = op;
+    inst->use_label = false;
+    auto it         = opInfoTable.find(op);
+    Assert(it != opInfoTable.end() && it->second.type == RV64OpType::R4);
+
+    inst->rd  = rd;
+    inst->rs1 = rs1;
+    inst->rs2 = rs2;
+    inst->rs3 = rs3;
+
+    return inst;
+}
+
 RV64Inst* Backend::RV64::createIInst(RV64InstType op, Register rd, Register rs1, int imme)
 {
     RV64Inst* inst = new RV64Inst();

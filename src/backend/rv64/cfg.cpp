@@ -3,7 +3,7 @@
 using namespace Backend::RV64;
 using namespace std;
 
-CFG::CFG() : max_label(0), entry_block(nullptr), ret_block(nullptr) {}
+CFG::CFG() : max_label(0), entry_block(nullptr), ret_block(nullptr), dom_tree(nullptr), post_dom_tree(nullptr) {}
 
 void CFG::addNewBlock(int id, Block* b)
 {
@@ -43,4 +43,29 @@ void CFG::removeEdge(int from, int to)
         inv_graph[to].erase(it);
     else
         assert(false);
+}
+
+std::vector<std::vector<int>> CFG::buildGraphAdjacencyList() const
+{
+    std::vector<std::vector<int>> adj_list(max_label + 1);
+
+    for (const auto& [block_id, block] : blocks)
+    {
+        if (block_id < graph.size())
+        {
+            for (Block* succ_block : graph[block_id])
+            {
+                for (const auto& [succ_id, succ_ptr] : blocks)
+                {
+                    if (succ_ptr == succ_block)
+                    {
+                        adj_list[block_id].push_back(succ_id);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    return adj_list;
 }

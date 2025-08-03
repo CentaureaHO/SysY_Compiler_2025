@@ -334,7 +334,7 @@ namespace Transform
             }
         }
 
-        // std::cout << "[IndVars]\tRewrote " << rewritten_count << " induction variables" << std::endl;
+        std::cout << "[IndVars]\tRewrote " << rewritten_count << " induction variables" << std::endl;
     }
 
     void IndVarsSimplifyPass::canonicalizeExitConditions(CFG* cfg, NaturalLoop* loop, LLVMIR::PhiInst* canonical_iv)
@@ -500,7 +500,7 @@ namespace Transform
         }
         if (skipped_count > 0)
         {
-            // std::cout << "[IndVars]\tPreserved " << skipped_count << " non-IV-based exit conditions" << std::endl;
+            std::cout << "[IndVars]\tPreserved " << skipped_count << " non-IV-based exit conditions" << std::endl;
         }
     }
 
