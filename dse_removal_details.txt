@@ -1,0 +1,14 @@
+Removed store in block 1: @cnt = %reg_17
+Removed store in block 211: @cnt = %reg_328
+Removed store in block 1: @cnt = %reg_17
+Removed store in block 231: @cnt = %reg_372
+Removed store in block 12: @state = %reg_87
+Removed store in block 12: @state = %reg_92
+Removed store in block 12: @state = %reg_87
+Removed store in block 12: @state = %reg_92
+Removed store in block 12: @state = %reg_87
+Removed store in block 12: @state = %reg_92
+Removed store in block 1: @cnt = %reg_17
+Removed store in block 211: @cnt = %reg_328
+Removed store in block 1: @cnt = %reg_17
+Removed store in block 231: @cnt = %reg_372

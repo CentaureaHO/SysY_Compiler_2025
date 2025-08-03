@@ -3,6 +3,7 @@
 #include <queue>
 #include <vector>
 #include <map>
+#include "llvm_ir/defs.h"
 #include "llvm_ir/instruction.h"
 #include "llvm_ir/ir_builder.h"
 #include "cfg.h"
@@ -884,6 +885,21 @@ namespace Analysis
         }
 
         return result;
+    }
+
+    bool AliasAnalyser::isLocalPtr(CFG* cfg, LLVMIR::Operand* ptr)
+    {
+        if (ptr->type != LLVMIR::OperandType::REG) { return true; }
+
+        auto& location = reg_locations[cfg];
+        auto  reg      = static_cast<LLVMIR::RegOperand*>(ptr);
+
+        if (location.count(reg->reg_num))
+        {
+            const auto& memLoc = location.at(reg->reg_num);
+            return memLoc.escapes_function || !memLoc.is_stack_local;
+        }
+        return true;
     }
 
 }  // namespace Analysis

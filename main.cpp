@@ -70,6 +70,8 @@
 #include "optimize/llvm/utils/single_source_phi_elimination.h"
 // Constant Branch Folding
 #include "optimize/llvm/utils/constant_branch_folding.h"
+// DSE
+#include "optimize/llvm/dse.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -363,9 +365,6 @@ int main(int argc, char** argv)
         UnusedArrEliminator unusedelimator(&builder, &edefUseAnalysis);
         unusedelimator.Execute();
 
-        makecfg.Execute();
-        makedom.Execute();
-
         // DCE
         DefUseAnalysisPass DCEDefUse(&builder);
         DCEDefUse.Execute();
@@ -543,6 +542,14 @@ int main(int argc, char** argv)
         }
 
         // TODO: partially unroll loop
+
+        aa.run();
+        makecfg.Execute();
+        makedom.Execute();
+        DSEPass dse(&builder, &aa);
+        dse.Execute();
+        edefUseAnalysis.run();
+        unusedelimator.Execute();
 
         makecfg.Execute();
         makedom.Execute();
