@@ -34,7 +34,9 @@ namespace Backend::RV64
             Segmant(int s, int e);
 
             bool inside(int ins_id) const;
-            bool intersect(Interval::Segmant i) const;
+            bool intersect(const Interval::Segmant& other) const;
+            bool operator<(const Segmant& other) const { return start < other.start; }
+            bool operator==(const Segmant& other) const { return start == other.start && end == other.end; }
         };
 
         Register             reg;
@@ -44,7 +46,24 @@ namespace Backend::RV64
         Interval();
         Interval(Register r);
 
+        // Core interval operations
         bool intersect(const Interval& i) const;
+        void addSegment(int start, int end);
+        void mergeSegments();  // Merge overlapping/adjacent segments
+
+        // Advanced interval operations
+        Interval                      unionWith(const Interval& other) const;
+        std::pair<Interval, Interval> splitAt(int split_point) const;
+        bool                          isEmpty() const { return segs.empty(); }
+        int                           getFirstStart() const { return segs.empty() ? INT_MAX : segs.front().start; }
+        int                           getLastEnd() const { return segs.empty() ? INT_MIN : segs.back().end; }
+
+        // Spill optimization methods
+        int    getIntervalLength() const;
+        double calculateSpillWeight() const;
+
+        // Debugging and utilities
+        void print() const;
     };
 
     class AssignRecord
@@ -63,6 +82,15 @@ namespace Backend::RV64
 
         std::vector<int> getValidRegs(Interval i, bool save = false);
         int              getValidMem(Interval i);
+
+        // Spill optimization methods
+        std::vector<Interval> getConflictIntervals(const Interval& interval) const;
+        bool                  releaseReg(int phy_id, const Interval& interval);
+        bool                  releaseMem(int offset, int size, const Interval& interval);
+
+        // Advanced register allocation with preferences
+        int getIdleReg(const Interval& interval, const std::vector<int>& preferred_regs = {},
+            const std::vector<int>& noprefer_regs = {}, bool save = false);
     };
 
     class Liveness
@@ -103,6 +131,9 @@ namespace Backend::RV64
         std::vector<Block*>                      dfsOrderBlocks;
         std::map<Register, std::pair<bool, int>> regAlloc;
 
+        // Copy Coalescing support: a = COPY b ==> copy_sources[a].push_back(b)
+        std::map<Register, std::vector<Register>> copy_sources;
+
         void     tagBFSID();
         void     getInterval();
         Register genReadCode(std::list<Instruction*>::iterator& it, int raw_stk_offset, DataType* dt);
@@ -122,6 +153,15 @@ namespace Backend::RV64
         void calcIntervals();
         void intervalDfs(Block* cur, MAT2(Block*) to, std::vector<uint8_t>& visited, int& dfn);
         bool tryAssignRegister();
+
+        // Spill optimization methods
+        void swapRegisterSpill(
+            const Interval& victim_interval, int victim_phy_reg, const Interval& current_interval, int mem_offset);
+
+        // Copy Coalescing methods
+        void     collectCopyInformation();
+        void     coalesceRegisters();
+        Register findCoalescingRoot(std::map<Register, Register>& coal_result, Register vreg);
     };
 
     class GraphColoringRegisterAssigner : public LinearScanRegisterAssigner

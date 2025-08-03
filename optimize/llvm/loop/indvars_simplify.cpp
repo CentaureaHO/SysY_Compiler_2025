@@ -42,20 +42,20 @@ namespace Transform
         auto induction_vars = findInductionVariables(cfg, loop);
         if (induction_vars.empty())
         {
-            std::cout << "[IndVars]\tNo induction variables found in loop " << loop->loop_id << std::endl;
+            // std::cout << "[IndVars]\tNo induction variables found in loop " << loop->loop_id << std::endl;
             return false;
         }
 
-        std::cout << "[IndVars]\tFound " << induction_vars.size() << " induction variables" << std::endl;
+        // std::cout << "[IndVars]\tFound " << induction_vars.size() << " induction variables" << std::endl;
 
         auto* canonical_iv = createCanonicalInductionVariable(cfg, loop, induction_vars);
         if (!canonical_iv)
         {
-            std::cout << "[IndVars]\tFailed to create canonical induction variable" << std::endl;
+            // std::cout << "[IndVars]\tFailed to create canonical induction variable" << std::endl;
             return false;
         }
 
-        std::cout << "[IndVars]\tCanonical IV reg: " << canonical_iv->GetResultReg() << std::endl;
+        // std::cout << "[IndVars]\tCanonical IV reg: " << canonical_iv->GetResultReg() << std::endl;
         changed = true;
 
         rewriteInductionVariables(cfg, loop, canonical_iv, induction_vars);
@@ -334,7 +334,7 @@ namespace Transform
             }
         }
 
-        std::cout << "[IndVars]\tRewrote " << rewritten_count << " induction variables" << std::endl;
+        // std::cout << "[IndVars]\tRewrote " << rewritten_count << " induction variables" << std::endl;
     }
 
     void IndVarsSimplifyPass::canonicalizeExitConditions(CFG* cfg, NaturalLoop* loop, LLVMIR::PhiInst* canonical_iv)
@@ -366,7 +366,7 @@ namespace Transform
 
             if (!isIVBasedExit(cfg, loop, icmp, canonical_iv))
             {
-                std::cout << "[IndVars]\t  Skipping exit condition not based on induction variable" << std::endl;
+                // std::cout << "[IndVars]\t  Skipping exit condition not based on induction variable" << std::endl;
                 skipped_count++;
                 continue;
             }
@@ -383,8 +383,10 @@ namespace Transform
 
             if (!is_main_loop_exit)
             {
+                /*
                 std::cout << "[IndVars]\t  Skipping early exit condition (break/continue), not in latch block"
                           << std::endl;
+                */
                 skipped_count++;
                 continue;
             }
@@ -392,7 +394,7 @@ namespace Transform
             auto trip_count_opt = computeTripCount(cfg, loop, canonical_iv);
             if (!trip_count_opt)
             {
-                std::cout << "[IndVars]\t  Cannot compute trip count for exit condition" << std::endl;
+                // std::cout << "[IndVars]\t  Cannot compute trip count for exit condition" << std::endl;
                 skipped_count++;
                 continue;
             }
@@ -496,11 +498,11 @@ namespace Transform
 
         if (canonicalized_count > 0)
         {
-            std::cout << "[IndVars]\tCanonicalized " << canonicalized_count << " exit conditions" << std::endl;
+            // std::cout << "[IndVars]\tCanonicalized " << canonicalized_count << " exit conditions" << std::endl;
         }
         if (skipped_count > 0)
         {
-            std::cout << "[IndVars]\tPreserved " << skipped_count << " non-IV-based exit conditions" << std::endl;
+            // std::cout << "[IndVars]\tPreserved " << skipped_count << " non-IV-based exit conditions" << std::endl;
         }
     }
 

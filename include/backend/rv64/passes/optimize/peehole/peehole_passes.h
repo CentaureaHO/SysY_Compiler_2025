@@ -1,0 +1,7 @@
+#ifndef __BACKEND_RV64_PASSES_OPTIMIZE_PEEHOLE_PEEHOLE_PASSES_H__
+#define __BACKEND_RV64_PASSES_OPTIMIZE_PEEHOLE_PEEHOLE_PASSES_H__
+
+#include "ssa_peehole.h"
+#include "ssa_dead_def_eliminate.h"
+
+#endif  // __BACKEND_RV64_PASSES_OPTIMIZE_PEEHOLE_PEEHOLE_PASSES_H__

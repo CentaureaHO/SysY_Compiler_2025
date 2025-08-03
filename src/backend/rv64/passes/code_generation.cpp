@@ -282,6 +282,17 @@ namespace Backend::RV64::Passes
                 out_ << inst->label.name;
                 break;
             }
+            case RV64OpType::R4:
+            {
+                printOperand(inst->rd);
+                out_ << ", ";
+                printOperand(inst->rs1);
+                out_ << ", ";
+                printOperand(inst->rs2);
+                out_ << ", ";
+                printOperand(inst->rs3);
+                break;
+            }
             default: assert(false);
         }
     }

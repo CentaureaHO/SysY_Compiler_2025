@@ -74,9 +74,35 @@ namespace Transform
     {
         ++loops_processed_;
 
-        if (!canFullyUnroll(loop))
+        // 分步检查各种限制条件，提供详细的失败原因
+        if (!loop || !loop->header || !loop->preheader || loop->latches.size() != 1)
         {
-            logResult(loop, false, "Cannot fully unroll");
+            logResult(loop, false, "Basic structure check failed");
+            return false;
+        }
+
+        if (!scev_analyser_->canFullyUnrollLoop(loop))
+        {
+            logResult(loop, false, "SCEV analysis failed");
+            return false;
+        }
+
+        if (loop->loop_nodes.size() > MAX_LOOP_BLOCKS)
+        {
+            logResult(loop,
+                false,
+                "Too many loop blocks (" + std::to_string(loop->loop_nodes.size()) + " > " +
+                    std::to_string(MAX_LOOP_BLOCKS) + ")");
+            return false;
+        }
+
+        int global_insts = getGlobalInstructionCount();
+        if (global_insts >= MAX_GLOBAL_INSTRUCTIONS)
+        {
+            logResult(loop,
+                false,
+                "Too many global instructions (" + std::to_string(global_insts) +
+                    " >= " + std::to_string(MAX_GLOBAL_INSTRUCTIONS) + ")");
             return false;
         }
 
@@ -90,27 +116,34 @@ namespace Transform
         int trip_count = *trip_count_opt;
         if (!isUnrollProfitable(loop, trip_count))
         {
-            logResult(loop, false, "Not profitable");
+            int loop_size = getLoopSize(loop);
+            logResult(loop,
+                false,
+                "Not profitable (size=" + std::to_string(loop_size) + " * count=" + std::to_string(trip_count) + " = " +
+                    std::to_string(loop_size * trip_count) + " > " + std::to_string(MAX_UNROLLED_INSTRUCTIONS) + ")");
             return false;
         }
 
         if (performFullUnroll(cfg, loop, trip_count))
         {
             ++loops_fully_unrolled_;
-            logResult(loop, true, "Successfully unrolled");
+            logResult(loop,
+                true,
+                "Successfully unrolled (blocks=" + std::to_string(loop->loop_nodes.size()) +
+                    ", trip_count=" + std::to_string(trip_count) + ")");
             return true;
         }
         else
         {
-            logResult(loop, false, "Unroll failed");
+            logResult(loop, false, "Unroll implementation failed");
             return false;
         }
     }
 
     bool LoopFullUnrollPass::canFullyUnroll(NaturalLoop* loop) const
     {
-        return loop && loop->header && loop->preheader && loop->latches.size() == 1 &&
-               scev_analyser_->canFullyUnrollLoop(loop);
+        // 只做基本的结构检查，详细检查在tryFullyUnrollLoop中进行
+        return loop && loop->header && loop->preheader && loop->latches.size() == 1;
     }
 
     bool LoopFullUnrollPass::isUnrollProfitable(NaturalLoop* loop, int trip_count) const
@@ -124,6 +157,22 @@ namespace Transform
         int size = 0;
         for (auto* block : loop->loop_nodes) size += block->insts.size();
         return size;
+    }
+
+    int LoopFullUnrollPass::getGlobalInstructionCount() const
+    {
+        int total_instructions = 0;
+        for (const auto& [func_def, cfg] : ir->cfg)
+        {
+            if (cfg)
+            {
+                for (const auto& [block_id, block] : cfg->block_id_to_block)
+                {
+                    total_instructions += block->insts.size();
+                }
+            }
+        }
+        return total_instructions;
     }
 
     bool LoopFullUnrollPass::performFullUnroll(CFG* cfg, NaturalLoop* loop, int trip_count)
