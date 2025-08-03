@@ -475,72 +475,72 @@ int main(int argc, char** argv)
         scevAnalyser.run();
 
         // Constant Loop Full Unroll
-        {
-            int unrolled_count = 0;
-            int total_unrolled = 0;
+        // {
+        //     int unrolled_count = 0;
+        //     int total_unrolled = 0;
 
-            do {
-                Transform::LoopFullUnrollPass loopUnrollPass(&builder, &scevAnalyser);
-                loopUnrollPass.Execute();
+        //     do {
+        //         Transform::LoopFullUnrollPass loopUnrollPass(&builder, &scevAnalyser);
+        //         loopUnrollPass.Execute();
 
-                auto stats     = loopUnrollPass.getUnrollStats();
-                unrolled_count = stats.second;
-                total_unrolled += unrolled_count;
+        //         auto stats     = loopUnrollPass.getUnrollStats();
+        //         unrolled_count = stats.second;
+        //         total_unrolled += unrolled_count;
 
-                makecfg.Execute();
-                makedom.Execute();
-                loopAnalysis.Execute();
-                loopSimplify.Execute();
-                lcssa.Execute();
-                loopRotate.Execute();
-                scevAnalyser.run();
+        //         makecfg.Execute();
+        //         makedom.Execute();
+        //         loopAnalysis.Execute();
+        //         loopSimplify.Execute();
+        //         lcssa.Execute();
+        //         loopRotate.Execute();
+        //         scevAnalyser.run();
 
-                std::cout << "Unrolled " << unrolled_count << " times" << std::endl;
+        //         std::cout << "Unrolled " << unrolled_count << " times" << std::endl;
 
-            } while (unrolled_count > 0 && total_unrolled < max_unroll_count);
-            makecfg.Execute();
-            makedom.Execute();
-            aa.run();
-            tsccp.Execute();
-        }
-        // SCCP after constant full unroll
-        {
-            Transform::SingleSourcePhiEliminationPass singleSourcePhiElim(&builder);
-            Transform::ConstantBranchFoldingPass      constantBranchFolding(&builder);
-            singleSourcePhiElim.setPreserveLCSSA(true);
+        //     } while (unrolled_count > 0 && total_unrolled < max_unroll_count);
+        //     makecfg.Execute();
+        //     makedom.Execute();
+        //     aa.run();
+        //     tsccp.Execute();
+        // }
+        // // SCCP after constant full unroll
+        // {
+        //     Transform::SingleSourcePhiEliminationPass singleSourcePhiElim(&builder);
+        //     Transform::ConstantBranchFoldingPass      constantBranchFolding(&builder);
+        //     singleSourcePhiElim.setPreserveLCSSA(true);
 
-            bool      changed        = true;
-            int       exec_cnt       = 0;
-            const int MAX_ITERATIONS = 10;
+        //     bool      changed        = true;
+        //     int       exec_cnt       = 0;
+        //     const int MAX_ITERATIONS = 10;
 
-            while (changed && exec_cnt < MAX_ITERATIONS)
-            {
-                changed = false;
-                exec_cnt++;
+        //     while (changed && exec_cnt < MAX_ITERATIONS)
+        //     {
+        //         changed = false;
+        //         exec_cnt++;
 
-                constantBranchFolding.Execute();
-                changed |= constantBranchFolding.wasModified();
+        //         constantBranchFolding.Execute();
+        //         changed |= constantBranchFolding.wasModified();
 
-                makecfg.Execute();
-                loopAnalysis.Execute();
-                loopSimplify.Execute();
+        //         makecfg.Execute();
+        //         loopAnalysis.Execute();
+        //         loopSimplify.Execute();
 
-                singleSourcePhiElim.Execute();
-                changed |= singleSourcePhiElim.wasModified();
+        //         singleSourcePhiElim.Execute();
+        //         changed |= singleSourcePhiElim.wasModified();
 
-                makecfg.Execute();
-                makedom.Execute();
-                aa.run();
+        //         makecfg.Execute();
+        //         makedom.Execute();
+        //         aa.run();
 
-                tsccp.Execute();
+        //         tsccp.Execute();
 
-                makecfg.Execute();
-                makedom.Execute();
+        //         makecfg.Execute();
+        //         makedom.Execute();
 
-                std::cout << "Iteration " << exec_cnt << ": " << (changed ? "modifications made" : "no changes")
-                          << std::endl;
-            }
-        }
+        //         std::cout << "Iteration " << exec_cnt << ": " << (changed ? "modifications made" : "no changes")
+        //                   << std::endl;
+        //     }
+        // }
 
         // TODO: partially unroll loop
 
