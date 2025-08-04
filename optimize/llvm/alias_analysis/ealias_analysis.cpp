@@ -1,4 +1,4 @@
-#include "llvm/alias_analysis/alias_analysis.h"
+#include "llvm/alias_analysis/ealias_analysis.h"
 #include <cassert>
 #include <queue>
 #include <vector>
@@ -9,42 +9,42 @@
 #include "cfg.h"
 #include <sstream>
 
-namespace Analysis
+namespace EAliasAnalysis
 {
-    void MemLocation::addTarget(LLVMIR::Operand* op)
+    void EMemLocation::addTarget(LLVMIR::Operand* op)
     {
         if (op != nullptr) targets.insert(op);
     }
 
-    void MemLocation::merge(const MemLocation& other)
+    void EMemLocation::merge(const EMemLocation& other)
     {
         for (auto* target : other.targets) targets.insert(target);
         escapes_function = escapes_function || other.escapes_function;
         is_stack_local   = is_stack_local && other.is_stack_local;
     }
 
-    void FuncMemProfile::addRead(LLVMIR::Operand* op)
+    void EFuncMemProfile::addRead(LLVMIR::Operand* op)
     {
         if (op != nullptr) mem_reads.insert(op);
     }
 
-    void FuncMemProfile::addWrite(LLVMIR::Operand* op)
+    void EFuncMemProfile::addWrite(LLVMIR::Operand* op)
     {
         if (op != nullptr) mem_writes.insert(op);
     }
 
-    void FuncMemProfile::addReads(const std::vector<LLVMIR::Operand*>& ops)
+    void EFuncMemProfile::addReads(const std::vector<LLVMIR::Operand*>& ops)
     {
         for (auto* op : ops) addRead(op);
     }
 
-    void FuncMemProfile::addWrites(const std::vector<LLVMIR::Operand*>& ops)
+    void EFuncMemProfile::addWrites(const std::vector<LLVMIR::Operand*>& ops)
     {
         for (auto* op : ops) addWrite(op);
     }
 
-    void FuncMemProfile::combineProfile(
-        LLVMIR::CallInst* call, const FuncMemProfile& other, const std::unordered_map<int, MemLocation>& locations)
+    void EFuncMemProfile::combineProfile(
+        LLVMIR::CallInst* call, const EFuncMemProfile& other, const std::unordered_map<int, EMemLocation>& locations)
     {
         has_external_deps = has_external_deps || other.has_external_deps;
 
@@ -111,9 +111,9 @@ namespace Analysis
         return nullptr;
     }
 
-    AliasAnalyser::AliasAnalyser(LLVMIR::IR* ir) : ir(ir) {}
+    EAliasAnalyser::EAliasAnalyser(LLVMIR::IR* ir) : ir(ir) {}
 
-    void AliasAnalyser::buildDefMap(CFG* cfg)
+    void EAliasAnalyser::buildDefMap(CFG* cfg)
     {
         def_map[cfg].clear();
 
@@ -136,13 +136,13 @@ namespace Analysis
         }
     }
 
-    void AliasAnalyser::processFunction(CFG* cfg)
+    void EAliasAnalyser::processFunction(CFG* cfg)
     {
         auto& locations = reg_locations[cfg];
         locations.clear();
 
         auto& profile = func_profiles[cfg];
-        profile       = FuncMemProfile();
+        profile       = EFuncMemProfile();
 
         buildDefMap(cfg);
 
@@ -174,7 +174,7 @@ namespace Analysis
         collectMemAccesses(cfg, locations);
     }
 
-    void AliasAnalyser::handlePtrPropagation(CFG* cfg, std::unordered_map<int, MemLocation>& locations)
+    void EAliasAnalyser::handlePtrPropagation(CFG* cfg, std::unordered_map<int,EMemLocation>& locations)
     {
         bool changed = true;
         while (changed)
@@ -264,7 +264,7 @@ namespace Analysis
         }
     }
 
-    void AliasAnalyser::collectMemAccesses(CFG* cfg, const std::unordered_map<int, MemLocation>& locations)
+    void EAliasAnalyser::collectMemAccesses(CFG* cfg, const std::unordered_map<int, EMemLocation>& locations)
     {
         auto& profile = func_profiles[cfg];
 
@@ -308,7 +308,7 @@ namespace Analysis
         }
     }
 
-    bool AliasAnalyser::checkSameBaseWithDistinctOffset(LLVMIR::Operand* p1, LLVMIR::Operand* p2, CFG* cfg)
+    bool EAliasAnalyser::checkSameBaseWithDistinctOffset(LLVMIR::Operand* p1, LLVMIR::Operand* p2, CFG* cfg)
     {
         if (p1->type != LLVMIR::OperandType::REG || p2->type != LLVMIR::OperandType::REG) { return false; }
 
@@ -353,7 +353,7 @@ namespace Analysis
         return false;
     }
 
-    bool AliasAnalyser::checkIdenticalGEP(LLVMIR::Operand* p1, LLVMIR::Operand* p2, CFG* cfg)
+    bool EAliasAnalyser::checkIdenticalGEP(LLVMIR::Operand* p1, LLVMIR::Operand* p2, CFG* cfg)
     {
         // 必须都是寄存器操作数
         if (p1->type != LLVMIR::OperandType::REG || p2->type != LLVMIR::OperandType::REG) { return false; }
@@ -368,10 +368,7 @@ namespace Analysis
         auto def_it1 = def_map[cfg].find(reg1);
         auto def_it2 = def_map[cfg].find(reg2);
 
-        if (def_it1 == def_map[cfg].end() || def_it2 == def_map[cfg].end())
-        {
-            return false;
-        }
+        if (def_it1 == def_map[cfg].end() || def_it2 == def_map[cfg].end()) { return false; }
 
         // 获取定义指令
         auto* inst1 = def_it1->second;
@@ -427,21 +424,21 @@ namespace Analysis
         return true;
     }
 
-    std::vector<LLVMIR::Operand*> AliasAnalyser::getWritePtrs(CFG* cfg)
+    std::vector<LLVMIR::Operand*> EAliasAnalyser::getWritePtrs(CFG* cfg)
     {
         std::vector<LLVMIR::Operand*> result;
         for (auto* op : func_profiles[cfg].mem_writes) { result.push_back(op); }
         return result;
     }
 
-    std::vector<LLVMIR::Operand*> AliasAnalyser::getReadPtrs(CFG* cfg)
+    std::vector<LLVMIR::Operand*> EAliasAnalyser::getReadPtrs(CFG* cfg)
     {
         std::vector<LLVMIR::Operand*> result;
         for (auto* op : func_profiles[cfg].mem_reads) { result.push_back(op); }
         return result;
     }
 
-    void AliasAnalyser::run()
+    void EAliasAnalyser::run()
     {
         for (auto const& [func_def, cfg] : ir->cfg) buildDefMap(cfg);
         for (auto const& [func_def, cfg] : ir->cfg) processFunction(cfg);
@@ -519,7 +516,7 @@ namespace Analysis
         }
     }
 
-    AliasAnalyser::AliasResult AliasAnalyser::queryAlias(LLVMIR::Operand* op1, LLVMIR::Operand* op2, CFG* cfg)
+    EAliasAnalyser::AliasResult EAliasAnalyser::queryAlias(LLVMIR::Operand* op1, LLVMIR::Operand* op2, CFG* cfg)
     {
         if (checkIdenticalGEP(op1, op2, cfg)) { return MustAlias; }
         AliasResult result = NoAlias;
@@ -527,7 +524,7 @@ namespace Analysis
         {
             const auto& locations = reg_locations[cfg];
 
-            MemLocation loc1, loc2;
+            EMemLocation loc1, loc2;
             bool        found1 = false, found2 = false;
 
             // Get location info for op1
@@ -570,7 +567,14 @@ namespace Analysis
             {
                 // Handle escapes_function case
                 // If either pointer escapes the function, they may alias (conservative approach)
-                if (loc1.escapes_function || loc2.escapes_function) { result = MustAlias; }
+                if (loc1.escapes_function || loc2.escapes_function)
+                {
+                    if (op1->type == LLVMIR::OperandType::GLOBAL && op2->type == LLVMIR::OperandType::GLOBAL)
+                    {
+                        return (op1->getName() == op2->getName()) ? MustAlias : NoAlias;
+                    }
+                    return MayAlias;
+                }
                 else
                 {
                     if (loc1.targets.size() == 1 && loc2.targets.size() == 1)
@@ -614,7 +618,7 @@ namespace Analysis
         return result;
     }
 
-    AliasAnalyser::ModRefResult AliasAnalyser::queryInstModRef(LLVMIR::Instruction* inst, LLVMIR::Operand* op, CFG* cfg)
+    EAliasAnalyser::ModRefResult EAliasAnalyser::queryInstModRef(LLVMIR::Instruction* inst, LLVMIR::Operand* op, CFG* cfg)
     {
         ModRefResult result = NoModRef;
 
@@ -622,7 +626,7 @@ namespace Analysis
         {
             const auto& locations = reg_locations[cfg];
 
-            MemLocation op_loc;
+            EMemLocation op_loc;
             bool        found_op = false;
 
             if (op->type == LLVMIR::OperandType::REG)
@@ -656,7 +660,7 @@ namespace Analysis
                 auto* load_inst = static_cast<LLVMIR::LoadInst*>(inst);
                 auto* ptr       = load_inst->ptr;
 
-                MemLocation ptr_loc;
+                EMemLocation ptr_loc;
                 bool        found_ptr = false;
 
                 if (ptr->type == LLVMIR::OperandType::REG)
@@ -708,7 +712,7 @@ namespace Analysis
                 auto* store_inst = static_cast<LLVMIR::StoreInst*>(inst);
                 auto* ptr        = store_inst->ptr;
 
-                MemLocation ptr_loc;
+                EMemLocation ptr_loc;
                 bool        found_ptr = false;
 
                 if (ptr->type == LLVMIR::OperandType::REG)
@@ -964,7 +968,7 @@ namespace Analysis
         return result;
     }
 
-    bool AliasAnalyser::isLocalPtr(CFG* cfg, LLVMIR::Operand* ptr)
+    bool EAliasAnalyser::isLocalPtr(CFG* cfg, LLVMIR::Operand* ptr)
     {
         if (ptr->type != LLVMIR::OperandType::REG) { return true; }
 

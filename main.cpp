@@ -13,6 +13,7 @@
 
 // llvmIR Optimizers
 // MEM2REG
+#include "llvm/alias_analysis/ealias_analysis.h"
 #include "llvm/cdg.h"
 #include "llvm/def_use.h"
 #include "llvm/elimination/unusedarr.h"
@@ -71,6 +72,7 @@
 // Constant Branch Folding
 #include "optimize/llvm/utils/constant_branch_folding.h"
 // DSE
+#include "optimize/llvm/alias_analysis/ealias_analysis.h"
 #include "optimize/llvm/dse.h"
 // Trench Path
 #include "optimize/llvm/trenchpath.h"
@@ -544,17 +546,20 @@ int main(int argc, char** argv)
         }
 
         // TODO: partially unroll loop
-
-        aa.run();
+        
         makecfg.Execute();
         makedom.Execute();
-        DSEPass dse(&builder, &aa);
+        aa.run();
+        EAliasAnalysis::EAliasAnalyser ealias_analyser(&builder);
+        ealias_analyser.run();
+        DSEPass dse(&builder, &ealias_analyser);
         dse.Execute();
         edefUseAnalysis.run();
         unusedelimator.Execute();
         // TODO：Trench path length
 
         makecfg.Execute();
+        aa.run();
         TrenchPath trenchPath(&builder);
         trenchPath.Execute();
 

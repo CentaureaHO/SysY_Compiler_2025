@@ -10,8 +10,8 @@
 #include <iostream>  // 添加头文件用于输出调试信息
 #include <fstream>   // 添加文件输出支持
 
-// #define DEBUG_DSE
-// #define LOG_DSE_REMOVAL  // 控制删除记录输出的开关
+#define DEBUG_DSE
+#define LOG_DSE_REMOVAL  // 控制删除记录输出的开关
 
 namespace LLVMIR
 {
@@ -393,7 +393,7 @@ namespace LLVMIR
             }
 
             // 检查是否为逃逸指针
-            if (!alias_analyser->isLocalPtr(cfg, ptr))
+            if (!ealias_analyser->isLocalPtr(cfg, ptr))
             {
 #ifdef DEBUG_DSE
                 std::cout << "    Pointer " << ptr << " escapes function" << std::endl;
@@ -439,7 +439,7 @@ namespace LLVMIR
                     auto func_cfg  = get_cfg_by_name(ir, call_inst->func_name);
                     if (func_cfg)
                     {
-                        if (!alias_analyser->isNoSideEffect(func_cfg))
+                        if (!ealias_analyser->isNoSideEffect(func_cfg))
                         {
 #ifdef DEBUG_DSE
                             std::cout << "      Found call with side effects, store is live" << std::endl;
@@ -485,6 +485,7 @@ namespace LLVMIR
                 if (inst->opcode == IROpCode::STORE)
                 {
                     auto* nextStore = dynamic_cast<StoreInst*>(inst);
+
                     if (mustAlias(nextStore->ptr, storeInst->ptr, cfg))
                     {
 #ifdef DEBUG_DSE
@@ -529,7 +530,7 @@ namespace LLVMIR
                     auto func_cfg  = get_cfg_by_name(ir, call_inst->func_name);
                     if (func_cfg)
                     {
-                        if (!alias_analyser->isNoSideEffect(func_cfg))
+                        if (!ealias_analyser->isNoSideEffect(func_cfg))
                         {
 #ifdef DEBUG_DSE
                             std::cout << "        Found call with side effects, store is live" << std::endl;
@@ -561,9 +562,6 @@ namespace LLVMIR
                 if (inst->opcode == IROpCode::STORE)
                 {
                     auto* nextStore = dynamic_cast<StoreInst*>(inst);
-                    // std::cout << "Nextstore: " << nextStore->ptr << std::endl;
-                    // std::cout << "Nextstore and store: " << mustAlias(nextStore->ptr, storeInst->ptr, cfg) <<
-                    // std::endl;
                     if (mustAlias(nextStore->ptr, storeInst->ptr, cfg))
                     {
 #ifdef DEBUG_DSE
@@ -696,12 +694,12 @@ namespace LLVMIR
 
     bool DSEPass::mayAlias(Operand* ptr1, Operand* ptr2, CFG* cfg)
     {
-        return alias_analyser->queryAlias(ptr1, ptr2, cfg) != Analysis::AliasAnalyser::AliasResult::NoAlias;
+        return ealias_analyser->queryAlias(ptr1, ptr2, cfg) != Analysis::EAliasAnalyser::AliasResult::NoAlias;
     }
 
     bool DSEPass::mustAlias(Operand* ptr1, Operand* ptr2, CFG* cfg)
     {
-        return alias_analyser->queryAlias(ptr1, ptr2, cfg) == Analysis::AliasAnalyser::AliasResult::MustAlias;
+        return ealias_analyser->queryAlias(ptr1, ptr2, cfg) == Analysis::EAliasAnalyser::AliasResult::MustAlias;
     }
 
 }  // namespace LLVMIR

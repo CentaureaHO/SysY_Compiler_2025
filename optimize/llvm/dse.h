@@ -2,7 +2,7 @@
 
 #include "cfg.h"
 #include "llvm_ir/instruction.h"
-#include "llvm/alias_analysis/alias_analysis.h"
+#include "llvm/alias_analysis/ealias_analysis.h"
 #include "llvm/pass.h"
 #include <unordered_map>
 #include <unordered_set>
@@ -12,7 +12,7 @@ namespace LLVMIR
     class DSEPass : public Pass
     {
       private:
-        Analysis::AliasAnalyser* alias_analyser;
+        EAliasAnalysis::EAliasAnalyser* ealias_analyser;
 
         // 删除的store指令
         std::unordered_map<int, std::unordered_set<Instruction*> > erase_set;
@@ -48,7 +48,7 @@ namespace LLVMIR
         bool mustAlias(Operand* ptr1, Operand* ptr2, CFG* cfg);
 
       public:
-        DSEPass(LLVMIR::IR* ir, Analysis::AliasAnalyser* aa) : Pass(ir), alias_analyser(aa){};
+        DSEPass(LLVMIR::IR* ir, EAliasAnalysis::EAliasAnalyser* eaa) : Pass(ir), ealias_analyser(eaa){};
         void Execute() override;
     };
 }  // namespace LLVMIR

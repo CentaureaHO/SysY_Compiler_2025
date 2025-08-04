@@ -1,0 +1,38 @@
+===== DSE Pass Execution (Aug  4 2025 22:34:45) =====
+Processing function: bubblesort
+  [REMOVED] 1 dead stores in function bubblesort
+    - Block 8: %reg_25 = %reg_41
+Processing function: main
+  [REMOVED] 10 dead stores in function main
+    - Block 13: %reg_76 = %reg_92
+    - Block 1: %reg_21 = 6
+    - Block 1: %reg_3 = 4
+    - Block 1: %reg_15 = 0
+    - Block 1: %reg_6 = 3
+    - Block 1: %reg_9 = 9
+    - Block 1: %reg_12 = 2
+    - Block 1: %reg_18 = 1
+    - Block 1: %reg_24 = 5
+    - Block 1: %reg_27 = 7
+DSE Pass summary: removed 11 dead stores in total
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 22:34:45) =====
+Processing function: bubblesort
+  [REMOVED] 1 dead stores in function bubblesort
+    - Block 8: %reg_25 = %reg_41
+Processing function: main
+  [REMOVED] 10 dead stores in function main
+    - Block 13: %reg_76 = %reg_92
+    - Block 1: %reg_21 = 6
+    - Block 1: %reg_3 = 4
+    - Block 1: %reg_15 = 0
+    - Block 1: %reg_6 = 3
+    - Block 1: %reg_9 = 9
+    - Block 1: %reg_12 = 2
+    - Block 1: %reg_18 = 1
+    - Block 1: %reg_24 = 5
+    - Block 1: %reg_27 = 7
+DSE Pass summary: removed 11 dead stores in total
+===== DSE Pass End =====
+
