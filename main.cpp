@@ -556,7 +556,7 @@ int main(int argc, char** argv)
 
         makecfg.Execute();
         TrenchPath trenchPath(&builder);
-        // trenchPath.Execute();
+        trenchPath.Execute();
 
         makecfg.Execute();
         makedom.Execute();

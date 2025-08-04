@@ -15,6 +15,8 @@ namespace LLVMIR
             // 重置
             replace_map.clear();
             erase_blocks.clear();
+            phi_deps.clear();
+            CollectPHIDeps(cfg);
             ExecuteInSingleCFG(cfg);
         }
     }
@@ -35,6 +37,31 @@ namespace LLVMIR
         return target_id;
     }
 
+    void TrenchPath::CollectPHIDeps(CFG* cfg)
+    {
+        // 这里可以实现收集Phi依赖的逻辑
+        // 目前简单遍历所有块，收集Phi指令的依赖
+        for (auto [id, block] : cfg->block_id_to_block)
+        {
+            for (auto inst : block->insts)
+            {
+                if (inst->opcode == IROpCode::PHI)
+                {
+                    auto phi_inst = dynamic_cast<PhiInst*>(inst);
+                    for (const auto& [val, label] : phi_inst->vals_for_labels)
+                    {
+                        int label_id = dynamic_cast<LabelOperand*>(label)->label_num;
+                        phi_deps.insert(label_id);
+                    }
+                }
+                if (inst->opcode != IROpCode::PHI)
+                {
+                    break;  // 如果不是Phi指令，跳出循环
+                }
+            }
+        }
+    }
+
     void TrenchPath::ExecuteInSingleCFG(CFG* cfg)
     {
         for (auto [id, block] : cfg->block_id_to_block)
@@ -45,10 +72,13 @@ namespace LLVMIR
             {
                 // Handle unconditional branch
                 // 只有bruncond的块实际上是没必要的
-                auto brun_inst  = dynamic_cast<BranchUncondInst*>(inst);
-                auto target_id  = dynamic_cast<LabelOperand*>(brun_inst->target_label)->label_num;
-                replace_map[id] = target_id;
-                erase_blocks.insert(id);
+                auto brun_inst = dynamic_cast<BranchUncondInst*>(inst);
+                auto target_id = dynamic_cast<LabelOperand*>(brun_inst->target_label)->label_num;
+                if (phi_deps.count(target_id) == 0)
+                {
+                    replace_map[id] = target_id;
+                    erase_blocks.insert(id);
+                }
                 continue;
             }
         }
