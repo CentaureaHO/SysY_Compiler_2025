@@ -60,6 +60,10 @@ namespace LLVMIR
                 }
             }
         }
+#ifdef DEBUG_TRENCH_PATH
+        std::cout << "Collected Phi dependencies: ";
+        for (const auto& dep : phi_deps) { std::cout << dep << " "; }
+#endif
     }
 
     void TrenchPath::ExecuteInSingleCFG(CFG* cfg)
@@ -74,7 +78,7 @@ namespace LLVMIR
                 // 只有bruncond的块实际上是没必要的
                 auto brun_inst = dynamic_cast<BranchUncondInst*>(inst);
                 auto target_id = dynamic_cast<LabelOperand*>(brun_inst->target_label)->label_num;
-                if (phi_deps.count(target_id) == 0)
+                if (phi_deps.count(brun_inst->block_id) == 0)
                 {
                     replace_map[id] = target_id;
                     erase_blocks.insert(id);
