@@ -1,0 +1,2956 @@
+===== DSE Pass Execution (Aug  4 2025 14:25:27) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 14:25:27) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 14:25:27) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: get_next
+Processing function: KMP
+Processing function: read_str
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: get_next
+Processing function: KMP
+Processing function: read_str
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: get_next
+Processing function: KMP
+Processing function: read_str
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: bubblesort
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: bubblesort
+Processing function: insertsort
+Processing function: QuickSort
+Processing function: getMid
+Processing function: getMost
+Processing function: revert
+Processing function: arrCopy
+Processing function: calSum
+Processing function: avgPooling
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: func
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: Dijkstra
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: func
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: reverse
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: swap
+Processing function: heap_ajust
+Processing function: heap_sort
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: long_array
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: mul
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: my_memset
+Processing function: add_node
+Processing function: dfs
+Processing function: max_flow
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: whileIf
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: EightWhile
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: get_one
+Processing function: deepWhileBr
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: deepWhileBr
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: loop1
+Processing function: loop2
+Processing function: loop3
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: set_a
+Processing function: set_b
+Processing function: set_d
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: doubleWhile
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: foo
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: QuickSort
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: insertsort
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: long_func
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: sub
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: FourWhile
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: ififElse
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: counting_sort
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: float_abs
+Processing function: circle_area
+Processing function: float_eq
+Processing function: error
+Processing function: ok
+Processing function: assert
+Processing function: assert_not
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: putstr
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: ifElseIf
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: isdigit
+Processing function: power
+Processing function: getstr
+Processing function: intpush
+Processing function: chapush
+Processing function: intpop
+Processing function: chapop
+Processing function: intadd
+Processing function: find
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: relu_reg
+Processing function: model
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: my_getint
+Processing function: my_putint
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: tran
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: next_char
+Processing function: is_space
+Processing function: is_num
+Processing function: next_token
+Processing function: panic
+Processing function: get_op_prec
+Processing function: stack_push
+Processing function: stack_pop
+Processing function: stack_peek
+Processing function: stack_size
+Processing function: eval_op
+Processing function: eval
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: defn
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: move
+Processing function: hanoi
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: sort
+Processing function: param32_rec
+Processing function: param32_arr
+Processing function: param16
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: if_if_Else
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: func1
+Processing function: func2
+Processing function: func3
+Processing function: func4
+Processing function: func5
+Processing function: func6
+Processing function: func7
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: ifWhile
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: exgcd
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: if_ifElse_
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: merge_sort
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: testParam32
+Processing function: testParam8
+Processing function: testParam16
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: func
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: select_sort
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: func
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: printans
+Processing function: f
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: add
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: f1
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: MAX
+Processing function: max_sum_nonadjacent
+Processing function: longest_common_subseq
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: func
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: equal
+Processing function: dfs
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: inc_a
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: init
+Processing function: findfa
+Processing function: mmerge
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: read_program
+Processing function: interpret
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: search
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+Processing function: fib
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: printSolution
+Processing function: printMessage
+Processing function: isSafe
+Processing function: graphColoring
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: is_number
+Processing function: skip_space
+Processing function: detect_item
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: my_fabs
+Processing function: p
+Processing function: my_sin_impl
+Processing function: my_sin
+Processing function: my_cos
+Processing function: write_mat
+Processing function: dct
+Processing function: idct
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: quick_read
+Processing function: add_edge
+  [REMOVED] 1 dead stores in function add_edge
+    - Block 1: @cnt = %reg_17
+Processing function: init
+Processing function: clear
+Processing function: same
+Processing function: main
+  [REMOVED] 1 dead stores in function main
+    - Block 211: @cnt = %reg_328
+DSE Pass summary: removed 2 dead stores in total
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: getA
+Processing function: f1
+Processing function: f2
+Processing function: f3
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: quick_read
+Processing function: add_edge
+Processing function: init
+Processing function: tree
+Processing function: LCA
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: sum
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: f
+Processing function: g
+Processing function: h
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: params_f40
+Processing function: params_f40_i24
+Processing function: params_fa40
+Processing function: params_mix
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: inc_impl
+Processing function: inc
+Processing function: add_impl
+Processing function: add
+Processing function: sub_impl
+Processing function: sub
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: swap
+Processing function: findPivot
+Processing function: findSmallest
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: quick_read
+Processing function: sortA
+Processing function: sortB
+Processing function: sortC
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: matrix_multiply
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: my_fabs
+Processing function: p
+Processing function: my_sin_impl
+Processing function: my_sin
+Processing function: my_cos
+Processing function: read_image
+Processing function: rotate
+Processing function: write_pgm
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: f
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: func
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: quick_read
+Processing function: find
+Processing function: same
+Processing function: prim
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: quick_read
+Processing function: add_edge
+  [REMOVED] 1 dead stores in function add_edge
+    - Block 1: @cnt = %reg_17
+Processing function: init
+Processing function: inqueue
+Processing function: pop_queue
+Processing function: same
+Processing function: main
+  [REMOVED] 1 dead stores in function main
+    - Block 231: @cnt = %reg_372
+DSE Pass summary: removed 2 dead stores in total
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: my_fabs
+Processing function: my_pow
+Processing function: my_sqrt
+Processing function: F1
+Processing function: F2
+Processing function: simpson
+Processing function: asr5
+Processing function: asr4
+Processing function: eee
+Processing function: my_exp
+Processing function: my_ln
+Processing function: my_log
+Processing function: my_powf
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: quick_read
+Processing function: init
+Processing function: find
+Processing function: same
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: is_clique
+Processing function: maxCliques
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: find
+Processing function: merge
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: search
+Processing function: find_minimum
+Processing function: new_node
+Processing function: insert
+Processing function: delete
+Processing function: inorder
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: rand
+Processing function: my_fabs
+Processing function: my_sqrt
+Processing function: p
+Processing function: my_sin_impl
+Processing function: my_sin
+Processing function: my_cos
+Processing function: circle_sdf
+Processing function: scene
+Processing function: trace
+Processing function: sample
+Processing function: write_pgm
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: f
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: get_random
+Processing function: rotl1
+Processing function: rotl5
+Processing function: rotl30
+Processing function: _and
+Processing function: _not
+Processing function: _xor
+Processing function: _or
+Processing function: pseudo_sha1
+Processing function: main
+  [REMOVED] 2 dead stores in function main
+    - Block 12: @state = %reg_92
+    - Block 12: @state = %reg_87
+DSE Pass summary: removed 2 dead stores in total
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: kernel_nussinov
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: min
+Processing function: f
+Processing function: loop_test
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: fun
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: multiply
+Processing function: power
+Processing function: memmove
+Processing function: fft
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: fun
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: multiply
+Processing function: power
+Processing function: memmove
+Processing function: fft
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: kernel_nussinov
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: getMaxNum
+Processing function: getNumPos
+Processing function: radixSort
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: min
+Processing function: f
+Processing function: loop_test
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: read_map
+Processing function: put_map
+Processing function: swap12
+Processing function: step
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: kernel_ludcmp
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: max
+Processing function: exp
+Processing function: sigmoid
+Processing function: kernel_conv_pooling
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: kernel_ludcmp
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: multiply
+Processing function: power
+Processing function: memmove
+Processing function: fft
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: func
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: transpose
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: loop
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: getMaxNum
+Processing function: getNumPos
+Processing function: radixSort
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: kernel_ludcmp
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: hash
+Processing function: insert
+Processing function: reduce
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: transpose
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: max
+Processing function: exp
+Processing function: sigmoid
+Processing function: kernel_conv_pooling
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: spmv
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: bubble_sort
+Processing function: binary_search
+Processing function: perform_operations
+Processing function: array_init_and_process
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: read_map
+Processing function: put_map
+Processing function: swap12
+Processing function: step
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: read_map
+Processing function: put_map
+Processing function: swap12
+Processing function: step
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: newtons_sqrt_recursive
+Processing function: newtons_sqrt
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: getMaxNum
+Processing function: getNumPos
+Processing function: radixSort
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: transpose
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: get_random
+Processing function: rotl1
+Processing function: rotl5
+Processing function: rotl30
+Processing function: _and
+Processing function: _not
+Processing function: _xor
+Processing function: _or
+Processing function: pseudo_sha1
+Processing function: main
+  [REMOVED] 2 dead stores in function main
+    - Block 12: @state = %reg_92
+    - Block 12: @state = %reg_87
+DSE Pass summary: removed 2 dead stores in total
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: rand
+Processing function: fib
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: mm
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: loop
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: trsm
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: func
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: hash
+Processing function: insert
+Processing function: reduce
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: mm
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: hash
+Processing function: insert
+Processing function: reduce
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: loop
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: kernel_nussinov
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: max
+Processing function: exp
+Processing function: sigmoid
+Processing function: kernel_conv_pooling
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: spmv
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: rand
+Processing function: fib
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: mm
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: trsm
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: rand
+Processing function: fib
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: fun
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: get_random
+Processing function: rotl1
+Processing function: rotl5
+Processing function: rotl30
+Processing function: _and
+Processing function: _not
+Processing function: _xor
+Processing function: _or
+Processing function: pseudo_sha1
+Processing function: main
+  [REMOVED] 2 dead stores in function main
+    - Block 12: @state = %reg_92
+    - Block 12: @state = %reg_87
+DSE Pass summary: removed 2 dead stores in total
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: trsm
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: spmv
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: func
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: min
+Processing function: f
+Processing function: loop_test
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: modx
+Processing function: mody
+Processing function: refx
+Processing function: refy
+Processing function: modxrefy
+Processing function: modyrefx
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: maxArea
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: gcd
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+Processing function: fib
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: next_char
+Processing function: is_space
+Processing function: is_num
+Processing function: next_token
+Processing function: panic
+Processing function: get_op_prec
+Processing function: stack_push
+Processing function: stack_pop
+Processing function: stack_peek
+Processing function: stack_size
+Processing function: eval_op
+Processing function: eval
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: mul
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: counting_sort
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: move
+Processing function: hanoi
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: lengthOfLastWord
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: add
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: maxSubArray
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: insert
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: putstr
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: sub
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: printans
+Processing function: f
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: printSolution
+Processing function: printMessage
+Processing function: isSafe
+Processing function: graphColoring
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: long_func
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: relu_reg
+Processing function: model
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: read_program
+Processing function: interpret
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: min
+Processing function: max
+Processing function: eq
+Processing function: lt
+Processing function: ne
+Processing function: select
+Processing function: newNode
+Processing function: update1
+Processing function: rotate
+Processing function: rank
+Processing function: transplant
+Processing function: findMin
+Processing function: insertFixUp
+Processing function: insert1
+Processing function: delFixUp
+Processing function: erase
+Processing function: cmp
+Processing function: suc2
+Processing function: insert
+Processing function: update
+Processing function: lower
+Processing function: suc
+Processing function: k_th
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: isdigit
+Processing function: power
+Processing function: getstr
+Processing function: intpush
+Processing function: chapush
+Processing function: intpop
+Processing function: chapop
+Processing function: intadd
+Processing function: find
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: get_next
+Processing function: KMP
+Processing function: read_str
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: concat
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: func1
+Processing function: func2
+Processing function: func3
+Processing function: func4
+Processing function: func5
+Processing function: func6
+Processing function: func7
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: foo
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: KnapSack
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: func
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: init
+Processing function: findfa
+Processing function: mmerge
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: is_number
+Processing function: skip_space
+Processing function: detect_item
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: my_fabs
+Processing function: p
+Processing function: my_sin_impl
+Processing function: my_sin
+Processing function: my_cos
+Processing function: write_mat
+Processing function: dct
+Processing function: idct
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: exgcd
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: bubblesort
+Processing function: insertsort
+Processing function: QuickSort
+Processing function: getMid
+Processing function: getMost
+Processing function: revert
+Processing function: arrCopy
+Processing function: calSum
+Processing function: avgPooling
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: quick_read
+Processing function: add_edge
+  [REMOVED] 1 dead stores in function add_edge
+    - Block 1: @cnt = %reg_17
+Processing function: init
+Processing function: clear
+Processing function: same
+Processing function: main
+  [REMOVED] 1 dead stores in function main
+    - Block 211: @cnt = %reg_328
+DSE Pass summary: removed 2 dead stores in total
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: quick_read
+Processing function: add_edge
+Processing function: init
+Processing function: tree
+Processing function: LCA
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: my_memset
+Processing function: add_node
+Processing function: dfs
+Processing function: max_flow
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: sum
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: float_abs
+Processing function: circle_area
+Processing function: float_eq
+Processing function: error
+Processing function: ok
+Processing function: assert
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: tran
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: DFS
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: uniquePaths
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: loop1
+Processing function: loop2
+Processing function: loop3
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: f1
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: params_f40
+Processing function: params_f40_i24
+Processing function: params_fa40
+Processing function: params_mix
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: func
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: swap
+Processing function: findPivot
+Processing function: findSmallest
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: canJump
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: testParam32
+Processing function: testParam8
+Processing function: testParam16
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: MAX
+Processing function: max_sum_nonadjacent
+Processing function: longest_common_subseq
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: my_fabs
+Processing function: p
+Processing function: my_sin_impl
+Processing function: my_sin
+Processing function: my_cos
+Processing function: read_image
+Processing function: rotate
+Processing function: write_pgm
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: func
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: merge_sort
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: eq
+Processing function: ne
+Processing function: lt
+Processing function: le
+Processing function: gt
+Processing function: ge
+Processing function: init_data
+Processing function: panic
+Processing function: alloc_data
+Processing function: free_data
+Processing function: copy_ptr
+Processing function: copy_data
+Processing function: make_symbol
+Processing function: make_number
+Processing function: make_list
+Processing function: is_predef_sym
+Processing function: is_eq_sym
+Processing function: print_sym
+Processing function: make_env
+Processing function: env_add
+Processing function: env_get
+Processing function: env_set
+Processing function: env_find
+Processing function: make_func
+Processing function: is_space
+Processing function: is_digit
+Processing function: next_token
+Processing function: parse
+Processing function: make_bool
+Processing function: is_true
+Processing function: is_equal
+Processing function: unwrap_list
+Processing function: unwrap_symbol
+Processing function: unwrap_number
+Processing function: eval
+Processing function: print
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: get_ans_se
+Processing function: get_ans
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: f
+Processing function: sum
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: testParam32
+Processing function: testParam8
+Processing function: testParam16
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: Dijkstra
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: eq
+Processing function: ne
+Processing function: lt
+Processing function: le
+Processing function: gt
+Processing function: ge
+Processing function: init_data
+Processing function: panic
+Processing function: alloc_data
+Processing function: free_data
+Processing function: copy_ptr
+Processing function: copy_data
+Processing function: make_symbol
+Processing function: make_number
+Processing function: make_list
+Processing function: is_predef_sym
+Processing function: is_eq_sym
+Processing function: print_sym
+Processing function: make_env
+Processing function: env_add
+Processing function: env_get
+Processing function: env_set
+Processing function: env_find
+Processing function: make_func
+Processing function: is_space
+Processing function: is_digit
+Processing function: next_token
+Processing function: parse
+Processing function: make_bool
+Processing function: is_true
+Processing function: is_equal
+Processing function: unwrap_list
+Processing function: unwrap_symbol
+Processing function: unwrap_number
+Processing function: eval
+Processing function: print
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: FourWhile
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: set_a
+Processing function: set_b
+Processing function: set_d
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: quick_read
+Processing function: add_edge
+  [REMOVED] 1 dead stores in function add_edge
+    - Block 1: @cnt = %reg_17
+Processing function: init
+Processing function: inqueue
+Processing function: pop_queue
+Processing function: same
+Processing function: main
+  [REMOVED] 1 dead stores in function main
+    - Block 231: @cnt = %reg_372
+DSE Pass summary: removed 2 dead stores in total
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: palindrome
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: my_fabs
+Processing function: my_pow
+Processing function: my_sqrt
+Processing function: F1
+Processing function: F2
+Processing function: simpson
+Processing function: asr5
+Processing function: asr4
+Processing function: eee
+Processing function: my_exp
+Processing function: my_ln
+Processing function: my_log
+Processing function: my_powf
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: long_array
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: quick_read
+Processing function: init
+Processing function: find
+Processing function: same
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: f
+Processing function: g
+Processing function: h
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: inc_a
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: topo
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: my_getint
+Processing function: my_putint
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: search
+Processing function: find_minimum
+Processing function: new_node
+Processing function: insert
+Processing function: delete
+Processing function: inorder
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: sort
+Processing function: param32_rec
+Processing function: param32_arr
+Processing function: param16
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: func
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: func
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: eq
+Processing function: son
+Processing function: push_up
+Processing function: xor_01
+Processing function: push_down
+Processing function: rotate
+Processing function: splay
+Processing function: get_kth
+Processing function: reverse
+Processing function: build
+Processing function: get_ans
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: swap
+Processing function: heap_ajust
+Processing function: heap_sort
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: split
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: rand
+Processing function: my_fabs
+Processing function: my_sqrt
+Processing function: p
+Processing function: my_sin_impl
+Processing function: my_sin
+Processing function: my_cos
+Processing function: circle_sdf
+Processing function: scene
+Processing function: trace
+Processing function: sample
+Processing function: write_pgm
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: equal
+Processing function: dfs
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: newExp
+Processing function: newPow
+Processing function: kernel_deriche
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: or
+Processing function: rand
+Processing function: put_string
+Processing function: clear_map
+Processing function: init
+Processing function: print_map
+Processing function: move_base
+Processing function: generate
+Processing function: move
+Processing function: try_move
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: removeElement
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: get_next
+Processing function: KMP
+Processing function: read_str
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+
+===== DSE Pass Execution (Aug  4 2025 18:30:00) =====
+Processing function: get_next
+Processing function: KMP
+Processing function: read_str
+Processing function: main
+DSE Pass summary: removed 0 dead stores in total
+WARNING: No stores were removed in this pass!
+===== DSE Pass End =====
+

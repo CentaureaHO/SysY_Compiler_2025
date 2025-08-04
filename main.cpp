@@ -72,6 +72,8 @@
 #include "optimize/llvm/utils/constant_branch_folding.h"
 // DSE
 #include "optimize/llvm/dse.h"
+// Trench Path
+#include "optimize/llvm/trenchpath.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -551,6 +553,10 @@ int main(int argc, char** argv)
         edefUseAnalysis.run();
         unusedelimator.Execute();
         // TODO：Trench path length
+
+        makecfg.Execute();
+        TrenchPath trenchPath(&builder);
+        // trenchPath.Execute();
 
         makecfg.Execute();
         makedom.Execute();

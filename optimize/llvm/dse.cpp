@@ -562,7 +562,8 @@ namespace LLVMIR
                 {
                     auto* nextStore = dynamic_cast<StoreInst*>(inst);
                     // std::cout << "Nextstore: " << nextStore->ptr << std::endl;
-                    // std::cout << "Nextstore and store: " << mustAlias(nextStore->ptr, storeInst->ptr, cfg) << std::endl;
+                    // std::cout << "Nextstore and store: " << mustAlias(nextStore->ptr, storeInst->ptr, cfg) <<
+                    // std::endl;
                     if (mustAlias(nextStore->ptr, storeInst->ptr, cfg))
                     {
 #ifdef DEBUG_DSE
