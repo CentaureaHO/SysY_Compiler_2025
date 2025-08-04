@@ -694,12 +694,12 @@ namespace LLVMIR
 
     bool DSEPass::mayAlias(Operand* ptr1, Operand* ptr2, CFG* cfg)
     {
-        return ealias_analyser->queryAlias(ptr1, ptr2, cfg) != Analysis::EAliasAnalyser::AliasResult::NoAlias;
+        return ealias_analyser->queryAlias(ptr1, ptr2, cfg) != EAliasAnalysis::EAliasAnalyser::AliasResult::NoAlias;
     }
 
     bool DSEPass::mustAlias(Operand* ptr1, Operand* ptr2, CFG* cfg)
     {
-        return ealias_analyser->queryAlias(ptr1, ptr2, cfg) == Analysis::EAliasAnalyser::AliasResult::MustAlias;
+        return ealias_analyser->queryAlias(ptr1, ptr2, cfg) == EAliasAnalysis::EAliasAnalyser::AliasResult::MustAlias;
     }
 
 }  // namespace LLVMIR

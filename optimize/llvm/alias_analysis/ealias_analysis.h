@@ -1,6 +1,4 @@
-#ifndef __OPTIMIZER_LLVM_ALIAS_ANALYSIS_ALIAS_ANALYSIS_H__
-#define __OPTIMIZER_LLVM_ALIAS_ANALYSIS_ALIAS_ANALYSIS_H__
-
+#pragma once
 #include <cassert>
 #include <vector>
 #include <unordered_map>
@@ -106,4 +104,3 @@ namespace EAliasAnalysis
         std::vector<LLVMIR::Operand*> getReadPtrs(CFG* cfg);
     };
 }  // namespace Analysis
-#endif

@@ -7,7 +7,6 @@
 #include "llvm_ir/instruction.h"
 #include "llvm_ir/ir_builder.h"
 #include "cfg.h"
-#include <sstream>
 
 namespace EAliasAnalysis
 {
@@ -174,7 +173,7 @@ namespace EAliasAnalysis
         collectMemAccesses(cfg, locations);
     }
 
-    void EAliasAnalyser::handlePtrPropagation(CFG* cfg, std::unordered_map<int,EMemLocation>& locations)
+    void EAliasAnalyser::handlePtrPropagation(CFG* cfg, std::unordered_map<int, EMemLocation>& locations)
     {
         bool changed = true;
         while (changed)
@@ -525,7 +524,7 @@ namespace EAliasAnalysis
             const auto& locations = reg_locations[cfg];
 
             EMemLocation loc1, loc2;
-            bool        found1 = false, found2 = false;
+            bool         found1 = false, found2 = false;
 
             // Get location info for op1
             if (op1->type == LLVMIR::OperandType::REG)
@@ -588,11 +587,11 @@ namespace EAliasAnalysis
                                 {
                                     if (target1->getName() == target2->getName())
                                     {
-                                        result = MustAlias;
+                                        result = MayAlias;
                                         break;
                                     }
                                 }
-                                if (result == MustAlias) break;
+                                if (result == MayAlias) break;
                             }
                         }
                     }
@@ -604,11 +603,11 @@ namespace EAliasAnalysis
                             {
                                 if (target1->getName() == target2->getName())
                                 {
-                                    result = MustAlias;
+                                    result = MayAlias;
                                     break;
                                 }
                             }
-                            if (result == MustAlias) break;
+                            if (result == MayAlias) break;
                         }
                     }
                 }
@@ -618,7 +617,8 @@ namespace EAliasAnalysis
         return result;
     }
 
-    EAliasAnalyser::ModRefResult EAliasAnalyser::queryInstModRef(LLVMIR::Instruction* inst, LLVMIR::Operand* op, CFG* cfg)
+    EAliasAnalyser::ModRefResult EAliasAnalyser::queryInstModRef(
+        LLVMIR::Instruction* inst, LLVMIR::Operand* op, CFG* cfg)
     {
         ModRefResult result = NoModRef;
 
@@ -627,7 +627,7 @@ namespace EAliasAnalysis
             const auto& locations = reg_locations[cfg];
 
             EMemLocation op_loc;
-            bool        found_op = false;
+            bool         found_op = false;
 
             if (op->type == LLVMIR::OperandType::REG)
             {
@@ -661,7 +661,7 @@ namespace EAliasAnalysis
                 auto* ptr       = load_inst->ptr;
 
                 EMemLocation ptr_loc;
-                bool        found_ptr = false;
+                bool         found_ptr = false;
 
                 if (ptr->type == LLVMIR::OperandType::REG)
                 {
@@ -713,7 +713,7 @@ namespace EAliasAnalysis
                 auto* ptr        = store_inst->ptr;
 
                 EMemLocation ptr_loc;
-                bool        found_ptr = false;
+                bool         found_ptr = false;
 
                 if (ptr->type == LLVMIR::OperandType::REG)
                 {
@@ -983,4 +983,4 @@ namespace EAliasAnalysis
         return true;
     }
 
-}  // namespace Analysis
+}  // namespace EAliasAnalysis
