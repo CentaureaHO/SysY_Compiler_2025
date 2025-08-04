@@ -1,19 +1,15 @@
-#ifndef __OPTIMIZER_LLVM_ALIAS_ANALYSIS_ALIAS_ANALYSIS_H__
-#define __OPTIMIZER_LLVM_ALIAS_ANALYSIS_ALIAS_ANALYSIS_H__
-
+#pragma once
 #include <cassert>
 #include <vector>
-#include <map>
-#include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include "llvm_ir/ir_builder.h"
 #include "llvm_ir/instruction.h"
 #include "cfg.h"
 
-namespace Analysis
+namespace EAliasAnalysis
 {
-    class MemLocation
+    class EMemLocation
     {
       public:
         // The set of base pointers (from alloca or globals) this location might refer to.
@@ -31,10 +27,10 @@ namespace Analysis
         }
         void markNonLocal() { is_stack_local = false; }
         bool isLocal() const { return is_stack_local && !escapes_function; }
-        void merge(const MemLocation& other);
+        void merge(const EMemLocation& other);
     };
 
-    class FuncMemProfile
+    class EFuncMemProfile
     {
       public:
         bool has_external_deps = false;
@@ -48,7 +44,7 @@ namespace Analysis
         void addReads(const std::vector<LLVMIR::Operand*>& ops);
         void addWrites(const std::vector<LLVMIR::Operand*>& ops);
         void combineProfile(
-            LLVMIR::CallInst* call, const FuncMemProfile& other, const std::unordered_map<int, MemLocation>& locations);
+            LLVMIR::CallInst* call, const EFuncMemProfile& other, const std::unordered_map<int, EMemLocation>& locations);
 
         bool isPure() const { return !has_external_deps && mem_reads.empty() && mem_writes.empty(); }
         bool hasNoWrites() const { return !has_external_deps && mem_writes.empty(); }
@@ -56,7 +52,7 @@ namespace Analysis
         bool writesMemory() const { return !mem_writes.empty() || has_external_deps; }
     };
 
-    class AliasAnalyser
+    class EAliasAnalyser
     {
       public:
         enum AliasResult
@@ -77,19 +73,19 @@ namespace Analysis
       private:
         LLVMIR::IR* ir;
 
-        std::unordered_map<CFG*, FuncMemProfile>                                func_profiles;
-        std::unordered_map<CFG*, std::unordered_map<int, MemLocation>>          reg_locations;
+        std::unordered_map<CFG*, EFuncMemProfile>                                func_profiles;
+        std::unordered_map<CFG*, std::unordered_map<int, EMemLocation>>          reg_locations;
         std::unordered_map<CFG*, std::unordered_map<int, LLVMIR::Instruction*>> def_map;
 
         void buildDefMap(CFG* cfg);
         void processFunction(CFG* cfg);
-        void handlePtrPropagation(CFG* cfg, std::unordered_map<int, MemLocation>& locations);
-        void collectMemAccesses(CFG* cfg, const std::unordered_map<int, MemLocation>& locations);
+        void handlePtrPropagation(CFG* cfg, std::unordered_map<int, EMemLocation>& locations);
+        void collectMemAccesses(CFG* cfg, const std::unordered_map<int, EMemLocation>& locations);
         bool checkSameBaseWithDistinctOffset(LLVMIR::Operand* p1, LLVMIR::Operand* p2, CFG* cfg);
         bool checkIdenticalGEP(LLVMIR::Operand* p1, LLVMIR::Operand* p2, CFG* cfg);
 
       public:
-        AliasAnalyser(LLVMIR::IR* ir);
+        EAliasAnalyser(LLVMIR::IR* ir);
 
         void setLLVMIR(LLVMIR::IR* ir) { this->ir = ir; }
 
@@ -108,4 +104,3 @@ namespace Analysis
         std::vector<LLVMIR::Operand*> getReadPtrs(CFG* cfg);
     };
 }  // namespace Analysis
-#endif

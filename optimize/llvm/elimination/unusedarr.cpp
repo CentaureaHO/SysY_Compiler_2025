@@ -3,6 +3,7 @@
 #include "llvm_ir/instruction.h"
 #include <deque>
 #include <iostream>
+#include <queue>
 #include <unordered_set>
 
 namespace LLVMIR
@@ -64,9 +65,6 @@ namespace LLVMIR
         {
             for (auto array : arrays)
             {
-#ifdef DEBUG
-                std::cout << array->getName() << " is ";
-#endif
                 if (array->type == OperandType::GLOBAL)
                 {
                     // 全局数组
@@ -124,6 +122,12 @@ namespace LLVMIR
                                 if (!visited.count(use2)) { uses.insert(use2); }
                             }
                         }
+                        else if (use->opcode == IROpCode::PHI)
+                        {
+                            // PHI指令可能会有多个输入，我们需要检查所有输入
+                            accessed_arrays[cfg].insert(array);
+                            break;
+                        }
                     }
                 }
             }
@@ -180,13 +184,15 @@ namespace LLVMIR
             for (auto array : arrays)
             {
                 auto                             def_inst = array2def[cfg][array];
-                std::unordered_set<Instruction*> defs;
-                defs.insert(def_inst);
+                std::queue<Instruction*>         defs;
+                std::unordered_set<Instruction*> visited;
+                defs.push(def_inst);
                 while (!defs.empty())
                 {
-                    auto inst = *defs.begin();
-                    defs.erase(inst);
+                    auto inst = defs.front();
+                    defs.pop();
                     to_remove.insert(inst);
+                    visited.insert(inst);
                     // 删除所有的use
                     for (auto use : edefUseAnalysis->getUses(cfg, inst->GetResultOperand()))
                     {
@@ -204,7 +210,7 @@ namespace LLVMIR
                                 std::cout << "Removing use: " << use2->opcode << " for array " << array->getName()
                                           << std::endl;
 #endif
-                                defs.insert(use2);
+                                if (!visited.count(use2)) { defs.push(use2); }
                             }
                         }
                         to_remove.insert(use);
@@ -217,7 +223,7 @@ namespace LLVMIR
                 std::deque<Instruction*> new_insts;
                 for (auto inst : block->insts)
                 {
-                    if (to_remove.count(inst) == 0) { new_insts.push_back(inst); }
+                    if (!to_remove.count(inst)) { new_insts.push_back(inst); }
                 }
                 block->insts = std::move(new_insts);
             }
@@ -227,6 +233,11 @@ namespace LLVMIR
 
     void UnusedArrEliminator::Execute()
     {
+        // 重置
+        array_defs.clear();
+        array2def.clear();
+        accessed_arrays.clear();
+
         collectArrayDefinitions();
 #ifdef DEBUG
         std::cout << "Collected array definitions: " << array_defs.size() << std::endl;
