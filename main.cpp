@@ -13,6 +13,7 @@
 
 // llvmIR Optimizers
 // MEM2REG
+#include "llvm/alias_analysis/ealias_analysis.h"
 #include "llvm/cdg.h"
 #include "llvm/def_use.h"
 #include "llvm/elimination/unusedarr.h"
@@ -70,6 +71,11 @@
 #include "optimize/llvm/utils/single_source_phi_elimination.h"
 // Constant Branch Folding
 #include "optimize/llvm/utils/constant_branch_folding.h"
+// DSE
+#include "optimize/llvm/alias_analysis/ealias_analysis.h"
+#include "optimize/llvm/dse.h"
+// Trench Path
+#include "optimize/llvm/trenchpath.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -363,9 +369,6 @@ int main(int argc, char** argv)
         UnusedArrEliminator unusedelimator(&builder, &edefUseAnalysis);
         unusedelimator.Execute();
 
-        makecfg.Execute();
-        makedom.Execute();
-
         // DCE
         DefUseAnalysisPass DCEDefUse(&builder);
         DCEDefUse.Execute();
@@ -543,6 +546,24 @@ int main(int argc, char** argv)
         }
 
         // TODO: partially unroll loop
+        
+        makecfg.Execute();
+        makedom.Execute();
+        aa.run();
+        EAliasAnalysis::EAliasAnalyser ealias_analyser(&builder);
+        ealias_analyser.run();
+        DSEPass dse(&builder, &ealias_analyser);
+        dse.Execute();
+        edefUseAnalysis.run();
+        unusedelimator.Execute();
+        DCEDefUse.Execute();
+        dce.Execute();
+        // TODO：Trench path length
+
+        makecfg.Execute();
+        aa.run();
+        TrenchPath trenchPath(&builder);
+        trenchPath.Execute();
 
         makecfg.Execute();
         makedom.Execute();

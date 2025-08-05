@@ -282,10 +282,7 @@ namespace LLVMIR
                 }
             }
             else if (control_inst->opcode == IROpCode::RET) { continue; }
-            else
-            {
-                return std::unordered_set<int>{};
-            }
+            else { return std::unordered_set<int>{}; }
         }
         return ret;
     }
@@ -334,10 +331,7 @@ namespace LLVMIR
         }
 
         // 处理postdominator
-        if (used_blocks.empty())
-        {
-            return -1;
-        }
+        if (used_blocks.empty()) { return -1; }
         else
         {
             L = *used_blocks.begin();

@@ -8,20 +8,30 @@ namespace Analysis
     void EDefUseAnalysis::print()
     {
         std::cout << "EDefUse Analysis Results:" << std::endl;
-        for (const auto& [op, inst] : DefMaps)
+        for (const auto& [cfg, def_map] : DefMaps)
         {
-            std::cout << "Operand: " << op->getName() << " defined by instruction: " << inst->opcode << std::endl;
+            for (const auto& [op, inst] : def_map)
+            {
+                std::cout << "Operand: " << op << " defined by instruction: " << inst->opcode << std::endl;
+            }
         }
-        for (const auto& [op, insts] : UseMaps)
+        for (const auto& [cfg, use_map] : UseMaps)
         {
-            std::cout << "Operand: " << op->getName() << " used by instructions: ";
-            for (const auto& inst : insts) { std::cout << inst->opcode << ", "; }
-            std::cout << std::endl;
+            for (const auto& [op, inst_set] : use_map)
+            {
+                std::cout << "Operand: " << op << " used by instructions: ";
+                for (const auto& inst : inst_set) { std::cout << inst << ", "; }
+                std::cout << std::endl;
+            }
         }
     }
 #endif
     void EDefUseAnalysis::run()
     {
+        // 先重置
+        DefMaps.clear();
+        UseMaps.clear();
+
         for (auto& global_def : ir->global_def)
         {
             auto global_inst = dynamic_cast<LLVMIR::GlbvarDefInst*>(global_def);
@@ -64,6 +74,11 @@ namespace Analysis
                         UseMaps[cfg][op].insert(inst);
                     }
                 }
+#ifdef DEBUG
+                std::cout << "Instruction: " << inst->opcode << " in block " << id << " uses: ";
+                for (auto& op : used_ops) { std::cout << op->getName() << ", "; }
+                std::cout << "defs: " << (def_op ? def_op->getName() : "None") << std::endl;
+#endif
             }
         }
     }
