@@ -312,6 +312,9 @@ class RV64Inst : public Instruction
 
 ### 后端完成的优化
 
+- 死代码消除
+- CSE：识别并消除重复的子表达式
+
 ## 关于参考
 
 https://github.com/yuhuifishash/SysY
