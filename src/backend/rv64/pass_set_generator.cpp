@@ -25,7 +25,7 @@ std::vector<std::unique_ptr<Backend::BasePass>> PassSetGenerator::generate(LLVMI
         // passes.emplace_back(std::make_unique<ArithmeticStrengthReductionPass>(functions));
         // passes.emplace_back(std::make_unique<Optimize::Peehole::SSAPeepholePass>(functions));
         passes.emplace_back(std::make_unique<Optimize::Peehole::SSADeadDefEliminatePass>(functions));
-        passes.emplace_back(std::make_unique<Optimize::RV64CSEPass>(functions)); 
+        passes.emplace_back(std::make_unique<Optimize::RV64CSEPass>(functions));
     }
     passes.emplace_back(std::make_unique<PhiDestructionPass>(functions));
     passes.emplace_back(std::make_unique<ImmediateFMoveEliminationPass>(functions));

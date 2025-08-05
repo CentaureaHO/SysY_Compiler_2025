@@ -460,7 +460,7 @@ int main(int argc, char** argv)
         // scevAnalyser.printAllResults();
 
         Transform::IndVarsSimplifyPass indVarsPass(&builder, &scevAnalyser);
-        indVarsPass.Execute();
+        // indVarsPass.Execute();
 
         makecfg.Execute();
         makedom.Execute();
@@ -546,7 +546,7 @@ int main(int argc, char** argv)
         }
 
         // TODO: partially unroll loop
-        
+
         makecfg.Execute();
         makedom.Execute();
         aa.run();
