@@ -556,6 +556,8 @@ int main(int argc, char** argv)
         dse.Execute();
         edefUseAnalysis.run();
         unusedelimator.Execute();
+        DCEDefUse.Execute();
+        dce.Execute();
         // TODO：Trench path length
 
         makecfg.Execute();
