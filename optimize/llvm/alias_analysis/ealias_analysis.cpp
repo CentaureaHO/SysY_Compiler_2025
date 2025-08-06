@@ -1,5 +1,6 @@
 #include "llvm/alias_analysis/ealias_analysis.h"
 #include <cassert>
+#include <cstddef>
 #include <queue>
 #include <vector>
 #include <map>
@@ -338,18 +339,16 @@ namespace EAliasAnalysis
         // Check if base pointers are the same
         if (gep1->base_ptr->getName() != gep2->base_ptr->getName()) { return false; }
 
-        // Check if last indices are different constants
-        auto* idx1 = gep1->idxs.back();
-        auto* idx2 = gep2->idxs.back();
-
-        if (idx1->type == LLVMIR::OperandType::IMMEI32 && idx2->type == LLVMIR::OperandType::IMMEI32)
+        // Check all indices
+        for (size_t i = 0; i < gep1->idxs.size(); ++i)
         {
-            auto* imm1 = static_cast<LLVMIR::ImmeI32Operand*>(idx1);
-            auto* imm2 = static_cast<LLVMIR::ImmeI32Operand*>(idx2);
-            return imm1->value != imm2->value;
+            auto* idx1 = gep1->idxs[i];
+            auto* idx2 = gep2->idxs[i];
+            if (idx1->type != idx2->type) { return false; }
+            if (idx1 == idx2) continue;  // Same index, skip
         }
 
-        return false;
+        return true;
     }
 
     bool EAliasAnalyser::checkIdenticalGEP(LLVMIR::Operand* p1, LLVMIR::Operand* p2, CFG* cfg)
@@ -576,25 +575,7 @@ namespace EAliasAnalysis
                 }
                 else
                 {
-                    if (loc1.targets.size() == 1 && loc2.targets.size() == 1)
-                    {
-                        if (checkSameBaseWithDistinctOffset(op1, op2, cfg)) { result = NoAlias; }
-                        else
-                        {
-                            for (auto* target1 : loc1.targets)
-                            {
-                                for (auto* target2 : loc2.targets)
-                                {
-                                    if (target1->getName() == target2->getName())
-                                    {
-                                        result = MayAlias;
-                                        break;
-                                    }
-                                }
-                                if (result == MayAlias) break;
-                            }
-                        }
-                    }
+                    if (checkSameBaseWithDistinctOffset(op1, op2, cfg)) { result = NoAlias; }
                     else
                     {
                         for (auto* target1 : loc1.targets)
@@ -978,7 +959,7 @@ namespace EAliasAnalysis
         if (location.count(reg->reg_num))
         {
             const auto& memLoc = location.at(reg->reg_num);
-            return memLoc.escapes_function || !memLoc.is_stack_local;
+            return !memLoc.escapes_function || !memLoc.is_stack_local;
         }
         return true;
     }

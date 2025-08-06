@@ -538,7 +538,6 @@ int main(int argc, char** argv)
         
         makecfg.Execute();
         makedom.Execute();
-        aa.run();
         EAliasAnalysis::EAliasAnalyser ealias_analyser(&builder);
         ealias_analyser.run();
         DSEPass dse(&builder, &ealias_analyser);
@@ -564,7 +563,7 @@ int main(int argc, char** argv)
         makedom.Execute();
 
         Transform::GEPStrengthReduce gepStrengthReduce(&builder);
-        gepStrengthReduce.Execute();
+        // gepStrengthReduce.Execute();
 
         makecfg.Execute();
         makedom.Execute();
