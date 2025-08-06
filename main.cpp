@@ -425,17 +425,6 @@ int main(int argc, char** argv)
         makeredom.Execute(true);
         loopAnalysis.Execute();
 
-        makecfg.Execute();
-        makedom.Execute();
-
-        Transform::ArithInstReduce arithInstReduce(&builder);
-        arithInstReduce.Execute();
-
-        makecfg.Execute();
-        makedom.Execute();
-
-        Transform::GEPStrengthReduce gepStrengthReduce(&builder);
-        gepStrengthReduce.Execute();
 
         makecfg.Execute();
         makedom.Execute();
@@ -564,6 +553,18 @@ int main(int argc, char** argv)
         aa.run();
         TrenchPath trenchPath(&builder);
         trenchPath.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
+
+        Transform::ArithInstReduce arithInstReduce(&builder);
+        arithInstReduce.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
+
+        Transform::GEPStrengthReduce gepStrengthReduce(&builder);
+        gepStrengthReduce.Execute();
 
         makecfg.Execute();
         makedom.Execute();
