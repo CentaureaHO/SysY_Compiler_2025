@@ -563,7 +563,7 @@ int main(int argc, char** argv)
         makedom.Execute();
 
         Transform::GEPStrengthReduce gepStrengthReduce(&builder);
-        // gepStrengthReduce.Execute();
+        gepStrengthReduce.Execute();
 
         makecfg.Execute();
         makedom.Execute();
