@@ -1,5 +1,6 @@
 #include "llvm/t_sccp.h"
 #include "llvm_ir/instruction.h"
+#include "llvm/loop/loop_find.h"
 #include "cfg.h"
 #include <algorithm>
 #include <cassert>
@@ -30,9 +31,8 @@ namespace Transform
     {
         if (!isValid()) return "INVALID";
 
-        std::string result = "Base:" + std::to_string(reinterpret_cast<uintptr_t>(base_ptr));
-        result += "+";
-        result += std::to_string(element_offset);
+        std::string result = "Base:" + base_ptr->getName();
+        for (auto idx : indices) { result += "[" + idx->getName() + "]"; }
 
         return result;
     }
@@ -1225,7 +1225,6 @@ namespace Transform
     {
         LatticeValue   stored_value = getValueForOperand(store->val);
         MemoryLocation store_loc    = getMemoryLocation(store->ptr);
-
         if (!store_loc.isValid())
         {
             DBGINFO("\tSTORE with dynamic indices detected - using selective invalidation");
@@ -1247,10 +1246,7 @@ namespace Transform
                 std::vector<MemoryLocation> to_remove;
                 for (const auto& [loc, value] : memory_state_)
                 {
-                    if (reinterpret_cast<uintptr_t>(loc.base_ptr) == reinterpret_cast<uintptr_t>(base_ptr))
-                    {
-                        to_remove.push_back(loc);
-                    }
+                    if (mayAlias(store_loc, loc)) { to_remove.push_back(loc); }
                 }
                 for (const auto& loc : to_remove) { memory_state_.erase(loc); }
                 DBGINFO("\tInvalidated ", to_remove.size(), " locations with same base pointer");
@@ -1434,70 +1430,37 @@ namespace Transform
                         return MemoryLocation();
                     }
 
-                    int current_offset = 0;
-                    for (size_t i = 0; i < gep->idxs.size(); ++i)
+                    std::vector<LLVMIR::Operand*> index_operands;
+                    index_operands.reserve(gep->idxs.size());
+                    for (size_t i = 1; i < gep->idxs.size(); ++i)
                     {
                         auto* operand = gep->idxs[i];
                         DBGINFO("\tIndex ", i, ": type=", static_cast<int>(operand->type));
 
-                        if (operand->type == LLVMIR::OperandType::IMMEI32)
-                        {
-                            auto* imm = static_cast<LLVMIR::ImmeI32Operand*>(operand);
-                            current_offset += imm->value;
-                            DBGINFO("\t\timmediate_value=", imm->value);
-                        }
-                        else if (operand->type == LLVMIR::OperandType::REG)
-                        {
-                            auto* reg_operand = static_cast<LLVMIR::RegOperand*>(operand);
-                            auto  def_it      = def_map_.find(reg_operand->reg_num);
-                            if (def_it != def_map_.end())
-                            {
-                                auto*        defining_inst = def_it->second;
-                                LatticeValue reg_value     = getValue(defining_inst);
-                                if (reg_value.isConstant() && reg_value.getType() == LatticeValue::ValueType::INTEGER)
-                                {
-                                    current_offset += reg_value.getIntValue();
-                                    DBGINFO("\t\tregister_constant_value=", reg_value.getIntValue());
-                                }
-                                else
-                                {
-                                    DBGINFO("\t\tregister_non_constant_or_unknown");
-                                    DBGINFO("\tRejecting location due to dynamic index");
-                                    return MemoryLocation();
-                                }
-                            }
-                            else
-                            {
-                                DBGINFO("\t\tundefined_register");
-                                DBGINFO("\tRejecting location due to undefined register");
-                                return MemoryLocation();
-                            }
-                        }
-                        else
-                        {
-                            DBGINFO("\t\tunsupported_operand_type");
-                            DBGINFO("\tRejecting location due to unsupported operand type");
-                            return MemoryLocation();
-                        }
+                        index_operands.push_back(operand);
                     }
 
-                    int total_offset = base_loc.element_offset + current_offset;
-                    DBGINFO("\tTotal offset: ",
-                        total_offset,
-                        " (base: ",
-                        base_loc.element_offset,
-                        " + current: ",
-                        current_offset,
-                        ")");
+                    DBGINFO("\tReturning MemoryLocation with base_ptr: ",
+                        base_loc.base_ptr,
+                        " and indices count: ",
+                        index_operands.size());
 
-                    return MemoryLocation(base_loc.base_ptr, total_offset);
+                    return MemoryLocation(base_loc.base_ptr, index_operands);
                 }
 
-                if (defining_inst->opcode == LLVMIR::IROpCode::ALLOCA) return MemoryLocation(ptr, 0);
+                if (defining_inst->opcode == LLVMIR::IROpCode::ALLOCA)
+                {
+                    auto alloca_inst = static_cast<LLVMIR::AllocInst*>(defining_inst);
+                    DBGINFO("\tALLOCA instruction found, returning base pointer");
+                    std::vector<LLVMIR::Operand*> index_operands;
+                    index_operands.reserve(alloca_inst->dims.size());
+                    for (auto& idx : alloca_inst->dims) { index_operands.push_back(getImmeI32Operand(0)); }
+                    return MemoryLocation(ptr, index_operands);
+                }
             }
         }
 
-        return MemoryLocation(ptr, 0);
+        return MemoryLocation(ptr);
     }
 
     /**
@@ -1909,7 +1872,11 @@ namespace Transform
             return true;
         }
 
-        if (loc1.element_offset == loc2.element_offset) return true;
+        if (loc1.indices.size() != loc2.indices.size()) return false;
+        for (size_t i = 0; i < loc1.indices.size(); ++i)
+        {
+            if (loc1.indices[i] != loc2.indices[i]) return false;
+        }
 
         return true;
     }

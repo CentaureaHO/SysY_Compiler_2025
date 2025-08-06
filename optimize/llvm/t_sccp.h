@@ -3,11 +3,9 @@
 
 #include "llvm/pass.h"
 #include "llvm/alias_analysis/alias_analysis.h"
-#include "llvm/loop/loop_find.h"
 #include "llvm_ir/defs.h"
 #include <vector>
 #include <unordered_map>
-#include <unordered_set>
 #include <set>
 #include <string>
 #include <memory>
@@ -21,16 +19,16 @@ namespace Transform
      */
     struct MemoryLocation
     {
-        LLVMIR::Operand* base_ptr;        ///< 基址指针 (alloca 或全局变量)
-        int              element_offset;  ///< 从基址开始的元素偏移量
+        LLVMIR::Operand*              base_ptr;  ///< 基址指针 (alloca 或全局变量)
+        std::vector<LLVMIR::Operand*> indices;   ///< 索引列表，支持多维数组或结构体字段
 
-        MemoryLocation() : base_ptr(nullptr), element_offset(0) {}
-        MemoryLocation(LLVMIR::Operand* base) : base_ptr(base), element_offset(0) {}
-        MemoryLocation(LLVMIR::Operand* base, int offset) : base_ptr(base), element_offset(offset) {}
+        MemoryLocation() : base_ptr(nullptr), indices() {}
+        MemoryLocation(LLVMIR::Operand* base) : base_ptr(base), indices() {}
+        MemoryLocation(LLVMIR::Operand* base, std::vector<LLVMIR::Operand*> idx) : base_ptr(base), indices(idx) {}
 
         bool operator==(const MemoryLocation& other) const
         {
-            return base_ptr == other.base_ptr && element_offset == other.element_offset;
+            return base_ptr == other.base_ptr && indices == other.indices;
         }
 
         bool operator!=(const MemoryLocation& other) const { return !(*this == other); }
@@ -47,8 +45,37 @@ namespace Transform
     {
         size_t operator()(const MemoryLocation& loc) const
         {
+            // 从基址指针开始
             size_t hash = std::hash<void*>()(loc.base_ptr);
-            hash ^= std::hash<int>()(loc.element_offset) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+
+            // 对每个索引进行哈希并组合
+            for (const auto* idx : loc.indices)
+            {
+                // 获取索引的哈希值
+                size_t idx_hash = 0;
+                if (idx)
+                {
+                    if (idx->type == LLVMIR::OperandType::IMMEI32)
+                    {
+                        auto* imm = static_cast<const LLVMIR::ImmeI32Operand*>(idx);
+                        idx_hash  = std::hash<int>()(imm->value);
+                    }
+                    else if (idx->type == LLVMIR::OperandType::IMMEF32)
+                    {
+                        auto* imm = static_cast<const LLVMIR::ImmeF32Operand*>(idx);
+                        idx_hash  = std::hash<float>()(imm->value);
+                    }
+                    else
+                    {
+                        // 对于其他类型的操作数，使用其指针地址
+                        idx_hash = std::hash<const void*>()(idx);
+                    }
+                }
+
+                // 使用boost::hash_combine的公式组合哈希值
+                hash ^= idx_hash + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+            }
+
             return hash;
         }
     };

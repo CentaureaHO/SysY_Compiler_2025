@@ -425,7 +425,6 @@ int main(int argc, char** argv)
         makeredom.Execute(true);
         loopAnalysis.Execute();
 
-
         makecfg.Execute();
         makedom.Execute();
         loopAnalysis.Execute();
@@ -459,12 +458,6 @@ int main(int argc, char** argv)
         loopRotate.Execute();
         scevAnalyser.run();
         // scevAnalyser.printAllResults();
-
-        Transform::StrengthReducePass lsr(&builder, &scevAnalyser);
-        lsr.Execute();
-        DCEDefUse.Execute();
-        dce.Execute();
-        scevAnalyser.run();
 
         // Constant Loop Full Unroll
         {
@@ -558,6 +551,20 @@ int main(int argc, char** argv)
 
         Transform::ArithInstReduce arithInstReduce(&builder);
         arithInstReduce.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
+        loopAnalysis.Execute();
+        loopSimplify.Execute();
+        lcssa.Execute();
+        loopRotate.Execute();
+        scevAnalyser.run();
+
+        Transform::StrengthReducePass lsr(&builder, &scevAnalyser);
+        lsr.Execute();
+        DCEDefUse.Execute();
+        dce.Execute();
+        scevAnalyser.run();
 
         makecfg.Execute();
         makedom.Execute();
