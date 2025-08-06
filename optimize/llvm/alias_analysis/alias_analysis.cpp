@@ -368,10 +368,7 @@ namespace Analysis
         auto def_it1 = def_map[cfg].find(reg1);
         auto def_it2 = def_map[cfg].find(reg2);
 
-        if (def_it1 == def_map[cfg].end() || def_it2 == def_map[cfg].end())
-        {
-            return false;
-        }
+        if (def_it1 == def_map[cfg].end() || def_it2 == def_map[cfg].end()) { return false; }
 
         // 获取定义指令
         auto* inst1 = def_it1->second;

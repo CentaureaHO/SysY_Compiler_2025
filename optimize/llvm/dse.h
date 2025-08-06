@@ -48,7 +48,7 @@ namespace LLVMIR
         bool mustAlias(Operand* ptr1, Operand* ptr2, CFG* cfg);
 
       public:
-        DSEPass(LLVMIR::IR* ir, EAliasAnalysis::EAliasAnalyser* eaa) : Pass(ir), ealias_analyser(eaa){};
+        DSEPass(LLVMIR::IR* ir, EAliasAnalysis::EAliasAnalyser* eaa) : Pass(ir), ealias_analyser(eaa) {};
         void Execute() override;
     };
 }  // namespace LLVMIR

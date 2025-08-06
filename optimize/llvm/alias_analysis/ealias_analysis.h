@@ -43,8 +43,8 @@ namespace EAliasAnalysis
         void addWrite(LLVMIR::Operand* op);
         void addReads(const std::vector<LLVMIR::Operand*>& ops);
         void addWrites(const std::vector<LLVMIR::Operand*>& ops);
-        void combineProfile(
-            LLVMIR::CallInst* call, const EFuncMemProfile& other, const std::unordered_map<int, EMemLocation>& locations);
+        void combineProfile(LLVMIR::CallInst* call, const EFuncMemProfile& other,
+            const std::unordered_map<int, EMemLocation>& locations);
 
         bool isPure() const { return !has_external_deps && mem_reads.empty() && mem_writes.empty(); }
         bool hasNoWrites() const { return !has_external_deps && mem_writes.empty(); }
@@ -73,8 +73,8 @@ namespace EAliasAnalysis
       private:
         LLVMIR::IR* ir;
 
-        std::unordered_map<CFG*, EFuncMemProfile>                                func_profiles;
-        std::unordered_map<CFG*, std::unordered_map<int, EMemLocation>>          reg_locations;
+        std::unordered_map<CFG*, EFuncMemProfile>                               func_profiles;
+        std::unordered_map<CFG*, std::unordered_map<int, EMemLocation>>         reg_locations;
         std::unordered_map<CFG*, std::unordered_map<int, LLVMIR::Instruction*>> def_map;
 
         void buildDefMap(CFG* cfg);
@@ -103,4 +103,4 @@ namespace EAliasAnalysis
         std::vector<LLVMIR::Operand*> getWritePtrs(CFG* cfg);
         std::vector<LLVMIR::Operand*> getReadPtrs(CFG* cfg);
     };
-}  // namespace Analysis
+}  // namespace EAliasAnalysis
