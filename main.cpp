@@ -77,6 +77,9 @@
 // Trench Path
 #include "optimize/llvm/trenchpath.h"
 
+//unused_func_elimination
+#include "optimize/llvm/unused_func_elimination.h"
+
 #define STR_PW 30
 #define INT_PW 8
 #define MIN_GAP 5
@@ -270,10 +273,14 @@ int main(int argc, char** argv)
     if (optimizeLevel)
     {
         opt_level = optimizeLevel;
+        
+
         // 构建CFG
         MakeCFGPass     makecfg(&builder);
         MakeDomTreePass makedom(&builder);
         MakeDomTreePass makeredom(&builder);
+
+        
 
         Verify::PhiPrecursorPass phiPrecursor(&builder);
         makecfg.Execute();
@@ -306,9 +313,16 @@ int main(int argc, char** argv)
         Transform::FunctionInlinePass inlinePass(&builder);
         inlinePass.Execute();
 
+        
+
+
+
         makecfg.Execute();
         makedom.Execute();
-        // std::cout << "After Function Inline" << std::endl;
+
+        
+        
+        //std::cout << "After Function Inline" << std::endl;
         // phiPrecursor.Execute();
 
         StructuralTransform::LoopRotatePass loopRotate(&builder);
@@ -570,6 +584,11 @@ int main(int argc, char** argv)
         loopAnalysis.Execute();
         inlinePass.Execute();
 
+        makecfg.Execute();
+
+        //直接删除内联后没用的函数
+        Transform::UnusedFuncEliminationPass unused_func_del(&builder);
+        unused_func_del.Execute();
         makecfg.Execute();
     }
 
