@@ -2120,14 +2120,25 @@ void PhiInst::ErasePhiWithBlock(int block_id)
 
 void PhiInst::SetNewFrom(int old_from, int new_from)
 {
+    std::cout<<"for phi with result "<<res->GetRegNum()<<" old from and new from "<<old_from<<' '<<new_from<<std::endl;
     for (auto& [val, label] : vals_for_labels)
     {
-        if (val && val->type == OperandType::REG)
-        {
-            auto* reg_op = dynamic_cast<RegOperand*>(val);
-            if (reg_op->reg_num == old_from)
-            {
-                label = getLabelOperand(new_from);  // 更新对应寄存器操作数的标签
+        // if (val && val->type == OperandType::REG)
+        // {
+        //     auto* reg_op = dynamic_cast<RegOperand*>(val);
+        //     if (reg_op->reg_num == old_from)
+        //     {
+        //         label = getLabelOperand(new_from);  // 更新对应寄存器操作数的标签
+        //         return;
+        //     }
+        // }
+
+        //牛魔的copilot害人
+
+        if(label && label->type == OperandType::LABEL){
+            auto label_op = (LabelOperand*) label;
+            if(label_op->label_num==old_from){
+                label=getLabelOperand(new_from);
                 return;
             }
         }
