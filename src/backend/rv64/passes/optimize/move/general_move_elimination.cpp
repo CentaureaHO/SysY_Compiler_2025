@@ -17,8 +17,12 @@ namespace Backend::RV64::Passes::Optimize::Move
         {
             for (auto it = block->insts.begin(); it != block->insts.end(); ++it)
             {
+                setCanSchedule();
+
                 Instruction* base_inst = *it;
                 if (base_inst->inst_type != InstType::MOVE) continue;
+
+                if (!base_inst->schedule_flag) setNoSchedule();
 
                 MoveInst* move_inst = (MoveInst*)base_inst;
                 assert(move_inst->src->operand_type == OperandType::REG);
@@ -27,7 +31,7 @@ namespace Backend::RV64::Passes::Optimize::Move
                 Register     src_reg   = ((RegOperand*)move_inst->src)->reg;
                 unsigned int data_type = src_reg.data_type->data_type;
 
-                delete move_inst;
+                Instruction::delInst(move_inst);
 
                 if (dst_reg == src_reg)
                 {
@@ -53,6 +57,8 @@ namespace Backend::RV64::Passes::Optimize::Move
                     assert(false);
             }
         }
+
+        setCanSchedule();
     }
 
 }  // namespace Backend::RV64::Passes::Optimize::Move

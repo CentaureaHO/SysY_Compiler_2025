@@ -21,7 +21,7 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
 
         if (eliminated_jumps_count_ > 0)
         {
-            std::cout << "Eliminated " << eliminated_jumps_count_ << " fallthrough jumps" << std::endl;
+            // std::cout << "Eliminated " << eliminated_jumps_count_ << " fallthrough jumps" << std::endl;
         }
 
         return modified;
@@ -53,12 +53,12 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
                 eliminated_jumps_count_++;
                 modified = true;
 
-                std::cout << "Eliminated fallthrough jump from block " << current_block->label_num << " to block "
-                          << next_block->label_num;
+                // std::cout << "Eliminated fallthrough jump from block " << current_block->label_num << " to block "
+                //           << next_block->label_num;
 
-                if (was_conditional_pattern) std::cout << " (false branch of conditional jump)";
+                // if (was_conditional_pattern) std::cout << " (false branch of conditional jump)";
 
-                std::cout << std::endl;
+                // std::cout << std::endl;
             }
         }
 
@@ -110,7 +110,7 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
         {
             auto* last_inst = block->insts.back();
             block->insts.pop_back();
-            delete last_inst;
+            Instruction::delInst(last_inst);
         }
     }
 

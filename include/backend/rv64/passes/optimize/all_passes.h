@@ -7,6 +7,6 @@
 #include "peehole/peehole_passes.h"
 #include "rv64_cse.h"
 #include "rv64_makedom.h"
-// #include "instruction_schedule.h"
+#include "instruction_schedule.h"
 
 #endif  // __BACKEND_RV64_PASSES_OPTIMIZE_ALL_PASSES_H__

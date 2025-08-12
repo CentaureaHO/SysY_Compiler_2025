@@ -141,7 +141,7 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
                 }
 
                 phi->phi_list.clear();
-                delete phi;
+                Instruction::delInst(phi);
             }
         }
 
@@ -242,7 +242,11 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
                         float imme_val = ((ImmeF32Operand*)src_op)->val;
                         block->insts.insert(insert_it, createMoveInst(dest.data_type, dest, imme_val));
                     }
-                    else { block->insts.insert(insert_it, new MoveInst(dest.data_type, src_op, new RegOperand(dest))); }
+                    else
+                    {
+                        block->insts.insert(
+                            insert_it, MoveInst::getInstance(dest.data_type, src_op, new RegOperand(dest)));
+                    }
                     continue;
                 }
 
@@ -264,7 +268,10 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
                     float imme_val = ((ImmeF32Operand*)src)->val;
                     block->insts.insert(insert_it, createMoveInst(dest.data_type, mid_reg, imme_val));
                 }
-                else { block->insts.insert(insert_it, new MoveInst(dest.data_type, src, new RegOperand(mid_reg))); }
+                else
+                {
+                    block->insts.insert(insert_it, MoveInst::getInstance(dest.data_type, src, new RegOperand(mid_reg)));
+                }
 
                 if (src->operand_type == OperandType::REG)
                 {

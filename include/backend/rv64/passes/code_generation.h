@@ -16,8 +16,15 @@ namespace LLVMIR
 namespace Backend::RV64::Passes
 {
 
+    namespace Optimize
+    {
+        class InstructionSchedulePass;
+    }
+
     class CodeGenerationPass : public BasePass
     {
+        friend class ::Backend::RV64::Passes::Optimize::InstructionSchedulePass;
+
       public:
         CodeGenerationPass(
             std::vector<Function*>& functions, std::vector<LLVMIR::Instruction*>& glb_defs, std::ostream& out);

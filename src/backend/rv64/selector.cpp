@@ -153,6 +153,7 @@ float Selector::extractIROp2ImmeF32(LLVMIR::Operand* op)
 
 void Selector::convertAndAppend(LLVMIR::Instruction* inst)
 {
+    setCanSchedule();
     switch (inst->opcode)
     {
         case LOC::LOAD: convertAndAppend((LLVMIR::LoadInst*)inst); break;
@@ -1359,6 +1360,7 @@ void Selector::convertAndAppend(LLVMIR::AllocInst* inst)
 }
 void Selector::convertAndAppend(LLVMIR::BranchCondInst* inst)
 {
+    setNoSchedule();
     if (IS_IMMEI32(inst->cond))
     {
         // 如果条件是立即数，根据其值生成无条件跳转
@@ -1518,6 +1520,7 @@ void Selector::convertAndAppend(LLVMIR::BranchCondInst* inst)
 }
 void Selector::convertAndAppend(LLVMIR::BranchUncondInst* inst)
 {
+    setNoSchedule();
     RV64Label tar_label(((LLVMIR::LabelOperand*)inst->target_label)->label_num);
 
     cur_block->insts.push_back(createJInst(RV64InstType::JAL, preg_x0, tar_label));
@@ -1565,6 +1568,7 @@ namespace
 }  // namespace
 void Selector::convertAndAppend(LLVMIR::CallInst* inst)
 {
+    setNoSchedule();
     if (inst->func_name == "llvm.memset.p0.i32")
     {
         // dst
@@ -1946,6 +1950,7 @@ void Selector::convertAndAppend(LLVMIR::CallInst* inst)
 }
 void Selector::convertAndAppend(LLVMIR::RetInst* inst)
 {
+    setNoSchedule();
     int ret_type = 0;  // default: void
 
     if (inst->ret != nullptr)
@@ -2254,7 +2259,7 @@ void Selector::convertAndAppend(LLVMIR::ZextInst* inst)
 
     if (!cmp_inst)
     {
-        PhiInst* phi_inst = new PhiInst(res_reg);
+        PhiInst* phi_inst = PhiInst::getInstance(res_reg);
         assert(false);
         return;
     }
@@ -2546,7 +2551,7 @@ void Selector::convertAndAppend(LLVMIR::PhiInst* inst)
         if (all_from_same_cmp && common_cmp_inst != nullptr) cmp_context[res_reg] = common_cmp_inst;
     }
 
-    PhiInst* phi_inst = new PhiInst(res_reg);
+    PhiInst* phi_inst = PhiInst::getInstance(res_reg);
 
     for (auto& [val, label] : inst->vals_for_labels)
     {
@@ -2591,6 +2596,7 @@ void Selector::convertAndAppend(LLVMIR::PhiInst* inst)
 
 void Selector::convertAndAppend(LLVMIR::SelectInst* inst)
 {
+    setNoSchedule();
     assert(IS_REG(inst->cond));
 
     LLVMIR::Operand* cond   = inst->cond;

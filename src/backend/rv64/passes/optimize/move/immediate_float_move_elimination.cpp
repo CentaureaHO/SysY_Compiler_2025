@@ -19,16 +19,20 @@ namespace Backend::RV64::Passes::Optimize::Move
         {
             for (auto it = block->insts.begin(); it != block->insts.end(); ++it)
             {
+                setCanSchedule();
+
                 Instruction* base_inst = *it;
                 if (base_inst->inst_type != InstType::MOVE) continue;
 
                 MoveInst* move_inst = (MoveInst*)base_inst;
                 if (move_inst->src->operand_type != OperandType::IMMEF32) continue;
 
+                if (!base_inst->schedule_flag) setNoSchedule();
+
                 float    src     = ((ImmeF32Operand*)move_inst->src)->val;
                 Register dst_reg = ((RegOperand*)move_inst->dst)->reg;
 
-                delete move_inst;
+                Instruction::delInst(move_inst);
                 it               = block->insts.erase(it);
                 Register tmp_reg = func->getNewReg(INT64);
                 block->insts.insert(it, createMoveInst(INT64, tmp_reg, *(int*)&src));
@@ -36,6 +40,8 @@ namespace Backend::RV64::Passes::Optimize::Move
                 --it;
             }
         }
+
+        setCanSchedule();
     }
 
 }  // namespace Backend::RV64::Passes::Optimize::Move

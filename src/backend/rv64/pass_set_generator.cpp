@@ -6,7 +6,7 @@
 #include <backend/rv64/passes/code_generation.h>
 #include <backend/rv64/passes/optimize/control_flow/block_layout.h>
 #include <backend/rv64/passes/optimize/control_flow/fallthrough_elimination.h>
-// #include <backend/rv64/passes/optimize/instruction_schedule.h>
+#include <backend/rv64/passes/optimize/instruction_schedule.h>
 #include <backend/rv64/passes/cfg_builder.h>
 
 #include <backend/rv64/pass_set_generator.h>
@@ -17,6 +17,8 @@ using namespace Backend::RV64::Passes::Optimize::ControlFlow;
 
 extern bool no_reg_alloc;
 extern bool no_select_lower;
+
+bool Backend::RV64::force_no_schedule = false;
 
 std::vector<std::unique_ptr<Backend::BasePass>> PassSetGenerator::generate(LLVMIR::IR* ir,
     std::vector<Function*>& functions, std::vector<LLVMIR::Instruction*>& glb_defs, std::ostream& out, int optLevel)
@@ -36,13 +38,15 @@ std::vector<std::unique_ptr<Backend::BasePass>> PassSetGenerator::generate(LLVMI
     PhiDestructionPass(functions).run();
     ImmediateFMoveEliminationPass(functions).run();
     ImmediateIMoveEliminationPass(functions).run();
+    // force_no_schedule = true;
     MoveEliminationPass(functions).run();
+    // force_no_schedule = false;
     if (optLevel)
     {
         BlockLayoutPass(functions).run();
         CFGBuilderPass(functions).run();
 
-        // if (optLevel >= 2) Passes::Optimize::InstructionSchedulePass(functions).run();
+        if (optLevel >= 2) { Optimize::InstructionSchedulePass(functions).run(); }
     }
     if (!no_reg_alloc)
     {
@@ -52,6 +56,9 @@ std::vector<std::unique_ptr<Backend::BasePass>> PassSetGenerator::generate(LLVMI
         RegisterAllocationPass(functions).run();
         StackLoweringPass(functions).run();
     }
+
+    if (optLevel) { FallthroughEliminationPass(functions).run(); }
+
     CodeGenerationPass(functions, glb_defs, out).run();
 
     // passes.emplace_back(std::make_unique<InstructionSelectionPass>(ir, functions, glb_defs));
@@ -78,7 +85,8 @@ std::vector<std::unique_ptr<Backend::BasePass>> PassSetGenerator::generate(LLVMI
     //     // passes.emplace_back(std::make_unique<FallthroughEliminationPass>(functions)); 违背寄存器分配假设了，不应用
 
     //     // 指令调度优化 - 在寄存器分配前进行以考虑寄存器压力
-    //     if (optLevel >= 2) passes.emplace_back(std::make_unique<Passes::Optimize::InstructionSchedulePass>(functions));
+    //     if (optLevel >= 2)
+    //     passes.emplace_back(std::make_unique<Passes::Optimize::InstructionSchedulePass>(functions));
     // }
     // if (!no_reg_alloc)
     // {

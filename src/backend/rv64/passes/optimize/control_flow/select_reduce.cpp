@@ -161,7 +161,7 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
 #endif
 
                 it = insts.erase(it);
-                delete sel;
+                Instruction::delInst(sel);
             }
         }
     }

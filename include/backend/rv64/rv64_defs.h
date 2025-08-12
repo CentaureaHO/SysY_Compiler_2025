@@ -246,6 +246,9 @@
 
 namespace Backend::RV64
 {
+    extern bool can_schedule;
+    extern bool force_no_schedule;
+
     enum class REG
     {
 #define X(name, alias, saver) name,
@@ -436,7 +439,12 @@ namespace Backend::RV64
 
         int ins_id;
 
+        bool schedule_flag;
+
       public:
+        static void delInst(Instruction* i) { delete i; }
+
+      protected:
         Instruction(InstType it);
         virtual ~Instruction() = default;
 
@@ -481,6 +489,17 @@ namespace Backend::RV64
         int ret_type;
 
       public:
+        static RV64Inst* getInstance()
+        {
+            RV64Inst* ret      = new RV64Inst();
+            ret->schedule_flag = can_schedule;
+
+            if (force_no_schedule) ret->schedule_flag = false;
+
+            return ret;
+        }
+
+      private:
         RV64Inst();
 
       public:
@@ -498,6 +517,17 @@ namespace Backend::RV64
         std::map<int, Operand*> phi_list;
 
       public:
+        static PhiInst* getInstance(Register r)
+        {
+            PhiInst* ret       = new PhiInst(r);
+            ret->schedule_flag = can_schedule;
+
+            if (force_no_schedule) ret->schedule_flag = false;
+
+            return ret;
+        }
+
+      private:
         PhiInst(Register r);
         ~PhiInst();
 
@@ -514,6 +544,17 @@ namespace Backend::RV64
         Operand * src, *dst;
 
       public:
+        static MoveInst* getInstance(DataType* dt, Operand* s, Operand* d)
+        {
+            MoveInst* ret      = new MoveInst(dt, s, d);
+            ret->schedule_flag = can_schedule;
+
+            if (force_no_schedule) ret->schedule_flag = false;
+
+            return ret;
+        }
+
+      private:
         MoveInst(DataType* dt, Operand* s, Operand* d);
         ~MoveInst();
 
@@ -532,6 +573,17 @@ namespace Backend::RV64
         Operand* false_val;
 
       public:
+        static SelectInst* getInstance(Register cond, Register dst, Operand* tv, Operand* fv)
+        {
+            SelectInst* ret    = new SelectInst(cond, dst, tv, fv);
+            ret->schedule_flag = can_schedule;
+
+            if (force_no_schedule) ret->schedule_flag = false;
+
+            return ret;
+        }
+
+      private:
         SelectInst(Register cond, Register dst, Operand* tv, Operand* fv);
         ~SelectInst();
 
@@ -543,7 +595,7 @@ namespace Backend::RV64
 
     class NopInst : public Instruction
     {
-      public:
+      private:
         NopInst();
         ~NopInst();
     };
