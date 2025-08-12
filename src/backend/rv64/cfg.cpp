@@ -51,7 +51,7 @@ std::vector<std::vector<int>> CFG::buildGraphAdjacencyList() const
 
     for (const auto& [block_id, block] : blocks)
     {
-        if (block_id < graph.size())
+        if (block_id < (int)graph.size())
         {
             for (Block* succ_block : graph[block_id])
             {

@@ -217,6 +217,8 @@ namespace LLVMIR
             int current = q.front();
             q.pop();
 
+            auto* block = cfg->block_id_to_block[current];
+
             if (current == end)
             {
                 // 找到一条不经过through的路径
@@ -226,8 +228,6 @@ namespace LLVMIR
 #endif
                 return false;
             }
-
-            auto* block = cfg->block_id_to_block[current];
 
             for (int succ : cfg->G_id[block->block_id])
             {
@@ -246,11 +246,10 @@ namespace LLVMIR
         return true;
     }
 
-    bool DSEPass::allPathsNoLoad(CFG* cfg, int start, int end, int through, Operand* ptr)
+    bool DSEPass::allPathsNoLoad(CFG* cfg, int start, int through, Operand* ptr, Instruction* newstore)
     {
 #ifdef DEBUG_DSE
-        std::cout << "    Checking all paths from " << start << " to " << end << " through " << through << " for loads"
-                  << std::endl;
+        std::cout << "    Checking all paths from " << start << " to " << through << " for loads" << std::endl;
 #endif
 
         // 1. 获取从start可达through的块
@@ -284,45 +283,15 @@ namespace LLVMIR
             }
         }
 
-        // 2. 获取从through可达end的块
-        std::set<int> throughToEnd;
-        {
-            std::queue<int> q;
-            std::set<int>   visited;
-
-            q.push(through);
-            visited.insert(through);
-
-            while (!q.empty())
-            {
-                int current = q.front();
-                q.pop();
-
-                throughToEnd.insert(current);
-
-                if (current != end)
-                {
-                    auto* block = cfg->block_id_to_block[current];
-                    for (int succ : cfg->G_id[block->block_id])
-                    {
-                        if (visited.count(succ) == 0)
-                        {
-                            visited.insert(succ);
-                            q.push(succ);
-                        }
-                    }
-                }
-            }
-        }
-
-        // 3. 检查startToThrough中的块是否有load
+        // 2. 检查startToThrough中的块是否有load
         for (int blockId : startToThrough)
         {
-            if (blockId == start || blockId == through) continue;
+            if (blockId == start) continue;
 
             auto* block = cfg->block_id_to_block[blockId];
             for (auto* inst : block->insts)
             {
+                if (inst == newstore) break;  // 如果是新store，跳过它
                 if (inst->opcode == IROpCode::LOAD)
                 {
                     auto* loadInst = dynamic_cast<LoadInst*>(inst);
@@ -330,29 +299,6 @@ namespace LLVMIR
                     {
 #ifdef DEBUG_DSE
                         std::cout << "      Found load in block " << blockId << " on path from start to through"
-                                  << std::endl;
-#endif
-                        return false;
-                    }
-                }
-            }
-        }
-
-        // 4. 检查throughToEnd中的块是否有load
-        for (int blockId : throughToEnd)
-        {
-            if (blockId == through || blockId == end) continue;
-
-            auto* block = cfg->block_id_to_block[blockId];
-            for (auto* inst : block->insts)
-            {
-                if (inst->opcode == IROpCode::LOAD)
-                {
-                    auto* loadInst = dynamic_cast<LoadInst*>(inst);
-                    if (mayAlias(loadInst->ptr, ptr, cfg))
-                    {
-#ifdef DEBUG_DSE
-                        std::cout << "      Found load in block " << blockId << " on path from through to end"
                                   << std::endl;
 #endif
                         return false;
@@ -413,15 +359,30 @@ namespace LLVMIR
         auto*    storeInst    = dynamic_cast<StoreInst*>(store);
         int      storeBlockId = store->block_id;
         IRBlock* storeBlock   = cfg->block_id_to_block[storeBlockId];
+        auto*    ptr          = storeInst->ptr;
 
 #ifdef DEBUG_DSE
         std::cout << "    Analyzing store at block " << storeBlockId << ": " << storeInst->ptr << " = "
                   << storeInst->val << std::endl;
+        std::cout << "    Step 1: Checking for global or escaping pointers" << std::endl;
 
-        std::cout << "    Step 1: Checking same basic block for redundant stores" << std::endl;
 #endif
 
-        // 1. 检查同一基本块内的后续指令
+        // 1. 检查全局逃逸情况
+        // 如果store的指针可能指向全局变量或函数参数，保守地认为不是死代码
+        if (pointsToGlobalOrEscapes(ptr, cfg))
+        {
+#ifdef DEBUG_DSE
+            std::cout << "      Pointer escapes or is global, store is live" << std::endl;
+#endif
+            return false;
+        }
+
+#ifdef DEBUG_DSE
+        std::cout << "    Step 2: Checking same basic block for redundant stores" << std::endl;
+#endif
+
+        // 2. 检查同一基本块内的后续指令
         bool foundInSameBlock = false;
         auto it               = storeBlock->insts.begin();
         while (it != storeBlock->insts.end() && *it != store) { ++it; }
@@ -503,16 +464,13 @@ namespace LLVMIR
         if (foundInSameBlock) return true;
 
 #ifdef DEBUG_DSE
-        std::cout << "    Step 2: Checking across basic blocks using dominator tree" << std::endl;
+        std::cout << "    Step 3: Checking across basic blocks using dominator tree" << std::endl;
 #endif
 
-        // 2. 检查跨基本块的情况 - 这需要支配树和内存依赖分析
-        // 获取此store可能影响的所有内存位置
-        auto* ptr = storeInst->ptr;
+        // 3. 检查跨基本块的情况 - 这需要支配树和内存依赖分析
 
         // 获取从store所在块支配的所有块
         std::unordered_set<int> dominatedBlocks = getDominatedBlocks(ir, cfg, storeBlockId);
-
         // 检查所有被支配的块中是否有load或store操作
         for (int blockId : dominatedBlocks)
         {
@@ -544,20 +502,6 @@ namespace LLVMIR
                     }
                 }
 
-                // 如果遇到对相同位置的load，不是死代码
-                if (inst->opcode == IROpCode::LOAD)
-                {
-                    auto* loadInst = dynamic_cast<LoadInst*>(inst);
-                    if (mayAlias(loadInst->ptr, storeInst->ptr, cfg))
-                    {
-#ifdef DEBUG_DSE
-                        std::cout << "        Found load from same location in dominated block, store is live"
-                                  << std::endl;
-#endif
-                        return false;
-                    }
-                }
-
                 // 如果遇到对相同位置的store，进一步检查是否所有路径都经过此store
                 if (inst->opcode == IROpCode::STORE)
                 {
@@ -575,7 +519,7 @@ namespace LLVMIR
                             std::cout << "        All paths go through overwriting store, current store is dead"
                                       << std::endl;
 #endif
-                            if (allPathsNoLoad(cfg, storeBlockId, blockId, nextStore->block_id, storeInst->ptr))
+                            if (allPathsNoLoad(cfg, storeBlockId, nextStore->block_id, storeInst->ptr, inst))
                             {
                                 return true;
                             }
@@ -590,19 +534,6 @@ namespace LLVMIR
                     }
                 }
             }
-        }
-
-#ifdef DEBUG_DSE
-        std::cout << "    Step 3: Checking for global or escaping pointers" << std::endl;
-#endif
-        // 3. 检查全局逃逸情况
-        // 如果store的指针可能指向全局变量或函数参数，保守地认为不是死代码
-        if (pointsToGlobalOrEscapes(ptr, cfg))
-        {
-#ifdef DEBUG_DSE
-            std::cout << "      Pointer escapes or is global, store is live" << std::endl;
-#endif
-            return false;
         }
 
 #ifdef DEBUG_DSE

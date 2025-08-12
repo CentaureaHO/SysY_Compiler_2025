@@ -36,6 +36,7 @@ namespace Backend::RV64::Passes
         void printASM(RV64Inst* inst);
         void printASM(MoveInst* inst);
         void printASM(PhiInst* inst);
+        void printASM(SelectInst* inst);
         void printOperand(Register r);
         void printOperand(Register* r);
         void printOperand(RV64Label l);

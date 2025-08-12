@@ -17,7 +17,7 @@ namespace Backend::RV64::Passes
     {
         // Print assembly header
         out_ << "\t.text\n\t.globl main\n";
-        out_ << "\t.attribute arch, \"rv64i2p1_m2p0_a2p1_f2p2_d2p2_c2p0_zicsr2p0_zifencei2p0_zba1p0_zbb1p0\"\n\n";
+        out_ << "\t.attribute arch, \"" << ::Backend::RV64::getRV64ArchString() << "\"\n\n";
 
         printFunctions();
         printGlobalDefinitions();
@@ -57,6 +57,12 @@ namespace Backend::RV64::Passes
                     {
                         out_ << "\t";
                         printASM((PhiInst*)inst);
+                        out_ << "\n";
+                    }
+                    else if (inst->inst_type == InstType::SELECT)
+                    {
+                        out_ << "\t";
+                        printASM((SelectInst*)inst);
                         out_ << "\n";
                     }
                     else
@@ -316,6 +322,17 @@ namespace Backend::RV64::Passes
             printOperand(val);
             out_ << ", %" << cur_func_->name << "_" << label << "] ";
         }
+    }
+
+    void CodeGenerationPass::printASM(SelectInst* inst)
+    {
+        printOperand(inst->dst_reg);
+        out_ << " = " << inst->dst_reg.data_type->toString() << " SELECT ";
+        printOperand(inst->cond_reg);
+        out_ << " ? ";
+        printOperand(inst->true_val);
+        out_ << " : ";
+        printOperand(inst->false_val);
     }
 
     void CodeGenerationPass::printOperand(Register r)

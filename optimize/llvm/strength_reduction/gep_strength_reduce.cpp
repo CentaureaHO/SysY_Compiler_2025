@@ -138,6 +138,8 @@ namespace Transform
         // 索引数量必须相同
         if (base_gep.indices.size() != target_gep.indices.size()) return false;
 
+        assert(base_gep.gep_inst->idx_type == target_gep.gep_inst->idx_type);
+
         return calculateOffset(base_gep, target_gep, arith_defs, offset);
     }
 
@@ -302,14 +304,17 @@ namespace Transform
 
     void GEPStrengthReduce::optimizeGEP(LLVMIR::GEPInst* target_gep, LLVMIR::GEPInst* base_gep, int offset)
     {
-        target_gep->dims.clear();
+        if (offset == 0) return;
 
         target_gep->base_ptr = base_gep->res;
 
         target_gep->idxs.clear();
         target_gep->idxs.push_back(getImmeI32Operand(offset));
 
-        if (!base_gep->dims.empty()) target_gep->type = base_gep->type;
+        target_gep->type     = base_gep->type;
+        target_gep->idx_type = base_gep->idx_type;
+
+        target_gep->dims.clear();
     }
 
     int GEPStrengthReduce::calculateDimensionSize(const std::vector<int>& dims, int dim_index) const

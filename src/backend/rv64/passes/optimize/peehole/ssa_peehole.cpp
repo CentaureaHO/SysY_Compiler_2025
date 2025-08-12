@@ -43,8 +43,10 @@ namespace Backend::RV64::Passes::Optimize::Peehole
                         assert(false && "tryFmla");
                         break;
                     }
+#if RV64_ENABLE_ZBA
                     if (tryShxAdd(jt, it, block)) { break; }
                     if (tryConstShxAdd(jt, it, block, func)) { break; }
+#endif
                     if (tryMemOffset(jt, it, block)) { break; }
                 }
             }
@@ -187,6 +189,7 @@ namespace Backend::RV64::Passes::Optimize::Peehole
         return false;
     }
 
+#if RV64_ENABLE_ZBA
     bool SSAPeepholePass::tryShxAdd(
         std::list<Instruction*>::iterator& pre, std::list<Instruction*>::iterator& cur, Block* block)
     {
@@ -318,6 +321,7 @@ namespace Backend::RV64::Passes::Optimize::Peehole
         }
         return false;
     }
+#endif
 
     bool SSAPeepholePass::tryMemOffset(
         std::list<Instruction*>::iterator& pre, std::list<Instruction*>::iterator& cur, Block* block)

@@ -2120,7 +2120,8 @@ void PhiInst::ErasePhiWithBlock(int block_id)
 
 void PhiInst::SetNewFrom(int old_from, int new_from)
 {
-    std::cout<<"for phi with result "<<res->GetRegNum()<<" old from and new from "<<old_from<<' '<<new_from<<std::endl;
+    std::cout << "for phi with result " << res->GetRegNum() << " old from and new from " << old_from << ' ' << new_from
+              << std::endl;
     for (auto& [val, label] : vals_for_labels)
     {
         // if (val && val->type == OperandType::REG)
@@ -2133,14 +2134,139 @@ void PhiInst::SetNewFrom(int old_from, int new_from)
         //     }
         // }
 
-        //牛魔的copilot害人
+        // 牛魔的copilot害人
 
-        if(label && label->type == OperandType::LABEL){
-            auto label_op = (LabelOperand*) label;
-            if(label_op->label_num==old_from){
-                label=getLabelOperand(new_from);
+        if (label && label->type == OperandType::LABEL)
+        {
+            auto label_op = (LabelOperand*)label;
+            if (label_op->label_num == old_from)
+            {
+                label = getLabelOperand(new_from);
                 return;
             }
         }
     }
 }
+
+// SelectInst implementation
+SelectInst::SelectInst(DataType t, Operand* tv, Operand* fv, Operand* c, Operand* r)
+    : Instruction(LLVMIR::IROpCode::SELECT), type(t), cond(c), true_val(tv), false_val(fv), res(r)
+{}
+
+void SelectInst::printIR(std::ostream& s)
+{
+    s << res << " = select i1 " << cond << ", " << type << " " << true_val << ", " << type << " " << false_val
+      << std::endl;
+}
+
+void SelectInst::Rename(std::map<int, int>& replace)
+{
+    if (cond->type == OperandType::REG)
+    {
+        int reg_num = ((RegOperand*)cond)->reg_num;
+        if (replace.find(reg_num) != replace.end()) { cond = getRegOperand(replace[reg_num]); }
+    }
+    if (true_val->type == OperandType::REG)
+    {
+        int reg_num = ((RegOperand*)true_val)->reg_num;
+        if (replace.find(reg_num) != replace.end()) { true_val = getRegOperand(replace[reg_num]); }
+    }
+    if (false_val->type == OperandType::REG)
+    {
+        int reg_num = ((RegOperand*)false_val)->reg_num;
+        if (replace.find(reg_num) != replace.end()) { false_val = getRegOperand(replace[reg_num]); }
+    }
+    if (res->type == OperandType::REG)
+    {
+        int reg_num = ((RegOperand*)res)->reg_num;
+        if (replace.find(reg_num) != replace.end()) { res = getRegOperand(replace[reg_num]); }
+    }
+}
+
+void SelectInst::ReplaceAllOperands(std::map<int, int>& replace) { Rename(replace); }
+
+int SelectInst::GetResultReg()
+{
+    if (res->type == OperandType::REG) { return ((RegOperand*)res)->reg_num; }
+    return -1;
+}
+
+std::vector<int> SelectInst::GetUsedRegs()
+{
+    std::vector<int> used_regs;
+    if (cond->type == OperandType::REG) { used_regs.push_back(((RegOperand*)cond)->reg_num); }
+    if (true_val->type == OperandType::REG) { used_regs.push_back(((RegOperand*)true_val)->reg_num); }
+    if (false_val->type == OperandType::REG) { used_regs.push_back(((RegOperand*)false_val)->reg_num); }
+    return used_regs;
+}
+
+std::vector<Operand*> SelectInst::GetUsedOperands() { return {cond, true_val, false_val}; }
+
+Operand* SelectInst::GetResultOperand() { return res; }
+
+Instruction* SelectInst::Clone(int new_result_reg) const
+{
+    Operand* new_res = (new_result_reg == -1) ? res : getRegOperand(new_result_reg);
+    return new SelectInst(type, true_val, false_val, cond, new_res);
+}
+
+void SelectInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+{
+    if (cond->type == OperandType::REG)
+    {
+        int  reg_num = ((RegOperand*)cond)->reg_num;
+        auto it      = substitutions.find(reg_num);
+        if (it != substitutions.end()) { cond = it->second; }
+    }
+    if (true_val->type == OperandType::REG)
+    {
+        int  reg_num = ((RegOperand*)true_val)->reg_num;
+        auto it      = substitutions.find(reg_num);
+        if (it != substitutions.end()) { true_val = it->second; }
+    }
+    if (false_val->type == OperandType::REG)
+    {
+        int  reg_num = ((RegOperand*)false_val)->reg_num;
+        auto it      = substitutions.find(reg_num);
+        if (it != substitutions.end()) { false_val = it->second; }
+    }
+}
+
+DataType SelectInst::GetResultType() const { return type; }
+
+Instruction* SelectInst::CloneWithMapping(const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const
+{
+    Operand* new_cond      = copyOperand(cond, reg_map, label_map);
+    Operand* new_true_val  = copyOperand(true_val, reg_map, label_map);
+    Operand* new_false_val = copyOperand(false_val, reg_map, label_map);
+    Operand* new_res       = copyOperand(res, reg_map, label_map);
+    return new SelectInst(type, new_true_val, new_false_val, new_cond, new_res);
+}
+
+std::vector<Operand*> SelectInst::GetCSEOperands() const { return {cond, true_val, false_val}; }
+
+void SelectInst::ReplaceLabels(const std::map<int, int>& label_map) {}
+
+EmptyInst::EmptyInst() : Instruction(LLVMIR::IROpCode::EMPTY) {}
+void EmptyInst::printIR(std::ostream& s)
+{
+    if (comment.empty()) return;
+
+    s << "; " << comment << std::endl;
+}
+
+void                  EmptyInst::Rename(std::map<int, int>&) {}
+void                  EmptyInst::ReplaceAllOperands(std::map<int, int>&) {}
+int                   EmptyInst::GetResultReg() { return -1; }
+std::vector<int>      EmptyInst::GetUsedRegs() { return {}; }
+std::vector<Operand*> EmptyInst::GetUsedOperands() { return {}; }
+Operand*              EmptyInst::GetResultOperand() { return nullptr; }
+Instruction*          EmptyInst::Clone(int) const { return new EmptyInst(); }
+void                  EmptyInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) {}
+DataType              EmptyInst::GetResultType() const { return DataType::I32; }
+Instruction*          EmptyInst::CloneWithMapping(const std::map<int, int>&, const std::map<int, int>&) const
+{
+    return new EmptyInst();
+}
+std::vector<Operand*> EmptyInst::GetCSEOperands() const { return {}; }
+void                  EmptyInst::ReplaceLabels(const std::map<int, int>&) {}

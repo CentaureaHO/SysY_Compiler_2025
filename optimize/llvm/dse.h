@@ -39,7 +39,7 @@ namespace LLVMIR
 
         bool allPathsGoThrough(CFG* cfg, int start, int end, int through);
 
-        bool allPathsNoLoad(CFG* cfg, int start, int end, int through, Operand* ptr);
+        bool allPathsNoLoad(CFG* cfg, int start, int through, Operand* ptr, Instruction* newstore);
 
         bool pointsToGlobalOrEscapes(Operand* ptr, CFG* cfg);
 

@@ -220,6 +220,12 @@ MoveInst* Backend::RV64::createMoveInst(DataType* type, Register dst, double src
     return inst;
 }
 
+SelectInst* Backend::RV64::createSelectInst(Register cond_reg, Register dst, Operand* true_val, Operand* false_val)
+{
+    SelectInst* inst = new SelectInst(cond_reg, dst, true_val, false_val);
+    return inst;
+}
+
 RV64Inst* Backend::RV64::createCallInst(RV64InstType op, std::string name, int ireg_para_cnt, int freg_para_cnt)
 {
     RV64Inst* inst = new RV64Inst();

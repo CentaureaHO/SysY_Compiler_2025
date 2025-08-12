@@ -58,7 +58,7 @@ Instruction::Instruction(InstType it) : inst_type(it) {}
 
 RV64Label::RV64Label(bool la) : is_data_addr(false), is_hi(false), jmp_label(0), seq_label(0), is_la(la) {}
 RV64Label::RV64Label(string n, bool hi, bool la)
-    : name(n), is_data_addr(true), jmp_label(0), seq_label(0), is_hi(hi), is_la(la)
+    : name(n), is_data_addr(true), is_hi(hi), jmp_label(0), seq_label(0), is_la(la)
 {}
 RV64Label::RV64Label(int jmp, int seq, bool la)
     : is_data_addr(false), is_hi(false), jmp_label(jmp), seq_label(seq), is_la(la)
@@ -279,6 +279,75 @@ void MoveInst::replaceAllOperands(const std::map<int, int>& reg_replace_map)
         if (reg_dst->reg.is_virtual && reg_replace_map.find(reg_dst->reg.reg_num) != reg_replace_map.end())
         {
             reg_dst->reg.reg_num = reg_replace_map.at(reg_dst->reg.reg_num);
+        }
+    }
+}
+
+SelectInst::SelectInst(Register cond, Register dst, Operand* tv, Operand* fv)
+    : Instruction(InstType::SELECT), cond_reg(cond), dst_reg(dst), true_val(tv), false_val(fv)
+{}
+
+SelectInst::~SelectInst()
+{
+    delete true_val;
+    delete false_val;
+}
+
+vector<Register*> SelectInst::getReadRegs()
+{
+    vector<Register*> read_regs;
+
+    read_regs.push_back(&cond_reg);
+
+    if (true_val && true_val->operand_type == OperandType::REG)
+    {
+        RegOperand* reg_operand = (RegOperand*)true_val;
+        read_regs.push_back(&reg_operand->reg);
+    }
+
+    if (false_val && false_val->operand_type == OperandType::REG)
+    {
+        RegOperand* reg_operand = (RegOperand*)false_val;
+        read_regs.push_back(&reg_operand->reg);
+    }
+
+    return read_regs;
+}
+
+vector<Register*> SelectInst::getWriteRegs()
+{
+    vector<Register*> write_regs;
+    write_regs.push_back(&dst_reg);
+    return write_regs;
+}
+
+void SelectInst::replaceAllOperands(const std::map<int, int>& reg_replace_map)
+{
+    if (cond_reg.is_virtual && reg_replace_map.find(cond_reg.reg_num) != reg_replace_map.end())
+    {
+        cond_reg.reg_num = reg_replace_map.at(cond_reg.reg_num);
+    }
+
+    if (dst_reg.is_virtual && reg_replace_map.find(dst_reg.reg_num) != reg_replace_map.end())
+    {
+        dst_reg.reg_num = reg_replace_map.at(dst_reg.reg_num);
+    }
+
+    if (true_val && true_val->operand_type == OperandType::REG)
+    {
+        RegOperand* reg_operand = (RegOperand*)true_val;
+        if (reg_operand->reg.is_virtual && reg_replace_map.find(reg_operand->reg.reg_num) != reg_replace_map.end())
+        {
+            reg_operand->reg.reg_num = reg_replace_map.at(reg_operand->reg.reg_num);
+        }
+    }
+
+    if (false_val && false_val->operand_type == OperandType::REG)
+    {
+        RegOperand* reg_operand = (RegOperand*)false_val;
+        if (reg_operand->reg.is_virtual && reg_replace_map.find(reg_operand->reg.reg_num) != reg_replace_map.end())
+        {
+            reg_operand->reg.reg_num = reg_replace_map.at(reg_operand->reg.reg_num);
         }
     }
 }

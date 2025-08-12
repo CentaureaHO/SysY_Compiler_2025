@@ -33,6 +33,7 @@ class ExprNode : public Node
 
     void setConst();
     void setNonConst();
+    bool isConstExpr() const;
 };
 
 class LeftValueExpr : public ExprNode

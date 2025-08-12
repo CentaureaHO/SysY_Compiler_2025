@@ -1,4 +1,6 @@
 #include "llvm/loop/loop_strength_reduce.h"
+#include "llvm_ir/defs.h"
+#include "llvm_ir/instruction.h"
 #include <assert.h>
 #include <iostream>
 
@@ -24,7 +26,13 @@ namespace Transform
     {
         assert(b != nullptr);
         auto it = b->insts.begin();
-        while (it != b->insts.end() && (*it)->opcode == IROpCode::PHI) { ++it; }
+        // 确保def-use关系
+        it = b->insts.begin();
+        while (it != b->insts.end() &&
+               ((*it)->opcode == IROpCode::PHI || (*it)->opcode == LLVMIR::IROpCode::GETELEMENTPTR))
+        {
+            ++it;
+        }
         b->insts.insert(it, ins_to_insert.begin(), ins_to_insert.end());
     }
 
@@ -270,7 +278,6 @@ namespace Transform
 
         auto dom_tree = this->ir->DomTrees[loop->cfg];
         assert(dom_tree != nullptr);
-
         int latch_num  = (*(loop->latches.begin()))->block_id;
         int header_num = loop->header->block_id;
 

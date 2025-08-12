@@ -1,6 +1,5 @@
 #include "llvm/t_sccp.h"
 #include "llvm_ir/instruction.h"
-#include "llvm/loop/loop_find.h"
 #include "cfg.h"
 #include <algorithm>
 #include <cassert>
@@ -9,7 +8,7 @@
 #include <queue>
 #include <sstream>
 
-// #define DBGMODE
+#define DBGMODE
 
 #ifdef DBGMODE
 template <typename... Args>
@@ -31,8 +30,9 @@ namespace Transform
     {
         if (!isValid()) return "INVALID";
 
-        std::string result = "Base:" + base_ptr->getName();
-        for (auto idx : indices) { result += "[" + idx->getName() + "]"; }
+        std::string result = "Base:" + std::to_string(reinterpret_cast<uintptr_t>(base_ptr));
+        result += "+";
+        result += std::to_string(element_offset);
 
         return result;
     }
@@ -92,8 +92,7 @@ namespace Transform
         return true;
     }
 
-    TSCCPPass::TSCCPPass(LLVMIR::IR* ir, Analysis::AliasAnalyser* aa)
-        : Pass(ir), current_cfg_(nullptr), alias_analyser_(aa)
+    TSCCPPass::TSCCPPass(LLVMIR::IR* ir) : Pass(ir), current_cfg_(nullptr)
     {
         instruction_visitor_ = std::make_unique<InstructionVisitor>(this);
     }
@@ -303,8 +302,28 @@ namespace Transform
 
     void TSCCPPass::propagateConstants(CFG* cfg)
     {
-        for (const auto& [block_id, block] : cfg->block_id_to_block)
-            for (auto* inst : block->insts) updateInstructionOperands(inst);
+        current_cfg_ = cfg;
+
+        for (auto& [block_id, block] : cfg->block_id_to_block)
+        {
+            for (auto* inst : block->insts)
+            {
+                updateInstructionOperands(inst);
+
+                if (inst->opcode == LLVMIR::IROpCode::LOAD)
+                {
+                    auto value = getValue(inst);
+                    if (value.isConstant())
+                    {
+                        auto dead_value = getValue(inst);
+                        int  result_reg = inst->GetResultReg();
+                        if (result_reg == -1) continue;
+
+                        for (auto* use_inst : use_chains_[inst]) mapRegToConstant(use_inst, result_reg, dead_value);
+                    }
+                }
+            }
+        }
     }
 
     void TSCCPPass::updateInstructionOperands(LLVMIR::Instruction* inst)
@@ -488,23 +507,22 @@ namespace Transform
             if (operand && operand->type == LLVMIR::OperandType::REG)
             {
                 auto* reg_operand = static_cast<LLVMIR::RegOperand*>(operand);
-                if (reg_operand->reg_num == reg_num)
-                {
-                    DBGINFO("TSCCP: Replacing register ", reg_num, " with constant in instruction");
-                    replaceWithConstant(operand, value);
-                }
+                if (reg_operand->reg_num == reg_num) replaceWithConstant(operand, value);
             }
         };
 
+        std::vector<LLVMIR::Operand*> operands = inst->GetUsedOperands();
+        for (auto*& operand : operands)
+        {
+            if (operand && operand->type == LLVMIR::OperandType::REG)
+            {
+                auto* reg_operand = static_cast<LLVMIR::RegOperand*>(operand);
+                if (reg_operand->reg_num == reg_num) replaceWithConstant(operand, value);
+            }
+        }
+
         switch (inst->opcode)
         {
-            case LLVMIR::IROpCode::PHI:
-            {
-                auto* phi = static_cast<LLVMIR::PhiInst*>(inst);
-                for (auto& phi_pair : phi->vals_for_labels) replaceIfMatch(phi_pair.first);
-                break;
-            }
-            // 算术指令
             case LLVMIR::IROpCode::ADD:
             case LLVMIR::IROpCode::SUB:
             case LLVMIR::IROpCode::MUL:
@@ -525,7 +543,6 @@ namespace Transform
                 replaceIfMatch(arith->rhs);
                 break;
             }
-            // 比较指令
             case LLVMIR::IROpCode::ICMP:
             case LLVMIR::IROpCode::FCMP:
             {
@@ -534,14 +551,6 @@ namespace Transform
                 replaceIfMatch(cmp->rhs);
                 break;
             }
-            // 分支指令
-            case LLVMIR::IROpCode::BR_COND:
-            {
-                auto* br = static_cast<LLVMIR::BranchCondInst*>(inst);
-                replaceIfMatch(br->cond);
-                break;
-            }
-            // 内存指令
             case LLVMIR::IROpCode::STORE:
             {
                 auto* store = static_cast<LLVMIR::StoreInst*>(inst);
@@ -555,58 +564,37 @@ namespace Transform
                 replaceIfMatch(load->ptr);
                 break;
             }
-            case LLVMIR::IROpCode::GETELEMENTPTR:
+            case LLVMIR::IROpCode::BR_COND:
             {
-                auto* gep = static_cast<LLVMIR::GEPInst*>(inst);
-                replaceIfMatch(gep->base_ptr);
-                for (auto*& index : gep->idxs) replaceIfMatch(index);
+                auto* br = static_cast<LLVMIR::BranchCondInst*>(inst);
+                replaceIfMatch(br->cond);
                 break;
             }
-            // 类型转换指令
-            case LLVMIR::IROpCode::ZEXT:
-            {
-                auto* zext = static_cast<LLVMIR::ZextInst*>(inst);
-                replaceIfMatch(zext->src);
-                break;
-            }
-            case LLVMIR::IROpCode::SITOFP:
-            {
-                auto* sitofp = static_cast<LLVMIR::SI2FPInst*>(inst);
-                replaceIfMatch(sitofp->f_si);
-                break;
-            }
-            case LLVMIR::IROpCode::FPTOSI:
-            {
-                auto* fptosi = static_cast<LLVMIR::FP2SIInst*>(inst);
-                replaceIfMatch(fptosi->f_fp);
-                break;
-            }
-            case LLVMIR::IROpCode::FPEXT:
-            {
-                auto* fpext = static_cast<LLVMIR::FPExtInst*>(inst);
-                replaceIfMatch(fpext->src);
-                break;
-            }
-            // 函数调用
-            case LLVMIR::IROpCode::CALL:
-            {
-                auto* call = static_cast<LLVMIR::CallInst*>(inst);
-                for (auto& arg_pair : call->args) replaceIfMatch(arg_pair.second);
-                break;
-            }
-            // 返回指令
             case LLVMIR::IROpCode::RET:
             {
                 auto* ret = static_cast<LLVMIR::RetInst*>(inst);
                 if (ret->ret) replaceIfMatch(ret->ret);
                 break;
             }
-            // 其他指令暂不处理
-            case LLVMIR::IROpCode::BR_UNCOND:
-            case LLVMIR::IROpCode::ALLOCA:
-            case LLVMIR::IROpCode::GLOBAL_VAR:
-            case LLVMIR::IROpCode::GLOBAL_STR:
-            case LLVMIR::IROpCode::OTHER:
+            case LLVMIR::IROpCode::PHI:
+            {
+                auto* phi = static_cast<LLVMIR::PhiInst*>(inst);
+                for (auto& [val, label] : phi->vals_for_labels) replaceIfMatch(val);
+                break;
+            }
+            case LLVMIR::IROpCode::GETELEMENTPTR:
+            {
+                auto* gep = static_cast<LLVMIR::GEPInst*>(inst);
+                replaceIfMatch(gep->base_ptr);
+                for (auto*& idx : gep->idxs) replaceIfMatch(idx);
+                break;
+            }
+            case LLVMIR::IROpCode::CALL:
+            {
+                auto* call = static_cast<LLVMIR::CallInst*>(inst);
+                for (auto& [type, operand] : call->args) replaceIfMatch(operand);
+                break;
+            }
             default: break;
         }
     }
@@ -617,92 +605,34 @@ namespace Transform
      */
     void TSCCPPass::eliminateDeadInstructions(CFG* cfg)
     {
-        std::vector<LLVMIR::Instruction*> to_eliminate;
-
+        std::vector<LLVMIR::Instruction*> dead_instructions;
         for (auto& [block_id, block] : cfg->block_id_to_block)
         {
             for (auto* inst : block->insts)
             {
-                auto value            = getValue(inst);
-                bool should_eliminate = false;
-
+                auto value = getValue(inst);
                 if (value.isConstant())
                 {
-                    switch (inst->opcode)
-                    {
-                        // 算术指令
-                        case LLVMIR::IROpCode::ADD:
-                        case LLVMIR::IROpCode::SUB:
-                        case LLVMIR::IROpCode::MUL:
-                        case LLVMIR::IROpCode::DIV:
-                        case LLVMIR::IROpCode::MOD:
-                        case LLVMIR::IROpCode::FADD:
-                        case LLVMIR::IROpCode::FSUB:
-                        case LLVMIR::IROpCode::FMUL:
-                        case LLVMIR::IROpCode::FDIV:
-                        case LLVMIR::IROpCode::BITXOR:
-                        case LLVMIR::IROpCode::BITAND:
-                        case LLVMIR::IROpCode::SHL:
-                        case LLVMIR::IROpCode::ASHR:
-                        case LLVMIR::IROpCode::LSHR:
-                        // 比较指令
-                        case LLVMIR::IROpCode::ICMP:
-                        case LLVMIR::IROpCode::FCMP:
-                        // 类型转换指令
-                        case LLVMIR::IROpCode::SITOFP:
-                        case LLVMIR::IROpCode::FPTOSI:
-                        case LLVMIR::IROpCode::ZEXT:
-                        case LLVMIR::IROpCode::FPEXT:
-                        // 内存读取指令（需谨慎，可能有副作用）
-                        case LLVMIR::IROpCode::LOAD:
-                        // GEP指令
-                        case LLVMIR::IROpCode::GETELEMENTPTR: should_eliminate = true; break;
-                        // 函数调用不能消除，可能有副作用
-                        case LLVMIR::IROpCode::CALL:
-                        // 内存写入不能消除，有副作用
-                        case LLVMIR::IROpCode::STORE:
-                        // 控制流指令不能消除
-                        case LLVMIR::IROpCode::BR_COND:
-                        case LLVMIR::IROpCode::BR_UNCOND:
-                        case LLVMIR::IROpCode::RET:
-                        // PHI指令不能消除，影响控制流
-                        case LLVMIR::IROpCode::PHI:
-                        // 分配指令不能消除，影响内存布局
-                        case LLVMIR::IROpCode::ALLOCA:
-                        // 全局变量定义不能消除
-                        case LLVMIR::IROpCode::GLOBAL_VAR:
-                        case LLVMIR::IROpCode::GLOBAL_STR:
-                        case LLVMIR::IROpCode::OTHER:
-                        default: break;
-                    }
-                }
+                    auto dead_value = getValue(inst);
+                    int  result_reg = inst->GetResultReg();
+                    if (result_reg == -1) continue;
 
-                if (should_eliminate) to_eliminate.push_back(inst);
+                    for (auto* use_inst : use_chains_[inst]) mapRegToConstant(use_inst, result_reg, dead_value);
+
+                    dead_instructions.push_back(inst);
+                }
             }
         }
 
-        for (auto* dead_inst : to_eliminate)
+        for (auto* dead_inst : dead_instructions)
         {
-            int result_reg = dead_inst->GetResultReg();
-            if (result_reg == -1) continue;
-
-            auto dead_value = getValue(dead_inst);
-
-            if (use_chains_.find(dead_inst) != use_chains_.end())
-                for (auto* use_inst : use_chains_[dead_inst]) mapRegToConstant(use_inst, result_reg, dead_value);
-        }
-
-        std::set<LLVMIR::Instruction*> eliminate_set(to_eliminate.begin(), to_eliminate.end());
-
-        for (auto& [block_id, block] : cfg->block_id_to_block)
-        {
-            std::deque<LLVMIR::Instruction*> new_insts;
-
-            for (auto* inst : block->insts)
-                if (eliminate_set.find(inst) == eliminate_set.end()) new_insts.push_back(inst);
-
-            block->insts.clear();
-            block->insts.insert(block->insts.end(), new_insts.begin(), new_insts.end());
+            auto block_it = cfg->block_id_to_block.find(dead_inst->block_id);
+            if (block_it != cfg->block_id_to_block.end())
+            {
+                auto& insts = block_it->second->insts;
+                insts.erase(std::remove(insts.begin(), insts.end(), dead_inst), insts.end());
+                delete dead_inst;
+            }
         }
     }
 
@@ -941,7 +871,6 @@ namespace Transform
                     {
                         DBGINFO("\tFound base array pointer, invalidating all related memory locations");
 
-                        // 失效所有与这个数组相关的内存位置
                         std::vector<MemoryLocation> to_invalidate;
                         for (auto& [mem_loc, value] : pass_->memory_state_)
                         {
@@ -1227,35 +1156,8 @@ namespace Transform
         MemoryLocation store_loc    = getMemoryLocation(store->ptr);
         if (!store_loc.isValid())
         {
-            DBGINFO("\tSTORE with dynamic indices detected - using selective invalidation");
-
-            LLVMIR::Operand* base_ptr = nullptr;
-            if (store->ptr->type == LLVMIR::OperandType::REG)
-            {
-                auto* reg_operand = static_cast<LLVMIR::RegOperand*>(store->ptr);
-                auto  it          = def_map_.find(reg_operand->reg_num);
-                if (it != def_map_.end() && it->second->opcode == LLVMIR::IROpCode::GETELEMENTPTR)
-                {
-                    auto* gep = static_cast<LLVMIR::GEPInst*>(it->second);
-                    base_ptr  = gep->base_ptr;
-                }
-            }
-
-            if (base_ptr)
-            {
-                std::vector<MemoryLocation> to_remove;
-                for (const auto& [loc, value] : memory_state_)
-                {
-                    if (mayAlias(store_loc, loc)) { to_remove.push_back(loc); }
-                }
-                for (const auto& loc : to_remove) { memory_state_.erase(loc); }
-                DBGINFO("\tInvalidated ", to_remove.size(), " locations with same base pointer");
-            }
-            else
-            {
-                DBGINFO("\tCannot determine base pointer - clearing ALL memory state");
-                memory_state_.clear();
-            }
+            DBGINFO("\tSTORE with dynamic indices detected - clearing ALL memory state");
+            memory_state_.clear();
             return;
         }
 
@@ -1264,98 +1166,35 @@ namespace Transform
         {
             auto* reg_operand = static_cast<LLVMIR::RegOperand*>(store->val);
             auto  def_it      = def_map_.find(reg_operand->reg_num);
-            if (def_it != def_map_.end())
-            {
-                has_circular_dependency = hasCircularDependency(def_it->second, store_loc);
-            }
+            if (def_it != def_map_.end()) has_circular_dependency = hasCircularDependency(def_it->second, store_loc);
         }
-
-        DBGINFO("STORE: ",
-            store_loc.toString(),
-            " = ",
-            (stored_value.isConstant() ? "CONSTANT" : "NON_CONSTANT"),
-            (has_circular_dependency ? " (CIRCULAR_DEP)" : ""));
 
         for (auto it = memory_state_.begin(); it != memory_state_.end();)
         {
             if (it->first != store_loc && mayAlias(store_loc, it->first))
-            {
-                DBGINFO("\tINVALIDATING: ", it->first.toString(), " (alias conflict)");
                 it = memory_state_.erase(it);
-            }
             else
                 ++it;
         }
 
         if (stored_value.isConstant() && !has_circular_dependency)
-        {
             memory_state_[store_loc] = stored_value;
-            DBGINFO("\tSTORED in memory state, total entries: ", memory_state_.size());
-        }
         else
-        {
             memory_state_.erase(store_loc);
-            if (has_circular_dependency)
-            {
-                DBGINFO("\tERASED from memory state (circular dependency detected)");
-
-                if (store->val->type == LLVMIR::OperandType::REG)
-                {
-                    auto* reg_operand = static_cast<LLVMIR::RegOperand*>(store->val);
-                    auto  def_it      = def_map_.find(reg_operand->reg_num);
-                    if (def_it != def_map_.end())
-                    {
-                        setValue(def_it->second, LatticeValue::createBottom());
-                        DBGINFO("\tMarked stored value instruction as BOTTOM");
-                    }
-                }
-
-                for (const auto& [block_id, block] : current_cfg_->block_id_to_block)
-                {
-                    for (auto* inst : block->insts)
-                    {
-                        if (inst->opcode == LLVMIR::IROpCode::LOAD)
-                        {
-                            auto*          load     = static_cast<LLVMIR::LoadInst*>(inst);
-                            MemoryLocation load_loc = getMemoryLocation(load->ptr);
-                            if (load_loc.isValid() && load_loc == store_loc)
-                            {
-                                setValue(load, LatticeValue::createBottom());
-                                DBGINFO("\tMarked load from circular dependency location as BOTTOM");
-                            }
-                        }
-                    }
-                }
-            }
-            else
-                DBGINFO("\tERASED from memory state");
-        }
     }
 
-    /**
-     * 处理load指令
-     *   使用reaching definitions分析，收集所有可能到达该load的store指令
-     *   并合并它们的值来确定load的结果
-     */
     LatticeValue TSCCPPass::handleLoadInstruction(LLVMIR::LoadInst* load)
     {
         MemoryLocation load_loc = getMemoryLocation(load->ptr);
 
-        if (!load_loc.isValid())
-        {
-            DBGINFO("LOAD with dynamic indices - cannot optimize, returning BOTTOM");
-            return LatticeValue::createBottom();
-        }
+        if (!load_loc.isValid()) return LatticeValue::createBottom();
 
-        DBGINFO("LOAD: ", load_loc.toString(), " using reaching definitions analysis");
+        auto it = memory_state_.find(load_loc);
+        if (it != memory_state_.end()) return it->second;
 
         std::vector<LLVMIR::StoreInst*> reaching_stores = collectReachingStores(load, load_loc);
 
-        if (reaching_stores.empty())
-        {
-            DBGINFO("\tNo reaching stores found, returning BOTTOM");
-            return LatticeValue::createBottom();
-        }
+        if (reaching_stores.empty()) return LatticeValue::createBottom();
 
         LatticeValue result;
         bool         first = true;
@@ -1363,10 +1202,6 @@ namespace Transform
         for (auto* store : reaching_stores)
         {
             LatticeValue store_value = getValueForOperand(store->val);
-            DBGINFO("\tReaching store in block ",
-                store->block_id,
-                " with value: ",
-                (store_value.isConstant() ? "CONSTANT" : "NON_CONSTANT"));
 
             if (first)
             {
@@ -1376,27 +1211,14 @@ namespace Transform
             else { result = result.meet(store_value); }
         }
 
-        DBGINFO("\tFinal load result: ", (result.isConstant() ? "CONSTANT" : (result.isBottom() ? "BOTTOM" : "TOP")));
         return result;
     }
 
-    /**
-     * 解析指针操作数，获取内存位置
-     *   递归地处理GEP指令链，直到找到真正的基址指针（alloca或全局变量）。
-     *   计算从基址开始的总元素偏移量，形成一个精确的`MemoryLocation`。
-     *   如果任何索引是动态的（非常量），则认为地址无法确定，返回无效位置。
-     *   支持经过GEPStrengthReduce优化后的扁平化GEP指令链。
-     */
     MemoryLocation TSCCPPass::getMemoryLocation(LLVMIR::Operand* ptr) const
     {
         if (!ptr) return MemoryLocation();
 
-        if (ptr->type == LLVMIR::OperandType::GLOBAL)
-        {
-            // 无法确定其他函数是否对全局变量进行修改，此处不处理
-            DBGINFO("  GLOBAL variable detected, returning invalid location");
-            return MemoryLocation();
-        }
+        if (ptr->type == LLVMIR::OperandType::GLOBAL) return MemoryLocation();
 
         if (ptr->type == LLVMIR::OperandType::REG)
         {
@@ -1406,358 +1228,118 @@ namespace Transform
             {
                 auto* defining_inst = it->second;
 
-                if (dynamic_cast<LLVMIR::FuncDefInst*>(defining_inst))
-                {
-                    // TODO: Track pointer parameters if they point to stack-allocated memory that we can analyze
-                    DBGINFO("  FUNCTION PARAMETER detected, returning invalid location");
-                    return MemoryLocation();
-                }
-
                 if (defining_inst->opcode == LLVMIR::IROpCode::GETELEMENTPTR)
                 {
                     auto* gep = static_cast<LLVMIR::GEPInst*>(defining_inst);
 
-                    DBGINFO("\tGEP instruction found, base_ptr reg: ",
-                        (gep->base_ptr->type == LLVMIR::OperandType::REG
-                                ? static_cast<LLVMIR::RegOperand*>(gep->base_ptr)->reg_num
-                                : -1));
-                    DBGINFO("\tGEP has ", gep->idxs.size(), " indices");
-
                     MemoryLocation base_loc = getMemoryLocation(gep->base_ptr);
-                    if (!base_loc.isValid())
+                    if (!base_loc.isValid()) return MemoryLocation();
+
+                    int current_offset = 0;
+
+                    if (gep->dims.size() > 0)
                     {
-                        DBGINFO("\tBase location invalid");
-                        return MemoryLocation();
-                    }
+                        size_t start_idx = 0;
 
-                    std::vector<LLVMIR::Operand*> index_operands;
-                    index_operands.reserve(gep->idxs.size());
-                    for (size_t i = 1; i < gep->idxs.size(); ++i)
-                    {
-                        auto* operand = gep->idxs[i];
-                        DBGINFO("\tIndex ", i, ": type=", static_cast<int>(operand->type));
-
-                        index_operands.push_back(operand);
-                    }
-
-                    DBGINFO("\tReturning MemoryLocation with base_ptr: ",
-                        base_loc.base_ptr,
-                        " and indices count: ",
-                        index_operands.size());
-
-                    return MemoryLocation(base_loc.base_ptr, index_operands);
-                }
-
-                if (defining_inst->opcode == LLVMIR::IROpCode::ALLOCA)
-                {
-                    auto alloca_inst = static_cast<LLVMIR::AllocInst*>(defining_inst);
-                    DBGINFO("\tALLOCA instruction found, returning base pointer");
-                    std::vector<LLVMIR::Operand*> index_operands;
-                    index_operands.reserve(alloca_inst->dims.size());
-                    for (auto& idx : alloca_inst->dims) { index_operands.push_back(getImmeI32Operand(0)); }
-                    return MemoryLocation(ptr, index_operands);
-                }
-            }
-        }
-
-        return MemoryLocation(ptr);
-    }
-
-    /**
-     * 利用支配树查找定义store
-     *   当load的值在当前内存状态中未知时，此函数被调用。
-     *   1. 沿支配树从load所在块向上回溯。
-     *   2. 在每个支配块中，从后向前搜索指令。
-     *   3. 找到第一个写入相同`MemoryLocation`的store指令。
-     *   4. 检查从该store到load的路径上是否跨越了循环(`hasLoopBetweenBlocks`)。
-     *      如果跨越了循环，那么控制流不再是单向的，可能出现同前文提到循环引用的类似问题，因此不能使用该store的值
-     *   5. 如果找到任何可能冲突的store（别名）或不安全的函数调用，则停止搜索。
-     */
-    bool TSCCPPass::findDefiningStore(
-        LLVMIR::LoadInst* load, const MemoryLocation& loc, LLVMIR::StoreInst*& defining_store)
-    {
-        defining_store = nullptr;
-
-        if (!loc.isValid())
-        {
-            DBGINFO("\tInvalid memory location for dominance search");
-            return false;
-        }
-
-        auto dom_it = ir->DomTrees.find(current_cfg_);
-        if (dom_it == ir->DomTrees.end())
-        {
-            DBGINFO("\tNo dominance tree available for current CFG");
-            return false;
-        }
-
-        auto* dom_analyzer = dom_it->second;
-        int   load_block   = load->block_id;
-
-        DBGINFO("\tSearching for defining store using dominance analysis, load in block ", load_block);
-
-        if (load_block < 0 || static_cast<size_t>(load_block) >= dom_analyzer->imm_dom.size())
-        {
-            DBGINFO("\tLoad block ", load_block, " is out of range for dominance tree");
-            return false;
-        }
-
-        // 检查是否在循环中或跨循环边界 - 如果是，则无法确定是否存在类循环引用，保守处理
-        if (isInLoopOrCrossesLoop(load_block))
-        {
-            DBGINFO("\tLoad is in loop, being conservative");
-            return false;
-        }
-
-        std::vector<int> dominating_blocks;
-        int              current_block = load_block;
-        std::set<int>    visited_blocks;
-
-        while (current_block != -1)
-        {
-            if (visited_blocks.count(current_block))
-            {
-                DBGINFO("\tDetected cycle in dominance tree at block ", current_block);
-                break;
-            }
-
-            if (static_cast<size_t>(current_block) >= dom_analyzer->imm_dom.size())
-            {
-                DBGINFO("\tBlock ", current_block, " is out of range for dominance tree");
-                break;
-            }
-
-            dominating_blocks.push_back(current_block);
-            visited_blocks.insert(current_block);
-
-            current_block = dom_analyzer->imm_dom[current_block];
-            DBGINFO("\t\tBlock ", dominating_blocks.back(), " -> ", current_block);
-        }
-
-        DBGINFO("\tFound ", dominating_blocks.size(), " dominating blocks to search");
-
-        for (int block_id : dominating_blocks)
-        {
-            auto block_it = current_cfg_->block_id_to_block.find(block_id);
-            if (block_it == current_cfg_->block_id_to_block.end()) continue;
-
-            auto* block = block_it->second;
-            DBGINFO("\tSearching in dominating block ", block_id);
-
-            if (block_id == load_block)
-            {
-                bool found_load = false;
-                for (auto it = block->insts.rbegin(); it != block->insts.rend(); ++it)
-                {
-                    auto* inst = *it;
-
-                    if (inst == load)
-                    {
-                        found_load = true;
-                        continue;
-                    }
-
-                    if (!found_load) continue;
-
-                    if (inst->opcode == LLVMIR::IROpCode::STORE)
-                    {
-                        auto*          store     = static_cast<LLVMIR::StoreInst*>(inst);
-                        MemoryLocation store_loc = getMemoryLocation(store->ptr);
-
-                        if (store_loc.isValid() && store_loc == loc)
+                        if (gep->idxs.size() > 0)
                         {
-                            DBGINFO("\t\tFound defining store in same block before load");
-                            defining_store = store;
-                            return true;
-                        }
-
-                        if (store_loc.isValid() && mayAlias(store_loc, loc))
-                        {
-                            DBGINFO("\t\tFound potentially aliasing store, stopping search");
-                            return false;
-                        }
-                    }
-                    else if (inst->opcode == LLVMIR::IROpCode::CALL)
-                    {
-                        // 无法确定函数调用中是否会对内存进行修改，因此返回false
-                        auto* call = static_cast<LLVMIR::CallInst*>(inst);
-                        if (!isSafeFunction(call->func_name))
-                        {
-                            DBGINFO("\t\tFound potentially unsafe function call, stopping search");
-                            return false;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                // 不同块，需要检查从defining store到load的路径上是否有循环干扰
-
-                // 先在块中寻找潜在的defining store
-                LLVMIR::StoreInst* candidate_store = nullptr;
-                for (auto it = block->insts.rbegin(); it != block->insts.rend(); ++it)
-                {
-                    auto* inst = *it;
-
-                    if (inst->opcode == LLVMIR::IROpCode::STORE)
-                    {
-                        auto*          store     = static_cast<LLVMIR::StoreInst*>(inst);
-                        MemoryLocation store_loc = getMemoryLocation(store->ptr);
-
-                        if (store_loc.isValid() && store_loc == loc)
-                        {
-                            candidate_store = store;
-                            break;
-                        }
-
-                        if (store_loc.isValid() && mayAlias(store_loc, loc))
-                        {
-                            DBGINFO("\t\tFound potentially aliasing store in block ", block_id, ", stopping search");
-                            return false;
-                        }
-                    }
-                    else if (inst->opcode == LLVMIR::IROpCode::CALL)
-                    {
-                        // 无法确定函数调用中是否会对内存进行修改，因此返回false
-                        auto* call = static_cast<LLVMIR::CallInst*>(inst);
-                        if (!isSafeFunction(call->func_name))
-                        {
-                            DBGINFO(
-                                "\t\tFound potentially unsafe function call in block ", block_id, ", stopping search");
-                            return false;
-                        }
-                    }
-                }
-
-                if (candidate_store)
-                {
-                    // 检查从candidate_store所在的块到load所在的块之间是否有循环干扰
-                    if (hasLoopBetweenBlocks(block_id, load_block))
-                    {
-                        DBGINFO("\t\tFound defining store in block ",
-                            block_id,
-                            " but there are loops between store and load, being conservative");
-                        return false;
-                    }
-
-                    DBGINFO("\t\tFound defining store in dominating block ", block_id, " with no loop interference");
-                    defining_store = candidate_store;
-                    return true;
-                }
-            }
-        }
-
-        DBGINFO("\tNo defining store found in dominating blocks");
-        return false;
-    }
-
-    bool TSCCPPass::isInLoopOrCrossesLoop(int block_id) const
-    {
-        auto block_it = current_cfg_->block_id_to_block.find(block_id);
-        if (block_it == current_cfg_->block_id_to_block.end()) return false;
-
-        LLVMIR::IRBlock* block = block_it->second;
-
-        if (!current_cfg_->LoopForest || current_cfg_->LoopForest->loop_set.empty())
-        {
-            DBGINFO("\tNo loop information available, being conservative and assuming in loop");
-            return true;
-        }
-
-        for (auto* loop : current_cfg_->LoopForest->loop_set)
-        {
-            if (loop->loop_nodes.find(block) != loop->loop_nodes.end())
-            {
-                DBGINFO("\tBlock ",
-                    block_id,
-                    " is in loop ",
-                    loop->loop_id,
-                    " with header ",
-                    (loop->header ? loop->header->block_id : -1));
-                return true;
-            }
-        }
-
-        DBGINFO("\tBlock ", block_id, " is not in any loop");
-        return false;
-    }
-
-    /**
-     * 检查从`from_block`到`to_block`的路径上是否有循环，保证找到的store通过单向控制流支配load
-     */
-    bool TSCCPPass::hasLoopBetweenBlocks(int from_block, int to_block) const
-    {
-        if (from_block == to_block) return false;
-
-        std::queue<int> worklist;
-        std::set<int>   visited;
-
-        worklist.push(from_block);
-        visited.insert(from_block);
-
-        while (!worklist.empty())
-        {
-            int current = worklist.front();
-            worklist.pop();
-
-            // 如果到达目标块，检查这条路径上是否有循环
-            if (current == to_block)
-            {
-                // 检查访问路径上的所有块是否在循环中
-                for (int block_id : visited)
-                {
-                    if (block_id == from_block || block_id == to_block) continue;  // 跳过起点和终点
-
-                    // 检查这个块是否在循环中
-                    auto block_it = current_cfg_->block_id_to_block.find(block_id);
-                    if (block_it == current_cfg_->block_id_to_block.end()) continue;
-
-                    LLVMIR::IRBlock* block = block_it->second;
-                    if (current_cfg_->LoopForest && !current_cfg_->LoopForest->loop_set.empty())
-                    {
-                        for (auto* loop : current_cfg_->LoopForest->loop_set)
-                        {
-                            if (loop->loop_nodes.find(block) != loop->loop_nodes.end())
+                            auto* first_operand = gep->idxs[0];
+                            if (first_operand->type == LLVMIR::OperandType::IMMEI32)
                             {
-                                DBGINFO("\tFound loop interference: block ",
-                                    block_id,
-                                    " is in loop ",
-                                    loop->loop_id,
-                                    " on path from ",
-                                    from_block,
-                                    " to ",
-                                    to_block);
-                                return true;
+                                auto* imm = static_cast<LLVMIR::ImmeI32Operand*>(first_operand);
+                                if (imm->value == 0) start_idx = 1;
                             }
                         }
-                    }
-                }
-                continue;  // 继续搜索其他路径
-            }
 
-            if (static_cast<size_t>(current) < current_cfg_->G_id.size())
-            {
-                for (int succ_id : current_cfg_->G_id[current])
-                {
-                    if (visited.find(succ_id) == visited.end())
-                    {
-                        visited.insert(succ_id);
-                        worklist.push(succ_id);
+                        for (size_t i = start_idx; i < gep->idxs.size(); ++i)
+                        {
+                            auto* operand     = gep->idxs[i];
+                            int   index_value = 0;
+
+                            if (operand->type == LLVMIR::OperandType::IMMEI32)
+                            {
+                                auto* imm   = static_cast<LLVMIR::ImmeI32Operand*>(operand);
+                                index_value = imm->value;
+                            }
+                            else if (operand->type == LLVMIR::OperandType::REG)
+                            {
+                                auto* reg_operand = static_cast<LLVMIR::RegOperand*>(operand);
+                                auto  def_it      = def_map_.find(reg_operand->reg_num);
+                                if (def_it != def_map_.end())
+                                {
+                                    auto*        defining_inst = def_it->second;
+                                    LatticeValue reg_value     = getValue(defining_inst);
+                                    if (reg_value.isConstant() &&
+                                        reg_value.getType() == LatticeValue::ValueType::INTEGER)
+                                    {
+                                        index_value = reg_value.getIntValue();
+                                    }
+                                    else { return MemoryLocation(); }
+                                }
+                                else { return MemoryLocation(); }
+                            }
+                            else { return MemoryLocation(); }
+
+                            int    dimension_multiplier = 1;
+                            size_t dim_idx              = i - start_idx;
+
+                            for (size_t d = dim_idx + 1; d < gep->dims.size(); ++d)
+                            {
+                                dimension_multiplier *= gep->dims[d];
+                            }
+
+                            current_offset += index_value * dimension_multiplier;
+                        }
                     }
+                    else
+                    {
+                        for (size_t i = 0; i < gep->idxs.size(); ++i)
+                        {
+                            auto* operand     = gep->idxs[i];
+                            int   index_value = 0;
+
+                            if (operand->type == LLVMIR::OperandType::IMMEI32)
+                            {
+                                auto* imm   = static_cast<LLVMIR::ImmeI32Operand*>(operand);
+                                index_value = imm->value;
+                            }
+                            else if (operand->type == LLVMIR::OperandType::REG)
+                            {
+                                auto* reg_operand = static_cast<LLVMIR::RegOperand*>(operand);
+                                auto  def_it      = def_map_.find(reg_operand->reg_num);
+                                if (def_it != def_map_.end())
+                                {
+                                    auto*        defining_inst = def_it->second;
+                                    LatticeValue reg_value     = getValue(defining_inst);
+                                    if (reg_value.isConstant() &&
+                                        reg_value.getType() == LatticeValue::ValueType::INTEGER)
+                                    {
+                                        index_value = reg_value.getIntValue();
+                                    }
+                                    else
+                                        return MemoryLocation();
+                                }
+                                else
+                                    return MemoryLocation();
+                            }
+                            else
+                                return MemoryLocation();
+
+                            current_offset += index_value;
+                        }
+                    }
+
+                    int total_offset = base_loc.element_offset + current_offset;
+                    return MemoryLocation(base_loc.base_ptr, total_offset);
                 }
+
+                if (defining_inst->opcode == LLVMIR::IROpCode::ALLOCA) return MemoryLocation(ptr, 0);
             }
         }
 
-        DBGINFO("\tNo loop interference found on path from ", from_block, " to ", to_block);
-        return false;
+        return MemoryLocation(ptr, 0);
     }
 
-    /**
-     * 判断一个函数是否"安全"
-     * "安全"意味着该函数不会修改任何通过指针传入的用户内存状态，或者其修改
-     * 是可预测的。例如，`putint`是安全的，因为它只输出值，不修改内存。
-     * 而`getarray`或一个未知的用户函数是不安全的。
-     */
     bool TSCCPPass::isSafeFunction(const std::string& func_name) const
     {
         static const std::set<std::string> safe_functions = {
@@ -1765,11 +1347,7 @@ namespace Transform
 
         if (func_name.find("llvm.") == 0)
         {
-            if (func_name.find("llvm.memset") == 0 || func_name.find("llvm.memcpy") == 0 ||
-                func_name.find("llvm.memmove") == 0)
-            {
-                return false;
-            }
+            if (func_name.find("llvm.memcpy") == 0 || func_name.find("llvm.memmove") == 0) { return false; }
             return true;
         }
 
@@ -1780,25 +1358,33 @@ namespace Transform
     {
         if (!ptr) return nullptr;
 
-        // 如果是寄存器，查找定义它的指令
-        if (ptr->type == LLVMIR::OperandType::REG)
+        std::set<LLVMIR::Operand*> visited;
+        while (ptr && visited.find(ptr) == visited.end())
         {
-            auto* reg_operand = static_cast<LLVMIR::RegOperand*>(ptr);
-            auto  it          = def_map_.find(reg_operand->reg_num);
-            if (it != def_map_.end())
-            {
-                auto* defining_inst = it->second;
+            visited.insert(ptr);
 
-                // 如果是GEP指令，返回它的基础指针
-                if (defining_inst->opcode == LLVMIR::IROpCode::GETELEMENTPTR)
+            if (ptr->type == LLVMIR::OperandType::GLOBAL) return ptr;
+
+            if (ptr->type == LLVMIR::OperandType::REG)
+            {
+                auto* reg = static_cast<LLVMIR::RegOperand*>(ptr);
+                auto  it  = def_map_.find(reg->reg_num);
+                if (it == def_map_.end()) break;
+
+                auto* def = it->second;
+                if (def->opcode == LLVMIR::IROpCode::ALLOCA) return ptr;
+
+                if (def->opcode == LLVMIR::IROpCode::GETELEMENTPTR)
                 {
-                    auto* gep = static_cast<LLVMIR::GEPInst*>(defining_inst);
-                    return getArrayBasePointer(gep->base_ptr);
+                    auto* gep = static_cast<LLVMIR::GEPInst*>(def);
+                    ptr       = gep->base_ptr;
+                    continue;
                 }
-                // 如果是alloca指令，这就是基础指针
-                else if (defining_inst->opcode == LLVMIR::IROpCode::ALLOCA)
-                    return ptr;
+
+                break;
             }
+
+            break;
         }
 
         return ptr;
@@ -1860,25 +1446,15 @@ namespace Transform
                     auto* inst1 = it1->second;
                     auto* inst2 = it2->second;
 
-                    // 两条 alloc 产生的结果不会为同一个
                     if (inst1->opcode == LLVMIR::IROpCode::ALLOCA && inst2->opcode == LLVMIR::IROpCode::ALLOCA)
                         return false;
                 }
             }
 
-            if (alias_analyser_)
-                return alias_analyser_->queryAlias(loc1.base_ptr, loc2.base_ptr, current_cfg_) !=
-                       Analysis::AliasAnalyser::NoAlias;
             return true;
         }
 
-        if (loc1.indices.size() != loc2.indices.size()) return false;
-        for (size_t i = 0; i < loc1.indices.size(); ++i)
-        {
-            if (loc1.indices[i] != loc2.indices[i]) return false;
-        }
-
-        return true;
+        return loc1.element_offset == loc2.element_offset;
     }
 
     bool TSCCPPass::hasCircularDependency(LLVMIR::Instruction* inst, const MemoryLocation& store_loc) const
@@ -1913,206 +1489,78 @@ namespace Transform
         return false;
     }
 
-    /**
-     * 分析指定路径上内存位置的值
-     * 从from_block向前追溯，查找最近的对指定内存位置的store
-     */
-    LatticeValue TSCCPPass::analyzePathValue(const MemoryLocation& loc, int from_block, int to_block)
-    {
-        if (from_block == to_block) return LatticeValue();
-
-        auto block_it = current_cfg_->block_id_to_block.find(from_block);
-        if (block_it == current_cfg_->block_id_to_block.end()) return LatticeValue();
-
-        auto* block = block_it->second;
-        DBGINFO("\tAnalyzing path value in block ", from_block, " for location ", loc.toString());
-
-        for (auto it = block->insts.rbegin(); it != block->insts.rend(); ++it)
-        {
-            auto* inst = *it;
-
-            if (inst->opcode == LLVMIR::IROpCode::STORE)
-            {
-                auto*          store     = static_cast<LLVMIR::StoreInst*>(inst);
-                MemoryLocation store_loc = getMemoryLocation(store->ptr);
-
-                if (store_loc.isValid() && store_loc == loc)
-                {
-                    LatticeValue stored_value = getValueForOperand(store->val);
-                    DBGINFO("\t\tFound defining store in block ",
-                        from_block,
-                        ", value: ",
-                        (stored_value.isConstant() ? "CONSTANT" : "NON_CONSTANT"));
-                    return stored_value;
-                }
-
-                if (store_loc.isValid() && mayAlias(store_loc, loc))
-                {
-                    DBGINFO("\t\tFound potentially aliasing store in block ", from_block);
-                    return LatticeValue::createBottom();
-                }
-            }
-            else if (inst->opcode == LLVMIR::IROpCode::CALL)
-            {
-                auto* call = static_cast<LLVMIR::CallInst*>(inst);
-                if (!isSafeFunction(call->func_name))
-                {
-                    DBGINFO("\t\tFound unsafe function call in block ", from_block);
-                    return LatticeValue::createBottom();
-                }
-            }
-        }
-
-        DBGINFO("\t\tNo defining store found in block ", from_block, ", trying dominance search");
-
-        auto dom_it = ir->DomTrees.find(current_cfg_);
-        if (dom_it == ir->DomTrees.end()) return LatticeValue();
-
-        auto* dom_analyzer = dom_it->second;
-        if (static_cast<size_t>(from_block) >= dom_analyzer->imm_dom.size()) return LatticeValue();
-
-        int dominator = dom_analyzer->imm_dom[from_block];
-        if (dominator == -1) return LatticeValue();
-
-        auto dom_block_it = current_cfg_->block_id_to_block.find(dominator);
-        if (dom_block_it == current_cfg_->block_id_to_block.end()) return LatticeValue();
-
-        auto* dom_block = dom_block_it->second;
-        for (auto it = dom_block->insts.rbegin(); it != dom_block->insts.rend(); ++it)
-        {
-            auto* inst = *it;
-
-            if (inst->opcode == LLVMIR::IROpCode::STORE)
-            {
-                auto*          store     = static_cast<LLVMIR::StoreInst*>(inst);
-                MemoryLocation store_loc = getMemoryLocation(store->ptr);
-
-                if (store_loc.isValid() && store_loc == loc)
-                {
-                    LatticeValue stored_value = getValueForOperand(store->val);
-                    DBGINFO("\t\tFound defining store in dominator block ",
-                        dominator,
-                        ", value: ",
-                        (stored_value.isConstant() ? "CONSTANT" : "NON_CONSTANT"));
-                    return stored_value;
-                }
-
-                if (store_loc.isValid() && mayAlias(store_loc, loc))
-                {
-                    DBGINFO("\t\tFound potentially aliasing store in dominator block ", dominator);
-                    return LatticeValue::createBottom();
-                }
-            }
-            else if (inst->opcode == LLVMIR::IROpCode::CALL)
-            {
-                auto* call = static_cast<LLVMIR::CallInst*>(inst);
-                if (!isSafeFunction(call->func_name))
-                {
-                    DBGINFO("\t\tFound unsafe function call in dominator block ", dominator);
-                    return LatticeValue::createBottom();
-                }
-            }
-        }
-
-        DBGINFO("\t\tNo value found for path analysis, returning TOP");
-        return LatticeValue();
-    }
-
-    /**
-     * 收集所有可能到达load指令的store指令
-     */
     std::vector<LLVMIR::StoreInst*> TSCCPPass::collectReachingStores(LLVMIR::LoadInst* load, const MemoryLocation& loc)
     {
         std::vector<LLVMIR::StoreInst*> reaching_stores;
-        std::set<int>                   visited_blocks;
 
-        DBGINFO("\tStarting reaching definitions analysis for load in block ", load->block_id);
+        auto dom_it = ir->DomTrees.find(current_cfg_);
+        if (dom_it == ir->DomTrees.end()) return reaching_stores;
 
-        findReachingStoresRecursive(loc, load->block_id, reaching_stores, visited_blocks, load);
+        auto* dom_analyzer = dom_it->second;
+        findReachingStoresWithDominatorTree(loc, load, dom_analyzer, reaching_stores);
 
-        DBGINFO("\tFound ", reaching_stores.size(), " reaching stores");
         return reaching_stores;
     }
 
-    /**
-     * 递归查找可能到达指定基本块的所有store指令
-     */
-    void TSCCPPass::findReachingStoresRecursive(const MemoryLocation& loc, int block_id,
-        std::vector<LLVMIR::StoreInst*>& reaching_stores, std::set<int>& visited_blocks, LLVMIR::LoadInst* target_load)
+    void TSCCPPass::findReachingStoresWithDominatorTree(const MemoryLocation& loc, LLVMIR::LoadInst* target_load,
+        Cele::Algo::DomAnalyzer* dom_analyzer, std::vector<LLVMIR::StoreInst*>& reaching_stores)
     {
-        if (visited_blocks.count(block_id)) return;
-        visited_blocks.insert(block_id);
+        int current_block = target_load->block_id;
 
-        auto block_it = current_cfg_->block_id_to_block.find(block_id);
-        if (block_it == current_cfg_->block_id_to_block.end()) return;
-
-        auto* block = block_it->second;
-        DBGINFO("\t\tSearching in block ", block_id);
-
-        bool found_defining_store        = false;
-        bool found_conflicting_operation = false;
-
-        auto start_it = block->insts.rbegin();
-        auto end_it   = block->insts.rend();
-
-        if (block_id == target_load->block_id)
+        while (current_block != -1)
         {
-            auto load_pos = std::find(block->insts.begin(), block->insts.end(), target_load);
-            if (load_pos != block->insts.end())
+            auto block_it = current_cfg_->block_id_to_block.find(current_block);
+            if (block_it == current_cfg_->block_id_to_block.end()) break;
+
+            auto* block = block_it->second;
+
+            auto start_it = block->insts.rbegin();
+            auto end_it   = block->insts.rend();
+
+            if (current_block == target_load->block_id)
             {
-                end_it = std::reverse_iterator<std::deque<LLVMIR::Instruction*>::iterator>(load_pos);
-            }
-        }
-
-        for (auto it = start_it; it != end_it; ++it)
-        {
-            auto* inst = *it;
-
-            if (inst->opcode == LLVMIR::IROpCode::STORE)
-            {
-                auto*          store     = static_cast<LLVMIR::StoreInst*>(inst);
-                MemoryLocation store_loc = getMemoryLocation(store->ptr);
-
-                if (store_loc.isValid() && store_loc == loc)
+                auto load_pos = std::find(block->insts.begin(), block->insts.end(), target_load);
+                if (load_pos != block->insts.end())
                 {
-                    reaching_stores.push_back(store);
-                    found_defining_store = true;
-                    DBGINFO("\t\t\tFound defining store in block ", block_id);
-                }
-                else if (store_loc.isValid() && mayAlias(store_loc, loc))
-                {
-                    DBGINFO("\t\t\tFound potentially aliasing store in block ", block_id);
-                    found_conflicting_operation = true;
-                    break;
+                    start_it = std::reverse_iterator<std::deque<LLVMIR::Instruction*>::iterator>(load_pos);
+                    end_it   = block->insts.rend();
                 }
             }
-            else if (inst->opcode == LLVMIR::IROpCode::CALL)
-            {
-                auto* call = static_cast<LLVMIR::CallInst*>(inst);
-                if (!isSafeFunction(call->func_name))
-                {
-                    DBGINFO("\t\t\tFound unsafe function call in block ", block_id);
-                    found_conflicting_operation = true;
-                    break;
-                }
-            }
-        }
 
-        if (found_conflicting_operation) return;
-
-        if (!found_defining_store || block_id != target_load->block_id)
-        {
-            if (block_id > 0 && static_cast<size_t>(block_id) < current_cfg_->invG_id.size())
+            for (auto it = start_it; it != end_it; ++it)
             {
-                for (int pred_id : current_cfg_->invG_id[block_id])
+                auto* inst = *it;
+
+                if (inst->opcode == LLVMIR::IROpCode::STORE)
                 {
-                    if (isEdgeExecutable(pred_id, block_id))
+                    auto*          store     = static_cast<LLVMIR::StoreInst*>(inst);
+                    MemoryLocation store_loc = getMemoryLocation(store->ptr);
+
+                    if (store_loc.isValid() && store_loc == loc)
                     {
-                        DBGINFO("\t\t\tRecursing to predecessor block ", pred_id);
-                        findReachingStoresRecursive(loc, pred_id, reaching_stores, visited_blocks, target_load);
+                        reaching_stores.push_back(store);
+                        return;
                     }
+                    else if (store_loc.isValid())
+                    {
+                        if (isSameArray(store_loc.base_ptr, loc.base_ptr)) { return; }
+                        else if (mayAlias(store_loc, loc)) { return; }
+                    }
+                    else { return; }
+                }
+                else if (inst->opcode == LLVMIR::IROpCode::CALL)
+                {
+                    auto* call = static_cast<LLVMIR::CallInst*>(inst);
+                    if (!isSafeFunction(call->func_name)) return;
                 }
             }
+
+            if (static_cast<size_t>(current_block) >= dom_analyzer->imm_dom.size()) break;
+
+            int imm_dom = dom_analyzer->imm_dom[current_block];
+            if (imm_dom == current_block) break;
+
+            current_block = imm_dom;
         }
     }
 

@@ -6,6 +6,7 @@
 namespace Backend::RV64::Passes
 {
     using PhiDestructionPass              = Optimize::ControlFlow::PhiDestructionPass;
+    using SelectReducePass                = Optimize::ControlFlow::SelectReducePass;
     using ImmediateFMoveEliminationPass   = Optimize::Move::ImmediateFloatMoveEliminationPass;
     using ImmediateIMoveEliminationPass   = Optimize::Move::ImmediateIntegerMoveEliminationPass;
     using MoveEliminationPass             = Optimize::Move::GeneralMoveEliminationPass;
