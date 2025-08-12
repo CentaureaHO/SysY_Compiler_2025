@@ -150,28 +150,77 @@ float Selector::extractIROp2ImmeF32(LLVMIR::Operand* op)
     assert(IS_IMMEF32(op));
     return ((LLVMIR::ImmeF32Operand*)op)->value;
 }
-
+extern bool no_schedule_zext;
 void Selector::convertAndAppend(LLVMIR::Instruction* inst)
 {
     setCanSchedule();
     switch (inst->opcode)
     {
-        case LOC::LOAD: convertAndAppend((LLVMIR::LoadInst*)inst); break;
-        case LOC::STORE: convertAndAppend((LLVMIR::StoreInst*)inst); break;
-        case LOC::ICMP: convertAndAppend((LLVMIR::IcmpInst*)inst); break;
-        case LOC::FCMP: convertAndAppend((LLVMIR::FcmpInst*)inst); break;
-        case LOC::ALLOCA: convertAndAppend((LLVMIR::AllocInst*)inst); break;
-        case LOC::BR_COND: convertAndAppend((LLVMIR::BranchCondInst*)inst); break;
-        case LOC::BR_UNCOND: convertAndAppend((LLVMIR::BranchUncondInst*)inst); break;
-        case LOC::RET: convertAndAppend((LLVMIR::RetInst*)inst); break;
-        case LOC::ZEXT: convertAndAppend((LLVMIR::ZextInst*)inst); break;
-        case LOC::FPTOSI: convertAndAppend((LLVMIR::FP2SIInst*)inst); break;
-        case LOC::SITOFP: convertAndAppend((LLVMIR::SI2FPInst*)inst); break;
-        case LOC::FPEXT: convertAndAppend((LLVMIR::FPExtInst*)inst); break;
-        case LOC::GETELEMENTPTR: convertAndAppend((LLVMIR::GEPInst*)inst); break;
-        case LOC::PHI: convertAndAppend((LLVMIR::PhiInst*)inst); break;
-        case LOC::SELECT: convertAndAppend((LLVMIR::SelectInst*)inst); break;
-        case LOC::CALL: convertAndAppend((LLVMIR::CallInst*)inst); break;
+        case LOC::LOAD:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::LoadInst*)inst);
+            break;
+        case LOC::STORE:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::StoreInst*)inst);
+            break;
+        case LOC::ICMP:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::IcmpInst*)inst);
+            break;
+        case LOC::FCMP:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::FcmpInst*)inst);
+            break;
+        case LOC::ALLOCA:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::AllocInst*)inst);
+            break;
+        case LOC::BR_COND:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::BranchCondInst*)inst);
+            break;
+        case LOC::BR_UNCOND:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::BranchUncondInst*)inst);
+            break;
+        case LOC::RET:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::RetInst*)inst);
+            break;
+        case LOC::ZEXT:
+            setNoSchedule();    // 如果指令调度效果好就回来修
+                                // 效果不好就直接禁用了
+            convertAndAppend((LLVMIR::ZextInst*)inst);
+            break;
+        case LOC::FPTOSI:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::FP2SIInst*)inst);
+            break;
+        case LOC::SITOFP:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::SI2FPInst*)inst);
+            break;
+        case LOC::FPEXT:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::FPExtInst*)inst);
+            break;
+        case LOC::GETELEMENTPTR:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::GEPInst*)inst);
+            break;
+        case LOC::PHI:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::PhiInst*)inst);
+            break;
+        case LOC::SELECT:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::SelectInst*)inst);
+            break;
+        case LOC::CALL:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::CallInst*)inst);
+            break;
         case LOC::ADD:
         case LOC::SUB:
         case LOC::MUL:
@@ -185,7 +234,10 @@ void Selector::convertAndAppend(LLVMIR::Instruction* inst)
         case LOC::ASHR:
         case LOC::LSHR:
         case LOC::BITXOR:
-        case LOC::BITAND: convertAndAppend((LLVMIR::ArithmeticInst*)inst); break;
+        case LOC::BITAND:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::ArithmeticInst*)inst);
+            break;
         case LOC::EMPTY: break;
         default: cerr << "Unknown opcode: " << inst->opcode << endl; assert(false);
     }

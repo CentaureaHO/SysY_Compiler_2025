@@ -106,6 +106,7 @@ size_t    errCnt = 0;
 
 bool no_reg_alloc     = false;
 bool no_select_lower  = false;
+bool no_schedule_zext = false;
 int  max_unroll_count = 100;
 
 int opt_level = 0;
@@ -156,6 +157,7 @@ int main(int argc, char** argv)
         else if (arg == "-O3") { optimizeLevel = 3; }
         else if (arg == "-no-reg-alloc") { no_reg_alloc = true; }
         else if (arg == "-no-sel-lower") { no_select_lower = true; }
+        else if (arg == "-no-sche-zext") { no_schedule_zext = true; }
         else if (arg[0] != '-') { inputFile = arg; }
         else
         {
