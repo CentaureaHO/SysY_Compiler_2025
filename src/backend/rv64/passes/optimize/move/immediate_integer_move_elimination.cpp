@@ -46,22 +46,32 @@ namespace Backend::RV64::Passes::Optimize::Move
                 if (imme_val >= -2048 && imme_val <= 2047)
                 {
                     it = block->insts.erase(it);
-                    block->insts.insert(it, createIInst(RV64InstType::ADDI, dst_reg, preg_x0, imme_val));
+                    block->insts.insert(it, createIInst(RV64InstType::ADDIW, dst_reg, preg_x0, imme_val));
                     --it;
                 }
                 else if ((imme_val & 0xfff) == 0)
                 {
                     it = block->insts.erase(it);
-                    block->insts.insert(it, createUInst(RV64InstType::LUI, dst_reg, ((unsigned int)imme_val) >> 12));
+                    block->insts.insert(
+                        it, createUInst(RV64InstType::LUI, dst_reg, (int)((unsigned int)imme_val >> 12)));
                     --it;
                 }
                 else
                 {
                     it = block->insts.erase(it);
-                    block->insts.insert(
-                        it, createUInst(RV64InstType::LUI, dst_reg, ((unsigned int)imme_val + 0x800) >> 12));
-                    assert(((imme_val << 20) >> 20) <= 2047);
-                    block->insts.insert(it, createIInst(RV64InstType::ADDI, dst_reg, dst_reg, (imme_val << 20) >> 20));
+
+                    unsigned int uimme_val = (unsigned int)imme_val;
+                    unsigned int upper_u   = (uimme_val + 0x800) >> 12;
+                    int          upper     = (int)upper_u;
+                    int          lower     = imme_val - (upper << 12);
+
+                    assert(!(upper < 0 || upper > 0xFFFFF) && "Immediate value cannot be represented with LUI+ADDIW");
+
+                    block->insts.insert(it, createUInst(RV64InstType::LUI, dst_reg, upper));
+
+                    assert(lower >= -2048 && lower <= 2047);
+                    block->insts.insert(it, createIInst(RV64InstType::ADDIW, dst_reg, dst_reg, lower));
+
                     --it;
                 }
             }

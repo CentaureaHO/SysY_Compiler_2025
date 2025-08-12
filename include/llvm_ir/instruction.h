@@ -695,6 +695,56 @@ namespace LLVMIR
         void     ErasePhiWithBlock(int block_id);
         void     SetNewFrom(int old_from, int new_from);
     };
+
+    class SelectInst : public Instruction
+    {
+      public:
+        DataType type;
+        Operand* cond;
+        Operand* true_val;
+        Operand* false_val;
+        Operand* res;
+
+        SelectInst(DataType t, Operand* tv, Operand* fv, Operand* c, Operand* r);
+
+        virtual void printIR(std::ostream& s) override;
+
+        virtual void                  Rename(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual int                   GetResultReg() override;
+        virtual std::vector<int>      GetUsedRegs() override;
+        virtual std::vector<Operand*> GetUsedOperands() override;
+        virtual Operand*              GetResultOperand() override;
+        virtual Instruction*          Clone(int new_result_reg = -1) const override;
+        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual DataType              GetResultType() const override;
+        virtual Instruction*          CloneWithMapping(
+                     const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
+        virtual std::vector<Operand*> GetCSEOperands() const override;
+        void                          ReplaceLabels(const std::map<int, int>& label_map) override;
+    };
+
+    // empty inst, just for debug
+    class EmptyInst : public Instruction
+    {
+      public:
+        EmptyInst();
+
+        virtual void                  printIR(std::ostream& s) override;
+        virtual void                  Rename(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual int                   GetResultReg() override;
+        virtual std::vector<int>      GetUsedRegs() override;
+        virtual std::vector<Operand*> GetUsedOperands() override;
+        virtual Operand*              GetResultOperand() override;
+        virtual Instruction*          Clone(int new_result_reg = -1) const override;
+        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual DataType              GetResultType() const override;
+        virtual Instruction*          CloneWithMapping(
+                     const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
+        virtual std::vector<Operand*> GetCSEOperands() const override;
+        void                          ReplaceLabels(const std::map<int, int>& label_map) override;
+    };
 }  // namespace LLVMIR
 
 // 操作数复制辅助函数声明

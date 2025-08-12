@@ -29,6 +29,8 @@ namespace Backend::RV64
     MoveInst* createMoveInst(DataType* type, Register dst, float src);
     MoveInst* createMoveInst(DataType* type, Register dst, double src);
 
+    SelectInst* createSelectInst(Register cond_reg, Register dst, Operand* true_val, Operand* false_val);
+
     RV64Inst* createCallInst(RV64InstType op, std::string name, int ireg_para_cnt, int freg_para_cnt);
 }  // namespace Backend::RV64
 

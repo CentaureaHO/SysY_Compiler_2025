@@ -88,7 +88,8 @@ namespace LLVMIR
         {
             auto func_cfg = get_cfg_by_name(ir, call_inst->func_name);
             // 说明这个函数没有副作用
-            if ((func_cfg && aliasAnalyser->isNoSideEffect(func_cfg)) || call_inst->func_name == "llvm.memset.p0.i32")
+            if ((func_cfg && aliasAnalyser->isNoSideEffect(func_cfg)) ||
+                (call_inst->func_name.find("llvm.memset") == 0))
             {
                 return true;
             }
@@ -177,7 +178,7 @@ namespace LLVMIR
             if (inst->opcode == IROpCode::CALL)
             {
                 auto call_inst = dynamic_cast<CallInst*>(inst);
-                if (call_inst && call_inst->func_name == "llvm.memset.p0.i32") { return 0; }
+                if (call_inst && (call_inst->func_name.find("llvm.memset") == 0)) { return 0; }
             }
             E = 0;
         }

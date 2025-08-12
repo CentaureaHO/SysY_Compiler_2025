@@ -59,6 +59,7 @@ namespace Backend::RV64
         void convertAndAppend(LLVMIR::ZextInst* inst);
         void convertAndAppend(LLVMIR::FPExtInst* inst);
         void convertAndAppend(LLVMIR::PhiInst* inst);
+        void convertAndAppend(LLVMIR::SelectInst* inst);
 
       private:
         void convertADD(LLVMIR::ArithmeticInst* inst);

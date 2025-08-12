@@ -2,9 +2,9 @@
 #define __OPTIMIZER_LLVM_T_SCCP_H__
 
 #include "llvm/pass.h"
-#include "llvm/alias_analysis/alias_analysis.h"
 #include "llvm/loop/loop_find.h"
 #include "llvm_ir/defs.h"
+#include "dom_analyzer.h"
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
@@ -137,8 +137,6 @@ namespace Transform
         std::unique_ptr<InstructionVisitor> instruction_visitor_;
         /// 当前正在处理的函数的CFG
         CFG* current_cfg_;
-        /// 别名分析器，用于判断指针是否可能指向同一内存
-        Analysis::AliasAnalyser* alias_analyser_;
         /// 跟踪内存位置的格值，用于处理load/store
         std::unordered_map<MemoryLocation, LatticeValue, MemoryLocationHash> memory_state_;
 
@@ -168,23 +166,14 @@ namespace Transform
         LatticeValue handleLoadInstruction(LLVMIR::LoadInst* load);
         /// 从指针操作数解析出MemoryLocation
         MemoryLocation getMemoryLocation(LLVMIR::Operand* ptr) const;
-        /// 当load的值不在memory_state_中时，通过支配树向上查找定义该值的store指令
-        bool findDefiningStore(LLVMIR::LoadInst* load, const MemoryLocation& loc, LLVMIR::StoreInst*& defining_store);
-        /// 分析指定路径上内存位置的值
-        LatticeValue analyzePathValue(const MemoryLocation& loc, int from_block, int to_block);
         /// 收集所有可能到达load指令的store指令
         std::vector<LLVMIR::StoreInst*> collectReachingStores(LLVMIR::LoadInst* load, const MemoryLocation& loc);
-        /// 递归查找可能到达指定基本块的所有store指令
-        void findReachingStoresRecursive(const MemoryLocation& loc, int block_id,
-            std::vector<LLVMIR::StoreInst*>& reaching_stores, std::set<int>& visited_blocks,
-            LLVMIR::LoadInst* target_load);
+        /// 使用支配树查找可能到达load指令的store指令
+        void findReachingStoresWithDominatorTree(const MemoryLocation& loc, LLVMIR::LoadInst* target_load,
+            Cele::Algo::DomAnalyzer* dom_analyzer, std::vector<LLVMIR::StoreInst*>& reaching_stores);
 
         /// 判断一个函数调用是否"安全"（即不修改可被分析的内存）
         bool isSafeFunction(const std::string& func_name) const;
-        /// 检查一个基本块是否在循环中
-        bool isInLoopOrCrossesLoop(int block_id) const;
-        /// 检查两个基本块之间的路径上是否存在循环，用于确保支配性查找的安全性
-        bool hasLoopBetweenBlocks(int from_block, int to_block) const;
 
         LLVMIR::Operand* getArrayBasePointer(LLVMIR::Operand* ptr) const;
         bool             isRelatedToArray(const MemoryLocation& loc, LLVMIR::Operand* array_base) const;
@@ -199,7 +188,7 @@ namespace Transform
         friend class InstructionVisitor;
 
       public:
-        TSCCPPass(LLVMIR::IR* ir, Analysis::AliasAnalyser* aa = nullptr);
+        TSCCPPass(LLVMIR::IR* ir);
         virtual ~TSCCPPass();
 
         virtual void Execute() override;

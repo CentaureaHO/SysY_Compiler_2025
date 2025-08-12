@@ -4,6 +4,7 @@ void MakeDomTreePass::Execute()
 {
     for (auto iter : ir->cfg)
     {
+
         Cele::Algo::DomAnalyzer* dom_tree = new Cele::Algo::DomAnalyzer;
         ir->DomTrees[iter.second]         = dom_tree;
 
