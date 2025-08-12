@@ -134,7 +134,7 @@ namespace LLVMIR
         }
     }
 
-    void UnusedArrEliminator::eliminateDeadArrays()
+    void UnusedArrEliminator::eliminateDeadArrays(bool& changed)
     {
         std::unordered_map<CFG*, std::unordered_set<Operand*>> dead_array;
         std::unordered_set<Operand*>                           global_dead_array;
@@ -151,7 +151,10 @@ namespace LLVMIR
             }
         }
 
-        // 打印未使用的数组
+        // 置位changed
+        if (!global_dead_array.empty() || !dead_array.empty()) changed = true;
+
+            // 打印未使用的数组
 #ifdef DEBUG
         std::cout << "Dead arrays found: " << dead_array.size() << std::endl;
         for (auto& [cfg, arrays] : dead_array)
@@ -233,36 +236,49 @@ namespace LLVMIR
 
     void UnusedArrEliminator::Execute()
     {
-        // 重置
-        array_defs.clear();
-        array2def.clear();
-        accessed_arrays.clear();
-
-        collectArrayDefinitions();
+        const int MAX_ITERATIONS = 5;  // 最大迭代次数
+        int       i              = 0;
+        bool      changed        = true;
+        while (i < MAX_ITERATIONS && changed)
+        {  
+            edefUseAnalysis->run();
+            // 重置
+            array_defs.clear();
+            array2def.clear();
+            accessed_arrays.clear();
+            changed = false;
+            collectArrayDefinitions();
 #ifdef DEBUG
-        std::cout << "Collected array definitions: " << array_defs.size() << std::endl;
-        for (auto [cfg, arrays] : array_defs)
-        {
-            std::cout << "CFG: " << cfg->func->func_def->func_name << " has arrays: ";
-            for (auto array : arrays) { std::cout << array->getName() << ", "; }
-            std::cout << std::endl;
-        }
-#endif
-        markAccessedArrays();
-#ifdef DEBUG
-        std::cout << "Marked accessed arrays: " << accessed_arrays.size() << std::endl;
-        for (auto [cfg, arrays] : accessed_arrays)
-        {
-            for (auto array : arrays)
+            std::cout << "Collected array definitions: " << array_defs.size() << std::endl;
+            for (auto [cfg, arrays] : array_defs)
             {
-                std::cout << "CFG: " << cfg->func->func_def->func_name << " Accessed Array: " << array->getName()
-                          << std::endl;
+                std::cout << "CFG: " << cfg->func->func_def->func_name << " has arrays: ";
+                for (auto array : arrays) { std::cout << array->getName() << ", "; }
+                std::cout << std::endl;
             }
-        }
 #endif
-        eliminateDeadArrays();
+            markAccessedArrays();
 #ifdef DEBUG
-        std::cout << "Eliminated dead arrays." << std::endl;
+            std::cout << "Marked accessed arrays: " << accessed_arrays.size() << std::endl;
+            for (auto [cfg, arrays] : accessed_arrays)
+            {
+                for (auto array : arrays)
+                {
+                    std::cout << "CFG: " << cfg->func->func_def->func_name << " Accessed Array: " << array->getName()
+                              << std::endl;
+                }
+            }
 #endif
+            eliminateDeadArrays(changed);
+#ifdef DEBUG
+            std::cout << "Eliminated dead arrays." << std::endl;
+#endif
+            dce->MakeDefUse();
+            dce->Execute();
+#ifdef DEBUG
+            std::cout << "Iteration " << i << ": Changed = " << changed << std::endl;
+#endif
+            i++;
+        }
     }
 }  // namespace LLVMIR

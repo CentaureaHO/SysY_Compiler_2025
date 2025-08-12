@@ -2,6 +2,7 @@
 
 #include "llvm_ir/instruction.h"
 #include "llvm_ir/ir_builder.h"
+#include "llvm/dce.h"
 #include "llvm/defuse_analysis/edefuse.h"
 #include "llvm/pass.h"
 #include <unordered_set>
@@ -12,6 +13,7 @@ namespace LLVMIR
     {
       private:
         Analysis::EDefUseAnalysis* edefUseAnalysis;
+        DCEPass*                   dce;
 
         // 记录数组定义
         std::unordered_map<CFG*, std::unordered_set<Operand*>> array_defs;
@@ -26,11 +28,11 @@ namespace LLVMIR
         // 标记所有的被访问的数组
         void markAccessedArrays();
 
-        void eliminateDeadArrays();
+        void eliminateDeadArrays(bool& changed);
 
       public:
-        UnusedArrEliminator(IR* ir, Analysis::EDefUseAnalysis* EDefUseAnalysis)
-            : Pass(ir), edefUseAnalysis(EDefUseAnalysis)
+        UnusedArrEliminator(IR* ir, Analysis::EDefUseAnalysis* EDefUseAnalysis, DCEPass* dce)
+            : Pass(ir), edefUseAnalysis(EDefUseAnalysis), dce(dce)
         {}
 
         void Execute() override;

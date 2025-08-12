@@ -402,19 +402,18 @@ int main(int argc, char** argv)
         makecfg.Execute();
         makedom.Execute();
 
-        // Eliminate unused array
-        Analysis::EDefUseAnalysis edefUseAnalysis(&builder);
-        edefUseAnalysis.run();
-        // edefUseAnalysis.print();
-        UnusedArrEliminator unusedelimator(&builder, &edefUseAnalysis);
-        unusedelimator.Execute();
-
         // DCE
         DefUseAnalysisPass DCEDefUse(&builder);
         DCEDefUse.Execute();
         DCEPass dce(&builder, &DCEDefUse);
         dce.Execute();
         // std::cout << "DCE completed" << std::endl;
+
+        // Eliminate unused array
+        Analysis::EDefUseAnalysis edefUseAnalysis(&builder);
+        // edefUseAnalysis.print();
+        UnusedArrEliminator unusedelimator(&builder, &edefUseAnalysis, &dce);
+        unusedelimator.Execute();
 
         // ADCE
         makeredom.Execute(true);
@@ -577,11 +576,8 @@ int main(int argc, char** argv)
         dse.Execute();
         makecfg.Execute();
         tsccp.Execute();
-        edefUseAnalysis.run();
         unusedelimator.Execute();
-        DCEDefUse.Execute();
-        dce.Execute();
-        // // TODO：Trench path length
+        // TODO：Trench path length
 
         makecfg.Execute();
         aa.run();

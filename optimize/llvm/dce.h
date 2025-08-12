@@ -15,6 +15,7 @@ class DCEPass : public Pass
   public:
     DCEPass(IR* ir, DefUseAnalysisPass* defuse) : Pass(ir) { this->DefUse = defuse; }
     void Execute();
+    void MakeDefUse() { DefUse->Execute(); }
 };
 
 #endif
