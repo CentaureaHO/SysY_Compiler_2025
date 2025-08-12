@@ -8,7 +8,7 @@
 #include <queue>
 #include <sstream>
 
-// #define DBGMODE
+#define DBGMODE
 
 #ifdef DBGMODE
 template <typename... Args>
@@ -114,6 +114,8 @@ namespace Transform
             ssa_worklist_.clear();
             executable_edges_.clear();
             memory_state_.clear();
+            memory_modified_in_loops_.clear();
+            base_modified_in_loops_.clear();
 
             buildDefUseChains(cfg);
 
@@ -1134,6 +1136,20 @@ namespace Transform
 
     void InstructionVisitor::visitLoad(LLVMIR::LoadInst* load)
     {
+        MemoryLocation load_loc = pass_->getMemoryLocation(load->ptr);
+
+        if (load_loc.isValid() && pass_->current_cfg_ && pass_->current_cfg_->LoopForest)
+        {
+            for (auto* loop : pass_->current_cfg_->LoopForest->loop_set)
+            {
+                if (pass_->isModifiedInLoop(load_loc, loop))
+                {
+                    pass_->setValue(load, LatticeValue::createBottom());
+                    return;
+                }
+            }
+        }
+
         LatticeValue result = pass_->handleLoadInstruction(load);
         pass_->setValue(load, result);
     }
@@ -1154,24 +1170,20 @@ namespace Transform
     {
         LatticeValue   stored_value = getValueForOperand(store->val);
         MemoryLocation store_loc    = getMemoryLocation(store->ptr);
+
+        NaturalLoop* store_loop = getLoopForInstruction(store);
+        if (store_loop)
+        {
+            if (store_loc.isValid()) { recordMemoryModificationInLoop(store_loc, store_loop); }
+
+            LLVMIR::Operand* base_ptr = getArrayBasePointer(store->ptr);
+            if (base_ptr) { recordBaseModificationInLoop(base_ptr, store_loop); }
+        }
+
         if (!store_loc.isValid())
         {
-            DBGINFO("\tSTORE with dynamic indices detected - clearing ALL memory state and invalidating related loads");
+            DBGINFO("\tSTORE with dynamic indices detected - clearing ALL memory state");
             memory_state_.clear();
-
-            for (auto& [block_id, block] : current_cfg_->block_id_to_block)
-            {
-                for (auto* inst : block->insts)
-                {
-                    if (inst->opcode != LLVMIR::IROpCode::LOAD) continue;
-                    auto* load = static_cast<LLVMIR::LoadInst*>(inst);
-                    if (isSameArray(load->ptr, store->ptr))
-                    {
-                        addToSSAWorklist(inst);
-                        setValue(inst, LatticeValue::createBottom());
-                    }
-                }
-            }
             return;
         }
 
@@ -1183,72 +1195,18 @@ namespace Transform
             if (def_it != def_map_.end()) has_circular_dependency = hasCircularDependency(def_it->second, store_loc);
         }
 
-        bool any_erased_or_changed = false;
         for (auto it = memory_state_.begin(); it != memory_state_.end();)
         {
             if (it->first != store_loc && mayAlias(store_loc, it->first))
-            {
-                it                    = memory_state_.erase(it);
-                any_erased_or_changed = true;
-            }
-            else { ++it; }
+                it = memory_state_.erase(it);
+            else
+                ++it;
         }
 
         if (stored_value.isConstant() && !has_circular_dependency)
-        {
-            auto it = memory_state_.find(store_loc);
-            if (it == memory_state_.end())
-            {
-                memory_state_[store_loc] = stored_value;
-                any_erased_or_changed    = true;
-            }
-            else
-            {
-                LatticeValue merged = it->second.meet(stored_value);
-                if (merged != it->second)
-                {
-                    it->second            = merged;
-                    any_erased_or_changed = true;
-                }
-            }
-        }
+            memory_state_[store_loc] = stored_value;
         else
-        {
-            auto it = memory_state_.find(store_loc);
-            if (it != memory_state_.end())
-            {
-                memory_state_.erase(it);
-                any_erased_or_changed = true;
-            }
-        }
-
-        if (any_erased_or_changed)
-        {
-            for (auto& [block_id, block] : current_cfg_->block_id_to_block)
-            {
-                for (auto* inst : block->insts)
-                {
-                    if (inst->opcode != LLVMIR::IROpCode::LOAD) continue;
-                    auto*          load     = static_cast<LLVMIR::LoadInst*>(inst);
-                    MemoryLocation load_loc = getMemoryLocation(load->ptr);
-                    if (!load_loc.isValid())
-                    {
-                        if (isSameArray(load->ptr, store->ptr))
-                        {
-                            addToSSAWorklist(inst);
-                            setValue(inst, LatticeValue::createBottom());
-                        }
-                        continue;
-                    }
-
-                    if (load_loc == store_loc || mayAlias(store_loc, load_loc))
-                    {
-                        addToSSAWorklist(inst);
-                        setValue(inst, LatticeValue::createBottom());
-                    }
-                }
-            }
-        }
+            memory_state_.erase(store_loc);
     }
 
     LatticeValue TSCCPPass::handleLoadInstruction(LLVMIR::LoadInst* load)
@@ -1257,10 +1215,36 @@ namespace Transform
 
         if (!load_loc.isValid()) return LatticeValue::createBottom();
 
-        auto it = memory_state_.find(load_loc);
-        if (it != memory_state_.end()) return it->second;
+        if (isMemoryModifiedInAnyLoop(load_loc))
+        {
+            // 跳过缓存使用reaching stores分析
+        }
+        else
+        {
+            auto it = memory_state_.find(load_loc);
+            if (it != memory_state_.end()) { return it->second; }
+        }
 
-        return LatticeValue::createBottom();
+        std::vector<LLVMIR::StoreInst*> reaching_stores = collectReachingStoresWithLoopAwareness(load, load_loc);
+
+        if (reaching_stores.empty()) { return LatticeValue::createBottom(); }
+
+        LatticeValue result;
+        bool         first = true;
+
+        for (auto* store : reaching_stores)
+        {
+            LatticeValue store_value = getValueForOperand(store->val);
+
+            if (first)
+            {
+                result = store_value;
+                first  = false;
+            }
+            else { result = result.meet(store_value); }
+        }
+
+        return result;
     }
 
     MemoryLocation TSCCPPass::getMemoryLocation(LLVMIR::Operand* ptr) const
@@ -1611,6 +1595,99 @@ namespace Transform
 
             current_block = imm_dom;
         }
+    }
+
+    NaturalLoop* TSCCPPass::getLoopForInstruction(LLVMIR::Instruction* inst) const
+    {
+        if (!current_cfg_ || !current_cfg_->LoopForest) return nullptr;
+
+        int  block_id = inst->block_id;
+        auto block_it = current_cfg_->block_id_to_block.find(block_id);
+        if (block_it == current_cfg_->block_id_to_block.end()) return nullptr;
+
+        LLVMIR::IRBlock* block = block_it->second;
+
+        NaturalLoop* innermost_loop = nullptr;
+        for (auto* loop : current_cfg_->LoopForest->loop_set)
+        {
+            if (loop->loop_nodes.count(block) > 0)
+            {
+                if (!innermost_loop || (innermost_loop->loop_nodes.size() > loop->loop_nodes.size()))
+                {
+                    innermost_loop = loop;
+                }
+            }
+        }
+
+        return innermost_loop;
+    }
+
+    bool TSCCPPass::isModifiedInLoop(const MemoryLocation& loc, NaturalLoop* loop) const
+    {
+        if (!loop || !loc.isValid()) return false;
+
+        for (auto* block : loop->loop_nodes)
+        {
+            for (auto* inst : block->insts)
+            {
+                if (inst->opcode != LLVMIR::IROpCode::STORE) continue;
+
+                auto*          store     = static_cast<LLVMIR::StoreInst*>(inst);
+                MemoryLocation store_loc = getMemoryLocation(store->ptr);
+
+                if (store_loc.isValid() && store_loc == loc) return true;
+            }
+        }
+
+        return false;
+    }
+
+    std::vector<LLVMIR::StoreInst*> TSCCPPass::collectReachingStoresWithLoopAwareness(
+        LLVMIR::LoadInst* load, const MemoryLocation& loc)
+    {
+        std::vector<LLVMIR::StoreInst*> reaching_stores;
+
+        if (!current_cfg_ || !current_cfg_->LoopForest) { return collectReachingStores(load, loc); }
+
+        NaturalLoop* load_loop = getLoopForInstruction(load);
+
+        if (load_loop)
+        {
+            if (isModifiedInLoop(loc, load_loop)) { return reaching_stores; }
+        }
+        else
+        {
+            for (auto* loop : current_cfg_->LoopForest->loop_set)
+            {
+                if (isModifiedInLoop(loc, loop)) { return reaching_stores; }
+            }
+        }
+
+        return collectReachingStores(load, loc);
+    }
+
+    bool TSCCPPass::isMemoryModifiedInAnyLoop(const MemoryLocation& loc) const
+    {
+        auto it = memory_modified_in_loops_.find(loc);
+        if (it != memory_modified_in_loops_.end() && !it->second.empty()) { return true; }
+
+        if (loc.isValid() && loc.base_ptr)
+        {
+            auto base_it = base_modified_in_loops_.find(loc.base_ptr);
+            if (base_it != base_modified_in_loops_.end() && !base_it->second.empty()) { return true; }
+        }
+
+        return false;
+    }
+
+    void TSCCPPass::recordMemoryModificationInLoop(const MemoryLocation& loc, NaturalLoop* loop)
+    {
+        if (loop && loc.isValid()) { memory_modified_in_loops_[loc].insert(loop); }
+    }
+
+    void TSCCPPass::recordBaseModificationInLoop(LLVMIR::Operand* base_ptr, NaturalLoop* loop)
+    {
+        if (loop && base_ptr) { base_modified_in_loops_[base_ptr].insert(loop); }
     }
 
 }  // namespace Transform

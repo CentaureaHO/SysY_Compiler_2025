@@ -389,10 +389,11 @@ int main(int argc, char** argv)
 
         // TSCCP - Sparse Conditional Constant Propagation
         Transform::TSCCPPass tsccp(&builder);
-        if (opt_level >= 2) { tsccp.Execute(); }
+        loopPreProcess();
+        tsccp.Execute();
         // std::cout << "TSCCP completed" << std::endl;
 
-        /*loopPreProcess();
+        loopPreProcess();
         makecfg.Execute();
         makedom.Execute();
 
@@ -478,6 +479,7 @@ int main(int argc, char** argv)
         //     for (auto* loop : cfg->LoopForest->loop_set) loop->printLoopInfo();
         // }
 
+        loopPreProcess();
         tsccp.Execute();
 
         Analysis::SCEVAnalyser scevAnalyser(&builder);
@@ -521,7 +523,11 @@ int main(int argc, char** argv)
             makecfg.Execute();
             makedom.Execute();
             aa.run();
-            tsccp.Execute();
+            if (opt_level >= 2)
+            {
+                loopPreProcess();
+                tsccp.Execute();
+            }
         }
         // SCCP after constant full unroll
         {
@@ -552,6 +558,7 @@ int main(int argc, char** argv)
                 makedom.Execute();
                 aa.run();
 
+                loopPreProcess();
                 tsccp.Execute();
 
                 makecfg.Execute();
@@ -571,6 +578,7 @@ int main(int argc, char** argv)
         DSEPass dse(&builder, &ealias_analyser);
         dse.Execute();
         makecfg.Execute();
+        loopPreProcess();
         tsccp.Execute();
         edefUseAnalysis.run();
         unusedelimator.Execute();
@@ -607,7 +615,7 @@ int main(int argc, char** argv)
             singleSourcePhiElim.setPreserveLCSSA(false);
             singleSourcePhiElim.Execute();
             cfgSimplify();
-        }*/
+        }
 
         makecfg.Execute();
     }

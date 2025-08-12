@@ -3,6 +3,7 @@
 
 #include "llvm/pass.h"
 #include "llvm/loop/loop_find.h"
+#include "llvm/loop/loop_def.h"
 #include "llvm_ir/defs.h"
 #include "dom_analyzer.h"
 #include <vector>
@@ -11,6 +12,8 @@
 #include <set>
 #include <string>
 #include <memory>
+
+class NaturalLoop;
 
 namespace Transform
 {
@@ -184,6 +187,26 @@ namespace Transform
         bool hasCircularDependency(LLVMIR::Instruction* inst, const MemoryLocation& store_loc) const;
         bool hasCircularDependencyHelper(
             LLVMIR::Instruction* inst, const MemoryLocation& store_loc, std::set<LLVMIR::Instruction*>& visited) const;
+
+        /// 检查指令是否在循环中
+        NaturalLoop* getLoopForInstruction(LLVMIR::Instruction* inst) const;
+        /// 检查内存位置是否在循环中被修改
+        bool isModifiedInLoop(const MemoryLocation& loc, NaturalLoop* loop) const;
+        /// 改进的reaching stores分析，考虑循环结构
+        std::vector<LLVMIR::StoreInst*> collectReachingStoresWithLoopAwareness(
+            LLVMIR::LoadInst* load, const MemoryLocation& loc);
+
+        /// 跟踪每个内存位置在哪些循环中被修改过
+        std::unordered_map<MemoryLocation, std::set<NaturalLoop*>, MemoryLocationHash> memory_modified_in_loops_;
+        /// 跟踪每个基址指针在哪些循环中被修改过（用于处理动态索引的情况）
+        std::unordered_map<LLVMIR::Operand*, std::set<NaturalLoop*>> base_modified_in_loops_;
+
+        /// 检查内存位置是否被任何循环修改过
+        bool isMemoryModifiedInAnyLoop(const MemoryLocation& loc) const;
+        /// 记录内存位置在循环中被修改
+        void recordMemoryModificationInLoop(const MemoryLocation& loc, NaturalLoop* loop);
+        /// 记录基址指针在循环中被修改（用于动态索引）
+        void recordBaseModificationInLoop(LLVMIR::Operand* base_ptr, NaturalLoop* loop);
 
         friend class InstructionVisitor;
 
