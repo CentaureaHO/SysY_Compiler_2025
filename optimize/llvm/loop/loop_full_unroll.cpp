@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <functional>
 
+// #define DBGMODE
+
 #ifdef DBGMODE
 template <typename... Args>
 void dbg_impl(Args&&... args)

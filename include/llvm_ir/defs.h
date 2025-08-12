@@ -54,7 +54,9 @@
     X(SITOFP, sitofp, 27)               \
     X(GLOBAL_VAR, global_var, 28)       \
     X(GLOBAL_STR, global_str, 29)       \
-    X(FPEXT, fpext, 30)
+    X(FPEXT, fpext, 30)                 \
+    X(SELECT, select, 33)               \
+    X(EMPTY, empty, 32)
 
 #define IR_ICMP    \
     X(EQ, eq, 1)   \

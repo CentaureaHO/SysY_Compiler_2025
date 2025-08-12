@@ -76,8 +76,17 @@
 #include "optimize/llvm/dse.h"
 // Trench Path
 #include "optimize/llvm/trenchpath.h"
+// Global Const Replace
+#include "optimize/llvm/utils/global_const_replace.h"
+// Eliminate Double Br Uncond
+#include "optimize/llvm/utils/eliminate_double_br_uncond.h"
+// If Conversion
+#include "optimize/llvm/utils/if_conversion.h"
+#include "optimize/llvm/utils/block_layout_optimization.h"
+// Instruction Simplify
+#include "optimize/llvm/utils/instruction_simplify.h"
 
-//unused_func_elimination
+// unused_func_elimination
 #include "optimize/llvm/unused_func_elimination.h"
 
 #define STR_PW 30
@@ -96,6 +105,7 @@ extern IR builder;
 size_t    errCnt = 0;
 
 bool no_reg_alloc     = false;
+bool no_select_lower  = false;
 int  max_unroll_count = 100;
 
 int opt_level = 0;
@@ -145,6 +155,7 @@ int main(int argc, char** argv)
         else if (arg == "-O2") { optimizeLevel = 2; }
         else if (arg == "-O3") { optimizeLevel = 3; }
         else if (arg == "-no-reg-alloc") { no_reg_alloc = true; }
+        else if (arg == "-no-sel-lower") { no_select_lower = true; }
         else if (arg[0] != '-') { inputFile = arg; }
         else
         {
@@ -273,18 +284,52 @@ int main(int argc, char** argv)
     if (optimizeLevel)
     {
         opt_level = optimizeLevel;
-        
 
         // 构建CFG
         MakeCFGPass     makecfg(&builder);
         MakeDomTreePass makedom(&builder);
         MakeDomTreePass makeredom(&builder);
 
-        
+        Analysis::LoopAnalysisPass             loopAnalysis(&builder);
+        StructuralTransform::LoopSimplifyPass  loopSimplify(&builder);
+        StructuralTransform::LCSSAPass         lcssa(&builder);
+        StructuralTransform::LoopRotatePass    loopRotate(&builder);
+        Transform::EliminateDoubleBrUncondPass eliminateDoubleBr(&builder);
+        Transform::InstructionSimplifyPass     instSimplify(&builder);
+        Transform::IfConversionPass            ifConversion(&builder);
+        Transform::BlockLayoutOptimizationPass blockLayout(&builder);
+
+        auto loopPreProcess = [&]() {
+            makecfg.Execute();
+            makedom.Execute();
+            loopAnalysis.Execute();
+            loopSimplify.Execute();
+            lcssa.Execute();
+            loopRotate.Execute();
+        };
+
+        // 在所有循环相关操作完成后才可执行
+        // 原因是牛魔的 makecfg 清空 cfg 内所有信息导致循环pass得写的绕来绕去
+        // 这里会破坏循环pass内部的一些假定
+        // 因此这里需要将所有循环相关操作完成后才可执行
+        auto cfgSimplify = [&]() {
+            makecfg.Execute();
+            eliminateDoubleBr.Execute();
+            makecfg.Execute();
+            instSimplify.Execute();
+            ifConversion.Execute();
+            makecfg.Execute();
+            blockLayout.Execute();
+            makecfg.Execute();
+            makedom.Execute();
+        };
 
         Verify::PhiPrecursorPass phiPrecursor(&builder);
         makecfg.Execute();
         makedom.Execute();
+
+        Transform::GlobalConstReplacePass globalConstReplace(&builder);
+        // globalConstReplace.Execute();
 
         Transform::TailRecursionPass tailRecursion(&builder);
         tailRecursion.Execute();
@@ -299,38 +344,22 @@ int main(int argc, char** argv)
         mem2reg.Execute();
 
         // Loop Analysis and Simplification
-        Analysis::LoopAnalysisPass loopAnalysis(&builder);
         loopAnalysis.Execute();  // inlinepass 需要，先执行一次
                                  // inlinepass 会改变程序结构，因此规范化与 SSA 形式在 inlinepass 后执行
-        StructuralTransform::LoopSimplifyPass loopSimplify(&builder);
         // loopSimplify.Execute();
         // Loop Closed SSA Form - ensures loop-defined variables used outside the loop are passed through PHI nodes
         // at loop exits
-        StructuralTransform::LCSSAPass lcssa(&builder);
         // lcssa.Execute();
         // std::cout << "Before Function Inline" << std::endl;
         // phiPrecursor.Execute();
         Transform::FunctionInlinePass inlinePass(&builder);
         inlinePass.Execute();
 
-        
+        // 直接删除内联后没用的函数
+        Transform::UnusedFuncEliminationPass unused_func_del(&builder);
+        unused_func_del.Execute();
 
-
-
-        makecfg.Execute();
-        makedom.Execute();
-
-        
-        
-        //std::cout << "After Function Inline" << std::endl;
-        // phiPrecursor.Execute();
-
-        StructuralTransform::LoopRotatePass loopRotate(&builder);
-
-        loopAnalysis.Execute();
-        loopSimplify.Execute();
-        lcssa.Execute();
-        loopRotate.Execute();
+        loopPreProcess();
         // 已修复
         makecfg.Execute();
         makedom.Execute();
@@ -355,18 +384,15 @@ int main(int argc, char** argv)
         makecfg.Execute();
         makedom.Execute();
 
+        Transform::GEPStrengthReduce gepStrengthReduce(&builder);
+        gepStrengthReduce.Execute();
+
         // TSCCP - Sparse Conditional Constant Propagation
-        Transform::TSCCPPass tsccp(&builder, &aa);
+        Transform::TSCCPPass tsccp(&builder);
         tsccp.Execute();
         // std::cout << "TSCCP completed" << std::endl;
 
-        makecfg.Execute();
-        makedom.Execute();
-
-        loopAnalysis.Execute();
-        loopSimplify.Execute();
-        lcssa.Execute();
-        loopRotate.Execute();
+        loopPreProcess();
         makecfg.Execute();
         makedom.Execute();
 
@@ -404,9 +430,8 @@ int main(int argc, char** argv)
 
         // GCM
         edefUseAnalysis.run();
-        MakeDomTreePass GCMmakeredom(&builder);
-        GCMmakeredom.Execute(true);
-        GCMmakeredom.Execute(false);
+        makedom.Execute();
+        makedom.Execute(false);
         // Used to set all instructions with the block they are in.
         SetIdAnalysis setIdAnalysis(&builder);
         setIdAnalysis.Execute();
@@ -433,28 +458,25 @@ int main(int argc, char** argv)
         md.run();
 
         // eDefUse.print();
+        Transform::ArithInstReduce arithInstReduce(&builder);
+        arithInstReduce.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
+
+        gepStrengthReduce.Execute();
 
         makecfg.Execute();
         makedom.Execute();
         makeredom.Execute(true);
-        loopAnalysis.Execute();
+        loopPreProcess();
 
-
-        makecfg.Execute();
-        makedom.Execute();
-        loopAnalysis.Execute();
-        loopSimplify.Execute();
-        lcssa.Execute();
-        loopRotate.Execute();
-
-        /*
-        for (const auto& [func_def, cfg] : builder.cfg)
-        {
-            std::cout << "Function: " << func_def->func_name << std::endl;
-            if (!cfg || !cfg->LoopForest) continue;
-            for (auto* loop : cfg->LoopForest->loop_set) loop->printLoopInfo();
-        }
-        */
+        // for (const auto& [func_def, cfg] : builder.cfg)
+        // {
+        //     std::cout << "Function: " << func_def->func_name << std::endl;
+        //     if (!cfg || !cfg->LoopForest) continue;
+        //     for (auto* loop : cfg->LoopForest->loop_set) loop->printLoopInfo();
+        // }
 
         tsccp.Execute();
 
@@ -465,12 +487,7 @@ int main(int argc, char** argv)
         Transform::IndVarsSimplifyPass indVarsPass(&builder, &scevAnalyser);
         // indVarsPass.Execute();
 
-        makecfg.Execute();
-        makedom.Execute();
-        loopAnalysis.Execute();
-        loopSimplify.Execute();
-        lcssa.Execute();
-        loopRotate.Execute();
+        loopPreProcess();
         scevAnalyser.run();
         // scevAnalyser.printAllResults();
 
@@ -478,6 +495,8 @@ int main(int argc, char** argv)
         lsr.Execute();
         DCEDefUse.Execute();
         dce.Execute();
+
+        loopPreProcess();
         scevAnalyser.run();
 
         // Constant Loop Full Unroll
@@ -493,12 +512,7 @@ int main(int argc, char** argv)
                 unrolled_count = stats.second;
                 total_unrolled += unrolled_count;
 
-                makecfg.Execute();
-                makedom.Execute();
-                loopAnalysis.Execute();
-                loopSimplify.Execute();
-                lcssa.Execute();
-                loopRotate.Execute();
+                loopPreProcess();
                 scevAnalyser.run();
 
                 std::cout << "Unrolled " << unrolled_count << " times" << std::endl;
@@ -507,7 +521,12 @@ int main(int argc, char** argv)
             makecfg.Execute();
             makedom.Execute();
             aa.run();
-            tsccp.Execute();
+            if (opt_level >= 2)
+            {
+                makecfg.Execute();
+                makedom.Execute();
+                tsccp.Execute();
+            }
         }
         // SCCP after constant full unroll
         {
@@ -556,39 +575,45 @@ int main(int argc, char** argv)
         ealias_analyser.run();
         DSEPass dse(&builder, &ealias_analyser);
         dse.Execute();
+        makecfg.Execute();
+        tsccp.Execute();
         edefUseAnalysis.run();
         unusedelimator.Execute();
         DCEDefUse.Execute();
         dce.Execute();
-        // TODO：Trench path length
+        // // TODO：Trench path length
 
         makecfg.Execute();
         aa.run();
         TrenchPath trenchPath(&builder);
         trenchPath.Execute();
 
+        cfgSimplify();
+        loopPreProcess();
+        scevAnalyser.run();
+
+        lsr.Execute();
+        DCEDefUse.Execute();
+        dce.Execute();
+        scevAnalyser.run();
+
         makecfg.Execute();
         makedom.Execute();
 
-        Transform::ArithInstReduce arithInstReduce(&builder);
         arithInstReduce.Execute();
 
         makecfg.Execute();
         makedom.Execute();
 
-        Transform::GEPStrengthReduce gepStrengthReduce(&builder);
         gepStrengthReduce.Execute();
 
-        makecfg.Execute();
-        makedom.Execute();
-        loopAnalysis.Execute();
-        inlinePass.Execute();
+        {
+            Transform::SingleSourcePhiEliminationPass singleSourcePhiElim(&builder);
+            singleSourcePhiElim.setPreserveLCSSA(false);
+            singleSourcePhiElim.Execute();
+            cfgSimplify();
+        }
 
-        makecfg.Execute();
-
-        //直接删除内联后没用的函数
-        Transform::UnusedFuncEliminationPass unused_func_del(&builder);
-        unused_func_del.Execute();
         makecfg.Execute();
     }
 

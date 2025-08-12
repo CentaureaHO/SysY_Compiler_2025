@@ -1,12 +1,11 @@
 #include "llvm/make_cfg.h"
-#include <iostream>
 
 void MakeCFGPass::Execute()
 {
     // ir->BuildCFG();
+    ir->cfg.clear();
     for (auto func : ir->functions)
     {
-
         CFG* new_cfg            = new CFG;
         ir->cfg[func->func_def] = new_cfg;
         new_cfg->func           = func;

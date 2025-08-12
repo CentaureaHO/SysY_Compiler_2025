@@ -16,6 +16,7 @@ void ExprNode::printAST(ostream* oss, const string& prefix, bool isLast)
 
 void ExprNode::setConst() { isConst = true; }
 void ExprNode::setNonConst() { isConst = false; }
+bool ExprNode::isConstExpr() const { return isConst; }
 
 /* Definition of LeftValueExpr */
 LeftValueExpr::LeftValueExpr(Symbol::Entry* entry, vector<ExprNode*>* dims, int scope, bool isL)

@@ -42,8 +42,23 @@
     X(R4) /* R4 rd rs1 rs2 rs3 */ \
     X(CALL)
 
-// (name, type, asm)
-#define RV64_INSTS            \
+#ifndef RV64_ENABLE_ZBA
+#define RV64_ENABLE_ZBA 0
+#endif
+#ifndef RV64_ENABLE_ZBB
+#define RV64_ENABLE_ZBB 0
+#endif
+#ifndef RV64_ENABLE_ZICSR
+#define RV64_ENABLE_ZICSR 0
+#endif
+#ifndef RV64_ENABLE_ZIFENCEI
+#define RV64_ENABLE_ZIFENCEI 0
+#endif
+#ifndef RV64_ENABLE_ZICOND
+#define RV64_ENABLE_ZICOND 0
+#endif
+
+#define RV64_INSTS_BASE       \
     X(ADD, R, add)            \
     X(ADDW, R, addw)          \
     X(SUB, R, sub)            \
@@ -71,6 +86,7 @@
     X(FLE_S, R, fle.s)        \
                               \
     X(ADDI, I, addi)          \
+    X(ADDIW, I, addiw)        \
     X(SLLI, I, slli)          \
     X(SRLI, I, srli)          \
     X(SRAI, I, srai)          \
@@ -124,14 +140,32 @@
     X(FNMADD_S, R4, fnmadd.s) \
     X(FNMSUB_S, R4, fnmsub.s) \
                               \
+    X(CALL, CALL, call)
+
+#if RV64_ENABLE_ZBA
+#define RV64_INSTS_ZBA        \
     X(SH1ADD, R, sh1add)      \
     X(SH2ADD, R, sh2add)      \
     X(SH3ADD, R, sh3add)      \
     X(SH1ADDUW, R, sh1add.uw) \
     X(SH2ADDUW, R, sh2add.uw) \
-    X(SH3ADDUW, R, sh3add.uw) \
-                              \
-    X(CALL, CALL, call)
+    X(SH3ADDUW, R, sh3add.uw)
+#else
+#define RV64_INSTS_ZBA
+#endif
+
+#if RV64_ENABLE_ZICOND
+#define RV64_INSTS_ZICOND      \
+    X(CZERO_EQZ, R, czero.eqz) \
+    X(CZERO_NEZ, R, czero.nez)
+#else
+#define RV64_INSTS_ZICOND
+#endif
+
+#define RV64_INSTS  \
+    RV64_INSTS_BASE \
+    RV64_INSTS_ZBA  \
+    RV64_INSTS_ZICOND
 
 // (name, alias, saver)
 // saver: 0: caller-saved, 1: callee-saved, 2: other
@@ -279,9 +313,10 @@ namespace Backend::RV64
 
     enum class InstType
     {
-        RV64 = 0,
-        PHI  = 1,
-        MOVE = 2
+        RV64   = 0,
+        PHI    = 1,
+        MOVE   = 2,
+        SELECT = 3
     };
 
     enum class RV64InstType
@@ -481,6 +516,31 @@ namespace Backend::RV64
         void                   replaceAllOperands(const std::map<int, int>& reg_replace_map) override;
     };
 
+    class SelectInst : public Instruction
+    {
+      public:
+        Register cond_reg;
+        Register dst_reg;
+        Operand* true_val;
+        Operand* false_val;
+
+      public:
+        SelectInst(Register cond, Register dst, Operand* tv, Operand* fv);
+        ~SelectInst();
+
+      public:
+        std::vector<Register*> getReadRegs() override;
+        std::vector<Register*> getWriteRegs() override;
+        void                   replaceAllOperands(const std::map<int, int>& reg_replace_map) override;
+    };
+
+    class NopInst : public Instruction
+    {
+      public:
+        NopInst();
+        ~NopInst();
+    };
+
     extern std::map<RV64InstType, OpInfo> opInfoTable;
     extern std::map<int, std::string>     rv64_reg_name_map;
 
@@ -490,6 +550,34 @@ namespace Backend::RV64
 #define X(name, alias, saver) extern Register preg_##alias;
     RV64_REGS
 #undef X
+
+    inline std::string getRV64ArchString()
+    {
+        std::string arch = "rv64i2p1";
+
+        arch += "_m2p0";  // M
+        arch += "_a2p1";  // A
+        arch += "_f2p2";  // F
+        arch += "_d2p2";  // D
+        arch += "_c2p0";  // C
+
+#if RV64_ENABLE_ZICSR
+        arch += "_zicsr2p0";
+#endif
+#if RV64_ENABLE_ZIFENCEI
+        arch += "_zifencei2p0";
+#endif
+#if RV64_ENABLE_ZBA
+        arch += "_zba1p0";
+#endif
+#if RV64_ENABLE_ZBB
+        arch += "_zbb1p0";
+#endif
+#if RV64_ENABLE_ZICOND
+        arch += "_zicond1p0";
+#endif
+        return arch;
+    }
 }  // namespace Backend::RV64
 
 #endif  // __BACKEND_RV64_DEFS_H__
