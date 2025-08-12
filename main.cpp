@@ -573,8 +573,10 @@ int main(int argc, char** argv)
         EAliasAnalysis::EAliasAnalyser ealias_analyser(&builder);
         ealias_analyser.run();
         DSEPass dse(&builder, &ealias_analyser, &edefUseAnalysis, &arrAliasAnalysis);
-        loopAnalysis.Execute();
+        // loopAnalysis.Execute();
         dse.Execute();
+        DCEDefUse.Execute();
+        dce.Execute();
         makecfg.Execute();
         tsccp.Execute();
         unusedelimator.Execute();

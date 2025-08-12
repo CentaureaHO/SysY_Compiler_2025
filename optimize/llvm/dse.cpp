@@ -6,13 +6,15 @@
 #include "llvm_ir/ir_builder.h"
 #include <deque>
 #include <queue>
+#include <unordered_map>
 #include <unordered_set>
 #include <functional>
 #include <iostream>  // 添加头文件用于输出调试信息
 #include <fstream>   // 添加文件输出支持
+#include <utility>
 
 // #define DEBUG_DSE
-// #define LOG_DSE_REMOVAL  // 控制删除记录输出的开关
+#define LOG_DSE_REMOVAL  // 控制删除记录输出的开关
 
 namespace LLVMIR
 {
@@ -30,74 +32,85 @@ namespace LLVMIR
         ealias_analyser->run();
         edef_use_analysis->run();
         arralias_analysis->run();
+        const int MAX_ITERATIONS = 5;
+        int       Iteration      = 0;
+        bool      changed        = true;
 
-        for (auto [func, cfg] : ir->cfg)
+        while (changed && Iteration < MAX_ITERATIONS)
         {
+            changed = false;
 #ifdef DEBUG_DSE
-            std::cout << "Processing function: " << func->func_name << std::endl;
+            std::cout << "Iteration " << Iteration + 1 << " of DSE Pass" << std::endl;
+#endif
+            Iteration++;
+            for (auto [func, cfg] : ir->cfg)
+            {
+#ifdef DEBUG_DSE
+                std::cout << "Processing function: " << func->func_name << std::endl;
 #endif
 #ifdef LOG_DSE_REMOVAL
-            log_file << "Processing function: " << func->func_name << std::endl;
+                log_file << "Processing function: " << func->func_name << std::endl;
 #endif
-            params.clear();
-            // 收集函数参数
-            for (auto arg : func->arg_regs)
-            {
-                params.insert(arg);
-#ifdef DEBUG_DSE
-                std::cout << "  Adding parameter: " << arg << std::endl;
-#endif
-            }
-
-            // 处理当前函数的CFG
-            ExecuteInSingleCFG(cfg);
-
-#ifdef DEBUG_DSE
-            // 统计该函数消除的存储指令
-            int func_eliminated = 0;
-            for (auto& [id, stores] : erase_set) { func_eliminated += stores.size(); }
-            total_eliminated += func_eliminated;
-
-            std::cout << "  Eliminated " << func_eliminated << " dead stores in function " << func->func_name
-                      << std::endl;
-#endif
-#ifdef LOG_DSE_REMOVAL
-            int func_removed = 0;
-            for (auto& [id, stores] : erase_set) { func_removed += stores.size(); }
-            removal_count += func_removed;
-
-            if (func_removed > 0)
-            {
-                log_file << "  [REMOVED] " << func_removed << " dead stores in function " << func->func_name
-                         << std::endl;
-
-                // 可选：记录每个被删除的store指令详情
-                for (auto& [block_id, stores] : erase_set)
+                params.clear();
+                // 收集函数参数
+                for (auto arg : func->arg_regs)
                 {
-                    for (auto* store : stores)
+                    params.insert(arg);
+#ifdef DEBUG_DSE
+                    std::cout << "  Adding parameter: " << arg << std::endl;
+#endif
+                }
+
+                // 处理当前函数的CFG
+                ExecuteInSingleCFG(cfg, changed);
+
+#ifdef DEBUG_DSE
+                // 统计该函数消除的存储指令
+                int func_eliminated = 0;
+                for (auto& [id, stores] : erase_set) { func_eliminated += stores.size(); }
+                total_eliminated += func_eliminated;
+
+                std::cout << "  Eliminated " << func_eliminated << " dead stores in function " << func->func_name
+                          << std::endl;
+#endif
+#ifdef LOG_DSE_REMOVAL
+                int func_removed = 0;
+                for (auto& [id, stores] : erase_set) { func_removed += stores.size(); }
+                removal_count += func_removed;
+
+                if (func_removed > 0)
+                {
+                    log_file << "  [REMOVED] " << func_removed << " dead stores in function " << func->func_name
+                             << std::endl;
+
+                    // 可选：记录每个被删除的store指令详情
+                    for (auto& [block_id, stores] : erase_set)
                     {
-                        auto* storeInst = dynamic_cast<StoreInst*>(store);
-                        log_file << "    - Block " << block_id << ": " << storeInst->ptr << " = " << storeInst->val
-                                 << std::endl;
+                        for (auto* store : stores)
+                        {
+                            auto* storeInst = dynamic_cast<StoreInst*>(store);
+                            log_file << "    - Block " << block_id << ": " << storeInst->ptr << " = " << storeInst->val
+                                     << std::endl;
+                        }
                     }
                 }
-            }
 #endif
-        }
+            }
 
 #ifdef DEBUG_DSE
-        std::cout << "DSE Pass complete: eliminated " << total_eliminated << " dead stores in total" << std::endl;
-        std::cout << "===== DSE Pass End =====" << std::endl;
+            std::cout << "DSE Pass complete: eliminated " << total_eliminated << " dead stores in total" << std::endl;
+            std::cout << "===== DSE Pass End =====" << std::endl;
 #endif
 #ifdef LOG_DSE_REMOVAL
-        log_file << "DSE Pass summary: removed " << removal_count << " dead stores in total" << std::endl;
-        if (removal_count == 0) { log_file << "WARNING: No stores were removed in this pass!" << std::endl; }
-        log_file << "===== DSE Pass End =====" << std::endl << std::endl;
-        log_file.close();
+            log_file << "DSE Pass summary: removed " << removal_count << " dead stores in total" << std::endl;
+            if (removal_count == 0) { log_file << "WARNING: No stores were removed in this pass!" << std::endl; }
+            log_file << "===== DSE Pass End =====" << std::endl << std::endl;
+            log_file.close();
 #endif
+        }
     }
 
-    void DSEPass::ExecuteInSingleCFG(CFG* cfg)
+    void DSEPass::ExecuteInSingleCFG(CFG* cfg, bool& changed)
     {
 #ifdef DEBUG_DSE
         std::cout << "  ExecuteInSingleCFG: Starting analysis" << std::endl;
@@ -115,6 +128,7 @@ namespace LLVMIR
 
         // 分析找出死代码
         GenerateElimination(cfg);
+        if (!erase_set.empty()) { changed = true; }
 
 #ifdef DEBUG_DSE
         // 计算找到的死代码数量
@@ -128,6 +142,14 @@ namespace LLVMIR
 #ifdef DEBUG_DSE
         std::cout << "  Removed all dead store instructions" << std::endl;
 #endif
+        // store_insts.clear();
+        // erase_set.clear();  // 清空erase_set以便下次使用
+
+        // CollectStores(cfg);
+        // // 对于store但是全局都没有对于mayAlias的读取，那么我们可以将其删除
+        // NoUseStore(cfg);
+        // if (!erase_set.empty()) { changed = true; }
+        // EraseStoreInst(cfg);
     }
 
     void DSEPass::CollectStores(CFG* cfg)
@@ -743,8 +765,10 @@ namespace LLVMIR
         }
         else
         {
+#ifdef DEBUG_DSE
             std::cout << "Calculating may alias for " << ptr1 << " and " << ptr2 << std::endl;
             std::cout << "Offsets: " << offset1 << ", " << offset2 << std::endl;
+#endif
             return offset1 == offset2;
         }
     }
@@ -764,9 +788,54 @@ namespace LLVMIR
         }
         else
         {
+#ifdef DEBUG_DSE
             std::cout << "Calculating must alias for " << ptr1 << " and " << ptr2 << std::endl;
             std::cout << "Offsets: " << offset1 << ", " << offset2 << std::endl;
+#endif
             return offset1 == offset2;
+        }
+    }
+
+    void DSEPass::NoUseStore(CFG* cfg)
+    {
+        auto                             dead_set = store_insts;
+        std::unordered_set<Instruction*> used_stores;
+        for (auto [id, block] : cfg->block_id_to_block)
+        {
+            for (auto inst : block->insts)
+            {
+                if (inst->opcode == IROpCode::GETELEMENTPTR)
+                {
+                    auto loadInst = dynamic_cast<LoadInst*>(inst);
+                    for (auto store_inst : dead_set)
+                    {
+                        auto store = dynamic_cast<StoreInst*>(store_inst);
+                        if (store && mayAlias(store->ptr, loadInst->ptr, cfg)) { used_stores.insert(store_inst); }
+                    }
+                }
+            }
+        }
+        for (auto store_inst : used_stores)
+        {
+            dead_set.erase(store_inst);  // 从死代码集中移除被使用的store
+        }
+#ifdef DEBUG_DSE
+
+        std::cout << "NoUseStore: Found " << used_stores.size() << " stores that are used by GEP instructions"
+                  << std::endl;
+#endif
+        std::unordered_map<int, Instruction*> to_remove;
+        for (auto dead : dead_set)
+        {
+            auto store = dynamic_cast<StoreInst*>(dead);
+            if (store)
+            {
+                erase_set[store->block_id].insert(dead);  // 将死代码存储到erase_set中
+#ifdef DEBUG_DSE
+                std::cout << "NoUseStore: Found dead store in block " << store->block_id << ": " << store->ptr << " = "
+                          << store->val << std::endl;
+#endif
+            }
         }
     }
 

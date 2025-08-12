@@ -47,7 +47,7 @@ namespace LLVMIR
         std::unordered_set<Operand*> params;
 
         // 在一个cfg中执行
-        void ExecuteInSingleCFG(CFG* cfg);
+        void ExecuteInSingleCFG(CFG* cfg, bool& changed);
 
         // 在一个cfg中进行判断
         void GenerateElimination(CFG* cfg);
@@ -60,6 +60,9 @@ namespace LLVMIR
 
         // 判断是否dead store
         bool isDeadStore(CFG* cfg, Instruction* store);
+
+        // 对于store但是没有对于mayAlias的读取，那么我们可以将其删除
+        void NoUseStore(CFG* cfg);
 
         bool allPathsGoThrough(CFG* cfg, int start, int end, int through);
 
