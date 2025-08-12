@@ -6,6 +6,7 @@
 #include <backend/rv64/passes/code_generation.h>
 #include <backend/rv64/passes/optimize/control_flow/block_layout.h>
 #include <backend/rv64/passes/optimize/control_flow/fallthrough_elimination.h>
+// #include <backend/rv64/passes/optimize/instruction_schedule.h>
 #include <backend/rv64/passes/cfg_builder.h>
 
 #include <backend/rv64/pass_set_generator.h>
@@ -22,36 +23,73 @@ std::vector<std::unique_ptr<Backend::BasePass>> PassSetGenerator::generate(LLVMI
 {
     std::vector<std::unique_ptr<Backend::BasePass>> passes;
 
-    passes.emplace_back(std::make_unique<InstructionSelectionPass>(ir, functions, glb_defs));
-    passes.emplace_back(std::make_unique<SelectReducePass>(functions));
-    passes.emplace_back(std::make_unique<CFGBuilderPass>(functions));
-    passes.emplace_back(std::make_unique<Optimize::RV64MakeDomTreePass>(functions));
-    passes.emplace_back(std::make_unique<FrameLoweringPass>(functions));
+    InstructionSelectionPass(ir, functions, glb_defs).run();
+    SelectReducePass(functions).run();
+    CFGBuilderPass(functions).run();
+    Optimize::RV64MakeDomTreePass(functions).run();
+    FrameLoweringPass(functions).run();
     if (optLevel)
     {
-        // passes.emplace_back(std::make_unique<ArithmeticStrengthReductionPass>(functions));
-        // passes.emplace_back(std::make_unique<Optimize::Peehole::SSAPeepholePass>(functions));
-        passes.emplace_back(std::make_unique<Optimize::Peehole::SSADeadDefEliminatePass>(functions));
-        passes.emplace_back(std::make_unique<Optimize::RV64CSEPass>(functions));
+        Optimize::Peehole::SSADeadDefEliminatePass(functions).run();
+        Optimize::RV64CSEPass(functions).run();
     }
-    passes.emplace_back(std::make_unique<PhiDestructionPass>(functions));
-    passes.emplace_back(std::make_unique<ImmediateFMoveEliminationPass>(functions));
-    passes.emplace_back(std::make_unique<ImmediateIMoveEliminationPass>(functions));
-    passes.emplace_back(std::make_unique<MoveEliminationPass>(functions));
+    PhiDestructionPass(functions).run();
+    ImmediateFMoveEliminationPass(functions).run();
+    ImmediateIMoveEliminationPass(functions).run();
+    MoveEliminationPass(functions).run();
     if (optLevel)
     {
-        passes.emplace_back(std::make_unique<BlockLayoutPass>(functions));
-        passes.emplace_back(std::make_unique<CFGBuilderPass>(functions));
+        BlockLayoutPass(functions).run();
+        CFGBuilderPass(functions).run();
 
-        // passes.emplace_back(std::make_unique<FallthroughEliminationPass>(functions)); 违背寄存器分配假设了，不应用
+        // if (optLevel >= 2) Passes::Optimize::InstructionSchedulePass(functions).run();
     }
     if (!no_reg_alloc)
     {
-        passes.emplace_back(std::make_unique<RegisterAllocationPass>(functions));
-        passes.emplace_back(std::make_unique<StackLoweringPass>(functions));
-    }
+        CFGBuilderPass(functions).run();
+        Optimize::RV64MakeDomTreePass(functions).run();
 
-    passes.emplace_back(std::make_unique<CodeGenerationPass>(functions, glb_defs, out));
+        RegisterAllocationPass(functions).run();
+        StackLoweringPass(functions).run();
+    }
+    CodeGenerationPass(functions, glb_defs, out).run();
+
+    // passes.emplace_back(std::make_unique<InstructionSelectionPass>(ir, functions, glb_defs));
+    // passes.emplace_back(std::make_unique<SelectReducePass>(functions));
+    // passes.emplace_back(std::make_unique<CFGBuilderPass>(functions));
+    // passes.emplace_back(std::make_unique<Optimize::RV64MakeDomTreePass>(functions));
+    // passes.emplace_back(std::make_unique<FrameLoweringPass>(functions));
+    // if (optLevel)
+    // {
+    //     // passes.emplace_back(std::make_unique<ArithmeticStrengthReductionPass>(functions));
+    //     // passes.emplace_back(std::make_unique<Optimize::Peehole::SSAPeepholePass>(functions));
+    //     passes.emplace_back(std::make_unique<Optimize::Peehole::SSADeadDefEliminatePass>(functions));
+    //     passes.emplace_back(std::make_unique<Optimize::RV64CSEPass>(functions));
+    // }
+    // passes.emplace_back(std::make_unique<PhiDestructionPass>(functions));
+    // passes.emplace_back(std::make_unique<ImmediateFMoveEliminationPass>(functions));
+    // passes.emplace_back(std::make_unique<ImmediateIMoveEliminationPass>(functions));
+    // passes.emplace_back(std::make_unique<MoveEliminationPass>(functions));
+    // if (optLevel)
+    // {
+    //     passes.emplace_back(std::make_unique<BlockLayoutPass>(functions));
+    //     passes.emplace_back(std::make_unique<CFGBuilderPass>(functions));
+
+    //     // passes.emplace_back(std::make_unique<FallthroughEliminationPass>(functions)); 违背寄存器分配假设了，不应用
+
+    //     // 指令调度优化 - 在寄存器分配前进行以考虑寄存器压力
+    //     if (optLevel >= 2) passes.emplace_back(std::make_unique<Passes::Optimize::InstructionSchedulePass>(functions));
+    // }
+    // if (!no_reg_alloc)
+    // {
+    //     passes.emplace_back(std::make_unique<CFGBuilderPass>(functions));
+    //     passes.emplace_back(std::make_unique<Optimize::RV64MakeDomTreePass>(functions));
+
+    //     passes.emplace_back(std::make_unique<RegisterAllocationPass>(functions));
+    //     passes.emplace_back(std::make_unique<StackLoweringPass>(functions));
+    // }
+
+    // passes.emplace_back(std::make_unique<CodeGenerationPass>(functions, glb_defs, out));
 
     return passes;
 }

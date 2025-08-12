@@ -126,6 +126,7 @@ void DomAnalyzer::build(const vector<vector<int>>& working_graph, int node_count
                 int runner = block;
                 while (runner != imm_dom[succ] && runner != virtual_source)
                 {
+                    // std::cout << "Adding to frontier: " << runner << " -> " << succ << std::endl;
                     dom_frontier[runner].insert(succ);
                     runner = imm_dom[runner];
                 }

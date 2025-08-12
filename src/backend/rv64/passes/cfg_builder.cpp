@@ -35,8 +35,8 @@ namespace Backend::RV64::Passes
 
         setEntryAndExitBlocks(cfg);
 
-        std::cout << "CFG rebuilt for function " << func->name << " with " << cfg->blocks.size() << " blocks"
-                  << std::endl;
+        // std::cout << "CFG rebuilt for function " << func->name << " with " << cfg->blocks.size() << " blocks"
+        //           << std::endl;
 
         return true;
     }

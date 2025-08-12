@@ -521,12 +521,7 @@ int main(int argc, char** argv)
             makecfg.Execute();
             makedom.Execute();
             aa.run();
-            if (opt_level >= 2)
-            {
-                makecfg.Execute();
-                makedom.Execute();
-                tsccp.Execute();
-            }
+            tsccp.Execute();
         }
         // SCCP after constant full unroll
         {
