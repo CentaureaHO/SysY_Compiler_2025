@@ -1156,8 +1156,22 @@ namespace Transform
         MemoryLocation store_loc    = getMemoryLocation(store->ptr);
         if (!store_loc.isValid())
         {
-            DBGINFO("\tSTORE with dynamic indices detected - clearing ALL memory state");
+            DBGINFO("\tSTORE with dynamic indices detected - clearing ALL memory state and invalidating related loads");
             memory_state_.clear();
+
+            for (auto& [block_id, block] : current_cfg_->block_id_to_block)
+            {
+                for (auto* inst : block->insts)
+                {
+                    if (inst->opcode != LLVMIR::IROpCode::LOAD) continue;
+                    auto* load = static_cast<LLVMIR::LoadInst*>(inst);
+                    if (isSameArray(load->ptr, store->ptr))
+                    {
+                        addToSSAWorklist(inst);
+                        setValue(inst, LatticeValue::createBottom());
+                    }
+                }
+            }
             return;
         }
 
@@ -1169,18 +1183,72 @@ namespace Transform
             if (def_it != def_map_.end()) has_circular_dependency = hasCircularDependency(def_it->second, store_loc);
         }
 
+        bool any_erased_or_changed = false;
         for (auto it = memory_state_.begin(); it != memory_state_.end();)
         {
             if (it->first != store_loc && mayAlias(store_loc, it->first))
-                it = memory_state_.erase(it);
-            else
-                ++it;
+            {
+                it                    = memory_state_.erase(it);
+                any_erased_or_changed = true;
+            }
+            else { ++it; }
         }
 
         if (stored_value.isConstant() && !has_circular_dependency)
-            memory_state_[store_loc] = stored_value;
+        {
+            auto it = memory_state_.find(store_loc);
+            if (it == memory_state_.end())
+            {
+                memory_state_[store_loc] = stored_value;
+                any_erased_or_changed    = true;
+            }
+            else
+            {
+                LatticeValue merged = it->second.meet(stored_value);
+                if (merged != it->second)
+                {
+                    it->second            = merged;
+                    any_erased_or_changed = true;
+                }
+            }
+        }
         else
-            memory_state_.erase(store_loc);
+        {
+            auto it = memory_state_.find(store_loc);
+            if (it != memory_state_.end())
+            {
+                memory_state_.erase(it);
+                any_erased_or_changed = true;
+            }
+        }
+
+        if (any_erased_or_changed)
+        {
+            for (auto& [block_id, block] : current_cfg_->block_id_to_block)
+            {
+                for (auto* inst : block->insts)
+                {
+                    if (inst->opcode != LLVMIR::IROpCode::LOAD) continue;
+                    auto*          load     = static_cast<LLVMIR::LoadInst*>(inst);
+                    MemoryLocation load_loc = getMemoryLocation(load->ptr);
+                    if (!load_loc.isValid())
+                    {
+                        if (isSameArray(load->ptr, store->ptr))
+                        {
+                            addToSSAWorklist(inst);
+                            setValue(inst, LatticeValue::createBottom());
+                        }
+                        continue;
+                    }
+
+                    if (load_loc == store_loc || mayAlias(store_loc, load_loc))
+                    {
+                        addToSSAWorklist(inst);
+                        setValue(inst, LatticeValue::createBottom());
+                    }
+                }
+            }
+        }
     }
 
     LatticeValue TSCCPPass::handleLoadInstruction(LLVMIR::LoadInst* load)
@@ -1192,26 +1260,7 @@ namespace Transform
         auto it = memory_state_.find(load_loc);
         if (it != memory_state_.end()) return it->second;
 
-        std::vector<LLVMIR::StoreInst*> reaching_stores = collectReachingStores(load, load_loc);
-
-        if (reaching_stores.empty()) return LatticeValue::createBottom();
-
-        LatticeValue result;
-        bool         first = true;
-
-        for (auto* store : reaching_stores)
-        {
-            LatticeValue store_value = getValueForOperand(store->val);
-
-            if (first)
-            {
-                result = store_value;
-                first  = false;
-            }
-            else { result = result.meet(store_value); }
-        }
-
-        return result;
+        return LatticeValue::createBottom();
     }
 
     MemoryLocation TSCCPPass::getMemoryLocation(LLVMIR::Operand* ptr) const

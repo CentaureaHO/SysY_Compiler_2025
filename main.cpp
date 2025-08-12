@@ -389,10 +389,10 @@ int main(int argc, char** argv)
 
         // TSCCP - Sparse Conditional Constant Propagation
         Transform::TSCCPPass tsccp(&builder);
-        tsccp.Execute();
+        if (opt_level >= 2) { tsccp.Execute(); }
         // std::cout << "TSCCP completed" << std::endl;
 
-        loopPreProcess();
+        /*loopPreProcess();
         makecfg.Execute();
         makedom.Execute();
 
@@ -607,7 +607,7 @@ int main(int argc, char** argv)
             singleSourcePhiElim.setPreserveLCSSA(false);
             singleSourcePhiElim.Execute();
             cfgSimplify();
-        }
+        }*/
 
         makecfg.Execute();
     }
