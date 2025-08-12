@@ -2,6 +2,7 @@
 #include "cfg.h"
 #include "llvm_ir/defs.h"
 #include "llvm_ir/instruction.h"
+#include "llvm_ir/ir_block.h"
 #include "llvm_ir/ir_builder.h"
 #include <deque>
 #include <queue>
@@ -10,8 +11,8 @@
 #include <iostream>  // 添加头文件用于输出调试信息
 #include <fstream>   // 添加文件输出支持
 
-#define DEBUG_DSE
-// #define LOG_DSE_REMOVAL  // 控制删除记录输出的开关
+// #define DEBUG_DSE
+#define LOG_DSE_REMOVAL  // 控制删除记录输出的开关
 
 namespace LLVMIR
 {
@@ -26,6 +27,9 @@ namespace LLVMIR
         log_file << "===== DSE Pass Execution (" << __DATE__ << " " << __TIME__ << ") =====" << std::endl;
         int removal_count = 0;
 #endif
+        ealias_analyser->run();
+        edef_use_analysis->run();
+        arralias_analysis->run();
 
         for (auto [func, cfg] : ir->cfg)
         {
@@ -304,6 +308,18 @@ namespace LLVMIR
                         return false;
                     }
                 }
+                else if (inst->opcode == IROpCode::GETELEMENTPTR)
+                {
+                    auto* gepInst = dynamic_cast<GEPInst*>(inst);
+                    if (mayAlias(gepInst->base_ptr, ptr, cfg))
+                    {
+#ifdef DEBUG_DSE
+                        std::cout << "      Found GEP in block " << blockId << " on path from start to through"
+                                  << std::endl;
+#endif
+                        return false;
+                    }
+                }
             }
         }
 
@@ -381,7 +397,11 @@ namespace LLVMIR
 #ifdef DEBUG_DSE
         std::cout << "    Step 2: Checking same basic block for redundant stores" << std::endl;
 #endif
-
+        // if (isInLoop(storeBlock, cfg))
+        // {
+        //     std::cout << "      Store is in a loop, conservatively assuming it's not dead" << std::endl;
+        //     return false;  // 如果store在循环中，保守地认为不是死代码
+        // }
         // 2. 检查同一基本块内的后续指令
         bool foundInSameBlock = false;
         auto it               = storeBlock->insts.begin();
@@ -450,8 +470,9 @@ namespace LLVMIR
                     if (mustAlias(nextStore->ptr, storeInst->ptr, cfg))
                     {
 #ifdef DEBUG_DSE
-                        std::cout << "      Found later store to same location in same block, store is dead"
-                                  << std::endl;
+                        std::cout << "      Found later store to same location in same block, store is dead, current "
+                                     "store is "
+                                  << storeInst->ptr << " and next is " << nextStore->ptr << std::endl;
 #endif
                         foundInSameBlock = true;
                         break;
@@ -623,14 +644,145 @@ namespace LLVMIR
 #endif
     }
 
+    // 计算GEP指令链的总偏移量
+    int DSEPass::calculateTotalOffset(LLVMIR::Operand* ptr, CFG* cfg, LLVMIR::Operand* alloca)
+    {
+        int total_offset = 0;
+
+        // 防止循环引用
+        std::set<int> visited_regs;
+
+        bool hasreg      = false;
+        auto alloca_inst = edef_use_analysis->getDef(cfg, alloca);
+        if (!alloca_inst || alloca_inst->opcode != LLVMIR::IROpCode::ALLOCA) { return -1; }
+
+        auto dims = static_cast<LLVMIR::AllocInst*>(alloca_inst)->dims;
+        // 递归计算偏移量
+        std::function<void(LLVMIR::Operand*)> calcOffset = [&](LLVMIR::Operand* current_ptr) {
+            if (!current_ptr || current_ptr->type != LLVMIR::OperandType::REG) return;
+            if (hasreg) return;  // 如果已经处理过寄存器，直接返回
+            auto* reg_ptr = static_cast<LLVMIR::RegOperand*>(current_ptr);
+            int   reg_num = reg_ptr->reg_num;
+
+            // 防止循环
+            if (visited_regs.count(reg_num)) return;
+            visited_regs.insert(reg_num);
+
+            // 查找定义
+            LLVMIR::Instruction* def_inst = nullptr;
+            if (edef_use_analysis) { def_inst = edef_use_analysis->getDef(cfg, current_ptr); }
+            if (!def_inst || def_inst->opcode != LLVMIR::IROpCode::GETELEMENTPTR)
+            {
+                if (def_inst->opcode != IROpCode::ALLOCA)
+                {
+                    hasreg = true;  // 如果不是GEP或ALLOCA指令，说明无法计算偏移量
+                }
+                return;
+            }
+            auto* gep = static_cast<LLVMIR::GEPInst*>(def_inst);
+
+            // 1. 先递归处理基指针
+            calcOffset(gep->base_ptr);
+
+            // 2. 计算当前GEP的偏移量
+            if (gep->idxs.size() > 0)
+            {
+                // 多维数组GEP
+                size_t start_idx = 0;
+
+                // 跳过首个0索引(指向数组本身)
+                if (gep->idxs.size() > 0 && gep->idxs[0]->type == LLVMIR::OperandType::IMMEI32)
+                {
+                    auto* imm = static_cast<LLVMIR::ImmeI32Operand*>(gep->idxs[0]);
+                    if (imm->value == 0) start_idx = 1;
+                }
+                // 处理每个维度
+                for (size_t i = start_idx; i < gep->idxs.size() && i - start_idx < dims.size(); ++i)
+                {
+                    auto* idx       = gep->idxs[i];
+                    int   idx_value = 0;
+                    // 提取索引值
+                    if (idx->type == LLVMIR::OperandType::IMMEI32)
+                    {
+                        auto* imm = static_cast<LLVMIR::ImmeI32Operand*>(idx);
+                        idx_value = imm->value;
+                    }
+                    else if (idx->type == LLVMIR::OperandType::REG)
+                    {
+                        hasreg = true;
+                        return;
+                    }
+                    // 计算这个维度的乘数
+                    int multiplier = 1;
+                    for (size_t j = i - start_idx + 1; j < dims.size(); ++j) { multiplier *= dims[j]; }
+
+                    total_offset += idx_value * multiplier;
+                }
+            }
+        };
+        // 开始计算
+        calcOffset(ptr);
+        if (hasreg)
+        {
+            total_offset = -1;  // 如果有寄存器参与计算，返回-1表示无法确定偏移量
+        }
+        return total_offset;
+    }
+
     bool DSEPass::mayAlias(Operand* ptr1, Operand* ptr2, CFG* cfg)
     {
-        return ealias_analyser->queryAlias(ptr1, ptr2, cfg) != EAliasAnalysis::EAliasAnalyser::AliasResult::NoAlias;
+        auto alloca1 = arralias_analysis->traceToBase(cfg, ptr1);
+        auto alloca2 = arralias_analysis->traceToBase(cfg, ptr2);
+        if (!alloca1 || !alloca2) { return false; }
+        if (alloca1 != alloca2) { return false; }
+        auto offset1 = calculateTotalOffset(ptr1, cfg, alloca1);
+        auto offset2 = calculateTotalOffset(ptr2, cfg, alloca2);
+        if (offset1 == -1 || offset2 == -1)
+        {
+            return ealias_analyser->queryAlias(ptr1, ptr2, cfg) != EAliasAnalysis::EAliasAnalyser::AliasResult::NoAlias;
+        }
+        else
+        {
+            std::cout << "Calculating may alias for " << ptr1 << " and " << ptr2 << std::endl;
+            std::cout << "Offsets: " << offset1 << ", " << offset2 << std::endl;
+            return offset1 == offset2;
+        }
     }
 
     bool DSEPass::mustAlias(Operand* ptr1, Operand* ptr2, CFG* cfg)
     {
-        return ealias_analyser->queryAlias(ptr1, ptr2, cfg) == EAliasAnalysis::EAliasAnalyser::AliasResult::MustAlias;
+        auto alloca1 = arralias_analysis->traceToBase(cfg, ptr1);
+        auto alloca2 = arralias_analysis->traceToBase(cfg, ptr2);
+        if (!alloca1 || !alloca2) { return false; }
+        if (alloca1 != alloca2) { return false; }
+        auto offset1 = calculateTotalOffset(ptr1, cfg, alloca1);
+        auto offset2 = calculateTotalOffset(ptr2, cfg, alloca2);
+        if (offset1 == -1 || offset2 == -1)
+        {
+            return ealias_analyser->queryAlias(ptr1, ptr2, cfg) ==
+                   EAliasAnalysis::EAliasAnalyser::AliasResult::MustAlias;
+        }
+        else
+        {
+            std::cout << "Calculating must alias for " << ptr1 << " and " << ptr2 << std::endl;
+            std::cout << "Offsets: " << offset1 << ", " << offset2 << std::endl;
+            return offset1 == offset2;
+        }
     }
+
+    // bool DSEPass::isInLoop(LLVMIR::IRBlock* block, CFG* cfg)
+    // {
+    //     return false;
+    //     // 检查block_id是否在循环中
+    //     auto* loop_info = cfg->LoopForest;
+    //     for (auto loop : loop_info->loop_set)
+    //     {
+    //         if (loop->loop_nodes.count(block))
+    //         {
+    //             return true;  // 如果block在循环中，返回true
+    //         }
+    //     }
+    //     return false;
+    // }
 
 }  // namespace LLVMIR

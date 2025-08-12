@@ -111,8 +111,6 @@ namespace EAliasAnalysis
         return nullptr;
     }
 
-    EAliasAnalyser::EAliasAnalyser(LLVMIR::IR* ir) : ir(ir) {}
-
     void EAliasAnalyser::buildDefMap(CFG* cfg)
     {
         def_map[cfg].clear();

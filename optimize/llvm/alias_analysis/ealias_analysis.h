@@ -6,6 +6,7 @@
 #include "llvm_ir/ir_builder.h"
 #include "llvm_ir/instruction.h"
 #include "cfg.h"
+#include "llvm/alias_analysis/arralias_analysis.h"
 
 namespace EAliasAnalysis
 {
@@ -85,7 +86,7 @@ namespace EAliasAnalysis
         bool checkIdenticalGEP(LLVMIR::Operand* p1, LLVMIR::Operand* p2, CFG* cfg);
 
       public:
-        EAliasAnalyser(LLVMIR::IR* ir);
+        EAliasAnalyser(LLVMIR::IR* ir) : ir(ir) {};
 
         void setLLVMIR(LLVMIR::IR* ir) { this->ir = ir; }
 

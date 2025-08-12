@@ -32,7 +32,6 @@ namespace Analysis
             auto global_def = dynamic_cast<LLVMIR::GlbvarDefInst*>(global);
             if (global_def)
             {
-
                 // 如果是数组定义，直接将其作为数组操作数
                 auto global_op = getGlobalOperand(global_def->name);
                 for (auto [func, cfg] : ir->cfg)
@@ -41,21 +40,21 @@ namespace Analysis
                     array_alias[cfg][global_op] = global_op;
                 }
             }
-            for (auto& [func, cfg] : ir->cfg)
+        }
+        for (auto& [func, cfg] : ir->cfg)
+        {
+            for (size_t i = 0; i < func->arg_regs.size(); i++)
             {
-                for (size_t i = 0; i < func->arg_regs.size(); i++)
+                auto arg      = func->arg_regs[i];
+                auto arg_type = func->arg_types[i];
+                if (arg_type == LLVMIR::DataType::PTR)
                 {
-                    auto arg      = func->arg_regs[i];
-                    auto arg_type = func->arg_types[i];
-                    if (arg_type == LLVMIR::DataType::PTR)
-                    {
-                        array_operands[cfg].insert(arg);
-                        array_alias[cfg][arg] = arg;
-                    }
+                    array_operands[cfg].insert(arg);
+                    array_alias[cfg][arg] = arg;
                 }
-                processSingleCFG(cfg);
-                processPHI(cfg);
             }
+            processSingleCFG(cfg);
+            processPHI(cfg);
         }
     }
 
@@ -81,7 +80,6 @@ namespace Analysis
                         gep_inst->base_ptr->type == LLVMIR::OperandType::GLOBAL)
                     {
                         // 这里我们记录下所有情况,因为我们现在不能只存储最终的数组baseptr
-
                         array_alias[cfg][gep_inst->res] = gep_inst->base_ptr;
                     }
                 }
@@ -128,15 +126,16 @@ namespace Analysis
         {
 #ifdef DEBUG
             std::cout << "op is " << op->getName() << " and type is "
-                      << ((op->type == LLVMIR::OperandType::GLOBAL) ? "Global" : "Other") << std::endl;
+                      << ((op->type == LLVMIR::OperandType::GLOBAL) ? "Global" : "Reg") << std::endl;
 #endif
             if (array_operands[cfg].count(op)) return op;  // 如果已经是最后alloca的，直接返回
             if (visited.count(op)) break;                  // 防止 alias 循环
             visited.insert(op);
-            op = array_alias[cfg][op];
+            if (array_alias[cfg].count(op)) { op = array_alias[cfg][op]; }
+            else { return nullptr; }  // 如果没有别名，返回 nullptr
 #ifdef DEBUG
             std::cout << "op is " << op->getName() << " and type is "
-                      << ((op->type == LLVMIR::OperandType::GLOBAL) ? "Global" : "Other") << std::endl;
+                      << ((op->type == LLVMIR::OperandType::GLOBAL) ? "Global" : "Reg") << std::endl;
 #endif
         }
 

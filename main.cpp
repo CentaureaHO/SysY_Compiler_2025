@@ -572,7 +572,8 @@ int main(int argc, char** argv)
         makedom.Execute();
         EAliasAnalysis::EAliasAnalyser ealias_analyser(&builder);
         ealias_analyser.run();
-        DSEPass dse(&builder, &ealias_analyser);
+        DSEPass dse(&builder, &ealias_analyser, &edefUseAnalysis, &arrAliasAnalysis);
+        loopAnalysis.Execute();
         dse.Execute();
         makecfg.Execute();
         tsccp.Execute();
