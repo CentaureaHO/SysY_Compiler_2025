@@ -56,7 +56,13 @@
     X(GLOBAL_STR, global_str, 29)       \
     X(FPEXT, fpext, 30)                 \
     X(SELECT, select, 33)               \
-    X(EMPTY, empty, 32)
+    X(EMPTY, empty, 32)                 \
+    X(SMIN_I32, smin_i32, 34)           \
+    X(SMAX_I32, smax_i32, 35)           \
+    X(UMIN_I32, umin_i32, 36)           \
+    X(UMAX_I32, umax_i32, 37)           \
+    X(FMIN_F32, fmin_f32, 38)           \
+    X(FMAX_F32, fmax_f32, 39)
 
 #define IR_ICMP    \
     X(EQ, eq, 1)   \

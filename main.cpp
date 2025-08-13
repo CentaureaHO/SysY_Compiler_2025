@@ -85,6 +85,8 @@
 #include "optimize/llvm/utils/block_layout_optimization.h"
 // Instruction Simplify
 #include "optimize/llvm/utils/instruction_simplify.h"
+// Min/Max Recognition
+#include "optimize/llvm/utils/min_max_recognize.h"
 
 // unused_func_elimination
 #include "optimize/llvm/unused_func_elimination.h"
@@ -300,6 +302,7 @@ int main(int argc, char** argv)
         Transform::InstructionSimplifyPass     instSimplify(&builder);
         Transform::IfConversionPass            ifConversion(&builder);
         Transform::BlockLayoutOptimizationPass blockLayout(&builder);
+        Transform::MinMaxRecognizePass         minMaxRecognize(&builder);
 
         auto loopPreProcess = [&]() {
             makecfg.Execute();
@@ -320,6 +323,8 @@ int main(int argc, char** argv)
             makecfg.Execute();
             instSimplify.Execute();
             ifConversion.Execute();
+            makecfg.Execute();
+            minMaxRecognize.Execute();
             makecfg.Execute();
             blockLayout.Execute();
             makecfg.Execute();
@@ -394,6 +399,10 @@ int main(int argc, char** argv)
         loopPreProcess();
         tsccp.Execute();
         // std::cout << "TSCCP completed" << std::endl;
+
+        ifConversion.Execute();
+        makecfg.Execute();
+        minMaxRecognize.Execute();
 
         loopPreProcess();
         makecfg.Execute();
@@ -526,11 +535,8 @@ int main(int argc, char** argv)
             makecfg.Execute();
             makedom.Execute();
             aa.run();
-            if (opt_level >= 2)
-            {
-                loopPreProcess();
-                tsccp.Execute();
-            }
+            loopPreProcess();
+            tsccp.Execute();
         }
         // SCCP after constant full unroll
         {
@@ -563,6 +569,10 @@ int main(int argc, char** argv)
 
                 loopPreProcess();
                 tsccp.Execute();
+
+                ifConversion.Execute();
+                makecfg.Execute();
+                minMaxRecognize.Execute();
 
                 makecfg.Execute();
                 makedom.Execute();

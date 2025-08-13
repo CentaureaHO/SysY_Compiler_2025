@@ -166,7 +166,31 @@ ArithmeticInst::ArithmeticInst(IROpCode op, DataType t, Operand* l, Operand* r, 
 {}
 void ArithmeticInst::printIR(ostream& s)
 {
-    s << res << " = " << opcode << " " << type << " " << lhs << ", " << rhs << "\n";
+    if (opcode == IROpCode::SMIN_I32)
+    {
+        s << res << " = call i32 @llvm.smin.i32(i32 " << lhs << ", i32 " << rhs << ")\n";
+    }
+    else if (opcode == IROpCode::SMAX_I32)
+    {
+        s << res << " = call i32 @llvm.smax.i32(i32 " << lhs << ", i32 " << rhs << ")\n";
+    }
+    else if (opcode == IROpCode::UMIN_I32)
+    {
+        s << res << " = call i32 @llvm.umin.i32(i32 " << lhs << ", i32 " << rhs << ")\n";
+    }
+    else if (opcode == IROpCode::UMAX_I32)
+    {
+        s << res << " = call i32 @llvm.umax.i32(i32 " << lhs << ", i32 " << rhs << ")\n";
+    }
+    else if (opcode == IROpCode::FMIN_F32)
+    {
+        s << res << " = call float @llvm.minnum.f32(float " << lhs << ", float " << rhs << ")\n";
+    }
+    else if (opcode == IROpCode::FMAX_F32)
+    {
+        s << res << " = call float @llvm.maxnum.f32(float " << lhs << ", float " << rhs << ")\n";
+    }
+    else { s << res << " = " << opcode << " " << type << " " << lhs << ", " << rhs << "\n"; }
 }
 
 int ArithmeticInst::GetResultReg()
