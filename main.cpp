@@ -434,7 +434,8 @@ int main(int argc, char** argv)
         // GCM
         edefUseAnalysis.run();
         makedom.Execute();
-        makedom.Execute(false);
+        MakeDomTreePass GCMRedom(&builder);
+        GCMRedom.Execute(true);
         // Used to set all instructions with the block they are in.
         SetIdAnalysis setIdAnalysis(&builder);
         setIdAnalysis.Execute();
@@ -633,6 +634,8 @@ int main(int argc, char** argv)
     // RISCV backend processing for -S step
     if (step == "-S")
     {
+        std::cout << "Middle end passed, enter backend processing..." << std::endl;
+
         if (!optimizeLevel)
         {
             MakeCFGPass makecfg(&builder);
