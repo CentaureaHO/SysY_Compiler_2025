@@ -8,6 +8,8 @@
 #include <backend/rv64/passes/optimize/control_flow/fallthrough_elimination.h>
 #include <backend/rv64/passes/optimize/instruction_schedule.h>
 #include <backend/rv64/passes/cfg_builder.h>
+#include <backend/rv64/passes/rv64_loop_find.h>
+#include <backend/rv64/passes/optimize/rv64_licm.h>
 
 #include <backend/rv64/pass_set_generator.h>
 
@@ -36,13 +38,14 @@ std::vector<std::unique_ptr<Backend::BasePass>> PassSetGenerator::generate(LLVMI
 
         Optimize::Peehole::SSADeadDefEliminatePass(functions).run();
         Optimize::RV64CSEPass(functions).run();
+
+        LoopFindPass(functions).run();
+        Optimize::LICMPass(functions).run();
     }
     PhiDestructionPass(functions).run();
     ImmediateFMoveEliminationPass(functions).run();
     ImmediateIMoveEliminationPass(functions).run();
-    // force_no_schedule = true;
     MoveEliminationPass(functions).run();
-    // force_no_schedule = false;
     if (optLevel)
     {
         BlockLayoutPass(functions).run();

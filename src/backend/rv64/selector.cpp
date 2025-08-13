@@ -151,7 +151,7 @@ float Selector::extractIROp2ImmeF32(LLVMIR::Operand* op)
     return ((LLVMIR::ImmeF32Operand*)op)->value;
 }
 extern bool no_schedule_zext;
-void Selector::convertAndAppend(LLVMIR::Instruction* inst)
+void        Selector::convertAndAppend(LLVMIR::Instruction* inst)
 {
     setCanSchedule();
     switch (inst->opcode)
@@ -189,8 +189,10 @@ void Selector::convertAndAppend(LLVMIR::Instruction* inst)
             convertAndAppend((LLVMIR::RetInst*)inst);
             break;
         case LOC::ZEXT:
-            setNoSchedule();    // 如果指令调度效果好就回来修
-                                // 效果不好就直接禁用了
+            // setNoSchedule();
+            // 如果指令调度效果好就回来修
+            // 效果不好就直接禁用了
+            // 效果不好，禁用了
             convertAndAppend((LLVMIR::ZextInst*)inst);
             break;
         case LOC::FPTOSI:

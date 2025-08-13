@@ -128,6 +128,9 @@ void DomAnalyzer::build(const vector<vector<int>>& working_graph, int node_count
                 {
                     // std::cout << "Adding to frontier: " << runner << " -> " << succ << std::endl;
                     dom_frontier[runner].insert(succ);
+
+                    if (imm_dom[runner] == runner) break;  // 期望只会在根节点遇到这种情况
+
                     runner = imm_dom[runner];
                 }
             }
