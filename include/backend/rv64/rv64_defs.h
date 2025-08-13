@@ -59,7 +59,7 @@
 #endif
 
 #define RV64_ENABLE_ZBA 0  // 评测平台上超时
-#define RV64_ENABLE_ZBB 0
+#define RV64_ENABLE_ZBB 1
 #define RV64_ENABLE_ZICSR 0
 #define RV64_ENABLE_ZIFENCEI 0
 #define RV64_ENABLE_ZICOND 0  // 性能不如位操作，吗？至少目前评测来看是不如
@@ -91,6 +91,8 @@
     X(FEQ_S, R, feq.s, 4)        \
     X(FLT_S, R, flt.s, 4)        \
     X(FLE_S, R, fle.s, 4)        \
+    X(FMIN_S, R, fmin.s, 4)      \
+    X(FMAX_S, R, fmax.s, 4)      \
                                  \
     X(ADDI, I, addi, 1)          \
     X(ADDIW, I, addiw, 1)        \
@@ -161,6 +163,16 @@
 #define RV64_INSTS_ZBA
 #endif
 
+#if RV64_ENABLE_ZBB
+#define RV64_INSTS_ZBB  \
+    X(MIN, R, min, 1)   \
+    X(MAX, R, max, 1)   \
+    X(MINU, R, minu, 1) \
+    X(MAXU, R, maxu, 1)
+#else
+#define RV64_INSTS_ZBB
+#endif
+
 #if RV64_ENABLE_ZICOND
 #define RV64_INSTS_ZICOND         \
     X(CZERO_EQZ, R, czero.eqz, 1) \
@@ -172,6 +184,7 @@
 #define RV64_INSTS  \
     RV64_INSTS_BASE \
     RV64_INSTS_ZBA  \
+    RV64_INSTS_ZBB  \
     RV64_INSTS_ZICOND
 
 // (name, alias, saver)
