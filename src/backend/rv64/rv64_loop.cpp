@@ -264,4 +264,18 @@ namespace Backend::RV64
         });
     }
 
+    int getBlockLoopDepth(Block* block, NaturalLoopForest* forest)
+    {
+        if (!block || !forest) return 0;
+
+        int depth = 0;
+
+        for (auto* loop : forest->loop_set)
+        {
+            if (loop->loop_nodes.find(block) != loop->loop_nodes.end()) { depth++; }
+        }
+
+        return depth;
+    }
+
 }  // namespace Backend::RV64

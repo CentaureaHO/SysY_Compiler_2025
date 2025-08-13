@@ -41,6 +41,8 @@ std::vector<std::unique_ptr<Backend::BasePass>> PassSetGenerator::generate(LLVMI
 
         LoopFindPass(functions).run();
         Optimize::LICMPass(functions).run();
+
+        Optimize::RV64CSEPass(functions).run();
     }
     PhiDestructionPass(functions).run();
     ImmediateFMoveEliminationPass(functions).run();
@@ -56,6 +58,7 @@ std::vector<std::unique_ptr<Backend::BasePass>> PassSetGenerator::generate(LLVMI
     if (!no_reg_alloc)
     {
         CFGBuilderPass(functions).run();
+        LoopFindPass(functions).run();
         Optimize::RV64MakeDomTreePass(functions).run();
 
         RegisterAllocationPass(functions).run();

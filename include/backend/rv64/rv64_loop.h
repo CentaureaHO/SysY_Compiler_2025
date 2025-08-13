@@ -71,6 +71,7 @@ namespace Backend::RV64
     Block*           insertTransferBlock(CFG* cfg, Function* func, const std::set<Block*>& froms, Block* to);
     std::set<Block*> findNodesInLoop(CFG* cfg, Block* latch, Block* header);
     bool             judgeLoopContain(const NaturalLoop* outer, const NaturalLoop* inner);
+    int              getBlockLoopDepth(Block* block, NaturalLoopForest* forest);
 
 }  // namespace Backend::RV64
 
