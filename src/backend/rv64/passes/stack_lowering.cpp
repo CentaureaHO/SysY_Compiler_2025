@@ -249,10 +249,7 @@ namespace Backend::RV64::Passes
             {
                 ld_blocks[i] = calculateGroupLCA(exit_blocks, func->cfg->post_dom_tree.get(), func);
             }
-            else
-            {
-                ld_blocks[i] = 0;
-            }
+            else { ld_blocks[i] = 0; }
 
             std::vector<int> extended_def_blocks = reg_def_blocks[i];
             if (ld_blocks[i] != -1) { extended_def_blocks.push_back(ld_blocks[i]); }

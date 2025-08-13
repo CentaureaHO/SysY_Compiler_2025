@@ -10,6 +10,7 @@
 #include <backend/rv64/passes/cfg_builder.h>
 #include <backend/rv64/passes/rv64_loop_find.h>
 #include <backend/rv64/passes/optimize/rv64_licm.h>
+#include <backend/rv64/passes/optimize/redundant_arithmetic_elimination.h>
 
 #include <backend/rv64/pass_set_generator.h>
 
@@ -30,11 +31,12 @@ std::vector<std::unique_ptr<Backend::BasePass>> PassSetGenerator::generate(LLVMI
     InstructionSelectionPass(ir, functions, glb_defs).run();
     SelectReducePass(functions).run();
     CFGBuilderPass(functions).run();
-    Optimize::RV64MakeDomTreePass(functions).run();
+    if (optLevel) { Optimize::RV64MakeDomTreePass(functions).run(); }
     FrameLoweringPass(functions).run();
     if (optLevel)
     {
         ArithmeticStrengthReductionPass(functions).run();
+        Optimize::Peehole::SSAPeepholePass(functions).run();
 
         Optimize::Peehole::SSADeadDefEliminatePass(functions).run();
         Optimize::RV64CSEPass(functions).run();
@@ -58,14 +60,23 @@ std::vector<std::unique_ptr<Backend::BasePass>> PassSetGenerator::generate(LLVMI
     if (!no_reg_alloc)
     {
         CFGBuilderPass(functions).run();
-        LoopFindPass(functions).run();
-        Optimize::RV64MakeDomTreePass(functions).run();
+        if (optLevel)
+        {
+            LoopFindPass(functions).run();
+            Optimize::RV64MakeDomTreePass(functions).run();
+        }
 
         RegisterAllocationPass(functions).run();
         StackLoweringPass(functions).run();
     }
 
-    if (optLevel) { FallthroughEliminationPass(functions).run(); }
+    if (optLevel)
+    {
+        // 冗余消除
+        Optimize::RedundantArithmeticEliminationPass(functions).run();
+
+        FallthroughEliminationPass(functions).run();
+    }
 
     CodeGenerationPass(functions, glb_defs, out).run();
 
