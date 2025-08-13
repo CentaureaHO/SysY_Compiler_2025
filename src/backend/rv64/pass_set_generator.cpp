@@ -32,6 +32,8 @@ std::vector<std::unique_ptr<Backend::BasePass>> PassSetGenerator::generate(LLVMI
     FrameLoweringPass(functions).run();
     if (optLevel)
     {
+        ArithmeticStrengthReductionPass(functions).run();
+
         Optimize::Peehole::SSADeadDefEliminatePass(functions).run();
         Optimize::RV64CSEPass(functions).run();
     }
@@ -46,7 +48,7 @@ std::vector<std::unique_ptr<Backend::BasePass>> PassSetGenerator::generate(LLVMI
         BlockLayoutPass(functions).run();
         CFGBuilderPass(functions).run();
 
-        Optimize::InstructionSchedulePass(functions).run();
+        // Optimize::InstructionSchedulePass(functions).run();
     }
     if (!no_reg_alloc)
     {
@@ -57,10 +59,7 @@ std::vector<std::unique_ptr<Backend::BasePass>> PassSetGenerator::generate(LLVMI
         StackLoweringPass(functions).run();
     }
 
-    if (optLevel)
-    {
-        FallthroughEliminationPass(functions).run();
-    }
+    if (optLevel) { FallthroughEliminationPass(functions).run(); }
 
     CodeGenerationPass(functions, glb_defs, out).run();
 
