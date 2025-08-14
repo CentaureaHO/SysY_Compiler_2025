@@ -70,7 +70,7 @@ namespace Transform
         int imm_val = imm_op->value;
         if (imm_val == -2147483648) return;
 
-        arith_inst->rhs    = LLVMIR::ImmeI32Operand::get(-imm_val);
+        arith_inst->rhs    = getImmeI32Operand(-imm_val);
         arith_inst->opcode = LLVMIR::IROpCode::ADD;
         modified_          = true;
     }
@@ -84,8 +84,8 @@ namespace Transform
             {
                 auto new_inst = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::ADD,
                     arith_inst->type,
-                    LLVMIR::ImmeI32Operand::get(0),
-                    LLVMIR::ImmeI32Operand::get(0),
+                    getImmeI32Operand(0),
+                    getImmeI32Operand(0),
                     arith_inst->res);
                 inst          = new_inst;
                 modified_     = true;
@@ -115,8 +115,8 @@ namespace Transform
                 {
                     auto new_inst = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::ADD,
                         arith_inst->type,
-                        LLVMIR::ImmeI32Operand::get(0),
-                        LLVMIR::ImmeI32Operand::get(0),
+                        getImmeI32Operand(0),
+                        getImmeI32Operand(0),
                         arith_inst->res);
                     inst          = new_inst;
                     modified_     = true;

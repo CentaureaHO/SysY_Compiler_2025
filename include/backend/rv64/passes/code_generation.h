@@ -38,8 +38,16 @@ namespace Backend::RV64::Passes
         std::vector<LLVMIR::Instruction*>& glb_defs_;
         std::ostream&                      out_;
 
+        bool needs_memset_i8_;
+        bool needs_memset_i32_;
+
         void printGlobalDefinitions();
         void printFunctions();
+        void printASMLibFunctions();
+
+        void printMemsetI8Function();
+        void printMemsetI32Function();
+
         void printASM(RV64Inst* inst);
         void printASM(MoveInst* inst);
         void printASM(PhiInst* inst);

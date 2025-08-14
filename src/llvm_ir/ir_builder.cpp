@@ -104,6 +104,13 @@ void IR::printIR(ostream& s)
 {
     for (auto& inst : function_declare) inst->printIR(s);
 
+    std::vector<Instruction*> lsccll_libs = {
+        new FuncDeclareInst(DT::VOID, "lsccll.lib.memset_i8", {DT::PTR, DT::I8, DT::I32}),
+        new FuncDeclareInst(DT::VOID, "lsccll.lib.memset_i32", {DT::PTR, DT::I32, DT::I32}),
+    };
+
+    for (auto& inst : lsccll_libs) inst->printIR(s);
+
     s << "\n";
 
     for (auto& inst : global_def) inst->printIR(s);

@@ -8,6 +8,8 @@ if [ ! -f "$INPUT_FILE" ]; then
 fi
 
 clang "$INPUT_FILE" -c -o "$OBJ_FILE" -w
-clang -static "$OBJ_FILE" -L./lib -lsysy_x86 -o "$OUTPUT_BIN"
+clang -static "$OBJ_FILE" -L./lib -lsysy_x86 -lutils_x86 -o "$OUTPUT_BIN"
+
+rm "$OBJ_FILE"
 
 echo "Successfully compiled $INPUT_FILE to $OUTPUT_BIN"

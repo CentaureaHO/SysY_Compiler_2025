@@ -207,23 +207,40 @@ namespace Analysis
                             auto  base_it  = locations.find(base_reg->reg_num);
                             if (base_it != locations.end())
                             {
-                                auto old_size = locations[result_reg].targets.size();
+                                auto old_targets  = locations[result_reg].targets;
+                                bool old_escapes  = locations[result_reg].escapes_function;
+                                bool old_is_local = locations[result_reg].is_stack_local;
+
                                 locations[result_reg].merge(base_it->second);
-                                if (locations[result_reg].targets.size() != old_size) { changed = true; }
+
+                                if (locations[result_reg].targets != old_targets ||
+                                    locations[result_reg].escapes_function != old_escapes ||
+                                    locations[result_reg].is_stack_local != old_is_local)
+                                {
+                                    changed = true;
+                                }
                             }
                             else
                             {
-                                locations[result_reg].addTarget(base_ptr);
-                                locations[result_reg].markEscaped();
-                                changed = true;
+                                if (locations[result_reg].targets.find(base_ptr) ==
+                                        locations[result_reg].targets.end() ||
+                                    !locations[result_reg].escapes_function)
+                                {
+                                    locations[result_reg].addTarget(base_ptr);
+                                    locations[result_reg].markEscaped();
+                                    changed = true;
+                                }
                             }
                         }
                         else
                         {
-                            auto old_size = locations[result_reg].targets.size();
-                            locations[result_reg].addTarget(base_ptr);
-                            locations[result_reg].markNonLocal();
-                            if (locations[result_reg].targets.size() != old_size) { changed = true; }
+                            if (locations[result_reg].targets.find(base_ptr) == locations[result_reg].targets.end() ||
+                                locations[result_reg].is_stack_local)
+                            {
+                                locations[result_reg].addTarget(base_ptr);
+                                locations[result_reg].markNonLocal();
+                                changed = true;
+                            }
                         }
                     }
                     else if (inst->opcode == LLVMIR::IROpCode::PHI)
@@ -231,8 +248,11 @@ namespace Analysis
                         auto* phi_inst = static_cast<LLVMIR::PhiInst*>(inst);
                         if (phi_inst->type == LLVMIR::DataType::PTR)
                         {
-                            int  result_reg = phi_inst->GetResultReg();
-                            auto old_size   = locations[result_reg].targets.size();
+                            int result_reg = phi_inst->GetResultReg();
+
+                            auto old_targets  = locations[result_reg].targets;
+                            bool old_escapes  = locations[result_reg].escapes_function;
+                            bool old_is_local = locations[result_reg].is_stack_local;
 
                             for (const auto& [val, label] : phi_inst->vals_for_labels)
                             {
@@ -254,7 +274,12 @@ namespace Analysis
                                 }
                             }
 
-                            if (locations[result_reg].targets.size() != old_size) { changed = true; }
+                            if (locations[result_reg].targets != old_targets ||
+                                locations[result_reg].escapes_function != old_escapes ||
+                                locations[result_reg].is_stack_local != old_is_local)
+                            {
+                                changed = true;
+                            }
                         }
                     }
                 }

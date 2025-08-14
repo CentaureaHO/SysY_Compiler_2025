@@ -11,6 +11,7 @@
 #include <backend/rv64/passes/rv64_loop_find.h>
 #include <backend/rv64/passes/optimize/rv64_licm.h>
 #include <backend/rv64/passes/optimize/redundant_arithmetic_elimination.h>
+#include <backend/rv64/passes/optimize/move/load_store_redundant_elimination.h>
 
 #include <backend/rv64/pass_set_generator.h>
 
@@ -54,8 +55,6 @@ std::vector<std::unique_ptr<Backend::BasePass>> PassSetGenerator::generate(LLVMI
     {
         BlockLayoutPass(functions).run();
         CFGBuilderPass(functions).run();
-
-        // Optimize::InstructionSchedulePass(functions).run();
     }
     if (!no_reg_alloc)
     {
@@ -74,6 +73,8 @@ std::vector<std::unique_ptr<Backend::BasePass>> PassSetGenerator::generate(LLVMI
     {
         // 冗余消除
         Optimize::RedundantArithmeticEliminationPass(functions).run();
+        Optimize::Move::LoadStoreRedundantEliminationPass(functions).run();
+        // if (optLevel >= 2) Optimize::Peehole::PostAlloc::UselessLoadEliminationPass(functions).run();
 
         FallthroughEliminationPass(functions).run();
     }

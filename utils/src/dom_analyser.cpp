@@ -142,6 +142,7 @@ void DomAnalyzer::build(
                     if (imm_dom[runner] == runner) { assert(false); }
 
                     runner = imm_dom[runner];
+                    if (runner == -1) break;
                 }
             }
         }

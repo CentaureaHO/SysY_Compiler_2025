@@ -191,8 +191,8 @@ namespace Transform
 
         if (load_inst->type == DataType::I32 && init_val.type == VarValue::Type::Int)
         {
-            auto* zero     = ImmeI32Operand::get(0);
-            auto* constant = ImmeI32Operand::get(init_val.int_val);
+            auto* zero     = getImmeI32Operand(0);
+            auto* constant = getImmeI32Operand(init_val.int_val);
 
             return new ArithmeticInst(IROpCode::ADD, DataType::I32, zero, constant, load_inst->res);
         }

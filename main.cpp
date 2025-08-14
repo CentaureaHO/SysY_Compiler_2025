@@ -87,7 +87,7 @@
 #include "optimize/llvm/utils/instruction_simplify.h"
 // Min/Max Recognition
 #include "optimize/llvm/utils/min_max_recognize.h"
-
+#include "optimize/llvm/loop/pattern_recognize/memset_pattern_recognize.h"
 // unused_func_elimination
 #include "optimize/llvm/unused_func_elimination.h"
 
@@ -303,6 +303,7 @@ int main(int argc, char** argv)
         Transform::IfConversionPass            ifConversion(&builder);
         Transform::BlockLayoutOptimizationPass blockLayout(&builder);
         Transform::MinMaxRecognizePass         minMaxRecognize(&builder);
+        Transform::MemsetPatternRecognizePass  memsetRecognize(&builder);
 
         auto loopPreProcess = [&]() {
             makecfg.Execute();
@@ -311,6 +312,8 @@ int main(int argc, char** argv)
             loopSimplify.Execute();
             lcssa.Execute();
             loopRotate.Execute();
+
+            memsetRecognize.Execute();
         };
 
         // 在所有循环相关操作完成后才可执行

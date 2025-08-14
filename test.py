@@ -51,7 +51,7 @@ def execute_ir(input,output,opt,stdin,stdout,testout):
         print("\033[93mOutPut Error on \033[0m"+input)
         return 0
         
-    result = execute(["clang","-static","tmp.o","-L./lib","-lsysy_x86"])
+    result = execute(["clang","-static","tmp.o","-L./lib","-lsysy_x86","-lutils_x86"])
     # result = execute(["clang","-static","tmp.o","library/libsysy_rv.a"])
     if(result.returncode != 0):
         result = execute(["rm","-rf","tmp.o"])
