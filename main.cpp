@@ -593,14 +593,18 @@ int main(int argc, char** argv)
         ealias_analyser.run();
         DSEPass dse(&builder, &ealias_analyser);
         dse.Execute();
-        makecfg.Execute();
-        loopPreProcess();
-        tsccp.Execute();
-        edefUseAnalysis.run();
-        unusedelimator.Execute();
-        DCEDefUse.Execute();
-        dce.Execute();
-        // // TODO：Trench path length
+
+        // for (int i = 0; i < 5; ++i)
+        {
+            makecfg.Execute();
+            loopPreProcess();
+            tsccp.Execute();
+            memsetRecognize.Execute();
+            edefUseAnalysis.run();
+            unusedelimator.Execute();
+            DCEDefUse.Execute();
+            dce.Execute();
+        }
 
         makecfg.Execute();
         aa.run();
@@ -623,6 +627,9 @@ int main(int argc, char** argv)
 
         makecfg.Execute();
         makedom.Execute();
+        loopAnalysis.Execute();
+        tsccp.Execute();
+        memsetRecognize.Execute();
 
         gepStrengthReduce.Execute();
 
