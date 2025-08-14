@@ -237,6 +237,8 @@ namespace Transform
         void visitLoad(LLVMIR::LoadInst* load);
         void visitStore(LLVMIR::StoreInst* store);
         void visitCall(LLVMIR::CallInst* call);
+        void visitSelect(LLVMIR::Instruction* select);
+        void visitMinMax(LLVMIR::ArithmeticInst* minmax);
         void visitOther(LLVMIR::Instruction* inst);
 
         // 编译时常量表达式运算
@@ -244,6 +246,8 @@ namespace Transform
         LatticeValue foldComparisonOperation(LLVMIR::IROpCode opcode, LLVMIR::IcmpCond icond, LLVMIR::FcmpCond fcond,
             const LatticeValue& lhs, const LatticeValue& rhs);
         LatticeValue foldConversionOperation(LLVMIR::IROpCode opcode, const LatticeValue& operand);
+        LatticeValue foldSelectOperation(
+            const LatticeValue& cond, const LatticeValue& true_val, const LatticeValue& false_val);
     };
 
 }  // namespace Transform

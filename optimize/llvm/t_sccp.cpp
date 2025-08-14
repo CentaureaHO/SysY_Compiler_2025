@@ -347,6 +347,12 @@ namespace Transform
             case LLVMIR::IROpCode::SHL:
             case LLVMIR::IROpCode::ASHR:
             case LLVMIR::IROpCode::LSHR:
+            case LLVMIR::IROpCode::SMIN_I32:
+            case LLVMIR::IROpCode::SMAX_I32:
+            case LLVMIR::IROpCode::UMIN_I32:
+            case LLVMIR::IROpCode::UMAX_I32:
+            case LLVMIR::IROpCode::FMIN_F32:
+            case LLVMIR::IROpCode::FMAX_F32:
             {
                 auto* arith   = static_cast<LLVMIR::ArithmeticInst*>(inst);
                 auto  lhs_val = getValueForOperand(arith->lhs);
@@ -473,6 +479,17 @@ namespace Transform
                 }
                 break;
             }
+            case LLVMIR::IROpCode::SELECT:
+            {
+                auto* select    = static_cast<LLVMIR::SelectInst*>(inst);
+                auto  cond_val  = getValueForOperand(select->cond);
+                auto  true_val  = getValueForOperand(select->true_val);
+                auto  false_val = getValueForOperand(select->false_val);
+                if (cond_val.isConstant()) replaceWithConstant(select->cond, cond_val);
+                if (true_val.isConstant()) replaceWithConstant(select->true_val, true_val);
+                if (false_val.isConstant()) replaceWithConstant(select->false_val, false_val);
+                break;
+            }
             // 其他指令暂不处理
             case LLVMIR::IROpCode::BR_UNCOND:
             case LLVMIR::IROpCode::ALLOCA:
@@ -539,6 +556,12 @@ namespace Transform
             case LLVMIR::IROpCode::SHL:
             case LLVMIR::IROpCode::ASHR:
             case LLVMIR::IROpCode::LSHR:
+            case LLVMIR::IROpCode::SMIN_I32:
+            case LLVMIR::IROpCode::SMAX_I32:
+            case LLVMIR::IROpCode::UMIN_I32:
+            case LLVMIR::IROpCode::UMAX_I32:
+            case LLVMIR::IROpCode::FMIN_F32:
+            case LLVMIR::IROpCode::FMAX_F32:
             {
                 auto* arith = static_cast<LLVMIR::ArithmeticInst*>(inst);
                 replaceIfMatch(arith->lhs);
@@ -595,6 +618,14 @@ namespace Transform
             {
                 auto* call = static_cast<LLVMIR::CallInst*>(inst);
                 for (auto& [type, operand] : call->args) replaceIfMatch(operand);
+                break;
+            }
+            case LLVMIR::IROpCode::SELECT:
+            {
+                auto* select = static_cast<LLVMIR::SelectInst*>(inst);
+                replaceIfMatch(select->cond);
+                replaceIfMatch(select->true_val);
+                replaceIfMatch(select->false_val);
                 break;
             }
             default: break;
@@ -662,6 +693,13 @@ namespace Transform
             case LLVMIR::IROpCode::SHL:
             case LLVMIR::IROpCode::ASHR:
             case LLVMIR::IROpCode::LSHR: visitArithmetic(static_cast<LLVMIR::ArithmeticInst*>(inst)); break;
+            // Min/Max指令
+            case LLVMIR::IROpCode::SMIN_I32:
+            case LLVMIR::IROpCode::SMAX_I32:
+            case LLVMIR::IROpCode::UMIN_I32:
+            case LLVMIR::IROpCode::UMAX_I32:
+            case LLVMIR::IROpCode::FMIN_F32:
+            case LLVMIR::IROpCode::FMAX_F32: visitMinMax(static_cast<LLVMIR::ArithmeticInst*>(inst)); break;
             // 比较指令
             case LLVMIR::IROpCode::ICMP:
             case LLVMIR::IROpCode::FCMP: visitComparison(inst); break;
@@ -670,6 +708,8 @@ namespace Transform
             case LLVMIR::IROpCode::FPTOSI:
             case LLVMIR::IROpCode::ZEXT:
             case LLVMIR::IROpCode::FPEXT: visitConversion(inst); break;
+            // Select指令
+            case LLVMIR::IROpCode::SELECT: visitSelect(inst); break;
             // 内存指令
             case LLVMIR::IROpCode::LOAD: visitLoad(static_cast<LLVMIR::LoadInst*>(inst)); break;
             case LLVMIR::IROpCode::STORE: visitStore(static_cast<LLVMIR::StoreInst*>(inst)); break;
@@ -964,7 +1004,12 @@ namespace Transform
                 case LLVMIR::IROpCode::LSHR:
                     return (r >= 0 && r < 32) ? LatticeValue(static_cast<int>(static_cast<unsigned>(l) >> r))
                                               : LatticeValue::createBottom();
-
+                case LLVMIR::IROpCode::SMIN_I32: return LatticeValue(l < r ? l : r);
+                case LLVMIR::IROpCode::SMAX_I32: return LatticeValue(l > r ? l : r);
+                case LLVMIR::IROpCode::UMIN_I32:
+                    return LatticeValue(static_cast<unsigned>(l) < static_cast<unsigned>(r) ? l : r);
+                case LLVMIR::IROpCode::UMAX_I32:
+                    return LatticeValue(static_cast<unsigned>(l) > static_cast<unsigned>(r) ? l : r);
                 default: return LatticeValue::createBottom();
             }
         }
@@ -986,6 +1031,18 @@ namespace Transform
                     // 检查结果是否为有限数
                     if (std::isfinite(result)) return LatticeValue(result);
                     return LatticeValue::createBottom();
+                }
+                case LLVMIR::IROpCode::FMIN_F32:
+                {
+                    if (std::isnan(l)) return LatticeValue(r);
+                    if (std::isnan(r)) return LatticeValue(l);
+                    return LatticeValue(l < r ? l : r);
+                }
+                case LLVMIR::IROpCode::FMAX_F32:
+                {
+                    if (std::isnan(l)) return LatticeValue(r);
+                    if (std::isnan(r)) return LatticeValue(l);
+                    return LatticeValue(l > r ? l : r);
                 }
                 default: break;
             }
@@ -1155,6 +1212,46 @@ namespace Transform
     }
 
     void InstructionVisitor::visitStore(LLVMIR::StoreInst* store) { pass_->handleStoreInstruction(store); }
+
+    void InstructionVisitor::visitMinMax(LLVMIR::ArithmeticInst* minmax)
+    {
+        LatticeValue lhs    = pass_->getValueForOperand(minmax->lhs);
+        LatticeValue rhs    = pass_->getValueForOperand(minmax->rhs);
+        LatticeValue result = foldBinaryOperation(minmax->opcode, lhs, rhs);
+        pass_->setValue(minmax, result);
+    }
+
+    void InstructionVisitor::visitSelect(LLVMIR::Instruction* select)
+    {
+        auto*        select_inst = static_cast<LLVMIR::SelectInst*>(select);
+        LatticeValue cond_val    = pass_->getValueForOperand(select_inst->cond);
+        LatticeValue true_val    = pass_->getValueForOperand(select_inst->true_val);
+        LatticeValue false_val   = pass_->getValueForOperand(select_inst->false_val);
+
+        LatticeValue result = foldSelectOperation(cond_val, true_val, false_val);
+        pass_->setValue(select, result);
+    }
+
+    LatticeValue InstructionVisitor::foldSelectOperation(
+        const LatticeValue& cond, const LatticeValue& true_val, const LatticeValue& false_val)
+    {
+        if (!cond.isConstant())
+        {
+            if (cond.isBottom()) return LatticeValue::createBottom();
+
+            if (true_val.isConstant() && false_val.isConstant() && true_val == false_val) return true_val;
+
+            return true_val.meet(false_val);
+        }
+
+        if (cond.getType() == LatticeValue::ValueType::INTEGER)
+        {
+            int cond_value = cond.getIntValue();
+            return (cond_value != 0) ? true_val : false_val;
+        }
+
+        return LatticeValue::createBottom();
+    }
 
     /**
      * 处理store指令

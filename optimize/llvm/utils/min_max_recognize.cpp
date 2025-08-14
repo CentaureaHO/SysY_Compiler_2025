@@ -186,7 +186,6 @@ namespace Transform
                 }
             };
 
-            // 确定正确的操作数顺序
             LLVMIR::Operand* final_op1 = nullptr;
             LLVMIR::Operand* final_op2 = nullptr;
 
@@ -259,7 +258,135 @@ namespace Transform
 
             return true;
         }
-        // TODO: 处理浮点数比较 (FCMP)
+        // 处理浮点数比较 (FCMP)
+        else if (phi_inst->type == LLVMIR::DataType::F32 && cmp_inst->opcode == LLVMIR::IROpCode::FCMP)
+        {
+            auto fcmp_inst = dynamic_cast<LLVMIR::FcmpInst*>(cmp_inst);
+            if (!fcmp_inst) return false;
+
+            bool is_min   = true;
+            auto cmp_cond = fcmp_inst->cond;
+
+            switch (cmp_cond)
+            {
+                case LLVMIR::FcmpCond::OLT:
+                case LLVMIR::FcmpCond::OLE:
+                case LLVMIR::FcmpCond::ULT:
+                case LLVMIR::FcmpCond::ULE: is_min = true; break;
+                case LLVMIR::FcmpCond::OGT:
+                case LLVMIR::FcmpCond::OGE:
+                case LLVMIR::FcmpCond::UGT:
+                case LLVMIR::FcmpCond::UGE: is_min = false; break;
+                default: return false;
+            }
+
+            auto fcmp_op1 = fcmp_inst->lhs;
+            auto fcmp_op2 = fcmp_inst->rhs;
+            auto phi_op1  = val1;
+            auto phi_op2  = val2;
+            auto phi_l1   = label1_op;
+            auto phi_l2   = label2_op;
+
+            auto operand_equals = [&define_map](LLVMIR::Operand* op1, LLVMIR::Operand* op2) -> bool {
+                if (op1->type != op2->type) return false;
+                switch (op1->type)
+                {
+                    case LLVMIR::OperandType::REG:
+                    {
+                        if (op1->GetRegNum() == op2->GetRegNum()) return true;
+
+                        auto inst1 = define_map[op1->GetRegNum()];
+                        auto inst2 = define_map[op2->GetRegNum()];
+                        if (inst1 && inst2 && inst1->opcode == LLVMIR::IROpCode::LOAD &&
+                            inst2->opcode == LLVMIR::IROpCode::LOAD)
+                        {
+                            auto load1 = dynamic_cast<LLVMIR::LoadInst*>(inst1);
+                            auto load2 = dynamic_cast<LLVMIR::LoadInst*>(inst2);
+                            if (load1 && load2 && load1->ptr->type == LLVMIR::OperandType::REG &&
+                                load2->ptr->type == LLVMIR::OperandType::REG)
+                            {
+                                return load1->ptr->GetRegNum() == load2->ptr->GetRegNum();
+                            }
+                        }
+                        return false;
+                    }
+                    case LLVMIR::OperandType::IMMEF32: return op1->GetImmF() == op2->GetImmF();
+                    case LLVMIR::OperandType::GLOBAL: return op1->GetGlobal() == op2->GetGlobal();
+                    default: return false;
+                }
+            };
+
+            LLVMIR::Operand* final_op1 = nullptr;
+            LLVMIR::Operand* final_op2 = nullptr;
+
+            if (operand_equals(fcmp_op1, phi_op1) && operand_equals(fcmp_op2, phi_op2))
+            {
+                final_op1 = fcmp_op1;
+                final_op2 = fcmp_op2;
+            }
+            else if (operand_equals(fcmp_op1, phi_op2) && operand_equals(fcmp_op2, phi_op1))
+            {
+                final_op1 = fcmp_op1;
+                final_op2 = fcmp_op2;
+                std::swap(phi_l1, phi_l2);
+                is_min = !is_min;
+            }
+            else { return false; }
+
+            auto true_label_op  = dynamic_cast<LLVMIR::LabelOperand*>(br_cond->true_label);
+            auto false_label_op = dynamic_cast<LLVMIR::LabelOperand*>(br_cond->false_label);
+            if (!true_label_op || !false_label_op) return false;
+
+            int true_label  = true_label_op->label_num;
+            int false_label = false_label_op->label_num;
+
+            if (true_label == bb2->block_id && false_label == block->block_id) { is_min = !is_min; }
+            else if (true_label != block->block_id || false_label != bb2->block_id) { return false; }
+
+            int bb2_pred_count = 0;
+            for (auto& [id, b] : cfg->block_id_to_block)
+            {
+                for (auto& inst : b->insts)
+                {
+                    if (inst->opcode == LLVMIR::IROpCode::BR_COND)
+                    {
+                        auto br = dynamic_cast<LLVMIR::BranchCondInst*>(inst);
+                        auto tl = dynamic_cast<LLVMIR::LabelOperand*>(br->true_label);
+                        auto fl = dynamic_cast<LLVMIR::LabelOperand*>(br->false_label);
+                        if ((tl && tl->label_num == bb2->block_id) || (fl && fl->label_num == bb2->block_id))
+                            bb2_pred_count++;
+                    }
+                    else if (inst->opcode == LLVMIR::IROpCode::BR_UNCOND)
+                    {
+                        auto br = dynamic_cast<LLVMIR::BranchUncondInst*>(inst);
+                        auto tl = dynamic_cast<LLVMIR::LabelOperand*>(br->target_label);
+                        if (tl && tl->label_num == bb2->block_id) bb2_pred_count++;
+                    }
+                }
+            }
+            if (bb2_pred_count > 1) return false;
+
+            if (!((phi_l1->label_num == bb1->block_id && phi_l2->label_num == bb2->block_id) ||
+                    (phi_l1->label_num == bb2->block_id && phi_l2->label_num == bb1->block_id)))
+                return false;
+
+            LLVMIR::IROpCode minmax_op = is_min ? LLVMIR::IROpCode::FMIN_F32 : LLVMIR::IROpCode::FMAX_F32;
+
+            auto minmax_inst =
+                new LLVMIR::ArithmeticInst(minmax_op, phi_inst->type, final_op1, final_op2, phi_inst->res);
+
+            for (auto it = block->insts.begin(); it != block->insts.end(); ++it)
+            {
+                if (*it == phi_inst)
+                {
+                    *it = minmax_inst;
+                    delete phi_inst;
+                    break;
+                }
+            }
+
+            return true;
+        }
 
         return false;
     }
