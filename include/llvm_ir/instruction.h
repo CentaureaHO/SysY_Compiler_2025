@@ -168,6 +168,7 @@ namespace LLVMIR
 
         virtual void Rename(std::map<int, int>& replace) = 0;
         virtual void ReplaceAllOperands(std::map<int, int>& replace) = 0;  // 新增：替换所有操作数（包括结果寄存器）
+        virtual void ReplaceAllOperands(std::map<int, Operand*>& replace) = 0;  // 替换所有操作数（包括结果寄存器）
         virtual int                   GetResultReg()     = 0;
         virtual std::vector<int>      GetUsedRegs()      = 0;
         virtual std::vector<Operand*> GetUsedOperands()  = 0;
@@ -201,6 +202,7 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
@@ -227,6 +229,7 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
@@ -254,6 +257,7 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
@@ -282,6 +286,7 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
@@ -310,6 +315,7 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
@@ -336,6 +342,7 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
@@ -362,6 +369,7 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
@@ -386,6 +394,7 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
@@ -414,6 +423,7 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
@@ -442,6 +452,7 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
@@ -467,6 +478,7 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
@@ -497,6 +509,7 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
@@ -523,6 +536,7 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
@@ -547,6 +561,7 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
@@ -572,6 +587,7 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
@@ -597,6 +613,7 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
@@ -624,6 +641,7 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
@@ -649,6 +667,7 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
@@ -677,6 +696,7 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
@@ -715,6 +735,7 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
@@ -737,6 +758,7 @@ namespace LLVMIR
         virtual void                  printIR(std::ostream& s) override;
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
