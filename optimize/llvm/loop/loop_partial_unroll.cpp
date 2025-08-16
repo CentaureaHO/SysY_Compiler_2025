@@ -435,7 +435,7 @@ namespace Transform
 
     bool LoopPartialUnrollPass::unrollLoopBodies(UnrollContext& ctx)
     {
-        std::cout << "DEBUG: Entering unrollLoopBodies function" << std::endl;
+        // std::cout << "DEBUG: Entering unrollLoopBodies function" << std::endl;
         DBGINFO("Unrolling loop bodies with factor ", ctx.unroll_factor);
 
         LLVMIR::IRBlock*           old_header     = ctx.header;

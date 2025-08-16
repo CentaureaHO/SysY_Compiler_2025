@@ -566,15 +566,15 @@ namespace Transform
             }
             default:
             {
-                std::cout << "Replacing operands in instruction: " << inst->toString() << std::endl;
+                // std::cout << "Replacing operands in instruction: " << inst->toString() << std::endl;
                 std::map<int, LLVMIR::Operand*> reg_mapping;
                 for (const auto& [old_reg, new_operand] : replacements)
                 {
                     reg_mapping[old_reg] = new_operand;
-                    std::cout << "Replace " << old_reg << " with " << new_operand->getName() << std::endl;
+                    // std::cout << "Replace " << old_reg << " with " << new_operand->getName() << std::endl;
                 }
                 if (!reg_mapping.empty()) { inst->ReplaceAllOperands(reg_mapping); }
-                std::cout << "Replaced operands in instruction: " << inst->toString() << std::endl;
+                // std::cout << "Replaced operands in instruction: " << inst->toString() << std::endl;
                 break;
             }
         }

@@ -597,7 +597,6 @@ int main(int argc, char** argv)
         // scevAnalyser.printAllResults();
 
         // Partial Loop Unroll
-        if (optimizeLevel >= 2)
         {
             Transform::LoopPartialUnrollPass loopPartialUnrollPass(&builder, &scevAnalyser);
             loopPartialUnrollPass.Execute();
@@ -615,7 +614,15 @@ int main(int argc, char** argv)
         DSEPass dse(&builder, &ealias_analyser);
         dse.Execute();
 
-        for (int i = 0; i < 5; ++i)
+        makecfg.Execute();
+        makedom.Execute();
+        makeredom.Execute(true);
+
+        aa.run();
+        licm.Execute();
+        md.run();
+
+        // for (int i = 0; i < 5; ++i)
         {
             makecfg.Execute();
             loopPreProcess();
