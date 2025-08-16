@@ -1001,4 +1001,112 @@ namespace Analysis
         return true;
     }
 
+    bool AliasAnalyser::hasLoopCarriedDependency(NaturalLoop* loop, LLVMIR::Instruction* i1, LLVMIR::Instruction* i2)
+    {
+        // 如果两个指令都不访问内存，不存在循环依赖
+        if (!accessesMemory(i1) && !accessesMemory(i2)) { return false; }
+
+        // 1. 确定每个指令的内存访问类型(读/写)和位置
+        bool i1_writes = writesToMemory(i1);
+        bool i2_writes = writesToMemory(i2);
+
+        // 如果两者都只是读内存，则不存在依赖
+        if (!i1_writes && !i2_writes) { return false; }
+
+        // 2. 获取指令访问的内存位置
+        std::vector<LLVMIR::Operand*> locs1 = getMemoryLocations(i1);
+        std::vector<LLVMIR::Operand*> locs2 = getMemoryLocations(i2);
+
+        if (locs1.empty() || locs2.empty()) { return false; }
+
+        // 3. 检查是否有可能的别名关系
+        CFG* cfg = loop->cfg;
+        for (auto* loc1 : locs1)
+        {
+            for (auto* loc2 : locs2)
+            {
+                AliasResult alias_result = queryAlias(loc1, loc2, cfg);
+
+                // 如果两个位置可能有别名，检查是否是循环携带依赖
+                if (alias_result != NoAlias)
+                {
+                    // 4. 检查是否依赖于循环归纳变量
+                    if (dependsOnInductionVariable(loop, loc1) && dependsOnInductionVariable(loop, loc2))
+                    {
+
+                        // 5. 分析访问模式，判断是否真正存在循环间依赖
+                        if (hasOverlappingAccesses(loop, loc1, loc2)) { return true; }
+                    }
+                    // 如果内存位置不依赖循环变量但可能别名，保守认为存在依赖
+                    else if (alias_result == MustAlias || i1_writes || i2_writes) { return true; }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    static CFG* getCalleeCFG(LLVMIR::IR* ir, LLVMIR::Instruction* inst)
+    {
+        auto*       call_inst   = static_cast<LLVMIR::CallInst*>(inst);
+        std::string callee_name = call_inst->func_name;
+        auto*       callee_cfg  = getCfgByName(ir, callee_name);
+
+        if (callee_cfg == nullptr)
+        {
+            // 如果找不到CFG，可能是外部函数或库函数
+            return nullptr;
+        }
+
+        return callee_cfg;
+    }
+    // 辅助方法: 检查指令是否访问内存
+    bool AliasAnalyser::accessesMemory(LLVMIR::Instruction* inst)
+    {
+        return inst->opcode == LLVMIR::IROpCode::LOAD || inst->opcode == LLVMIR::IROpCode::STORE ||
+               (inst->opcode == LLVMIR::IROpCode::CALL && !isIndependent(getCalleeCFG(ir, inst)));
+    }
+
+    // 辅助方法: 检查指令是否写内存
+    bool AliasAnalyser::writesToMemory(LLVMIR::Instruction* inst)
+    {
+        return inst->opcode == LLVMIR::IROpCode::STORE ||
+               (inst->opcode == LLVMIR::IROpCode::CALL && isWriteMem(getCalleeCFG(ir, inst)));
+    }
+
+    // 辅助方法: 获取指令访问的内存位置
+    std::vector<LLVMIR::Operand*> AliasAnalyser::getMemoryLocations(LLVMIR::Instruction* inst)
+    {
+        std::vector<LLVMIR::Operand*> locations;
+
+        if (inst->opcode == LLVMIR::IROpCode::LOAD)
+        {
+            auto* load = static_cast<LLVMIR::LoadInst*>(inst);
+            locations.push_back(load->ptr);
+        }
+        else if (inst->opcode == LLVMIR::IROpCode::STORE)
+        {
+            auto* store = static_cast<LLVMIR::StoreInst*>(inst);
+            locations.push_back(store->ptr);
+        }
+        else if (inst->opcode == LLVMIR::IROpCode::CALL)
+        {
+            // 对于函数调用，获取可能的内存位置（通过参数或全局变量）
+            auto* call       = static_cast<LLVMIR::CallInst*>(inst);
+            CFG*  callee_cfg = getCalleeCFG(ir, call);
+
+            if (callee_cfg)
+            {
+                // 添加函数可能读写的所有内存位置
+                auto read_ptrs  = getReadPtrs(callee_cfg);
+                auto write_ptrs = getWritePtrs(callee_cfg);
+
+                locations.insert(locations.end(), read_ptrs.begin(), read_ptrs.end());
+                locations.insert(locations.end(), write_ptrs.begin(), write_ptrs.end());
+            }
+        }
+
+        return locations;
+    }
+
 }  // namespace Analysis

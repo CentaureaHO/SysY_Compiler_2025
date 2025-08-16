@@ -9,6 +9,7 @@
 #include <unordered_set>
 #include "llvm_ir/ir_builder.h"
 #include "llvm_ir/instruction.h"
+#include "llvm/loop/loop_def.h"
 #include "cfg.h"
 
 namespace Analysis
@@ -88,6 +89,10 @@ namespace Analysis
         bool checkSameBaseWithDistinctOffset(LLVMIR::Operand* p1, LLVMIR::Operand* p2, CFG* cfg);
         bool checkIdenticalGEP(LLVMIR::Operand* p1, LLVMIR::Operand* p2, CFG* cfg);
 
+        bool                          accessesMemory(LLVMIR::Instruction* inst);
+        bool                          writesToMemory(LLVMIR::Instruction* inst);
+        std::vector<LLVMIR::Operand*> getMemoryLocations(LLVMIR::Instruction* inst);
+
       public:
         AliasAnalyser(LLVMIR::IR* ir);
 
@@ -103,6 +108,8 @@ namespace Analysis
         bool isNoSideEffect(CFG* cfg) { return func_profiles[cfg].hasNoWrites(); }
         bool haveExternalCall(CFG* cfg) { return func_profiles[cfg].has_external_deps; }
         bool isLocalPtr(CFG* cfg, LLVMIR::Operand* ptr);
+        bool hasLoopCarriedDependency(NaturalLoop* loop, LLVMIR::Instruction* i1, LLVMIR::Instruction* i2);
+        bool hasIndependentIterations(NaturalLoop* loop);
 
         std::vector<LLVMIR::Operand*> getWritePtrs(CFG* cfg);
         std::vector<LLVMIR::Operand*> getReadPtrs(CFG* cfg);
