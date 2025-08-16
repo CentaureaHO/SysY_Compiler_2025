@@ -30,8 +30,9 @@ namespace LLVMIR
         IRFunction(Type* rt, FuncDefInst* fd);
         ~IRFunction();
 
-        IRBlock* createBlock();
-        IRBlock* getBlock(int label);
+        IRBlock*     createBlock();
+        IRBlock*     getBlock(int label);
+        Instruction* findDef(Operand* op);
     };
 }  // namespace LLVMIR
 

@@ -72,7 +72,12 @@ float  GlobalOperand::GetImmF() const { return -1.0f; }
 Instruction::Instruction(IROpCode op) : opcode(op) {}
 
 LoadInst::LoadInst(DataType t, Operand* p, Operand* r) : Instruction(IROpCode::LOAD), type(t), ptr(p), res(r) {}
-void LoadInst::printIR(ostream& s) { s << res << " = load " << type << ", ptr " << ptr << "\n"; }
+void LoadInst::printIR(ostream& s)
+{
+    s << res << " = load " << type << ", ptr " << ptr;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
+}
 
 int LoadInst::GetResultReg()
 {
@@ -119,7 +124,12 @@ void LoadInst::Rename(std::map<int, int>& replace)
 }
 
 StoreInst::StoreInst(DataType t, Operand* p, Operand* r) : Instruction(IROpCode::STORE), type(t), ptr(p), val(r) {}
-void StoreInst::printIR(ostream& s) { s << "store " << type << " " << val << ", ptr " << ptr << "\n"; }
+void StoreInst::printIR(ostream& s)
+{
+    s << "store " << type << " " << val << ", ptr " << ptr;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
+}
 
 int StoreInst::GetResultReg() { return -1; }
 
@@ -168,29 +178,46 @@ void ArithmeticInst::printIR(ostream& s)
 {
     if (opcode == IROpCode::SMIN_I32)
     {
-        s << res << " = call i32 @llvm.smin.i32(i32 " << lhs << ", i32 " << rhs << ")\n";
+        s << res << " = call i32 @llvm.smin.i32(i32 " << lhs << ", i32 " << rhs << ")";
+        if (!comment.empty()) s << " ; " << comment;
+        s << "\n";
     }
     else if (opcode == IROpCode::SMAX_I32)
     {
-        s << res << " = call i32 @llvm.smax.i32(i32 " << lhs << ", i32 " << rhs << ")\n";
+        s << res << " = call i32 @llvm.smax.i32(i32 " << lhs << ", i32 " << rhs << ")";
+        if (!comment.empty()) s << " ; " << comment;
+        s << "\n";
     }
     else if (opcode == IROpCode::UMIN_I32)
     {
-        s << res << " = call i32 @llvm.umin.i32(i32 " << lhs << ", i32 " << rhs << ")\n";
+        s << res << " = call i32 @llvm.umin.i32(i32 " << lhs << ", i32 " << rhs << ")";
+        if (!comment.empty()) s << " ; " << comment;
+        s << "\n";
     }
     else if (opcode == IROpCode::UMAX_I32)
     {
-        s << res << " = call i32 @llvm.umax.i32(i32 " << lhs << ", i32 " << rhs << ")\n";
+        s << res << " = call i32 @llvm.umax.i32(i32 " << lhs << ", i32 " << rhs << ")";
+        if (!comment.empty()) s << " ; " << comment;
+        s << "\n";
     }
     else if (opcode == IROpCode::FMIN_F32)
     {
-        s << res << " = call float @llvm.minnum.f32(float " << lhs << ", float " << rhs << ")\n";
+        s << res << " = call float @llvm.minnum.f32(float " << lhs << ", float " << rhs << ")";
+        if (!comment.empty()) s << " ; " << comment;
+        s << "\n";
     }
     else if (opcode == IROpCode::FMAX_F32)
     {
-        s << res << " = call float @llvm.maxnum.f32(float " << lhs << ", float " << rhs << ")\n";
+        s << res << " = call float @llvm.maxnum.f32(float " << lhs << ", float " << rhs << ")";
+        if (!comment.empty()) s << " ; " << comment;
+        s << "\n";
     }
-    else { s << res << " = " << opcode << " " << type << " " << lhs << ", " << rhs << "\n"; }
+    else
+    {
+        s << res << " = " << opcode << " " << type << " " << lhs << ", " << rhs;
+        if (!comment.empty()) s << " ; " << comment;
+        s << "\n";
+    }
 }
 
 int ArithmeticInst::GetResultReg()
@@ -245,7 +272,9 @@ IcmpInst::IcmpInst(DataType t, IcmpCond c, Operand* l, Operand* r, Operand* res)
 {}
 void IcmpInst::printIR(ostream& s)
 {
-    s << res << " = icmp " << cond << " " << type << " " << lhs << ", " << rhs << "\n";
+    s << res << " = icmp " << cond << " " << type << " " << lhs << ", " << rhs;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
 }
 
 int IcmpInst::GetResultReg()
@@ -295,7 +324,9 @@ FcmpInst::FcmpInst(DataType t, FcmpCond c, Operand* l, Operand* r, Operand* res)
 {}
 void FcmpInst::printIR(ostream& s)
 {
-    s << res << " = fcmp " << cond << " " << type << " " << lhs << ", " << rhs << "\n";
+    s << res << " = fcmp " << cond << " " << type << " " << lhs << ", " << rhs;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
 }
 int FcmpInst::GetResultReg()
 {
@@ -350,7 +381,9 @@ void AllocInst::printIR(ostream& s)
     }
 
     for (int& dim : dims) s << "[" << dim << " x ";
-    s << type << string(dims.size(), ']') << "\n";
+    s << type << string(dims.size(), ']');
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
 }
 
 int AllocInst::GetResultReg()
@@ -380,7 +413,9 @@ BranchCondInst::BranchCondInst(Operand* c, Operand* t, Operand* f)
 {}
 void BranchCondInst::printIR(ostream& s)
 {
-    s << "br i1 " << cond << ", label " << true_label << ", label " << false_label << "\n";
+    s << "br i1 " << cond << ", label " << true_label << ", label " << false_label;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
 }
 
 int BranchCondInst::GetResultReg() { return -1; }
@@ -416,8 +451,13 @@ void BranchCondInst::Rename(std::map<int, int>& replace)
 }
 
 BranchUncondInst::BranchUncondInst(Operand* t) : Instruction(IROpCode::BR_UNCOND), target_label(t) {}
-void BranchUncondInst::printIR(ostream& s) { s << "br label " << target_label << "\n"; }
-int  BranchUncondInst::GetResultReg() { return -1; }
+void BranchUncondInst::printIR(ostream& s)
+{
+    s << "br label " << target_label;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
+}
+int BranchUncondInst::GetResultReg() { return -1; }
 
 std::vector<int> BranchUncondInst::GetUsedRegs()
 {
@@ -552,7 +592,10 @@ void CallInst::printIR(ostream& s)
         ++cp;
         if (cp != args.end()) s << ", ";
     }
-    s << ")\n";
+    s << ")";
+
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
 }
 int CallInst::GetResultReg()
 {
@@ -599,6 +642,8 @@ void RetInst::printIR(ostream& s)
 {
     s << "ret " << ret_type;
     if (ret) s << " " << ret;
+
+    if (!comment.empty()) s << " ; " << comment;
     s << "\n";
 }
 
@@ -647,6 +692,8 @@ void GEPInst::printIR(ostream& s)
 
     s << ", ptr " << base_ptr;
     for (auto& idx : idxs) s << ", " << idx_type << " " << idx;
+
+    if (!comment.empty()) s << " ; " << comment;
     s << "\n";
 }
 
@@ -772,8 +819,13 @@ Operand* FuncDefInst::GetResultOperand() { return nullptr; }
 void FuncDefInst::Rename(std::map<int, int>& replace) {}
 
 SI2FPInst::SI2FPInst(Operand* f, Operand* t) : Instruction(IROpCode::SITOFP), f_si(f), t_fp(t) {}
-void SI2FPInst::printIR(ostream& s) { s << t_fp << " = sitofp i32 " << f_si << " to float\n"; }
-int  SI2FPInst::GetResultReg()
+void SI2FPInst::printIR(ostream& s)
+{
+    s << t_fp << " = sitofp i32 " << f_si << " to float";
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
+}
+int SI2FPInst::GetResultReg()
 {
     if (this->t_fp->type != OperandType::REG) { return -1; }
     return ((RegOperand*)t_fp)->reg_num;
@@ -805,8 +857,13 @@ void SI2FPInst::Rename(std::map<int, int>& replace)
 }
 
 FP2SIInst::FP2SIInst(Operand* f, Operand* t) : Instruction(IROpCode::FPTOSI), f_fp(f), t_si(t) {}
-void FP2SIInst::printIR(ostream& s) { s << t_si << " = fptosi float " << f_fp << " to i32\n"; }
-int  FP2SIInst::GetResultReg()
+void FP2SIInst::printIR(ostream& s)
+{
+    s << t_si << " = fptosi float " << f_fp << " to i32";
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
+}
+int FP2SIInst::GetResultReg()
 {
     if (this->t_si->type != OperandType::REG) { return -1; }
     return ((RegOperand*)t_si)->reg_num;
@@ -840,7 +897,12 @@ void FP2SIInst::Rename(std::map<int, int>& replace)
 ZextInst::ZextInst(DataType f, DataType t, Operand* s, Operand* d)
     : Instruction(IROpCode::ZEXT), from(f), to(t), src(s), dest(d)
 {}
-void ZextInst::printIR(ostream& s) { s << dest << " = zext " << from << " " << src << " to " << to << "\n"; }
+void ZextInst::printIR(ostream& s)
+{
+    s << dest << " = zext " << from << " " << src << " to " << to;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
+}
 
 int ZextInst::GetResultReg()
 {
@@ -874,8 +936,13 @@ void ZextInst::Rename(std::map<int, int>& replace)
 }
 
 FPExtInst::FPExtInst(Operand* s, Operand* d) : Instruction(IROpCode::FPEXT), src(s), dest(d) {}
-void FPExtInst::printIR(ostream& s) { s << dest << " = fpext float" << " " << src << " to " << "double" << "\n"; }
-int  FPExtInst::GetResultReg()
+void FPExtInst::printIR(ostream& s)
+{
+    s << dest << " = fpext float" << " " << src << " to " << "double";
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
+}
+int FPExtInst::GetResultReg()
 {
     if (this->dest->type != OperandType::REG) { return -1; }
     return ((RegOperand*)dest)->reg_num;
@@ -922,6 +989,8 @@ void PhiInst::printIR(ostream& s)
         ++cp;
         if (cp != vals_for_labels.end()) s << ", ";
     }
+
+    if (!comment.empty()) s << " ; " << comment;
     s << "\n";
 }
 int PhiInst::GetResultReg()
@@ -2179,8 +2248,10 @@ SelectInst::SelectInst(DataType t, Operand* tv, Operand* fv, Operand* c, Operand
 
 void SelectInst::printIR(std::ostream& s)
 {
-    s << res << " = select i1 " << cond << ", " << type << " " << true_val << ", " << type << " " << false_val
-      << std::endl;
+    s << res << " = select i1 " << cond << ", " << type << " " << true_val << ", " << type << " " << false_val;
+
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
 }
 
 void SelectInst::Rename(std::map<int, int>& replace)

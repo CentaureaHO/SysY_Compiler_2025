@@ -65,6 +65,7 @@
 #include "optimize/llvm/defuse_analysis/edefuse.h"
 // Elimination
 #include "optimize/llvm/loop/loop_full_unroll.h"
+#include "optimize/llvm/loop/loop_partial_unroll.h"
 // loop_strength_reduce
 #include "llvm/loop/loop_strength_reduce.h"
 // Single Source Phi Elimination
@@ -585,9 +586,29 @@ int main(int argc, char** argv)
             }
         }
 
-        // TODO: partially unroll loop
+        makecfg.Execute();
+        instSimplify.Execute();
 
         makecfg.Execute();
+        makedom.Execute();
+        aa.run();
+        loopPreProcess();
+        scevAnalyser.run();
+        scevAnalyser.printAllResults();
+
+        // Partial Loop Unroll
+        if (optimizeLevel >= 2)
+        {
+            Transform::LoopPartialUnrollPass loopPartialUnrollPass(&builder, &scevAnalyser);
+            loopPartialUnrollPass.Execute();
+            // builder.printIR(std::cerr);
+
+            auto unroll_stats = loopPartialUnrollPass.getUnrollStats();
+            std::cout << "Partial unroll: processed " << unroll_stats.first << " loops, unrolled "
+                      << unroll_stats.second << " loops" << std::endl;
+        }
+
+        /*makecfg.Execute();
         makedom.Execute();
         EAliasAnalysis::EAliasAnalyser ealias_analyser(&builder);
         ealias_analyser.run();
@@ -638,7 +659,7 @@ int main(int argc, char** argv)
             singleSourcePhiElim.setPreserveLCSSA(false);
             singleSourcePhiElim.Execute();
             cfgSimplify();
-        }
+        }*/
 
         makecfg.Execute();
     }

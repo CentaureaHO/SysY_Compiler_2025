@@ -448,7 +448,8 @@ namespace Backend::RV64
     class Instruction
     {
       public:
-        InstType inst_type;
+        InstType    inst_type;
+        std::string comment;
 
         int ins_id;
 

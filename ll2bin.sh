@@ -7,6 +7,10 @@ if [ ! -f "$INPUT_FILE" ]; then
     exit 1
 fi
 
+if [ -f "$OUTPUT_BIN" ]; then
+    rm "$OUTPUT_BIN"
+fi
+
 clang "$INPUT_FILE" -c -o "$OBJ_FILE" -w
 clang -static "$OBJ_FILE" -L./lib -lsysy_x86 -lutils_x86 -o "$OUTPUT_BIN"
 

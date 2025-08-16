@@ -182,6 +182,10 @@ namespace LLVMIR
 
         std::string  toString();
         virtual void ReplaceLabels(const std::map<int, int>& label_map) = 0;
+        bool         isTerminator() const
+        {
+            return opcode == IROpCode::BR_COND || opcode == IROpCode::BR_UNCOND || opcode == IROpCode::RET;
+        }
     };
 
     class LoadInst : public Instruction

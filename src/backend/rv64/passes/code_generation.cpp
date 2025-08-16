@@ -446,6 +446,8 @@ namespace Backend::RV64::Passes
             }
             default: assert(false);
         }
+
+        if (!inst->comment.empty()) out_ << " # " << inst->comment;
     }
 
     void CodeGenerationPass::printASM(MoveInst* inst)
@@ -455,6 +457,8 @@ namespace Backend::RV64::Passes
         out_ << ", ";
         printOperand(inst->src);
         out_ << ", " << inst->data_type->toString();
+
+        if (!inst->comment.empty()) out_ << " # " << inst->comment;
     }
 
     void CodeGenerationPass::printASM(PhiInst* inst)
@@ -467,6 +471,8 @@ namespace Backend::RV64::Passes
             printOperand(val);
             out_ << ", %" << cur_func_->name << "_" << label << "] ";
         }
+
+        if (!inst->comment.empty()) out_ << " # " << inst->comment;
     }
 
     void CodeGenerationPass::printASM(SelectInst* inst)
@@ -478,6 +484,8 @@ namespace Backend::RV64::Passes
         printOperand(inst->true_val);
         out_ << " : ";
         printOperand(inst->false_val);
+
+        if (!inst->comment.empty()) out_ << " # " << inst->comment;
     }
 
     void CodeGenerationPass::printOperand(Register r)

@@ -32,3 +32,17 @@ IRBlock* IRFunction::createBlock()
     return block;
 }
 IRBlock* IRFunction::getBlock(int label) { return blocks[label]; }
+
+Instruction* IRFunction::findDef(Operand* op)
+{
+    if (op->type != OperandType::REG) { return nullptr; }
+    int reg_num = static_cast<RegOperand*>(op)->reg_num;
+    for (auto* block : blocks)
+    {
+        for (auto* inst : block->insts)
+        {
+            if (inst->GetResultReg() == reg_num) { return inst; }
+        }
+    }
+    return nullptr;
+}
