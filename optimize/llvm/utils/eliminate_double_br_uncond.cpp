@@ -543,7 +543,12 @@ namespace Transform
                     {
                         int  reg_num = static_cast<LLVMIR::RegOperand*>(val)->reg_num;
                         auto it      = replacements.find(reg_num);
-                        if (it != replacements.end() && it->second) { val = it->second; }
+                        while (it != replacements.end() && it->second)
+                        {
+                            val = it->second;
+                            it  = replacements.find(static_cast<LLVMIR::RegOperand*>(val)->reg_num);
+                        }
+                        std::cout << std::endl;
                     }
                 }
                 break;
@@ -561,16 +566,15 @@ namespace Transform
             }
             default:
             {
-                std::map<int, int> reg_mapping;
+                // std::cout << "Replacing operands in instruction: " << inst->toString() << std::endl;
+                std::map<int, LLVMIR::Operand*> reg_mapping;
                 for (const auto& [old_reg, new_operand] : replacements)
                 {
-                    if (new_operand && new_operand->type == LLVMIR::OperandType::REG)
-                    {
-                        int new_reg          = static_cast<LLVMIR::RegOperand*>(new_operand)->reg_num;
-                        reg_mapping[old_reg] = new_reg;
-                    }
+                    reg_mapping[old_reg] = new_operand;
+                    // std::cout << "Replace " << old_reg << " with " << new_operand->getName() << std::endl;
                 }
                 if (!reg_mapping.empty()) { inst->ReplaceAllOperands(reg_mapping); }
+                // std::cout << "Replaced operands in instruction: " << inst->toString() << std::endl;
                 break;
             }
         }

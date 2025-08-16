@@ -594,10 +594,9 @@ int main(int argc, char** argv)
         aa.run();
         loopPreProcess();
         scevAnalyser.run();
-        scevAnalyser.printAllResults();
+        // scevAnalyser.printAllResults();
 
         // Partial Loop Unroll
-        if (optimizeLevel >= 2)
         {
             Transform::LoopPartialUnrollPass loopPartialUnrollPass(&builder, &scevAnalyser);
             loopPartialUnrollPass.Execute();
@@ -608,12 +607,20 @@ int main(int argc, char** argv)
                       << unroll_stats.second << " loops" << std::endl;
         }
 
-        /*makecfg.Execute();
+        makecfg.Execute();
         makedom.Execute();
         EAliasAnalysis::EAliasAnalyser ealias_analyser(&builder);
         ealias_analyser.run();
         DSEPass dse(&builder, &ealias_analyser);
         dse.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
+        makeredom.Execute(true);
+
+        aa.run();
+        licm.Execute();
+        md.run();
 
         // for (int i = 0; i < 5; ++i)
         {
@@ -632,7 +639,7 @@ int main(int argc, char** argv)
         TrenchPath trenchPath(&builder);
         trenchPath.Execute();
 
-        cfgSimplify();
+        // cfgSimplify();
         loopPreProcess();
         scevAnalyser.run();
 
@@ -659,7 +666,7 @@ int main(int argc, char** argv)
             singleSourcePhiElim.setPreserveLCSSA(false);
             singleSourcePhiElim.Execute();
             cfgSimplify();
-        }*/
+        }
 
         makecfg.Execute();
     }
