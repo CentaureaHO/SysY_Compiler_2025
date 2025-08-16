@@ -413,7 +413,8 @@ namespace Transform
                 initial_value = ctx.phi_mappings[phi_index].preheader_incoming_value;
                 DBGINFO("  Using original preheader value: ", initial_value->getName());
             }
-            else { assert(false && "Cannot find preheader incoming value for PHI node"); }
+            else
+                assert(false && "Cannot find preheader incoming value for PHI node");
 
             phi->vals_for_labels.clear();
             phi->vals_for_labels.emplace_back(initial_value, getLabelOperand(ctx.new_preheader->block_id));
@@ -443,6 +444,15 @@ namespace Transform
 
         ValueMap last_value_map;
 
+        for (auto* block : old_loop_nodes)
+        {
+            for (auto* inst : block->insts)
+            {
+                int result_reg = inst->GetResultReg();
+                if (result_reg != -1) { last_value_map[result_reg] = getRegOperand(result_reg); }
+            }
+        }
+
         LLVMIR::IRBlock* prev_latch = ctx.latch;
 
         DBGINFO("About to start unroll loop with factor ",
@@ -460,6 +470,18 @@ namespace Transform
             std::set<LLVMIR::IRBlock*>                   new_loop_nodes;
             LLVMIR::IRBlock*                             new_header = nullptr;
             LLVMIR::IRBlock*                             new_latch  = nullptr;
+
+            for (auto* blk : old_loop_nodes)
+            {
+                for (auto* inst : blk->insts)
+                {
+                    int result_reg = inst->GetResultReg();
+                    if (result_reg != -1 && reg_map.find(result_reg) == reg_map.end())
+                    {
+                        reg_map[result_reg] = ++ctx.cfg->func->max_reg;
+                    }
+                }
+            }
 
             for (auto* old_block : old_loop_nodes)
             {
@@ -480,15 +502,17 @@ namespace Transform
                 LLVMIR::IRBlock* new_block = block_map[old_block];
                 for (auto* inst : old_block->insts)
                 {
-                    int result_reg = inst->GetResultReg();
-                    if (result_reg != -1) { reg_map[result_reg] = ++ctx.cfg->func->max_reg; }
-
+                    int   result_reg     = inst->GetResultReg();
                     auto* cloned_inst    = inst->CloneWithMapping(reg_map, label_map);
                     cloned_inst->comment = "Generated at line " + std::to_string(__LINE__) + " (unroll iteration " +
                                            std::to_string(iteration) + ")";
                     new_block->insts.push_back(cloned_inst);
 
-                    if (result_reg != -1) { vmap[result_reg] = getRegOperand(reg_map[result_reg]); }
+                    if (result_reg != -1)
+                    {
+                        auto it = reg_map.find(result_reg);
+                        if (it != reg_map.end()) { vmap[result_reg] = getRegOperand(it->second); }
+                    }
                 }
             }
 
@@ -523,7 +547,18 @@ namespace Transform
                                 " -> ",
                                 in_val->getName());
                         }
-                        else { DBGINFO("  No mapping found in LastValueMap for reg", reg_op->reg_num); }
+                        else if (mapping.latch_def_inst)
+                        {
+                            DBGINFO(
+                                "ERROR: Could not find value from previous iteration for PHI reg ", reg_op->reg_num);
+                            assert(false && "Failed to find value from previous iteration. Check value mapping logic.");
+                        }
+                        else
+                        {
+                            DBGINFO("  No mapping found in LastValueMap for reg",
+                                reg_op->reg_num,
+                                " (assuming loop-invariant)");
+                        }
                     }
 
                     if (in_val) { vmap[mapping.original_phi_result_reg] = in_val; }
@@ -545,6 +580,7 @@ namespace Transform
             {
                 auto it = reg_map.find(orig_reg);
                 if (it != reg_map.end()) { substitution_map[it->second] = new_operand; }
+                substitution_map[orig_reg] = new_operand;
             }
 
             for (auto* new_block : new_loop_nodes)
@@ -670,13 +706,26 @@ namespace Transform
                 delete ctx.final_unrolled_latch->insts.back();
                 ctx.final_unrolled_latch->insts.pop_back();
 
-                auto* br_to_remain     = new LLVMIR::BranchUncondInst(getLabelOperand(ctx.remainder_header->block_id));
-                br_to_remain->block_id = ctx.final_unrolled_latch->block_id;
-                br_to_remain->comment  = "Generated at line " + std::to_string(__LINE__) + " (to remainder loop)";
-                ctx.final_unrolled_latch->insts.push_back(br_to_remain);
+                LLVMIR::Operand* cond_op = nullptr;
+                for (auto it = ctx.final_unrolled_latch->insts.rbegin(); it != ctx.final_unrolled_latch->insts.rend();
+                     ++it)
+                {
+                    if ((*it)->opcode == LLVMIR::IROpCode::ICMP)
+                    {
+                        cond_op = (*it)->GetResultOperand();
+                        break;
+                    }
+                }
 
-                DBGINFO("  Modified final latch: unconditional branch -> remainder loop header Block",
-                    ctx.remainder_header->block_id);
+                if (!cond_op) assert(false && "Could not find cond op in last iter exiting.");
+
+                auto* br_to_rem_or_exit = new LLVMIR::BranchCondInst(
+                    cond_op, getLabelOperand(ctx.remainder_header->block_id), getLabelOperand(ctx.exit->block_id));
+                br_to_rem_or_exit->block_id = ctx.final_unrolled_latch->block_id;
+                br_to_rem_or_exit->comment  = "Generated (final latch: cond -> remainder, !cond -> exit)";
+                ctx.final_unrolled_latch->insts.push_back(br_to_rem_or_exit);
+
+                DBGINFO("  Rebuilt final latch to conditional branch to remainder/exit");
 
                 updateExitBlockPhiNodes(ctx);
             }
@@ -689,38 +738,61 @@ namespace Transform
     {
         DBGINFO("Updating exit block PHI nodes");
 
+        int remainder_exit_phi_index = 0;
         for (auto* inst : ctx.exit->insts)
         {
             if (auto* phi = dynamic_cast<LLVMIR::PhiInst*>(inst))
             {
-                phi->ErasePhiWithBlock(ctx.latch->block_id);
-
-                bool  found_replacement = false;
-                auto* phi_reg           = static_cast<LLVMIR::RegOperand*>(phi->res);
-                for (const auto& phi_mapping : ctx.phi_mappings)
+                LLVMIR::Operand* original_latch_value = nullptr;
+                for (auto it = phi->vals_for_labels.begin(); it != phi->vals_for_labels.end(); ++it)
                 {
-                    if (phi_mapping.original_phi_result_reg == phi_reg->reg_num)
+                    auto* label_op = static_cast<LLVMIR::LabelOperand*>(it->second);
+                    if (label_op->label_num == ctx.latch->block_id)
                     {
-                        for (auto* rem_inst : ctx.remainder_exit->insts)
-                        {
-                            if (auto* rem_phi = dynamic_cast<LLVMIR::PhiInst*>(rem_inst))
-                            {
-                                phi->Insert_into_PHI(rem_phi->res, getLabelOperand(ctx.remainder_exit->block_id));
-                                found_replacement = true;
-                                DBGINFO(
-                                    "Updated exit PHI reg_", phi_reg->reg_num, " to receive from remainder exit block");
-                                break;
-                            }
-                        }
-                        if (found_replacement) break;
+                        original_latch_value = it->first;
+                        break;
                     }
                 }
 
-                if (!found_replacement)
+                phi->ErasePhiWithBlock(ctx.latch->block_id);
+
+                if (ctx.final_unrolled_latch)
                 {
-                    DBGINFO("WARNING: Could not find replacement for exit PHI reg_", phi_reg->reg_num);
-                    return false;
+                    LLVMIR::Operand* final_unrolled_value = original_latch_value;
+                    if (final_unrolled_value)
+                    {
+                        final_unrolled_value = findValueInFinalIteration(ctx, final_unrolled_value);
+                    }
+                    if (final_unrolled_value)
+                    {
+                        phi->Insert_into_PHI(final_unrolled_value, getLabelOperand(ctx.final_unrolled_latch->block_id));
+                        DBGINFO("  Exit PHI add incoming from final_unrolled_latch Block",
+                            ctx.final_unrolled_latch->block_id);
+                    }
                 }
+
+                LLVMIR::Operand* remainder_exit_value = nullptr;
+                int              seen_phi             = 0;
+                for (auto* remainder_inst : ctx.remainder_exit->insts)
+                {
+                    if (remainder_inst->opcode == LLVMIR::IROpCode::PHI)
+                    {
+                        if (seen_phi == remainder_exit_phi_index)
+                        {
+                            remainder_exit_value = remainder_inst->GetResultOperand();
+                            break;
+                        }
+                        ++seen_phi;
+                    }
+                }
+
+                if (remainder_exit_value)
+                {
+                    phi->Insert_into_PHI(remainder_exit_value, getLabelOperand(ctx.remainder_exit->block_id));
+                    DBGINFO("  Exit PHI add incoming from remainder_exit Block", ctx.remainder_exit->block_id);
+                }
+
+                ++remainder_exit_phi_index;
             }
         }
 
@@ -737,14 +809,16 @@ namespace Transform
         {
             LLVMIR::Operand* final_val = findValueInFinalIteration(ctx, mapping.latch_incoming_value);
 
-            if (!final_val)
+            if (mapping.latch_def_inst && final_val == mapping.latch_incoming_value)
             {
-                final_val = mapping.latch_incoming_value;
-                DBGINFO("  Using original latch value as fallback for PHI reg", mapping.original_phi_result_reg);
+                DBGINFO("ERROR: Could not find final unrolled value for a loop-variant PHI. reg=",
+                    mapping.original_phi_result_reg);
+                assert(false && "Failed to find final value for a loop-variant PHI. Check value mapping logic.");
             }
-            else
+
+            if (final_val)
             {
-                DBGINFO("  Found final value for remainder header PHI reg",
+                DBGINFO("  Using final value for remainder header PHI reg",
                     mapping.original_phi_result_reg,
                     ": ",
                     final_val->getName());

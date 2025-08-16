@@ -75,11 +75,11 @@ namespace Transform
 
             struct PhiMapping
             {
-                LLVMIR::PhiInst*     original_phi;
-                LLVMIR::Operand*     latch_incoming_value;
-                LLVMIR::Instruction* latch_def_inst;
-                int                  original_phi_result_reg;
-                LLVMIR::Operand*     preheader_incoming_value;
+                LLVMIR::PhiInst*     original_phi;              // 原始PHI节点
+                LLVMIR::Operand*     latch_incoming_value;      // 从latch来的值
+                LLVMIR::Instruction* latch_def_inst;            // 在latch中定义这个值的指令
+                int                  original_phi_result_reg;   // 原始PHI的结果寄存器
+                LLVMIR::Operand*     preheader_incoming_value;  // 从preheader来的初始值
             };
             std::vector<PhiMapping> phi_mappings;
 
