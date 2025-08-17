@@ -597,15 +597,15 @@ int main(int argc, char** argv)
         // scevAnalyser.printAllResults();
 
         // Partial Loop Unroll
-        {
-            Transform::LoopPartialUnrollPass loopPartialUnrollPass(&builder, &scevAnalyser);
-            loopPartialUnrollPass.Execute();
-            // builder.printIR(std::cerr);
+        // {
+        //     Transform::LoopPartialUnrollPass loopPartialUnrollPass(&builder, &scevAnalyser);
+        //     loopPartialUnrollPass.Execute();
+        //     // builder.printIR(std::cerr);
 
-            auto unroll_stats = loopPartialUnrollPass.getUnrollStats();
-            std::cout << "Partial unroll: processed " << unroll_stats.first << " loops, unrolled "
-                      << unroll_stats.second << " loops" << std::endl;
-        }
+        //     auto unroll_stats = loopPartialUnrollPass.getUnrollStats();
+        //     std::cout << "Partial unroll: processed " << unroll_stats.first << " loops, unrolled "
+        //               << unroll_stats.second << " loops" << std::endl;
+        // }
 
         makecfg.Execute();
         makedom.Execute();
