@@ -1,4 +1,5 @@
 #pragma once
+#include "llvm_ir/function.h"
 #include "llvm_ir/ir_block.h"
 #include "llvm_ir/ir_builder.h"
 #include "llvm/defuse_analysis/edefuse.h"
@@ -92,6 +93,12 @@ namespace Transform
         void redirectControlFlow(CFG* cfg, NaturalLoop* loop, LLVMIR::IRBlock* check_block);
         std::tuple<std::set<int>, std::set<int>> analyzeLoopExternalVariables(CFG* cfg, NaturalLoop* loop);
 
+        std::string         generateParallelFunctionName(CFG* cfg, NaturalLoop* loop) const;
+        LLVMIR::IRFunction* createParallelFunction(
+            const std::string& func_name, const std::set<int>& i32_vars, const std::set<int>& float_vars);
+        bool copyLoopBodyToFunction(CFG* cfg, NaturalLoop* loop, LLVMIR::IRFunction* parallel_func,
+            const std::set<int>& i32_vars, const std::set<int>& float_vars);
+
         // 辅助方法
         std::vector<LLVMIR::Instruction*> collectMemoryInstructions(NaturalLoop* loop);
         bool                              isSimpleForLoop(NaturalLoop* loop) const;
@@ -113,6 +120,31 @@ namespace Transform
         static constexpr int MAX_PARALLEL_LOOPS_PER_FUNCTION = 10;
         static constexpr int MIN_ITERATIONS_FOR_PARALLEL     = 10;
         static constexpr int MIN_LOOP_SIZE_FOR_PARALLEL      = 3;
+
+        // 循环体复制相关方法
+        bool setupFunctionEntry(LLVMIR::IRBlock* entry_block, const std::set<int>& i32_vars,
+            const std::set<int>& float_vars, std::map<int, int>& reg_replace_map, int& max_reg);
+
+        bool createNewLoopStructure(LLVMIR::IRFunction* parallel_func, NaturalLoop* loop,
+            std::map<int, int>& label_replace_map, int& max_label, LLVMIR::IRBlock*& new_header,
+            LLVMIR::IRBlock*& new_latch, LLVMIR::IRBlock*& new_exit);
+
+        bool copyLoopInstructions(CFG* cfg, NaturalLoop* loop, LLVMIR::IRFunction* parallel_func,
+            std::map<int, int>& reg_replace_map, std::map<int, int>& label_replace_map, int& max_reg);
+
+        LLVMIR::Instruction* copyInstruction(LLVMIR::Instruction* old_inst, std::map<int, int>& reg_replace_map,
+            std::map<int, int>& label_replace_map, int& max_reg);
+
+        bool setupLoopControl(CFG* cfg, NaturalLoop* loop, LLVMIR::IRBlock* entry_block, LLVMIR::IRBlock* new_header,
+            LLVMIR::IRBlock* new_latch, LLVMIR::IRBlock* new_exit, std::map<int, int>& reg_replace_map, int& max_reg);
+
+        void connectControlFlow(LLVMIR::IRBlock* entry_block, LLVMIR::IRBlock* new_header, LLVMIR::IRBlock* new_exit);
+
+        void updateJumpTargets(LLVMIR::Instruction* inst, std::map<int, int>& label_replace_map);
+
+        // 临时存储循环边界寄存器
+        int loop_start_reg_ = -1;
+        int loop_end_reg_   = -1;
     };
 
 }  // namespace Transform

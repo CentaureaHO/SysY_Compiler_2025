@@ -1001,6 +1001,4 @@ namespace Analysis
         return true;
     }
 
-    
-
 }  // namespace Analysis

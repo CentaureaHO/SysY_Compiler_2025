@@ -1,4 +1,10 @@
 #include "llvm/parallel/loop_parallel.h"
+#include "common/type/type_defs.h"
+#include "llvm_ir/build/type_trans.h"
+#include "llvm_ir/defs.h"
+#include "llvm_ir/function.h"
+#include "llvm_ir/instruction.h"
+#include "llvm_ir/ir_builder.h"
 #include "llvm/alias_analysis/alias_analysis.h"
 #include <iostream>
 #include <algorithm>
@@ -385,15 +391,412 @@ namespace Transform
 
         // 2. 分析循环外定义的变量
         auto [i32_vars, float_vars] = analyzeLoopExternalVariables(cfg, loop);
+        if (i32_vars.size() + float_vars.size() >= 16)
+        {
+            DBGINFO("    循环使用过多外部变量，跳过并行化");
+            return false;
+        }
 
         // 3. 生成循环的并行版本函数
-        // std::string func_name     = generateParallelFunctionName(cfg, loop);
-        // auto*       parallel_func = createParallelFunction(func_name, i32_vars, float_vars);
+        std::string func_name     = generateParallelFunctionName(cfg, loop);
+        auto*       parallel_func = createParallelFunction(func_name, i32_vars, float_vars);
 
         // 4. 复制循环体到新函数
-        // if (!copyLoopBodyToFunction(cfg, loop, parallel_func, i32_vars, float_vars)) { return false; }
+        if (!copyLoopBodyToFunction(cfg, loop, parallel_func, i32_vars, float_vars)) { return false; }
 
         return true;
+    }
+
+    std::string LoopParallelizationPass::generateParallelFunctionName(CFG* cfg, NaturalLoop* loop) const
+    {
+        // 生成唯一的函数名
+        return "parallel_loop_" + cfg->func->func_def->func_name + "_" + std::to_string(loop->loop_id);
+    }
+
+    LLVMIR::IRFunction* LoopParallelizationPass::createParallelFunction(
+        const std::string& func_name, const std::set<int>& i32_vars, const std::set<int>& float_vars)
+    {
+        // 创建并行函数声明
+        auto* fd            = new LLVMIR::FuncDefInst(LLVMIR::DataType::VOID, func_name);
+        auto* parallel_func = new LLVMIR::IRFunction(TypeSystem::getBasicType(TypeKind::Void), fd);
+
+        // 添加参数类型
+        fd->arg_types.push_back(LLVMIR::DataType::PTR);  // function pointer
+        fd->arg_regs.push_back(getRegOperand(0));
+
+        ir->functions.push_back(parallel_func);
+        return parallel_func;
+    }
+
+    bool LoopParallelizationPass::copyLoopBodyToFunction(CFG* cfg, NaturalLoop* loop, LLVMIR::IRFunction* parallel_func,
+        const std::set<int>& i32_vars, const std::set<int>& float_vars)
+    {
+        DBGINFO("    开始复制循环体到并行函数...");
+
+        // 1. 准备寄存器和标签映射
+        std::map<int, int> reg_replace_map;
+        std::map<int, int> label_replace_map;
+
+        // 2. 设置函数入口和参数解包
+        if (parallel_func->blocks.empty()) { parallel_func->createBlock(); }
+        int max_reg   = ++parallel_func->max_reg;
+        int max_label = parallel_func->max_label;
+        std::cout << "    准备并行函数入口..." << std::endl;
+        std::cout << "max reg is " << max_reg << std::endl;
+        std::cout << "max label is " << max_label << std::endl;
+        auto* entry_block = parallel_func->blocks[0];
+        entry_block->insts.clear();  // 清空默认的ret指令
+
+        if (!setupFunctionEntry(entry_block, i32_vars, float_vars, reg_replace_map, max_reg)) { return false; }
+
+        // 3. 创建新的循环结构
+        LLVMIR::IRBlock* new_header = nullptr;
+        LLVMIR::IRBlock* new_latch  = nullptr;
+        LLVMIR::IRBlock* new_exit   = nullptr;
+
+        if (!createNewLoopStructure(parallel_func, loop, label_replace_map, max_label, new_header, new_latch, new_exit))
+        {
+            return false;
+        }
+
+        // 4. 复制循环体指令
+        if (!copyLoopInstructions(cfg, loop, parallel_func, reg_replace_map, label_replace_map, max_reg))
+        {
+            return false;
+        }
+
+        // 5. 设置循环控制和边界
+        if (!setupLoopControl(cfg, loop, entry_block, new_header, new_latch, new_exit, reg_replace_map, max_reg))
+        {
+            return false;
+        }
+
+        // 6. 连接控制流
+        connectControlFlow(entry_block, new_header, new_exit);
+
+        DBGINFO("    循环体复制完成");
+        return true;
+    }
+
+    // 设置函数入口和参数解包
+    bool LoopParallelizationPass::setupFunctionEntry(LLVMIR::IRBlock* entry_block, const std::set<int>& i32_vars,
+        const std::set<int>& float_vars, std::map<int, int>& reg_replace_map, int& max_reg)
+    {
+        // 参数解包：从传入的结构体中提取数据
+        // struct { int thread_id; int start; int end; int i32_vars[]; float float_vars[]; }
+
+        auto* param_ptr = getRegOperand(0);  // 参数指针
+
+        // 1. 加载 thread_id (offset 0)
+        auto* gep_thread =
+            new LLVMIR::GEPInst(LLVMIR::DataType::I32, LLVMIR::DataType::I32, param_ptr, getRegOperand(++max_reg));
+        gep_thread->idxs.emplace_back(getImmeI32Operand(0));
+        entry_block->insts.push_back(gep_thread);
+
+        auto* load_thread = new LLVMIR::LoadInst(LLVMIR::DataType::I32, gep_thread->res, getRegOperand(++max_reg));
+        entry_block->insts.push_back(load_thread);
+        int thread_id_reg = max_reg;
+
+        // 2. 加载 start (offset 1)
+        auto* gep_start =
+            new LLVMIR::GEPInst(LLVMIR::DataType::I32, LLVMIR::DataType::I32, param_ptr, getRegOperand(++max_reg));
+        gep_start->idxs.emplace_back(getImmeI32Operand(1));
+        entry_block->insts.push_back(gep_start);
+
+        auto* load_start = new LLVMIR::LoadInst(LLVMIR::DataType::I32, gep_start->res, getRegOperand(++max_reg));
+        entry_block->insts.push_back(load_start);
+        int start_reg = max_reg;
+
+        // 3. 加载 end (offset 2)
+        auto* gep_end =
+            new LLVMIR::GEPInst(LLVMIR::DataType::I32, LLVMIR::DataType::I32, param_ptr, getRegOperand(++max_reg));
+        gep_end->idxs.emplace_back(getImmeI32Operand(2));
+        entry_block->insts.push_back(gep_end);
+
+        auto* load_end = new LLVMIR::LoadInst(LLVMIR::DataType::I32, gep_end->res, getRegOperand(++max_reg));
+        entry_block->insts.push_back(load_end);
+        int end_reg = max_reg;
+
+        // 4. 计算当前线程的循环边界
+        // part = (end - start) / 4
+        auto* sub_inst = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::SUB,
+            LLVMIR::DataType::I32,
+            getRegOperand(end_reg),
+            getRegOperand(start_reg),
+            getRegOperand(++max_reg));
+        entry_block->insts.push_back(sub_inst);
+
+        auto* div_inst = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::DIV,
+            LLVMIR::DataType::I32,
+            sub_inst->res,
+            getImmeI32Operand(4),
+            getRegOperand(++max_reg));
+        entry_block->insts.push_back(div_inst);
+        int part_reg = max_reg;
+
+        // ST = part * thread_id + start
+        auto* mul_inst = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::MUL,
+            LLVMIR::DataType::I32,
+            getRegOperand(part_reg),
+            getRegOperand(thread_id_reg),
+            getRegOperand(++max_reg));
+        entry_block->insts.push_back(mul_inst);
+
+        auto* add_start_inst = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::ADD,
+            LLVMIR::DataType::I32,
+            mul_inst->res,
+            getRegOperand(start_reg),
+            getRegOperand(++max_reg));
+        entry_block->insts.push_back(add_start_inst);
+        int local_start_reg = max_reg;
+
+        // ED = part * (thread_id + 1) + start
+        auto* thread_add_inst = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::ADD,
+            LLVMIR::DataType::I32,
+            getRegOperand(thread_id_reg),
+            getImmeI32Operand(1),
+            getRegOperand(++max_reg));
+        entry_block->insts.push_back(thread_add_inst);
+
+        auto* mul_end_inst = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::MUL,
+            LLVMIR::DataType::I32,
+            getRegOperand(part_reg),
+            thread_add_inst->res,
+            getRegOperand(++max_reg));
+        entry_block->insts.push_back(mul_end_inst);
+
+        auto* add_end_inst = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::ADD,
+            LLVMIR::DataType::I32,
+            mul_end_inst->res,
+            getRegOperand(start_reg),
+            getRegOperand(++max_reg));
+        entry_block->insts.push_back(add_end_inst);
+        int local_end_reg = max_reg;
+
+        // 5. 加载外部变量
+        int offset = 3;  // 跳过 thread_id, start, end
+
+        // 加载 i32 变量
+        for (int old_reg : i32_vars)
+        {
+            auto* gep_var =
+                new LLVMIR::GEPInst(LLVMIR::DataType::I32, LLVMIR::DataType::I32, getRegOperand(++max_reg), param_ptr);
+            gep_var->idxs.emplace_back(getImmeI32Operand(offset++));
+            entry_block->insts.push_back(gep_var);
+
+            auto* load_var = new LLVMIR::LoadInst(LLVMIR::DataType::I32, gep_var->res, getRegOperand(++max_reg));
+            entry_block->insts.push_back(load_var);
+
+            reg_replace_map[old_reg] = max_reg;
+        }
+
+        // 加载 float 变量
+        for (int old_reg : float_vars)
+        {
+            auto* gep_var =
+                new LLVMIR::GEPInst(LLVMIR::DataType::I32, LLVMIR::DataType::F32, getRegOperand(++max_reg), param_ptr);
+            gep_var->idxs.emplace_back(getImmeI32Operand(offset++));
+            entry_block->insts.push_back(gep_var);
+
+            auto* load_var = new LLVMIR::LoadInst(LLVMIR::DataType::F32, gep_var->res, getRegOperand(++max_reg));
+            entry_block->insts.push_back(load_var);
+
+            reg_replace_map[old_reg] = max_reg;
+        }
+
+        // 保存循环边界寄存器
+        loop_start_reg_ = local_start_reg;
+        loop_end_reg_   = local_end_reg;
+
+        return true;
+    }
+
+    // 创建新的循环结构
+    bool LoopParallelizationPass::createNewLoopStructure(LLVMIR::IRFunction* parallel_func, NaturalLoop* loop,
+        std::map<int, int>& label_replace_map, int& max_label, LLVMIR::IRBlock*& new_header,
+        LLVMIR::IRBlock*& new_latch, LLVMIR::IRBlock*& new_exit)
+    {
+        // 为原循环的每个基本块创建新的基本块
+        for (auto* old_block : loop->loop_nodes)
+        {
+            auto* new_block                        = parallel_func->createBlock();
+            label_replace_map[old_block->block_id] = new_block->block_id;
+
+            if (old_block == loop->header) { new_header = new_block; }
+            if (loop->latches.count(old_block)) { new_latch = new_block; }
+        }
+
+        // 创建退出块
+        new_exit = parallel_func->createBlock();
+
+        return new_header != nullptr && new_latch != nullptr && new_exit != nullptr;
+    }
+
+    // 复制循环体指令
+    bool LoopParallelizationPass::copyLoopInstructions(CFG* cfg, NaturalLoop* loop, LLVMIR::IRFunction* parallel_func,
+        std::map<int, int>& reg_replace_map, std::map<int, int>& label_replace_map, int& max_reg)
+    {
+        // 遍历原循环的所有基本块
+        for (auto* old_block : loop->loop_nodes)
+        {
+            int   new_block_id = label_replace_map[old_block->block_id];
+            auto* new_block    = parallel_func->getBlock(new_block_id);
+
+            // 复制每条指令
+            for (auto* old_inst : old_block->insts)
+            {
+                auto* new_inst = copyInstruction(old_inst, reg_replace_map, label_replace_map, max_reg);
+                if (!new_inst)
+                {
+                    DBGINFO("      复制指令失败");
+                    return false;
+                }
+                new_block->insts.push_back(new_inst);
+            }
+        }
+
+        return true;
+    }
+
+    // 复制单条指令
+    LLVMIR::Instruction* LoopParallelizationPass::copyInstruction(LLVMIR::Instruction* old_inst,
+        std::map<int, int>& reg_replace_map, std::map<int, int>& label_replace_map, int& max_reg)
+    {
+        // 创建新指令的副本
+        auto* new_inst = old_inst->Clone();
+
+        // 更新结果寄存器
+        if (old_inst->GetResultReg() != -1)
+        {
+            int new_reg                               = ++max_reg;
+            reg_replace_map[old_inst->GetResultReg()] = new_reg;
+            new_inst->ReplaceAllOperands(reg_replace_map);
+        }
+
+        // 更新操作数中的寄存器
+        auto used_regs = old_inst->GetUsedRegs();
+        for (int old_reg : used_regs)
+        {
+            if (reg_replace_map.count(old_reg)) { new_inst->ReplaceAllOperands(reg_replace_map); }
+        }
+
+        // 更新跳转指令中的标签
+        if (old_inst->opcode == LLVMIR::IROpCode::BR_COND || old_inst->opcode == LLVMIR::IROpCode::BR_UNCOND)
+        {
+            updateJumpTargets(new_inst, label_replace_map);
+        }
+
+        return new_inst;
+    }
+
+    // 设置循环控制
+    bool LoopParallelizationPass::setupLoopControl(CFG* cfg, NaturalLoop* loop, LLVMIR::IRBlock* entry_block,
+        LLVMIR::IRBlock* new_header, LLVMIR::IRBlock* new_latch, LLVMIR::IRBlock* new_exit,
+        std::map<int, int>& reg_replace_map, int& max_reg)
+    {
+        // 1. 修改header中的phi指令，使用新的循环边界
+        for (auto* inst : new_header->insts)
+        {
+            if (inst->opcode == LLVMIR::IROpCode::PHI)
+            {
+                auto* phi = static_cast<LLVMIR::PhiInst*>(inst);
+
+                // 找到来自preheader的值，替换为local_start
+                for (auto& [val, label] : phi->vals_for_labels)
+                {
+                    if (static_cast<LLVMIR::LabelOperand*>(label)->label_num == loop->preheader->block_id)
+                    {
+                        if (val->type == LLVMIR::OperandType::REG)
+                        {
+                            std::map<int, int> replace_map = {{val->GetRegNum(), loop_start_reg_}};
+                            phi->ReplaceAllOperands(replace_map);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 2. 修改latch中的条件跳转，使用新的结束条件
+        auto* latch_last_inst = new_latch->insts.back();
+        if (latch_last_inst->opcode == LLVMIR::IROpCode::BR_COND)
+        {
+            auto* br_cond = static_cast<LLVMIR::BranchCondInst*>(latch_last_inst);
+
+            // 查找条件比较指令并修改
+            for (auto it = new_latch->insts.rbegin(); it != new_latch->insts.rend(); ++it)
+            {
+                if ((*it)->opcode == LLVMIR::IROpCode::ICMP)
+                {
+                    auto* icmp = static_cast<LLVMIR::IcmpInst*>(*it);
+
+                    // 将原来的结束条件替换为 loop_end_reg
+                    std::map<int, int> replace_map = {{icmp->rhs->GetRegNum(), loop_end_reg_}};
+                    icmp->ReplaceAllOperands(replace_map);
+                    break;
+                }
+            }
+
+            // 修改跳转目标：原来跳到exit的地方改为跳到new_exit
+            if (br_cond->false_label->type == LLVMIR::OperandType::LABEL)
+            {
+                br_cond->false_label = getLabelOperand(new_exit->block_id);
+            }
+        }
+
+        return true;
+    }
+
+    // 连接控制流
+    void LoopParallelizationPass::connectControlFlow(
+        LLVMIR::IRBlock* entry_block, LLVMIR::IRBlock* new_header, LLVMIR::IRBlock* new_exit)
+    {
+        // entry_block -> new_header
+        auto* br_to_header = new LLVMIR::BranchUncondInst(getLabelOperand(new_header->block_id));
+        entry_block->insts.push_back(br_to_header);
+
+        // new_exit -> return
+        auto* ret_inst = new LLVMIR::RetInst(LLVMIR::DataType::VOID, nullptr);
+        new_exit->insts.push_back(ret_inst);
+    }
+
+    // 更新跳转目标
+    void LoopParallelizationPass::updateJumpTargets(LLVMIR::Instruction* inst, std::map<int, int>& label_replace_map)
+    {
+        if (inst->opcode == LLVMIR::IROpCode::BR_UNCOND)
+        {
+            auto* br = static_cast<LLVMIR::BranchUncondInst*>(inst);
+            if (br->target_label->type == LLVMIR::OperandType::LABEL)
+            {
+                auto* label_op = static_cast<LLVMIR::LabelOperand*>(br->target_label);
+                if (label_replace_map.count(label_op->label_num))
+                {
+                    br->target_label = getLabelOperand(label_replace_map[label_op->label_num]);
+                }
+            }
+        }
+        else if (inst->opcode == LLVMIR::IROpCode::BR_COND)
+        {
+            auto* br = static_cast<LLVMIR::BranchCondInst*>(inst);
+
+            if (br->true_label->type == LLVMIR::OperandType::LABEL)
+            {
+                auto* label_op = static_cast<LLVMIR::LabelOperand*>(br->true_label);
+                if (label_replace_map.count(label_op->label_num))
+                {
+                    br->true_label = getLabelOperand(label_replace_map[label_op->label_num]);
+                }
+            }
+
+            if (br->false_label->type == LLVMIR::OperandType::LABEL)
+            {
+                auto* label_op = static_cast<LLVMIR::LabelOperand*>(br->false_label);
+                if (label_replace_map.count(label_op->label_num))
+                {
+                    br->false_label = getLabelOperand(label_replace_map[label_op->label_num]);
+                }
+            }
+        }
     }
 
     void LoopParallelizationPass::addParallelLibraryFunctions()

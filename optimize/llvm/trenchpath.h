@@ -19,7 +19,7 @@ namespace LLVMIR
         int                          TraceToBlock(int block_id);
 
       public:
-        TrenchPath(IR* ir) : Pass(ir) {};
+        TrenchPath(IR* ir) : Pass(ir){};
         void Execute() override;
     };
 }  // namespace LLVMIR
