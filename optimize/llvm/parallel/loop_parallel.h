@@ -1,44 +1,118 @@
 #pragma once
+#include "llvm_ir/ir_block.h"
 #include "llvm_ir/ir_builder.h"
+#include "llvm/defuse_analysis/edefuse.h"
+#include "llvm/loop/scev_analysis.h"
 #include "llvm/pass.h"
 #include "llvm/loop/loop_def.h"
-#include "llvm/parallel/parallel_analysis.h"
+#include "llvm/alias_analysis/alias_analysis.h"
+#include "llvm/loop/scev_analysis.h"
+#include <map>
+#include <set>
+#include <vector>
+#include <functional>
 
 namespace Transform
-{  // optimize/llvm/auto_parallel/loop_parallelizer.h
-    class LoopParallelizer : public Pass
+{
+    // 并行化决策信息
+    struct ParallelizationInfo
     {
-      private:
-        LLVMIR::IR*    ir;
-        Analysis::ParallelAnalysisPass* parallel_analysis;
+        bool        can_parallelize    = false;
+        bool        should_parallelize = false;
+        std::string reason             = "";
 
-        enum ParallelStrategy
-        {
-            OPENMP,    // 使用OpenMP指令
-            PTHREADS,  // 使用POSIX线程
-            SIMD       // 使用向量化SIMD指令
-        };
+        // 依赖分析结果
+        bool                              has_loop_carried_dependency = false;
+        std::vector<LLVMIR::Instruction*> dependent_instructions;
 
-        ParallelStrategy strategy;
+        // 并行化参数
+        int estimated_iterations = 0;
+        int thread_count         = 4;
+        int priority             = 0;  // 并行化优先级
 
-        // 将循环转换为OpenMP形式
-        bool convertToOpenMP(NaturalLoop* loop);
+        // 嵌套循环冲突信息
+        bool             conflicts_with_inner = false;
+        bool             conflicts_with_outer = false;
+        std::vector<int> conflicting_loop_ids;
+    };
 
-        // 将循环转换为POSIX线程形式
-        bool convertToPThreads(NaturalLoop* loop);
-
-        // 将循环转换为SIMD指令
-        bool convertToSIMD(NaturalLoop* loop);
-
-        // 生成辅助函数(用于pthread实现)
-        LLVMIR::IRFunction* generateWorkerFunction(NaturalLoop* loop);
-
+    class LoopParallelizationPass : public Pass
+    {
       public:
-        LoopParallelizer(LLVMIR::IR* ir, Analysis::ParallelAnalysisPass* analysis, ParallelStrategy strategy = OPENMP)
-            : Pass(ir), parallel_analysis(analysis), strategy(strategy)
+        LoopParallelizationPass(LLVMIR::IR* ir, Analysis::AliasAnalyser* alias_analysis = nullptr,
+            Analysis::SCEVAnalyser* scev_analyser = nullptr, Analysis::EDefUseAnalysis* def_use_analysis = nullptr)
+            : Pass(ir),
+              alias_analysis_(alias_analysis),
+              scev_analyser_(scev_analyser),
+              def_use_analysis_(def_use_analysis),
+              loops_processed_(0),
+              loops_parallelized_(0)
         {}
 
-        void                Execute() override;
-        std::pair<int, int> getParallelStats() const;  // 返回处理/成功的循环数
+        void Execute() override;
+
+        // 获取并行化结果
+        const std::map<NaturalLoop*, ParallelizationInfo>& getParallelizationResults() const
+        {
+            return parallelization_info_;
+        }
+
+        int getLoopsProcessed() const { return loops_processed_; }
+        int getLoopsParallelized() const { return loops_parallelized_; }
+
+      private:
+        // 主要处理方法（类比LoopFullUnrollPass）
+        void processAllLoops();
+        void processFunction(CFG* cfg);
+        bool processLoop(CFG* cfg, NaturalLoop* loop);
+
+        // 并行化分析和决策
+        bool tryParallelizeLoop(CFG* cfg, NaturalLoop* loop);
+        bool canParallelize(NaturalLoop* loop) const;
+        bool isParallelizationProfitable(NaturalLoop* loop, const ParallelizationInfo& info) const;
+
+        // 依赖分析方法
+        bool analyzeLoopDependencies(NaturalLoop* loop, ParallelizationInfo& info);
+        bool hasLoopCarriedMemoryDependency(NaturalLoop* loop);
+        bool checkInstructionDependency(NaturalLoop* loop, LLVMIR::Instruction* inst1, LLVMIR::Instruction* inst2);
+
+        // 嵌套循环冲突处理
+        void handleNestedLoopConflicts(NaturalLoop* loop);
+        bool hasConflictingInnerLoops(NaturalLoop* loop);
+        void markConflictingLoops(NaturalLoop* loop);
+
+        // 并行化实施
+        bool performParallelization(CFG* cfg, NaturalLoop* loop);
+        void insertParallelizationMarkers(NaturalLoop* loop);
+        bool generateParallelFunction(CFG* cfg, NaturalLoop* loop);
+        void addParallelLibraryFunctions();
+        void insertIterationCountCheck(
+            CFG* cfg, NaturalLoop* loop, LLVMIR::IRBlock* check_block, int loop_depth, int inst_count);
+        bool insertDynamicParallelCheck(CFG* cfg, NaturalLoop* loop);
+        void redirectControlFlow(CFG* cfg, NaturalLoop* loop, LLVMIR::IRBlock* check_block);
+        std::tuple<std::set<int>, std::set<int>> analyzeLoopExternalVariables(CFG* cfg, NaturalLoop* loop);
+
+        // 辅助方法
+        std::vector<LLVMIR::Instruction*> collectMemoryInstructions(NaturalLoop* loop);
+        bool                              isSimpleForLoop(NaturalLoop* loop) const;
+        int                               estimateIterationCount(NaturalLoop* loop) const;
+        int                               calculateParallelizationPriority(NaturalLoop* loop) const;
+        void                              logResult(NaturalLoop* loop, bool success, const std::string& reason) const;
+
+        // 成员变量
+        Analysis::AliasAnalyser*                    alias_analysis_;
+        Analysis::SCEVAnalyser*                     scev_analyser_;
+        std::map<NaturalLoop*, ParallelizationInfo> parallelization_info_;
+        Analysis::EDefUseAnalysis*                  def_use_analysis_;
+
+        // 统计信息
+        int loops_processed_;
+        int loops_parallelized_;
+
+        // 并行化限制常量
+        static constexpr int MAX_PARALLEL_LOOPS_PER_FUNCTION = 10;
+        static constexpr int MIN_ITERATIONS_FOR_PARALLEL     = 10;
+        static constexpr int MIN_LOOP_SIZE_FOR_PARALLEL      = 3;
     };
+
 }  // namespace Transform

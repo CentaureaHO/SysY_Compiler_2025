@@ -108,8 +108,6 @@ namespace Analysis
         bool isNoSideEffect(CFG* cfg) { return func_profiles[cfg].hasNoWrites(); }
         bool haveExternalCall(CFG* cfg) { return func_profiles[cfg].has_external_deps; }
         bool isLocalPtr(CFG* cfg, LLVMIR::Operand* ptr);
-        bool hasLoopCarriedDependency(NaturalLoop* loop, LLVMIR::Instruction* i1, LLVMIR::Instruction* i2);
-        bool hasIndependentIterations(NaturalLoop* loop);
 
         std::vector<LLVMIR::Operand*> getWritePtrs(CFG* cfg);
         std::vector<LLVMIR::Operand*> getReadPtrs(CFG* cfg);

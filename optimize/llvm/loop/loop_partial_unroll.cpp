@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <functional>
 
-// #define DBGMODE
+#define DBGMODE
 
 #ifdef DBGMODE
 template <typename... Args>
@@ -30,6 +30,7 @@ namespace Transform
 
     void LoopPartialUnrollPass::Execute()
     {
+        unroll_factors_.clear();
         DBGINFO("Starting Loop Partial Unroll Pass");
         processAllLoops();
         DBGINFO("Loop Partial Unroll Pass completed. Processed: ",
@@ -293,6 +294,7 @@ namespace Transform
             return false;
         }
 
+        unroll_factors_[loop] = unroll_factor;
         DBGINFO("Successfully performed partial unroll with factor ", unroll_factor);
         return true;
     }

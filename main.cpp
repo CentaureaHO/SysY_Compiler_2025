@@ -92,6 +92,9 @@
 // unused_func_elimination
 #include "optimize/llvm/unused_func_elimination.h"
 
+// parallel analysis
+#include "optimize/llvm/parallel/loop_parallel.h"
+
 #define STR_PW 30
 #define INT_PW 8
 #define MIN_GAP 5
@@ -518,73 +521,73 @@ int main(int argc, char** argv)
         scevAnalyser.run();
 
         // Constant Loop Full Unroll
-        {
-            int unrolled_count = 0;
-            int total_unrolled = 0;
+        // {
+        //     int unrolled_count = 0;
+        //     int total_unrolled = 0;
 
-            do {
-                Transform::LoopFullUnrollPass loopUnrollPass(&builder, &scevAnalyser);
-                loopUnrollPass.Execute();
+        //     do {
+        //         Transform::LoopFullUnrollPass loopUnrollPass(&builder, &scevAnalyser);
+        //         loopUnrollPass.Execute();
 
-                auto stats     = loopUnrollPass.getUnrollStats();
-                unrolled_count = stats.second;
-                total_unrolled += unrolled_count;
+        //         auto stats     = loopUnrollPass.getUnrollStats();
+        //         unrolled_count = stats.second;
+        //         total_unrolled += unrolled_count;
 
-                loopPreProcess();
-                scevAnalyser.run();
+        //         loopPreProcess();
+        //         scevAnalyser.run();
 
-                std::cout << "Unrolled " << unrolled_count << " times" << std::endl;
+        //         std::cout << "Unrolled " << unrolled_count << " times" << std::endl;
 
-            } while (unrolled_count > 0 && total_unrolled < max_unroll_count);
-            makecfg.Execute();
-            makedom.Execute();
-            aa.run();
-            loopPreProcess();
-            tsccp.Execute();
-        }
-        // SCCP after constant full unroll
-        {
-            Transform::SingleSourcePhiEliminationPass singleSourcePhiElim(&builder);
-            Transform::ConstantBranchFoldingPass      constantBranchFolding(&builder);
-            singleSourcePhiElim.setPreserveLCSSA(true);
+        //     } while (unrolled_count > 0 && total_unrolled < max_unroll_count);
+        //     makecfg.Execute();
+        //     makedom.Execute();
+        //     aa.run();
+        //     loopPreProcess();
+        //     tsccp.Execute();
+        // }
+        // // SCCP after constant full unroll
+        // {
+        //     Transform::SingleSourcePhiEliminationPass singleSourcePhiElim(&builder);
+        //     Transform::ConstantBranchFoldingPass      constantBranchFolding(&builder);
+        //     singleSourcePhiElim.setPreserveLCSSA(true);
 
-            bool      changed        = true;
-            int       exec_cnt       = 0;
-            const int MAX_ITERATIONS = 10;
+        //     bool      changed        = true;
+        //     int       exec_cnt       = 0;
+        //     const int MAX_ITERATIONS = 10;
 
-            while (changed && exec_cnt < MAX_ITERATIONS)
-            {
-                changed = false;
-                exec_cnt++;
+        //     while (changed && exec_cnt < MAX_ITERATIONS)
+        //     {
+        //         changed = false;
+        //         exec_cnt++;
 
-                constantBranchFolding.Execute();
-                changed |= constantBranchFolding.wasModified();
+        //         constantBranchFolding.Execute();
+        //         changed |= constantBranchFolding.wasModified();
 
-                makecfg.Execute();
-                loopAnalysis.Execute();
-                loopSimplify.Execute();
+        //         makecfg.Execute();
+        //         loopAnalysis.Execute();
+        //         loopSimplify.Execute();
 
-                singleSourcePhiElim.Execute();
-                changed |= singleSourcePhiElim.wasModified();
+        //         singleSourcePhiElim.Execute();
+        //         changed |= singleSourcePhiElim.wasModified();
 
-                makecfg.Execute();
-                makedom.Execute();
-                aa.run();
+        //         makecfg.Execute();
+        //         makedom.Execute();
+        //         aa.run();
 
-                loopPreProcess();
-                tsccp.Execute();
+        //         loopPreProcess();
+        //         tsccp.Execute();
 
-                ifConversion.Execute();
-                makecfg.Execute();
-                minMaxRecognize.Execute();
+        //         ifConversion.Execute();
+        //         makecfg.Execute();
+        //         minMaxRecognize.Execute();
 
-                makecfg.Execute();
-                makedom.Execute();
+        //         makecfg.Execute();
+        //         makedom.Execute();
 
-                std::cout << "Iteration " << exec_cnt << ": " << (changed ? "modifications made" : "no changes")
-                          << std::endl;
-            }
-        }
+        //         std::cout << "Iteration " << exec_cnt << ": " << (changed ? "modifications made" : "no changes")
+        //                   << std::endl;
+        //     }
+        // }
 
         makecfg.Execute();
         instSimplify.Execute();
@@ -596,76 +599,79 @@ int main(int argc, char** argv)
         scevAnalyser.run();
         // scevAnalyser.printAllResults();
 
+        Transform::LoopParallelizationPass loopParallelPass(&builder, &aa, &scevAnalyser);
+        loopParallelPass.Execute();
+
         // Partial Loop Unroll
-        {
-            Transform::LoopPartialUnrollPass loopPartialUnrollPass(&builder, &scevAnalyser);
-            loopPartialUnrollPass.Execute();
-            // builder.printIR(std::cerr);
+        // {
+        //     Transform::LoopPartialUnrollPass loopPartialUnrollPass(&builder, &scevAnalyser);
+        //     loopPartialUnrollPass.Execute();
+        //     // builder.printIR(std::cerr);
 
-            auto unroll_stats = loopPartialUnrollPass.getUnrollStats();
-            std::cout << "Partial unroll: processed " << unroll_stats.first << " loops, unrolled "
-                      << unroll_stats.second << " loops" << std::endl;
-        }
+        //     auto unroll_stats = loopPartialUnrollPass.getUnrollStats();
+        //     std::cout << "Partial unroll: processed " << unroll_stats.first << " loops, unrolled "
+        //               << unroll_stats.second << " loops" << std::endl;
+        // }
 
-        makecfg.Execute();
-        makedom.Execute();
-        EAliasAnalysis::EAliasAnalyser ealias_analyser(&builder);
-        DSEPass dse(&builder, &ealias_analyser, &edefUseAnalysis, &arrAliasAnalysis);
-        dse.Execute();
+        // makecfg.Execute();
+        // makedom.Execute();
+        // EAliasAnalysis::EAliasAnalyser ealias_analyser(&builder);
+        // DSEPass dse(&builder, &ealias_analyser, &edefUseAnalysis, &arrAliasAnalysis);
+        // dse.Execute();
 
-        makecfg.Execute();
-        makedom.Execute();
-        makeredom.Execute(true);
+        // makecfg.Execute();
+        // makedom.Execute();
+        // makeredom.Execute(true);
 
-        aa.run();
-        licm.Execute();
-        md.run();
+        // aa.run();
+        // licm.Execute();
+        // md.run();
 
-        // for (int i = 0; i < 5; ++i)
-        {
-            makecfg.Execute();
-            loopPreProcess();
-            tsccp.Execute();
-            memsetRecognize.Execute();
-            edefUseAnalysis.run();
-            unusedelimator.Execute();
-            DCEDefUse.Execute();
-            dce.Execute();
-        }
+        // // for (int i = 0; i < 5; ++i)
+        // {
+        //     makecfg.Execute();
+        //     loopPreProcess();
+        //     tsccp.Execute();
+        //     memsetRecognize.Execute();
+        //     edefUseAnalysis.run();
+        //     unusedelimator.Execute();
+        //     DCEDefUse.Execute();
+        //     dce.Execute();
+        // }
 
-        makecfg.Execute();
-        aa.run();
-        TrenchPath trenchPath(&builder);
-        trenchPath.Execute();
+        // makecfg.Execute();
+        // aa.run();
+        // TrenchPath trenchPath(&builder);
+        // trenchPath.Execute();
 
-        // cfgSimplify();
-        loopPreProcess();
-        scevAnalyser.run();
+        // // cfgSimplify();
+        // loopPreProcess();
+        // scevAnalyser.run();
 
-        lsr.Execute();
-        DCEDefUse.Execute();
-        dce.Execute();
-        scevAnalyser.run();
+        // lsr.Execute();
+        // DCEDefUse.Execute();
+        // dce.Execute();
+        // scevAnalyser.run();
 
-        makecfg.Execute();
-        makedom.Execute();
+        // makecfg.Execute();
+        // makedom.Execute();
 
-        arithInstReduce.Execute();
+        // arithInstReduce.Execute();
 
-        makecfg.Execute();
-        makedom.Execute();
-        loopAnalysis.Execute();
-        tsccp.Execute();
-        memsetRecognize.Execute();
+        // makecfg.Execute();
+        // makedom.Execute();
+        // loopAnalysis.Execute();
+        // tsccp.Execute();
+        // memsetRecognize.Execute();
 
-        gepStrengthReduce.Execute();
+        // gepStrengthReduce.Execute();
 
-        {
-            Transform::SingleSourcePhiEliminationPass singleSourcePhiElim(&builder);
-            singleSourcePhiElim.setPreserveLCSSA(false);
-            singleSourcePhiElim.Execute();
-            cfgSimplify();
-        }
+        // {
+        //     Transform::SingleSourcePhiEliminationPass singleSourcePhiElim(&builder);
+        //     singleSourcePhiElim.setPreserveLCSSA(false);
+        //     singleSourcePhiElim.Execute();
+        //     cfgSimplify();
+        // }
 
         makecfg.Execute();
     }

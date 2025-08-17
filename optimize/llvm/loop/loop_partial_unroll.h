@@ -22,14 +22,20 @@ namespace Transform
         static constexpr int MAX_UNROLLED_INSTRUCTIONS = 400;   // 展开后最大指令数
         static constexpr int MAX_GLOBAL_INSTRUCTIONS   = 2048;  // 全局最大指令数
 
-        Analysis::SCEVAnalyser* scev_analyser_;
-        int                     loops_processed_;
-        int                     loops_partially_unrolled_;
+        Analysis::SCEVAnalyser*     scev_analyser_;
+        int                         loops_processed_;
+        int                         loops_partially_unrolled_;
+        std::map<NaturalLoop*, int> unroll_factors_;
 
       public:
         explicit LoopPartialUnrollPass(LLVMIR::IR* ir, Analysis::SCEVAnalyser* scev);
         void                Execute() override;
         std::pair<int, int> getUnrollStats() const { return {loops_processed_, loops_partially_unrolled_}; }
+        int                 getUnrollFactor(NaturalLoop* loop) const
+        {
+            auto it = unroll_factors_.find(loop);
+            return it != unroll_factors_.end() ? it->second : 1;
+        }
 
       private:
         void processAllLoops();
