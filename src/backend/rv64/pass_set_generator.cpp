@@ -6,6 +6,7 @@
 #include <backend/rv64/passes/code_generation.h>
 #include <backend/rv64/passes/optimize/control_flow/block_layout.h>
 #include <backend/rv64/passes/optimize/control_flow/fallthrough_elimination.h>
+#include <backend/rv64/passes/optimize/control_flow/unreachable_block_elimination.h>
 #include <backend/rv64/passes/optimize/instruction_schedule.h>
 #include <backend/rv64/passes/cfg_builder.h>
 #include <backend/rv64/passes/rv64_loop_find.h>
@@ -51,11 +52,11 @@ std::vector<std::unique_ptr<Backend::BasePass>> PassSetGenerator::generate(LLVMI
     ImmediateFMoveEliminationPass(functions).run();
     ImmediateIMoveEliminationPass(functions).run();
     MoveEliminationPass(functions).run();
-    if (optLevel)
-    {
-        BlockLayoutPass(functions).run();
-        CFGBuilderPass(functions).run();
-    }
+    if (optLevel) { BlockLayoutPass(functions).run(); }
+
+    CFGBuilderPass(functions).run();
+    UnreachableBlockEliminationPass(functions).run();
+
     if (!no_reg_alloc)
     {
         CFGBuilderPass(functions).run();
