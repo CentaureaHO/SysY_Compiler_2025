@@ -7,6 +7,7 @@
 #include <functional>
 
 // #define DBGMODE
+// #define INSERT_PUTCH_CALLS
 
 #ifdef DBGMODE
 template <typename... Args>
@@ -573,6 +574,50 @@ namespace Transform
                         new_header->insts.erase(it);
                     }
                 }
+#ifdef INSERT_PUTCH_CALLS
+                std::vector<LLVMIR::Instruction*> putch_insts;
+
+                std::vector<int> chars = {80,
+                    97,
+                    114,
+                    116,
+                    105,
+                    97,
+                    108,
+                    108,
+                    121,
+                    32,
+                    117,
+                    110,
+                    114,
+                    111,
+                    108,
+                    108,
+                    101,
+                    100,
+                    32,
+                    108,
+                    111,
+                    111,
+                    112,
+                    10};
+
+                for (int char_code : chars)
+                {
+                    auto*                                                      arg  = getImmeI32Operand(char_code);
+                    std::vector<std::pair<LLVMIR::DataType, LLVMIR::Operand*>> args = {{LLVMIR::DataType::I32, arg}};
+
+                    auto* call_inst     = new LLVMIR::CallInst(LLVMIR::DataType::VOID, "putch", args, nullptr);
+                    call_inst->block_id = new_header->block_id;
+                    call_inst->comment  = "Debug output for partially unrolled loop";
+                    putch_insts.push_back(call_inst);
+                }
+
+                auto phi_end = new_header->insts.begin();
+                while (phi_end != new_header->insts.end() && (*phi_end)->opcode == LLVMIR::IROpCode::PHI) ++phi_end;
+
+                new_header->insts.insert(phi_end, putch_insts.begin(), putch_insts.end());
+#endif
             }
 
             std::map<int, LLVMIR::Operand*> substitution_map;
@@ -643,60 +688,119 @@ namespace Transform
                     {
                         auto* icmp_inst = static_cast<LLVMIR::IcmpInst*>(def_inst);
 
+                        auto is_defined_in_latch = [&](LLVMIR::Operand* op) -> bool {
+                            if (!op || op->type != LLVMIR::OperandType::REG) return false;
+                            int reg = static_cast<LLVMIR::RegOperand*>(op)->reg_num;
+                            for (auto* inst2 : ctx.final_unrolled_latch->insts)
+                            {
+                                if (inst2->GetResultReg() == reg) return true;
+                            }
+                            return false;
+                        };
+
+                        int adjust = ctx.unroll_factor - 1;
+
+                        auto insert_add_before = [&](LLVMIR::Operand* iv_op) -> LLVMIR::Operand* {
+                            auto* new_reg      = getRegOperand(++ctx.cfg->func->max_reg);
+                            auto* add_inst     = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::ADD,
+                                LLVMIR::DataType::I32,
+                                iv_op,
+                                getImmeI32Operand(adjust),
+                                new_reg);
+                            add_inst->block_id = ctx.final_unrolled_latch->block_id;
+
+                            auto it_pos = std::find(ctx.final_unrolled_latch->insts.begin(),
+                                ctx.final_unrolled_latch->insts.end(),
+                                def_inst);
+                            ctx.final_unrolled_latch->insts.insert(it_pos, add_inst);
+                            return new_reg;
+                        };
+
+                        bool lhs_is_iv = is_defined_in_latch(icmp_inst->lhs);
+                        bool rhs_is_iv = is_defined_in_latch(icmp_inst->rhs);
+
                         if (icmp_inst->cond == LLVMIR::IcmpCond::SLE || icmp_inst->cond == LLVMIR::IcmpCond::SLT)
                         {
-                            if (icmp_inst->rhs->type == LLVMIR::OperandType::REG)
+                            if (lhs_is_iv && !rhs_is_iv)
                             {
-                                auto* rhs_reg = static_cast<LLVMIR::RegOperand*>(icmp_inst->rhs);
-
-                                for (auto* inst : ctx.final_unrolled_latch->insts)
-                                {
-                                    if (inst->GetResultReg() == rhs_reg->reg_num &&
-                                        inst->opcode == LLVMIR::IROpCode::SUB)
-                                    {
-                                        auto* sub_inst = static_cast<LLVMIR::ArithmeticInst*>(inst);
-
-                                        icmp_inst->rhs = sub_inst->lhs;
-                                        DBGINFO("  Restored original upper bound for final latch condition");
-                                        break;
-                                    }
-                                }
+                                icmp_inst->lhs = insert_add_before(icmp_inst->lhs);
+                                DBGINFO("  Adjusted final latch induction variable (lhs) by ", adjust);
+                            }
+                            else if (!lhs_is_iv && rhs_is_iv)
+                            {
+                                icmp_inst->rhs = insert_add_before(icmp_inst->rhs);
+                                DBGINFO("  Adjusted final latch induction variable (rhs) by ", adjust);
+                            }
+                            else
+                            {
+                                icmp_inst->lhs = insert_add_before(icmp_inst->lhs);
+                                DBGINFO("  Adjusted final latch induction variable (default lhs) by ", adjust);
                             }
                         }
                         else if (icmp_inst->cond == LLVMIR::IcmpCond::SGE || icmp_inst->cond == LLVMIR::IcmpCond::SGT)
                         {
-                            if (icmp_inst->lhs->type == LLVMIR::OperandType::REG)
+                            if (lhs_is_iv && !rhs_is_iv)
                             {
-                                auto* lhs_reg = static_cast<LLVMIR::RegOperand*>(icmp_inst->lhs);
-
-                                for (auto* inst : ctx.final_unrolled_latch->insts)
-                                {
-                                    if (inst->GetResultReg() == lhs_reg->reg_num &&
-                                        inst->opcode == LLVMIR::IROpCode::SUB)
-                                    {
-                                        auto* sub_inst = static_cast<LLVMIR::ArithmeticInst*>(inst);
-
-                                        icmp_inst->lhs = sub_inst->lhs;
-                                        DBGINFO("  Restored original upper bound for final latch condition");
-                                        break;
-                                    }
-                                }
+                                icmp_inst->lhs = insert_add_before(icmp_inst->lhs);
+                                DBGINFO("  Adjusted final latch induction variable (lhs) by ", adjust);
+                            }
+                            else if (!lhs_is_iv && rhs_is_iv)
+                            {
+                                icmp_inst->rhs = insert_add_before(icmp_inst->rhs);
+                                DBGINFO("  Adjusted final latch induction variable (rhs) by ", adjust);
+                            }
+                            else
+                            {
+                                icmp_inst->lhs = insert_add_before(icmp_inst->lhs);
+                                DBGINFO("  Adjusted final latch induction variable (default lhs) by ", adjust);
                             }
                         }
                     }
                 }
 
-                if (true_target->label_num == ctx.exit->block_id)
+                auto* intermediate_block    = ctx.cfg->createBlock();
+                intermediate_block->comment = "Intermediate block to pass values to remainder loop";
+                auto* br_to_remainder = new LLVMIR::BranchUncondInst(getLabelOperand(ctx.remainder_header->block_id));
+                br_to_remainder->block_id = intermediate_block->block_id;
+                intermediate_block->insts.push_back(br_to_remainder);
+
+                bool exit_in_true  = (true_target->label_num == ctx.exit->block_id);
+                bool exit_in_false = (false_target->label_num == ctx.exit->block_id);
+
+                if (exit_in_true)
                 {
-                    br_cond->false_label = getLabelOperand(ctx.remainder_header->block_id);
-                    DBGINFO("  Modified final latch: false branch -> remainder loop header Block",
-                        ctx.remainder_header->block_id);
+                    br_cond->true_label = getLabelOperand(intermediate_block->block_id);
+                    DBGINFO("  Modified final latch: true branch -> intermediate Block", intermediate_block->block_id);
+
+                    br_cond->false_label = getLabelOperand(ctx.header->block_id);
+                    DBGINFO("  Modified final latch: false branch -> original header Block", ctx.header->block_id);
                 }
-                else if (false_target->label_num == ctx.exit->block_id)
+                else if (exit_in_false)
                 {
-                    br_cond->true_label = getLabelOperand(ctx.remainder_header->block_id);
-                    DBGINFO("  Modified final latch: true branch -> remainder loop header Block",
-                        ctx.remainder_header->block_id);
+                    br_cond->false_label = getLabelOperand(intermediate_block->block_id);
+                    DBGINFO("  Modified final latch: false branch -> intermediate Block", intermediate_block->block_id);
+
+                    br_cond->true_label = getLabelOperand(ctx.header->block_id);
+                    DBGINFO("  Modified final latch: true branch -> original header Block", ctx.header->block_id);
+                }
+
+                int phi_idx = 0;
+                for (auto* inst : ctx.remainder_header->insts)
+                {
+                    if (inst->opcode != LLVMIR::IROpCode::PHI) break;
+                    auto* phi = static_cast<LLVMIR::PhiInst*>(inst);
+
+                    if (phi_idx < (int)ctx.phi_mappings.size())
+                    {
+                        const auto&      mapping   = ctx.phi_mappings[phi_idx];
+                        LLVMIR::Operand* final_val = findValueInFinalIteration(ctx, mapping.latch_incoming_value);
+                        if (final_val)
+                        {
+                            phi->vals_for_labels.emplace_back(final_val, getLabelOperand(intermediate_block->block_id));
+                            DBGINFO("  Added remainder PHI[", phi_idx, "] incoming from intermediate block");
+                        }
+                    }
+                    phi_idx++;
                 }
 
                 updateExitBlockPhiNodes(ctx);
@@ -706,26 +810,91 @@ namespace Transform
                 delete ctx.final_unrolled_latch->insts.back();
                 ctx.final_unrolled_latch->insts.pop_back();
 
-                LLVMIR::Operand* cond_op = nullptr;
+                LLVMIR::Operand*  cond_op   = nullptr;
+                LLVMIR::IcmpInst* icmp_inst = nullptr;
                 for (auto it = ctx.final_unrolled_latch->insts.rbegin(); it != ctx.final_unrolled_latch->insts.rend();
                      ++it)
                 {
                     if ((*it)->opcode == LLVMIR::IROpCode::ICMP)
                     {
-                        cond_op = (*it)->GetResultOperand();
+                        icmp_inst = static_cast<LLVMIR::IcmpInst*>(*it);
+                        cond_op   = icmp_inst->GetResultOperand();
                         break;
+                    }
+                }
+
+                if (icmp_inst)
+                {
+                    auto is_defined_in_latch = [&](LLVMIR::Operand* op) -> bool {
+                        if (!op || op->type != LLVMIR::OperandType::REG) return false;
+                        int reg = static_cast<LLVMIR::RegOperand*>(op)->reg_num;
+                        for (auto* inst2 : ctx.final_unrolled_latch->insts)
+                        {
+                            if (inst2->GetResultReg() == reg) return true;
+                        }
+                        return false;
+                    };
+
+                    int adjust = ctx.unroll_factor - 1;
+
+                    auto insert_add_before_icmp = [&](LLVMIR::Operand* iv_op) -> LLVMIR::Operand* {
+                        auto* new_reg  = getRegOperand(++ctx.cfg->func->max_reg);
+                        auto* add_inst = new LLVMIR::ArithmeticInst(
+                            LLVMIR::IROpCode::ADD, LLVMIR::DataType::I32, iv_op, getImmeI32Operand(adjust), new_reg);
+                        add_inst->block_id = ctx.final_unrolled_latch->block_id;
+
+                        auto it_pos = std::find(
+                            ctx.final_unrolled_latch->insts.begin(), ctx.final_unrolled_latch->insts.end(), icmp_inst);
+                        ctx.final_unrolled_latch->insts.insert(it_pos, add_inst);
+                        return new_reg;
+                    };
+
+                    bool lhs_is_iv = is_defined_in_latch(icmp_inst->lhs);
+
+                    if (icmp_inst->cond == LLVMIR::IcmpCond::SLE || icmp_inst->cond == LLVMIR::IcmpCond::SLT)
+                    {
+                        if (lhs_is_iv)
+                        {
+                            icmp_inst->lhs = insert_add_before_icmp(icmp_inst->lhs);
+                            DBGINFO("  Adjusted else path final latch induction variable (lhs) by ", adjust);
+                        }
                     }
                 }
 
                 if (!cond_op) assert(false && "Could not find cond op in last iter exiting.");
 
-                auto* br_to_rem_or_exit = new LLVMIR::BranchCondInst(
-                    cond_op, getLabelOperand(ctx.remainder_header->block_id), getLabelOperand(ctx.exit->block_id));
-                br_to_rem_or_exit->block_id = ctx.final_unrolled_latch->block_id;
-                br_to_rem_or_exit->comment  = "Generated (final latch: cond -> remainder, !cond -> exit)";
-                ctx.final_unrolled_latch->insts.push_back(br_to_rem_or_exit);
+                auto* intermediate_block    = ctx.cfg->createBlock();
+                intermediate_block->comment = "Intermediate block to pass values to remainder loop";
+                auto* br_to_remainder = new LLVMIR::BranchUncondInst(getLabelOperand(ctx.remainder_header->block_id));
+                br_to_remainder->block_id = intermediate_block->block_id;
+                intermediate_block->insts.push_back(br_to_remainder);
 
-                DBGINFO("  Rebuilt final latch to conditional branch to remainder/exit");
+                auto* br_to_next_or_rem = new LLVMIR::BranchCondInst(
+                    cond_op, getLabelOperand(ctx.header->block_id), getLabelOperand(intermediate_block->block_id));
+                br_to_next_or_rem->block_id = ctx.final_unrolled_latch->block_id;
+                br_to_next_or_rem->comment  = "Generated (final latch: cond -> header, !cond -> intermediate)";
+                ctx.final_unrolled_latch->insts.push_back(br_to_next_or_rem);
+
+                int phi_idx = 0;
+                for (auto* inst : ctx.remainder_header->insts)
+                {
+                    if (inst->opcode != LLVMIR::IROpCode::PHI) break;
+                    auto* phi = static_cast<LLVMIR::PhiInst*>(inst);
+
+                    if (phi_idx < (int)ctx.phi_mappings.size())
+                    {
+                        const auto&      mapping   = ctx.phi_mappings[phi_idx];
+                        LLVMIR::Operand* final_val = findValueInFinalIteration(ctx, mapping.latch_incoming_value);
+                        if (final_val)
+                        {
+                            phi->vals_for_labels.emplace_back(final_val, getLabelOperand(intermediate_block->block_id));
+                            DBGINFO("  Added remainder PHI[", phi_idx, "] incoming from intermediate block");
+                        }
+                    }
+                    phi_idx++;
+                }
+
+                DBGINFO("  Rebuilt final latch to conditional branch to header/intermediate");
 
                 updateExitBlockPhiNodes(ctx);
             }
@@ -743,33 +912,7 @@ namespace Transform
         {
             if (auto* phi = dynamic_cast<LLVMIR::PhiInst*>(inst))
             {
-                LLVMIR::Operand* original_latch_value = nullptr;
-                for (auto it = phi->vals_for_labels.begin(); it != phi->vals_for_labels.end(); ++it)
-                {
-                    auto* label_op = static_cast<LLVMIR::LabelOperand*>(it->second);
-                    if (label_op->label_num == ctx.latch->block_id)
-                    {
-                        original_latch_value = it->first;
-                        break;
-                    }
-                }
-
                 phi->ErasePhiWithBlock(ctx.latch->block_id);
-
-                if (ctx.final_unrolled_latch)
-                {
-                    LLVMIR::Operand* final_unrolled_value = original_latch_value;
-                    if (final_unrolled_value)
-                    {
-                        final_unrolled_value = findValueInFinalIteration(ctx, final_unrolled_value);
-                    }
-                    if (final_unrolled_value)
-                    {
-                        phi->Insert_into_PHI(final_unrolled_value, getLabelOperand(ctx.final_unrolled_latch->block_id));
-                        DBGINFO("  Exit PHI add incoming from final_unrolled_latch Block",
-                            ctx.final_unrolled_latch->block_id);
-                    }
-                }
 
                 LLVMIR::Operand* remainder_exit_value = nullptr;
                 int              seen_phi             = 0;
@@ -801,7 +944,7 @@ namespace Transform
 
     bool LoopPartialUnrollPass::updateOriginalHeaderPhiNodes(UnrollContext& ctx)
     {
-        DBGINFO("Updating remainder loop header PHI nodes to receive from final unrolled latch");
+        DBGINFO("Updating original header PHI nodes to receive from final unrolled latch");
 
         std::vector<LLVMIR::Operand*> final_values;
 
@@ -828,7 +971,7 @@ namespace Transform
         }
 
         int phi_idx = 0;
-        for (auto* inst : ctx.remainder_header->insts)
+        for (auto* inst : ctx.header->insts)
         {
             if (inst->opcode != LLVMIR::IROpCode::PHI) break;
             auto* phi = static_cast<LLVMIR::PhiInst*>(inst);
@@ -837,7 +980,7 @@ namespace Transform
             {
                 phi->vals_for_labels.emplace_back(
                     final_values[phi_idx], getLabelOperand(ctx.final_unrolled_latch->block_id));
-                DBGINFO("  Updated remainder header PHI[",
+                DBGINFO("  Updated original header PHI[",
                     phi_idx,
                     "] with final value from Block",
                     ctx.final_unrolled_latch->block_id);
@@ -1300,39 +1443,6 @@ namespace Transform
 
             phi_index++;
             remainder_exit_phi_index++;
-        }
-
-        phi_index          = 0;
-        int exit_phi_index = 0;
-        for (auto* inst : ctx.exit->insts)
-        {
-            if (inst->opcode != LLVMIR::IROpCode::PHI) break;
-
-            auto* exit_phi = static_cast<LLVMIR::PhiInst*>(inst);
-
-            LLVMIR::Operand* remainder_exit_value = nullptr;
-            for (auto* remainder_exit_inst : ctx.remainder_exit->insts)
-            {
-                if (remainder_exit_inst->opcode == LLVMIR::IROpCode::PHI && exit_phi_index == phi_index)
-                {
-                    remainder_exit_value = remainder_exit_inst->GetResultOperand();
-                    break;
-                }
-                if (remainder_exit_inst->opcode == LLVMIR::IROpCode::PHI) exit_phi_index++;
-            }
-            exit_phi_index = 0;
-
-            if (remainder_exit_value)
-            {
-                exit_phi->vals_for_labels.emplace_back(
-                    remainder_exit_value, getLabelOperand(ctx.remainder_exit->block_id));
-                DBGINFO("  Added exit PHI[",
-                    phi_index,
-                    "] incoming from remainder_exit: ",
-                    remainder_exit_value->getName());
-            }
-
-            phi_index++;
         }
 
         DBGINFO("Successfully updated remainder loop PHI nodes");

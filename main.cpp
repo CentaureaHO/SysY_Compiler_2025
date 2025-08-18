@@ -607,7 +607,7 @@ int main(int argc, char** argv)
                       << unroll_stats.second << " loops" << std::endl;
         }
 
-        makecfg.Execute();
+        /*makecfg.Execute();
         makedom.Execute();
         EAliasAnalysis::EAliasAnalyser ealias_analyser(&builder);
         DSEPass dse(&builder, &ealias_analyser, &edefUseAnalysis, &arrAliasAnalysis);
@@ -665,7 +665,7 @@ int main(int argc, char** argv)
             singleSourcePhiElim.setPreserveLCSSA(false);
             singleSourcePhiElim.Execute();
             cfgSimplify();
-        }
+        }*/
 
         makecfg.Execute();
     }
