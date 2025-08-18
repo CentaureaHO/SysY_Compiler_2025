@@ -594,7 +594,7 @@ namespace Transform
         for (int old_reg : float_vars)
         {
             auto* gep_var =
-                new LLVMIR::GEPInst(LLVMIR::DataType::I32, LLVMIR::DataType::F32, getRegOperand(++max_reg), param_ptr);
+                new LLVMIR::GEPInst(LLVMIR::DataType::F32, LLVMIR::DataType::I32, getRegOperand(++max_reg), param_ptr);
             gep_var->idxs.emplace_back(getImmeI32Operand(offset++));
             entry_block->insts.push_back(gep_var);
 
@@ -616,10 +616,26 @@ namespace Transform
         std::map<int, int>& label_replace_map, int& max_label, LLVMIR::IRBlock*& new_header,
         LLVMIR::IRBlock*& new_latch, LLVMIR::IRBlock*& new_exit)
     {
+        if (loop->latches.size() != 1)
+        {
+            DBGINFO("    循环 latches 数量不为 1，无法创建并行结构");
+            return false;
+        }
+
+        if (loop->preheader) { label_replace_map[loop->preheader->block_id] = 0; }
+        else
+        {
+            DBGINFO("    循环没有 preheader，无法创建并行结构");
+            return false;
+        }
         // 为原循环的每个基本块创建新的基本块
         for (auto* old_block : loop->loop_nodes)
         {
-            auto* new_block                        = parallel_func->createBlock();
+            // std::cout << std::endl;
+            // std::cout << "      处理基本块: " << old_block->block_id << std::endl;
+            auto* new_block = parallel_func->createBlock();
+            // std::cout << "      新建基本块: " << new_block->block_id << std::endl;
+            // std::cout << std::endl;
             label_replace_map[old_block->block_id] = new_block->block_id;
 
             if (old_block == loop->header) { new_header = new_block; }
@@ -670,18 +686,27 @@ namespace Transform
         {
             int new_reg                               = ++max_reg;
             reg_replace_map[old_inst->GetResultReg()] = new_reg;
+            std::cout << std::endl;
+            std::cout << "      复制指令: " << old_inst->GetResultReg() << " -> " << new_reg << std::endl;
             new_inst->ReplaceAllOperands(reg_replace_map);
+            std::cout << "      复制指令: " << old_inst->toString() << " -> " << new_inst->toString() << std::endl;
+            std::cout << std::endl;
         }
 
         // 更新操作数中的寄存器
         auto used_regs = old_inst->GetUsedRegs();
         for (int old_reg : used_regs)
         {
-            if (reg_replace_map.count(old_reg)) { new_inst->ReplaceAllOperands(reg_replace_map); }
+            if (reg_replace_map.count(old_reg))
+            {
+                new_inst->ReplaceAllOperands(reg_replace_map);
+                break;
+            }
         }
 
         // 更新跳转指令中的标签
-        if (old_inst->opcode == LLVMIR::IROpCode::BR_COND || old_inst->opcode == LLVMIR::IROpCode::BR_UNCOND)
+        if (old_inst->opcode == LLVMIR::IROpCode::BR_COND || old_inst->opcode == LLVMIR::IROpCode::BR_UNCOND ||
+            old_inst->opcode == LLVMIR::IROpCode::PHI)
         {
             updateJumpTargets(new_inst, label_replace_map);
         }
@@ -794,6 +819,21 @@ namespace Transform
                 if (label_replace_map.count(label_op->label_num))
                 {
                     br->false_label = getLabelOperand(label_replace_map[label_op->label_num]);
+                }
+            }
+        }
+        else if (inst->opcode == LLVMIR::IROpCode::PHI)
+        {
+            auto* phi = static_cast<LLVMIR::PhiInst*>(inst);
+            for (auto& [val, label] : phi->vals_for_labels)
+            {
+                if (label->type == LLVMIR::OperandType::LABEL)
+                {
+                    auto* label_op = static_cast<LLVMIR::LabelOperand*>(label);
+                    if (label_replace_map.count(label_op->label_num))
+                    {
+                        label = getLabelOperand(label_replace_map[label_op->label_num]);
+                    }
                 }
             }
         }
