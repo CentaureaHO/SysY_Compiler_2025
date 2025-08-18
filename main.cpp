@@ -593,13 +593,18 @@ int main(int argc, char** argv)
         makedom.Execute();
         aa.run();
         loopPreProcess();
+        for (auto& [func_def, cfg] : builder.cfg)
+        {
+            if (!cfg || !cfg->LoopForest) continue;
+            for (auto* loop : cfg->LoopForest->loop_set) loop->printLoopInfo();
+        }
         scevAnalyser.run();
         // scevAnalyser.printAllResults();
 
         // Partial Loop Unroll
         {
             Transform::LoopPartialUnrollPass loopPartialUnrollPass(&builder, &scevAnalyser);
-            loopPartialUnrollPass.Execute();
+            if (optimizeLevel >= 2) loopPartialUnrollPass.Execute();
             // builder.printIR(std::cerr);
 
             auto unroll_stats = loopPartialUnrollPass.getUnrollStats();

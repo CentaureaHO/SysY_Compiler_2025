@@ -66,6 +66,10 @@ namespace Transform
             LLVMIR::Operand* trip_count_upper_bound;
             LLVMIR::Operand* trip_count_lower_bound;
 
+            // 原始条件信息
+            LLVMIR::IcmpInst*       original_condition;
+            LLVMIR::BranchCondInst* original_branch;
+
             // 余数循环相关
             LLVMIR::IRBlock*              remainder_header;
             LLVMIR::IRBlock*              remainder_latch;
@@ -112,6 +116,9 @@ namespace Transform
         int  getGlobalInstructionCount() const;
         bool hasArrayAccess(NaturalLoop* loop) const;
         void logResult(NaturalLoop* loop, bool success, int unroll_factor, const std::string& reason) const;
+
+        LLVMIR::IRBlock* createGuardedIntermediateBlock(UnrollContext& ctx);
+        void             updateRemainderExitPhiNodes(UnrollContext& ctx, LLVMIR::IRBlock* guard_block);
     };
 
 }  // namespace Transform

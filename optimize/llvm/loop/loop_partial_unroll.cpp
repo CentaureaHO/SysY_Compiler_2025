@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <functional>
 
-// #define DBGMODE
+#define DBGMODE
 // #define INSERT_PUTCH_CALLS
 
 #ifdef DBGMODE
@@ -256,6 +256,34 @@ namespace Transform
         {
             DBGINFO("Failed to get loop info");
             return false;
+        }
+
+        ctx.original_condition = nullptr;
+        ctx.original_branch    = nullptr;
+
+        for (auto* inst : ctx.latch->insts)
+        {
+            if (inst->opcode == LLVMIR::IROpCode::BR_COND)
+            {
+                ctx.original_branch = static_cast<LLVMIR::BranchCondInst*>(inst);
+                break;
+            }
+        }
+
+        if (ctx.original_branch)
+        {
+            for (auto* inst : ctx.latch->insts)
+            {
+                if (inst->opcode == LLVMIR::IROpCode::ICMP)
+                {
+                    auto* icmp = static_cast<LLVMIR::IcmpInst*>(inst);
+                    if (icmp->GetResultOperand() == ctx.original_branch->cond)
+                    {
+                        ctx.original_condition = icmp;
+                        break;
+                    }
+                }
+            }
         }
 
         if (!initializePhiInfos(ctx))
@@ -758,11 +786,7 @@ namespace Transform
                     }
                 }
 
-                auto* intermediate_block    = ctx.cfg->createBlock();
-                intermediate_block->comment = "Intermediate block to pass values to remainder loop";
-                auto* br_to_remainder = new LLVMIR::BranchUncondInst(getLabelOperand(ctx.remainder_header->block_id));
-                br_to_remainder->block_id = intermediate_block->block_id;
-                intermediate_block->insts.push_back(br_to_remainder);
+                auto* intermediate_block = createGuardedIntermediateBlock(ctx);
 
                 bool exit_in_true  = (true_target->label_num == ctx.exit->block_id);
                 bool exit_in_false = (false_target->label_num == ctx.exit->block_id);
@@ -863,11 +887,7 @@ namespace Transform
 
                 if (!cond_op) assert(false && "Could not find cond op in last iter exiting.");
 
-                auto* intermediate_block    = ctx.cfg->createBlock();
-                intermediate_block->comment = "Intermediate block to pass values to remainder loop";
-                auto* br_to_remainder = new LLVMIR::BranchUncondInst(getLabelOperand(ctx.remainder_header->block_id));
-                br_to_remainder->block_id = intermediate_block->block_id;
-                intermediate_block->insts.push_back(br_to_remainder);
+                auto* intermediate_block = createGuardedIntermediateBlock(ctx);
 
                 auto* br_to_next_or_rem = new LLVMIR::BranchCondInst(
                     cond_op, getLabelOperand(ctx.header->block_id), getLabelOperand(intermediate_block->block_id));
@@ -1115,6 +1135,120 @@ namespace Transform
         std::cout << "Loop " << loop->loop_id << ": " << (success ? "PARTIALLY UNROLLED" : "SKIPPED")
                   << " (factor=" << unroll_factor << ") - " << reason << std::endl;
 #endif
+    }
+
+    LLVMIR::IRBlock* LoopPartialUnrollPass::createGuardedIntermediateBlock(UnrollContext& ctx)
+    {
+        auto* intermediate_block    = ctx.cfg->createBlock();
+        intermediate_block->comment = "Intermediate block to guard remainder loop entry";
+
+        if (!ctx.original_condition || !ctx.original_branch)
+        {
+            assert(false && "Could not find original condition in loop");
+        }
+        else
+        {
+            LLVMIR::Operand* final_lhs = findValueInFinalIteration(ctx, ctx.original_condition->lhs);
+            LLVMIR::Operand* final_rhs = findValueInFinalIteration(ctx, ctx.original_condition->rhs);
+
+            auto* cmp_reg  = getRegOperand(++ctx.cfg->func->max_reg);
+            auto* cmp_inst = new LLVMIR::IcmpInst(
+                ctx.original_condition->type, ctx.original_condition->cond, final_lhs, final_rhs, cmp_reg);
+            cmp_inst->block_id = intermediate_block->block_id;
+            cmp_inst->comment  = "Guard condition for remainder loop";
+            intermediate_block->insts.push_back(cmp_inst);
+
+            auto* true_target  = static_cast<LLVMIR::LabelOperand*>(ctx.original_branch->true_label);
+            auto* false_target = static_cast<LLVMIR::LabelOperand*>(ctx.original_branch->false_label);
+
+            LLVMIR::Operand* remainder_target = getLabelOperand(ctx.remainder_header->block_id);
+            LLVMIR::Operand* exit_target      = getLabelOperand(ctx.remainder_exit->block_id);
+
+            if (true_target->label_num == ctx.exit->block_id)
+            {
+                auto* br_cond     = new LLVMIR::BranchCondInst(cmp_reg, exit_target, remainder_target);
+                br_cond->block_id = intermediate_block->block_id;
+                br_cond->comment  = "Guard: exit if condition true, enter remainder if false";
+                intermediate_block->insts.push_back(br_cond);
+
+                updateRemainderExitPhiNodes(ctx, intermediate_block);
+            }
+            else
+            {
+                auto* br_cond     = new LLVMIR::BranchCondInst(cmp_reg, remainder_target, exit_target);
+                br_cond->block_id = intermediate_block->block_id;
+                br_cond->comment  = "Guard: enter remainder if condition true, exit if false";
+                intermediate_block->insts.push_back(br_cond);
+
+                updateRemainderExitPhiNodes(ctx, intermediate_block);
+            }
+
+            DBGINFO("  Created guarded intermediate block with original condition logic");
+        }
+
+        return intermediate_block;
+    }
+
+    void LoopPartialUnrollPass::updateRemainderExitPhiNodes(UnrollContext& ctx, LLVMIR::IRBlock* guard_block)
+    {
+        DBGINFO("Updating remainder exit PHI nodes for guard block");
+
+        int phi_index = 0;
+        for (auto* exit_inst : ctx.exit->insts)
+        {
+            if (exit_inst->opcode != LLVMIR::IROpCode::PHI) break;
+
+            auto* exit_phi = static_cast<LLVMIR::PhiInst*>(exit_inst);
+
+            LLVMIR::Operand* original_latch_value = nullptr;
+            for (const auto& [val, label] : exit_phi->vals_for_labels)
+            {
+                auto* label_op = static_cast<LLVMIR::LabelOperand*>(label);
+                if (label_op->label_num == ctx.latch->block_id)
+                {
+                    original_latch_value = val;
+                    break;
+                }
+            }
+
+            if (original_latch_value)
+            {
+                LLVMIR::Operand* final_value = findValueInFinalIteration(ctx, original_latch_value);
+
+                if (final_value)
+                {
+                    int seen_phi = 0;
+                    for (auto* remainder_inst : ctx.remainder_exit->insts)
+                    {
+                        if (remainder_inst->opcode == LLVMIR::IROpCode::PHI)
+                        {
+                            if (seen_phi == phi_index)
+                            {
+                                auto* remainder_phi = static_cast<LLVMIR::PhiInst*>(remainder_inst);
+
+                                remainder_phi->vals_for_labels.emplace_back(
+                                    final_value, getLabelOperand(guard_block->block_id));
+                                DBGINFO("  Added guard PHI[", phi_index, "] incoming from guard block: ", final_value);
+                                break;
+                            }
+                            ++seen_phi;
+                        }
+                    }
+                }
+                else
+                {
+                    DBGINFO("  Warning: Could not find final value for PHI[",
+                        phi_index,
+                        "] from guard block, original value: ",
+                        original_latch_value);
+                }
+            }
+            else { DBGINFO("  Warning: No latch incoming value found for exit PHI[", phi_index, "]"); }
+
+            phi_index++;
+        }
+
+        DBGINFO("  Updated ", phi_index, " remainder exit PHI nodes with guard incoming values");
     }
 
     std::vector<LLVMIR::IRBlock*> LoopPartialUnrollPass::getPredecessors(LLVMIR::IRBlock* block, CFG* cfg)
