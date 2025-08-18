@@ -390,8 +390,8 @@ namespace Transform
         addParallelLibraryFunctions();
 
         // 2. 分析循环外定义的变量
-        auto [i32_vars, float_vars] = analyzeLoopExternalVariables(cfg, loop);
-        if (i32_vars.size() + float_vars.size() >= 16)
+        auto [i32_vars, ptr_vars, float_vars] = analyzeLoopExternalVariables(cfg, loop);
+        if (i32_vars.size() + ptr_vars.size() + float_vars.size() >= 16)
         {
             DBGINFO("    循环使用过多外部变量，跳过并行化");
             return false;
@@ -399,10 +399,10 @@ namespace Transform
 
         // 3. 生成循环的并行版本函数
         std::string func_name     = generateParallelFunctionName(cfg, loop);
-        auto*       parallel_func = createParallelFunction(func_name, i32_vars, float_vars, cfg->func->max_reg);
+        auto*       parallel_func = createParallelFunction(func_name, cfg->func->max_reg);
 
         // 4. 复制循环体到新函数
-        if (!copyLoopBodyToFunction(cfg, loop, parallel_func, i32_vars, float_vars)) { return false; }
+        if (!copyLoopBodyToFunction(cfg, loop, parallel_func, i32_vars, ptr_vars, float_vars)) { return false; }
 
         return true;
     }
@@ -413,8 +413,7 @@ namespace Transform
         return "parallel_loop_" + cfg->func->func_def->func_name + "_" + std::to_string(loop->loop_id);
     }
 
-    LLVMIR::IRFunction* LoopParallelizationPass::createParallelFunction(
-        const std::string& func_name, const std::set<int>& i32_vars, const std::set<int>& float_vars, int max_reg)
+    LLVMIR::IRFunction* LoopParallelizationPass::createParallelFunction(const std::string& func_name, int max_reg)
     {
         // 创建并行函数声明
         auto* fd            = new LLVMIR::FuncDefInst(LLVMIR::DataType::VOID, func_name);
@@ -429,7 +428,7 @@ namespace Transform
     }
 
     bool LoopParallelizationPass::copyLoopBodyToFunction(CFG* cfg, NaturalLoop* loop, LLVMIR::IRFunction* parallel_func,
-        const std::set<int>& i32_vars, const std::set<int>& float_vars)
+        const std::set<int>& i32_vars, const std::set<int>& ptr_vars, const std::set<int>& float_vars)
     {
         DBGINFO("    开始复制循环体到并行函数...");
 
@@ -446,7 +445,7 @@ namespace Transform
         auto* entry_block = parallel_func->blocks[0];
         entry_block->insts.clear();  // 清空默认的ret指令
 
-        if (!setupFunctionEntry(entry_block, i32_vars, float_vars, reg_replace_map, parallel_func->max_reg))
+        if (!setupFunctionEntry(entry_block, i32_vars, ptr_vars, float_vars, reg_replace_map, parallel_func->max_reg))
         {
             return false;
         }
@@ -484,10 +483,11 @@ namespace Transform
 
     // 设置函数入口和参数解包
     bool LoopParallelizationPass::setupFunctionEntry(LLVMIR::IRBlock* entry_block, const std::set<int>& i32_vars,
-        const std::set<int>& float_vars, std::map<int, int>& reg_replace_map, int& max_reg)
+        const std::set<int>& ptr_vars, const std::set<int>& float_vars, std::map<int, int>& reg_replace_map,
+        int& max_reg)
     {
         // 参数解包：从传入的结构体中提取数据
-        // struct { int thread_id; int start; int end; int i32_vars[]; float float_vars[]; }
+        // struct { int thread_id; int start; int end; int i32_vars[]; ptr_vars[] , float float_vars[]; }
 
         auto* param_ptr = getRegOperand(max_reg);  // 参数指针
 
@@ -584,7 +584,7 @@ namespace Transform
         for (int old_reg : i32_vars)
         {
             auto* gep_var =
-                new LLVMIR::GEPInst(LLVMIR::DataType::I32, LLVMIR::DataType::I32, getRegOperand(++max_reg), param_ptr);
+                new LLVMIR::GEPInst(LLVMIR::DataType::I32, LLVMIR::DataType::I32, param_ptr, getRegOperand(++max_reg));
             gep_var->idxs.emplace_back(getImmeI32Operand(offset++));
             entry_block->insts.push_back(gep_var);
 
@@ -594,11 +594,24 @@ namespace Transform
             reg_replace_map[old_reg] = max_reg;
         }
 
+        for (int old_reg : ptr_vars)
+        {
+            auto* gep_var =
+                new LLVMIR::GEPInst(LLVMIR::DataType::PTR, LLVMIR::DataType::I32, param_ptr, getRegOperand(++max_reg));
+            gep_var->idxs.emplace_back(getImmeI32Operand(offset++));
+            entry_block->insts.push_back(gep_var);
+
+            auto* load_var = new LLVMIR::LoadInst(LLVMIR::DataType::PTR, gep_var->res, getRegOperand(++max_reg));
+            entry_block->insts.push_back(load_var);
+
+            reg_replace_map[old_reg] = max_reg;
+        }
+
         // 加载 float 变量
         for (int old_reg : float_vars)
         {
             auto* gep_var =
-                new LLVMIR::GEPInst(LLVMIR::DataType::F32, LLVMIR::DataType::I32, getRegOperand(++max_reg), param_ptr);
+                new LLVMIR::GEPInst(LLVMIR::DataType::F32, LLVMIR::DataType::I32, param_ptr, getRegOperand(++max_reg));
             gep_var->idxs.emplace_back(getImmeI32Operand(offset++));
             entry_block->insts.push_back(gep_var);
 
@@ -699,11 +712,11 @@ namespace Transform
         {
             int new_reg                               = ++max_reg;
             reg_replace_map[old_inst->GetResultReg()] = new_reg;
-            std::cout << std::endl;
-            std::cout << "      复制指令: " << old_inst->GetResultReg() << " -> " << new_reg << std::endl;
+            // std::cout << std::endl;
+            // std::cout << "      复制指令: " << old_inst->GetResultReg() << " -> " << new_reg << std::endl;
             new_inst->ReplaceAllOperands(reg_replace_map);
-            std::cout << "      复制指令: " << old_inst->toString() << " -> " << new_inst->toString() << std::endl;
-            std::cout << std::endl;
+            // std::cout << "      复制指令: " << old_inst->toString() << " -> " << new_inst->toString() << std::endl;
+            // std::cout << std::endl;
         }
 
         // 更新操作数中的寄存器
@@ -899,15 +912,15 @@ namespace Transform
         // 生成检查代码...
     }
 
-    std::tuple<std::set<int>, std::set<int>> LoopParallelizationPass::analyzeLoopExternalVariables(
+    std::tuple<std::set<int>, std::set<int>, std::set<int>> LoopParallelizationPass::analyzeLoopExternalVariables(
         CFG* cfg, NaturalLoop* loop)
     {
-        std::set<int> i32_vars, float_vars;
+        std::set<int> i32_vars, ptr_vars, float_vars;
 
         std::map<int, LLVMIR::DataType> var_types;
 
         // 分析循环中使用但在循环外定义的变量
-        for (auto* block : loop->loop_nodes)
+        for (auto [id, block] : cfg->block_id_to_block)
         {
             if (loop->loop_nodes.count(block)) { continue; }
             for (auto inst : block->insts)
@@ -930,13 +943,15 @@ namespace Transform
                     {
                         auto type = var_types[use];
                         if (type == LLVMIR::DataType::I32) { i32_vars.insert(use); }
+                        else if (type == LLVMIR::DataType::PTR) { ptr_vars.insert(use); }
+                        // TODO 添加指针类型的加载
                         else if (type == LLVMIR::DataType::F32) { float_vars.insert(use); }
                     }
                 }
             }
         }
 
-        return {i32_vars, float_vars};
+        return {i32_vars, ptr_vars, float_vars};
     }
 
     void LoopParallelizationPass::logResult(NaturalLoop* loop, bool success, const std::string& reason) const

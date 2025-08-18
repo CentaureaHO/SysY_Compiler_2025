@@ -91,13 +91,13 @@ namespace Transform
             CFG* cfg, NaturalLoop* loop, LLVMIR::IRBlock* check_block, int loop_depth, int inst_count);
         bool insertDynamicParallelCheck(CFG* cfg, NaturalLoop* loop);
         void redirectControlFlow(CFG* cfg, NaturalLoop* loop, LLVMIR::IRBlock* check_block);
-        std::tuple<std::set<int>, std::set<int>> analyzeLoopExternalVariables(CFG* cfg, NaturalLoop* loop);
+        std::tuple<std::set<int>, std::set<int>, std::set<int>> analyzeLoopExternalVariables(
+            CFG* cfg, NaturalLoop* loop);
 
         std::string         generateParallelFunctionName(CFG* cfg, NaturalLoop* loop) const;
-        LLVMIR::IRFunction* createParallelFunction(
-            const std::string& func_name, const std::set<int>& i32_vars, const std::set<int>& float_vars, int max_reg);
-        bool copyLoopBodyToFunction(CFG* cfg, NaturalLoop* loop, LLVMIR::IRFunction* parallel_func,
-            const std::set<int>& i32_vars, const std::set<int>& float_vars);
+        LLVMIR::IRFunction* createParallelFunction(const std::string& func_name, int max_reg);
+        bool                copyLoopBodyToFunction(CFG* cfg, NaturalLoop* loop, LLVMIR::IRFunction* parallel_func,
+                           const std::set<int>& i32_vars, const std::set<int>& ptr_vars, const std::set<int>& float_vars);
 
         // 辅助方法
         std::vector<LLVMIR::Instruction*> collectMemoryInstructions(NaturalLoop* loop);
@@ -123,7 +123,8 @@ namespace Transform
 
         // 循环体复制相关方法
         bool setupFunctionEntry(LLVMIR::IRBlock* entry_block, const std::set<int>& i32_vars,
-            const std::set<int>& float_vars, std::map<int, int>& reg_replace_map, int& max_reg);
+            const std::set<int>& ptr_vars, const std::set<int>& float_vars, std::map<int, int>& reg_replace_map,
+            int& max_reg);
 
         bool createNewLoopStructure(LLVMIR::IRFunction* parallel_func, NaturalLoop* loop,
             std::map<int, int>& label_replace_map, int& max_label, LLVMIR::IRBlock*& new_header,
