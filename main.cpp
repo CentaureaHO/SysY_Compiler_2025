@@ -596,6 +596,11 @@ int main(int argc, char** argv)
         makedom.Execute();
         aa.run();
         loopPreProcess();
+        // for (auto& [func_def, cfg] : builder.cfg)
+        // {
+        //     if (!cfg || !cfg->LoopForest) continue;
+        //     for (auto* loop : cfg->LoopForest->loop_set) loop->printLoopInfo();
+        // }
         scevAnalyser.run();
         // scevAnalyser.printAllResults();
 
