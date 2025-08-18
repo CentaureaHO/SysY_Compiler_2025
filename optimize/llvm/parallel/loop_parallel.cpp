@@ -168,6 +168,36 @@ namespace Transform
         // 检查是否是简单的for循环
         if (!isSimpleForLoop(loop)) { return false; }
 
+        // Check lower bound & upper bound
+        auto* info = scev_analyser_->getLoopInfo(loop);
+        if (info->loop_info.lowerbound.type != Analysis::CROperand::CONSTANT &&
+            info->loop_info.lowerbound.type != Analysis::CROperand::LLVM_OPERAND)
+        {
+            DBGINFO("\t循环下界不是常量或LLVM操作数");
+            return false;
+        }
+        if (info->loop_info.upperbound.type != Analysis::CROperand::CONSTANT &&
+            info->loop_info.upperbound.type != Analysis::CROperand::LLVM_OPERAND)
+        {
+            DBGINFO("\t循环上界不是常量或LLVM操作数");
+            return false;
+        }
+
+        // 检查出口块是否有PHI指令，目前暂不支持LCSSA形式
+        for (auto* exit_block : loop->exit_nodes)
+        {
+            for (auto* inst : exit_block->insts)
+            {
+                if (inst->opcode == LLVMIR::IROpCode::PHI)
+                {
+                    DBGINFO("\t循环出口块包含PHI指令，不支持并行化");
+                    return false;
+                }
+                else
+                    break;
+            }
+        }
+
         return true;
     }
 
@@ -410,7 +440,7 @@ namespace Transform
     std::string LoopParallelizationPass::generateParallelFunctionName(CFG* cfg, NaturalLoop* loop) const
     {
         // 生成唯一的函数名
-        return "parallel_loop_" + cfg->func->func_def->func_name + "_" + std::to_string(loop->loop_id);
+        return "parallel.loop." + cfg->func->func_def->func_name + "." + std::to_string(loop->loop_id);
     }
 
     LLVMIR::IRFunction* LoopParallelizationPass::createParallelFunction(const std::string& func_name, int max_reg)
@@ -662,6 +692,8 @@ namespace Transform
         // 创建退出块
         new_exit = parallel_func->createBlock();
 
+        for (auto* exit_block : loop->exit_nodes) label_replace_map[exit_block->block_id] = new_exit->block_id;
+
         return new_header != nullptr && new_latch != nullptr && new_exit != nullptr;
     }
 
@@ -867,6 +899,7 @@ namespace Transform
 
     void LoopParallelizationPass::addParallelLibraryFunctions()
     {
+        /*
         // 添加运行时并行库函数
         auto* thread_func = new LLVMIR::FuncDeclareInst(LLVMIR::DataType::VOID, "___parallel_loop_");
 
@@ -877,6 +910,7 @@ namespace Transform
         thread_func->arg_types.push_back(LLVMIR::DataType::I32);  // f32_count
 
         ir->function_declare.push_back(thread_func);
+        */
     }
 
     bool LoopParallelizationPass::insertDynamicParallelCheck(CFG* cfg, NaturalLoop* loop)
@@ -889,13 +923,13 @@ namespace Transform
         for (auto* block : loop->loop_nodes) { instruction_count += block->insts.size(); }
 
         // 3. 创建检查基本块
-        auto* check_block = cfg->func->createBlock();
+        auto* check_block = cfg->createBlock();
 
         // 4. 插入迭代次数检查
         insertIterationCountCheck(cfg, loop, check_block, loop_depth, instruction_count);
 
         // 5. 修改控制流：preheader -> check_block -> [parallel_call | original_loop]
-        // redirectControlFlow(cfg, loop, check_block);
+        redirectControlFlow(cfg, loop, check_block);
 
         return true;
     }
@@ -903,13 +937,85 @@ namespace Transform
     void LoopParallelizationPass::insertIterationCountCheck(
         CFG* cfg, NaturalLoop* loop, LLVMIR::IRBlock* check_block, int loop_depth, int inst_count)
     {
-        // 实现您的动态检查逻辑
-        int depth_constants[] = {0, 1, 500, 5000};
+        // 实现动态检查逻辑
+        int depth_constants[] = {1, 1, 500, 5000};  // 修复：避免除零错误
 
         // 计算迭代次数阈值
-        int threshold = (loop_depth < 4) ? std::max(20, 4000000 / inst_count / depth_constants[loop_depth]) : 20;
+        int threshold =
+            (loop_depth < 4) ? std::max(20, 4000000 / std::max(1, inst_count) / depth_constants[loop_depth]) : 20;
 
-        // 生成检查代码...
+        DBGINFO("    插入动态检查，阈值: ", threshold);
+
+        LLVMIR::Operand* loop_start = nullptr;
+        LLVMIR::Operand* loop_end   = nullptr;
+
+        if (scev_analyser_)
+        {
+            auto* loop_info = scev_analyser_->getLoopInfo(loop);
+            if (loop_info && loop_info->is_simple_loop)
+            {
+                if (loop_info->loop_info.lowerbound.type == Analysis::CROperand::CONSTANT)
+                {
+                    loop_start = getImmeI32Operand(loop_info->loop_info.lowerbound.const_val);
+                }
+                else if (loop_info->loop_info.lowerbound.type == Analysis::CROperand::LLVM_OPERAND)
+                {
+                    loop_start = loop_info->loop_info.lowerbound.llvm_op;
+                }
+
+                if (loop_info->loop_info.upperbound.type == Analysis::CROperand::CONSTANT)
+                {
+                    loop_end = getImmeI32Operand(loop_info->loop_info.upperbound.const_val);
+                }
+                else if (loop_info->loop_info.upperbound.type == Analysis::CROperand::LLVM_OPERAND)
+                {
+                    loop_end = loop_info->loop_info.upperbound.llvm_op;
+                }
+
+                if (loop_info->loop_info.lowerbound.type != Analysis::CROperand::CONSTANT)
+                {
+                    auto* loop_start_inst = loop_info->loop_info.lowerbound.generateInstruction(cfg);
+                    if (loop_start_inst)
+                    {
+                        check_block->insts.push_back(loop_start_inst);
+                        loop_start = getRegOperand(loop_start_inst->GetResultReg());
+                    }
+                    else
+                        assert(false && "Failed to generate loop start instruction");
+                }
+                if (loop_info->loop_info.upperbound.type != Analysis::CROperand::CONSTANT)
+                {
+                    auto* loop_end_inst = loop_info->loop_info.upperbound.generateInstruction(cfg);
+                    if (loop_end_inst)
+                    {
+                        check_block->insts.push_back(loop_end_inst);
+                        loop_end = getRegOperand(loop_end_inst->GetResultReg());
+                    }
+                    else
+                        assert(false && "Failed to generate loop end instruction");
+                }
+
+                DBGINFO("    从SCEV获取循环边界: start=",
+                    (loop_start ? loop_start->getName() : "null"),
+                    ", end=",
+                    (loop_end ? loop_end->getName() : "null"));
+            }
+        }
+
+        if (!loop_start || !loop_end) assert(false && "Failed to get loop bounds");
+
+        auto* iter_calc = new LLVMIR::ArithmeticInst(
+            LLVMIR::IROpCode::SUB, LLVMIR::DataType::I32, loop_end, loop_start, getRegOperand(++cfg->func->max_reg));
+        check_block->insts.push_back(iter_calc);
+
+        auto* threshold_cmp = new LLVMIR::IcmpInst(LLVMIR::DataType::I32,
+            LLVMIR::IcmpCond::SGE,
+            iter_calc->res,
+            getImmeI32Operand(threshold),
+            getRegOperand(++cfg->func->max_reg));
+        check_block->insts.push_back(threshold_cmp);
+
+        DBGINFO("    动态检查指令已插入");
     }
 
     std::tuple<std::set<int>, std::set<int>, std::set<int>> LoopParallelizationPass::analyzeLoopExternalVariables(
@@ -947,11 +1053,187 @@ namespace Transform
                         // TODO 添加指针类型的加载
                         else if (type == LLVMIR::DataType::F32) { float_vars.insert(use); }
                     }
+                    else
+                    {
+                        // check function arguments
+                        if (use < (int)cfg->func->func_def->arg_types.size())
+                        {
+                            auto type = cfg->func->func_def->arg_types[use];
+                            if (type == LLVMIR::DataType::I32) { i32_vars.insert(use); }
+                            else if (type == LLVMIR::DataType::PTR) { ptr_vars.insert(use); }
+                            else if (type == LLVMIR::DataType::F32) { float_vars.insert(use); }
+                        }
+                    }
                 }
             }
         }
 
         return {i32_vars, ptr_vars, float_vars};
+    }
+
+    void LoopParallelizationPass::redirectControlFlow(CFG* cfg, NaturalLoop* loop, LLVMIR::IRBlock* check_block)
+    {
+        auto* parallel_call_block = cfg->createBlock();
+
+        LLVMIR::Operand* check_result = nullptr;
+        for (auto it = check_block->insts.rbegin(); it != check_block->insts.rend(); ++it)
+        {
+            if ((*it)->opcode == LLVMIR::IROpCode::ICMP)
+            {
+                check_result = static_cast<LLVMIR::IcmpInst*>(*it)->res;
+                break;
+            }
+        }
+
+        if (!check_result) assert(false && "Failed to find check result");
+
+        auto* cond_br = new LLVMIR::BranchCondInst(check_result,
+            getLabelOperand(parallel_call_block->block_id),
+            getLabelOperand(loop->header->block_id));
+        check_block->insts.push_back(cond_br);
+
+        if (!loop->preheader->insts.empty())
+        {
+            auto* last_inst = loop->preheader->insts.back();
+            if (last_inst->opcode == LLVMIR::IROpCode::BR_UNCOND)
+            {
+                auto* br_uncond         = static_cast<LLVMIR::BranchUncondInst*>(last_inst);
+                br_uncond->target_label = getLabelOperand(check_block->block_id);
+            }
+        }
+
+        for (auto* inst : loop->header->insts)
+        {
+            if (inst->opcode == LLVMIR::IROpCode::PHI)
+            {
+                auto* phi = static_cast<LLVMIR::PhiInst*>(inst);
+                for (auto& [val, label] : phi->vals_for_labels)
+                {
+                    if (static_cast<LLVMIR::LabelOperand*>(label)->label_num == loop->preheader->block_id)
+                    {
+                        label = getLabelOperand(check_block->block_id);
+                        break;
+                    }
+                }
+            }
+            else
+                break;
+        }
+
+        addParallelCallToBlock(cfg, loop, parallel_call_block);
+    }
+
+    void LoopParallelizationPass::addParallelCallToBlock(CFG* cfg, NaturalLoop* loop, LLVMIR::IRBlock* block)
+    {
+        auto [i32_vars, ptr_vars, float_vars] = analyzeLoopExternalVariables(cfg, loop);
+
+        LLVMIR::Operand* loop_start = nullptr;
+        LLVMIR::Operand* loop_end   = nullptr;
+
+        if (scev_analyser_)
+        {
+            auto* loop_info = scev_analyser_->getLoopInfo(loop);
+            if (loop_info && loop_info->is_simple_loop)
+            {
+                if (loop_info->loop_info.lowerbound.type == Analysis::CROperand::CONSTANT)
+                {
+                    loop_start = getImmeI32Operand(loop_info->loop_info.lowerbound.const_val);
+                }
+                else if (loop_info->loop_info.lowerbound.type == Analysis::CROperand::LLVM_OPERAND)
+                {
+                    loop_start = loop_info->loop_info.lowerbound.llvm_op;
+                }
+                else
+                    assert(false && "lowerbound type is not constant or llvm_operand");
+
+                if (loop_info->loop_info.upperbound.type == Analysis::CROperand::CONSTANT)
+                {
+                    loop_end = getImmeI32Operand(loop_info->loop_info.upperbound.const_val);
+                }
+                else if (loop_info->loop_info.upperbound.type == Analysis::CROperand::LLVM_OPERAND)
+                {
+                    loop_end = loop_info->loop_info.upperbound.llvm_op;
+                }
+                else
+                    assert(false && "upperbound type is not constant or llvm_operand");
+
+                if (loop_info->loop_info.lowerbound.type != Analysis::CROperand::CONSTANT)
+                {
+                    auto* loop_start_inst = loop_info->loop_info.lowerbound.generateInstruction(cfg);
+                    if (loop_start_inst)
+                    {
+                        block->insts.push_back(loop_start_inst);
+                        loop_start = getRegOperand(loop_start_inst->GetResultReg());
+                    }
+                    else
+                        assert(false && "Failed to generate loop start instruction");
+                }
+                if (loop_info->loop_info.upperbound.type != Analysis::CROperand::CONSTANT)
+                {
+                    auto* loop_end_inst = loop_info->loop_info.upperbound.generateInstruction(cfg);
+                    if (loop_end_inst)
+                    {
+                        block->insts.push_back(loop_end_inst);
+                        loop_end = getRegOperand(loop_end_inst->GetResultReg());
+                    }
+                    else
+                        assert(false && "Failed to generate loop end instruction");
+                }
+            }
+        }
+
+        if (!loop_start || !loop_end) assert(false && "Failed to get loop bounds");
+
+        std::string func_name = generateParallelFunctionName(cfg, loop);
+
+        auto* call_inst = new LLVMIR::CallInst(LLVMIR::DataType::VOID, "lsccll.lib.parallel.loop", nullptr);
+
+        call_inst->args.emplace_back(LLVMIR::DataType::PTR, getGlobalOperand(func_name));
+        call_inst->args.emplace_back(LLVMIR::DataType::I32, loop_start);
+        call_inst->args.emplace_back(LLVMIR::DataType::I32, loop_end);
+        call_inst->args.emplace_back(LLVMIR::DataType::I32, getImmeI32Operand(i32_vars.size()));
+        call_inst->args.emplace_back(LLVMIR::DataType::I32, getImmeI32Operand(ptr_vars.size()));
+
+        for (int reg : i32_vars) call_inst->args.emplace_back(LLVMIR::DataType::I32, getRegOperand(reg));
+        for (int reg : ptr_vars) call_inst->args.emplace_back(LLVMIR::DataType::PTR, getRegOperand(reg));
+        for (int reg : float_vars) call_inst->args.emplace_back(LLVMIR::DataType::F32, getRegOperand(reg));
+
+        block->insts.push_back(call_inst);
+
+        if (!loop->exit_nodes.empty())
+        {
+            auto* exit_block = *loop->exit_nodes.begin();
+            auto* br_to_exit = new LLVMIR::BranchUncondInst(getLabelOperand(exit_block->block_id));
+            block->insts.push_back(br_to_exit);
+            DBGINFO("\t跳转到循环出口块: ", exit_block->block_id);
+        }
+        else
+        {
+            DBGINFO("\t没有循环出口节点，寻找返回块");
+            LLVMIR::IRBlock* return_block = nullptr;
+            for (auto& [block_id, blk] : cfg->block_id_to_block)
+            {
+                if (!blk->insts.empty() && blk->insts.back()->opcode == LLVMIR::IROpCode::RET)
+                {
+                    return_block = blk;
+                    DBGINFO("\t找到返回块: ", block_id);
+                    break;
+                }
+            }
+
+            if (return_block)
+            {
+                auto* br_to_ret = new LLVMIR::BranchUncondInst(getLabelOperand(return_block->block_id));
+                block->insts.push_back(br_to_ret);
+                DBGINFO("\t跳转到返回块: ", return_block->block_id);
+            }
+            else
+            {
+                auto* ret_inst = new LLVMIR::RetInst(LLVMIR::DataType::VOID, nullptr);
+                block->insts.push_back(ret_inst);
+                DBGINFO("\t直接添加返回指令");
+            }
+        }
     }
 
     void LoopParallelizationPass::logResult(NaturalLoop* loop, bool success, const std::string& reason) const

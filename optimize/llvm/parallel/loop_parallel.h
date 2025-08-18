@@ -143,6 +143,8 @@ namespace Transform
 
         void updateJumpTargets(LLVMIR::Instruction* inst, std::map<int, int>& label_replace_map);
 
+        void addParallelCallToBlock(CFG* cfg, NaturalLoop* loop, LLVMIR::IRBlock* block);
+
         // 临时存储循环边界寄存器
         int loop_start_reg_ = -1;
         int loop_end_reg_   = -1;
