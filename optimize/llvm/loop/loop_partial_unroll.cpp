@@ -266,6 +266,7 @@ namespace Transform
 
         ctx.original_condition = nullptr;
         ctx.original_branch    = nullptr;
+        ctx.adjusted_upper_bound = nullptr;
 
         for (auto* inst : ctx.latch->insts)
         {
@@ -372,6 +373,18 @@ namespace Transform
 
         auto step_val = ctx.loop_info->loop_info.step.getConstantValue();
         int  step     = step_val ? *step_val : 1;
+
+        int   bound_adjustment            = (ctx.unroll_factor - 1) * step;
+        auto* adjusted_upper_bound_reg    = getRegOperand(++ctx.cfg->func->max_reg);
+        auto* adjust_upper_bound_inst     = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::SUB,
+            LLVMIR::DataType::I32,
+            ctx.trip_count_upper_bound,
+            getImmeI32Operand(bound_adjustment),
+            adjusted_upper_bound_reg);
+        adjust_upper_bound_inst->block_id = preheader->block_id;
+        adjust_upper_bound_inst->comment  = "Adjusted upper bound for unrolled loop final condition";
+        preheader->insts.push_back(adjust_upper_bound_inst);
+        ctx.adjusted_upper_bound = adjusted_upper_bound_reg;
 
         auto* diff_reg      = getRegOperand(++ctx.cfg->func->max_reg);
         auto* diff_inst     = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::SUB,
@@ -722,71 +735,55 @@ namespace Transform
                     {
                         auto* icmp_inst = static_cast<LLVMIR::IcmpInst*>(def_inst);
 
-                        auto is_defined_in_latch = [&](LLVMIR::Operand* op) -> bool {
-                            if (!op || op->type != LLVMIR::OperandType::REG) return false;
-                            int reg = static_cast<LLVMIR::RegOperand*>(op)->reg_num;
-                            for (auto* inst2 : ctx.final_unrolled_latch->insts)
+                        bool lhs_is_upper_bound = (icmp_inst->lhs == ctx.trip_count_upper_bound);
+                        bool rhs_is_upper_bound = (icmp_inst->rhs == ctx.trip_count_upper_bound);
+
+                        if (!lhs_is_upper_bound && !rhs_is_upper_bound)
+                        {
+                            if (ctx.trip_count_upper_bound->type == LLVMIR::OperandType::REG)
                             {
-                                if (inst2->GetResultReg() == reg) return true;
+                                auto* upper_bound_reg   = static_cast<LLVMIR::RegOperand*>(ctx.trip_count_upper_bound);
+                                auto  final_upper_bound = findValueInFinalIteration(ctx, ctx.trip_count_upper_bound);
+
+                                lhs_is_upper_bound = (icmp_inst->lhs == final_upper_bound);
+                                rhs_is_upper_bound = (icmp_inst->rhs == final_upper_bound);
                             }
-                            return false;
-                        };
-
-                        int adjust = ctx.unroll_factor - 1;
-
-                        auto insert_add_before = [&](LLVMIR::Operand* iv_op) -> LLVMIR::Operand* {
-                            auto* new_reg      = getRegOperand(++ctx.cfg->func->max_reg);
-                            auto* add_inst     = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::ADD,
-                                LLVMIR::DataType::I32,
-                                iv_op,
-                                getImmeI32Operand(adjust),
-                                new_reg);
-                            add_inst->block_id = ctx.final_unrolled_latch->block_id;
-
-                            auto it_pos = std::find(ctx.final_unrolled_latch->insts.begin(),
-                                ctx.final_unrolled_latch->insts.end(),
-                                def_inst);
-                            ctx.final_unrolled_latch->insts.insert(it_pos, add_inst);
-                            return new_reg;
-                        };
-
-                        bool lhs_is_iv = is_defined_in_latch(icmp_inst->lhs);
-                        bool rhs_is_iv = is_defined_in_latch(icmp_inst->rhs);
+                        }
 
                         if (icmp_inst->cond == LLVMIR::IcmpCond::SLE || icmp_inst->cond == LLVMIR::IcmpCond::SLT)
                         {
-                            if (lhs_is_iv && !rhs_is_iv)
+                            if (rhs_is_upper_bound)
                             {
-                                icmp_inst->lhs = insert_add_before(icmp_inst->lhs);
-                                DBGINFO("  Adjusted final latch induction variable (lhs) by ", adjust);
+                                icmp_inst->rhs = ctx.adjusted_upper_bound;
+                                DBGINFO("  Replaced upper bound (rhs) with pre-computed adjusted upper bound");
                             }
-                            else if (!lhs_is_iv && rhs_is_iv)
+                            else if (lhs_is_upper_bound)
                             {
-                                icmp_inst->rhs = insert_add_before(icmp_inst->rhs);
-                                DBGINFO("  Adjusted final latch induction variable (rhs) by ", adjust);
+                                icmp_inst->lhs = ctx.adjusted_upper_bound;
+                                DBGINFO("  Replaced upper bound (lhs) with pre-computed adjusted upper bound");
                             }
                             else
                             {
-                                icmp_inst->lhs = insert_add_before(icmp_inst->lhs);
-                                DBGINFO("  Adjusted final latch induction variable (default lhs) by ", adjust);
+                                icmp_inst->rhs = ctx.adjusted_upper_bound;
+                                DBGINFO("  Default: replaced rhs with pre-computed adjusted upper bound");
                             }
                         }
                         else if (icmp_inst->cond == LLVMIR::IcmpCond::SGE || icmp_inst->cond == LLVMIR::IcmpCond::SGT)
                         {
-                            if (lhs_is_iv && !rhs_is_iv)
+                            if (lhs_is_upper_bound)
                             {
-                                icmp_inst->lhs = insert_add_before(icmp_inst->lhs);
-                                DBGINFO("  Adjusted final latch induction variable (lhs) by ", adjust);
+                                icmp_inst->lhs = ctx.adjusted_upper_bound;
+                                DBGINFO("  Replaced upper bound (lhs) with pre-computed adjusted upper bound");
                             }
-                            else if (!lhs_is_iv && rhs_is_iv)
+                            else if (rhs_is_upper_bound)
                             {
-                                icmp_inst->rhs = insert_add_before(icmp_inst->rhs);
-                                DBGINFO("  Adjusted final latch induction variable (rhs) by ", adjust);
+                                icmp_inst->rhs = ctx.adjusted_upper_bound;
+                                DBGINFO("  Replaced upper bound (rhs) with pre-computed adjusted upper bound");
                             }
                             else
                             {
-                                icmp_inst->lhs = insert_add_before(icmp_inst->lhs);
-                                DBGINFO("  Adjusted final latch induction variable (default lhs) by ", adjust);
+                                icmp_inst->lhs = ctx.adjusted_upper_bound;
+                                DBGINFO("  Default: replaced lhs with pre-computed adjusted upper bound");
                             }
                         }
                     }
@@ -855,38 +852,54 @@ namespace Transform
 
                 if (icmp_inst)
                 {
-                    auto is_defined_in_latch = [&](LLVMIR::Operand* op) -> bool {
-                        if (!op || op->type != LLVMIR::OperandType::REG) return false;
-                        int reg = static_cast<LLVMIR::RegOperand*>(op)->reg_num;
-                        for (auto* inst2 : ctx.final_unrolled_latch->insts)
+                    bool lhs_is_upper_bound = (icmp_inst->lhs == ctx.trip_count_upper_bound);
+                    bool rhs_is_upper_bound = (icmp_inst->rhs == ctx.trip_count_upper_bound);
+
+                    if (!lhs_is_upper_bound && !rhs_is_upper_bound)
+                    {
+                        if (ctx.trip_count_upper_bound->type == LLVMIR::OperandType::REG)
                         {
-                            if (inst2->GetResultReg() == reg) return true;
+                            auto final_upper_bound = findValueInFinalIteration(ctx, ctx.trip_count_upper_bound);
+
+                            lhs_is_upper_bound = (icmp_inst->lhs == final_upper_bound);
+                            rhs_is_upper_bound = (icmp_inst->rhs == final_upper_bound);
                         }
-                        return false;
-                    };
-
-                    int adjust = ctx.unroll_factor - 1;
-
-                    auto insert_add_before_icmp = [&](LLVMIR::Operand* iv_op) -> LLVMIR::Operand* {
-                        auto* new_reg  = getRegOperand(++ctx.cfg->func->max_reg);
-                        auto* add_inst = new LLVMIR::ArithmeticInst(
-                            LLVMIR::IROpCode::ADD, LLVMIR::DataType::I32, iv_op, getImmeI32Operand(adjust), new_reg);
-                        add_inst->block_id = ctx.final_unrolled_latch->block_id;
-
-                        auto it_pos = std::find(
-                            ctx.final_unrolled_latch->insts.begin(), ctx.final_unrolled_latch->insts.end(), icmp_inst);
-                        ctx.final_unrolled_latch->insts.insert(it_pos, add_inst);
-                        return new_reg;
-                    };
-
-                    bool lhs_is_iv = is_defined_in_latch(icmp_inst->lhs);
+                    }
 
                     if (icmp_inst->cond == LLVMIR::IcmpCond::SLE || icmp_inst->cond == LLVMIR::IcmpCond::SLT)
                     {
-                        if (lhs_is_iv)
+                        if (rhs_is_upper_bound)
                         {
-                            icmp_inst->lhs = insert_add_before_icmp(icmp_inst->lhs);
-                            DBGINFO("  Adjusted else path final latch induction variable (lhs) by ", adjust);
+                            icmp_inst->rhs = ctx.adjusted_upper_bound;
+                            DBGINFO("  Replaced upper bound (rhs) with pre-computed adjusted upper bound (else path)");
+                        }
+                        else if (lhs_is_upper_bound)
+                        {
+                            icmp_inst->lhs = ctx.adjusted_upper_bound;
+                            DBGINFO("  Replaced upper bound (lhs) with pre-computed adjusted upper bound (else path)");
+                        }
+                        else
+                        {
+                            icmp_inst->rhs = ctx.adjusted_upper_bound;
+                            DBGINFO("  Default: replaced rhs with pre-computed adjusted upper bound (else path)");
+                        }
+                    }
+                    else if (icmp_inst->cond == LLVMIR::IcmpCond::SGE || icmp_inst->cond == LLVMIR::IcmpCond::SGT)
+                    {
+                        if (lhs_is_upper_bound)
+                        {
+                            icmp_inst->lhs = ctx.adjusted_upper_bound;
+                            DBGINFO("  Replaced upper bound (lhs) with pre-computed adjusted upper bound (else path)");
+                        }
+                        else if (rhs_is_upper_bound)
+                        {
+                            icmp_inst->rhs = ctx.adjusted_upper_bound;
+                            DBGINFO("  Replaced upper bound (rhs) with pre-computed adjusted upper bound (else path)");
+                        }
+                        else
+                        {
+                            icmp_inst->lhs = ctx.adjusted_upper_bound;
+                            DBGINFO("  Default: replaced lhs with pre-computed adjusted upper bound (else path)");
                         }
                     }
                 }

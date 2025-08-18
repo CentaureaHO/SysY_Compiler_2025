@@ -593,11 +593,11 @@ int main(int argc, char** argv)
         makedom.Execute();
         aa.run();
         loopPreProcess();
-        for (auto& [func_def, cfg] : builder.cfg)
-        {
-            if (!cfg || !cfg->LoopForest) continue;
-            for (auto* loop : cfg->LoopForest->loop_set) loop->printLoopInfo();
-        }
+        // for (auto& [func_def, cfg] : builder.cfg)
+        // {
+        //     if (!cfg || !cfg->LoopForest) continue;
+        //     for (auto* loop : cfg->LoopForest->loop_set) loop->printLoopInfo();
+        // }
         scevAnalyser.run();
         // scevAnalyser.printAllResults();
 
@@ -612,7 +612,7 @@ int main(int argc, char** argv)
                       << unroll_stats.second << " loops" << std::endl;
         }
 
-        /*makecfg.Execute();
+        makecfg.Execute();
         makedom.Execute();
         EAliasAnalysis::EAliasAnalyser ealias_analyser(&builder);
         DSEPass dse(&builder, &ealias_analyser, &edefUseAnalysis, &arrAliasAnalysis);
@@ -670,7 +670,7 @@ int main(int argc, char** argv)
             singleSourcePhiElim.setPreserveLCSSA(false);
             singleSourcePhiElim.Execute();
             cfgSimplify();
-        }*/
+        }
 
         makecfg.Execute();
     }

@@ -66,6 +66,9 @@ namespace Transform
             LLVMIR::Operand* trip_count_upper_bound;
             LLVMIR::Operand* trip_count_lower_bound;
 
+            // 调整后的上界，用于展开循环的最终条件比较
+            LLVMIR::Operand* adjusted_upper_bound;
+
             // 原始条件信息
             LLVMIR::IcmpInst*       original_condition;
             LLVMIR::BranchCondInst* original_branch;
