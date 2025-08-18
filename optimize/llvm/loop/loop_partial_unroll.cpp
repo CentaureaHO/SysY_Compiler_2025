@@ -265,8 +265,8 @@ namespace Transform
             return false;
         }
 
-        ctx.original_condition = nullptr;
-        ctx.original_branch    = nullptr;
+        ctx.original_condition   = nullptr;
+        ctx.original_branch      = nullptr;
         ctx.adjusted_upper_bound = nullptr;
 
         for (auto* inst : ctx.latch->insts)

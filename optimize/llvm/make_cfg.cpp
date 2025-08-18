@@ -6,6 +6,7 @@ void MakeCFGPass::Execute()
     ir->cfg.clear();
     for (auto func : ir->functions)
     {
+        // std::cout << "func name: " << func->func_def->func_name << std::endl;
         CFG* new_cfg            = new CFG;
         ir->cfg[func->func_def] = new_cfg;
         new_cfg->func           = func;

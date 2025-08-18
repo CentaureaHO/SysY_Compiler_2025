@@ -529,8 +529,9 @@ namespace LLVMIR
         DataType              ret_type;
         std::string           func_name;
         std::vector<DataType> arg_types;
+        bool                  is_var_arg;
 
-        FuncDeclareInst(DataType rt, std::string fn, std::vector<DataType> at = {});
+        FuncDeclareInst(DataType rt, std::string fn, std::vector<DataType> at = {}, bool is_va = false);
 
         virtual void printIR(std::ostream& s) override;
 

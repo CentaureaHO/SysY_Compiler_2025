@@ -742,8 +742,8 @@ void GEPInst::Rename(std::map<int, int>& replace)
     }
 }
 
-FuncDeclareInst::FuncDeclareInst(DataType rt, string fn, vector<DataType> at)
-    : Instruction(IROpCode::OTHER), ret_type(rt), func_name(fn), arg_types(at)
+FuncDeclareInst::FuncDeclareInst(DataType rt, string fn, vector<DataType> at, bool is_va)
+    : Instruction(IROpCode::OTHER), ret_type(rt), func_name(fn), arg_types(at), is_var_arg(is_va)
 {}
 void FuncDeclareInst::printIR(ostream& s)
 {
@@ -756,6 +756,7 @@ void FuncDeclareInst::printIR(ostream& s)
         ++cp;
         if (cp != arg_types.end()) s << ", ";
     }
+    if (is_var_arg) s << ", ...";
     s << ")\n";
 }
 
