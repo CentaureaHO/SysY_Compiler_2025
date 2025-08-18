@@ -119,6 +119,7 @@ namespace Transform
 
         LLVMIR::IRBlock* createGuardedIntermediateBlock(UnrollContext& ctx);
         void             updateRemainderExitPhiNodes(UnrollContext& ctx, LLVMIR::IRBlock* guard_block);
+        bool             checkLoopBoundsDominance(UnrollContext& ctx);
     };
 
 }  // namespace Transform

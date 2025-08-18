@@ -258,6 +258,12 @@ namespace Transform
             return false;
         }
 
+        if (!checkLoopBoundsDominance(ctx))
+        {
+            DBGINFO("Loop bounds depend on loop-internal values, skipping partial unroll");
+            return false;
+        }
+
         ctx.original_condition = nullptr;
         ctx.original_branch    = nullptr;
 
@@ -1249,6 +1255,49 @@ namespace Transform
         }
 
         DBGINFO("  Updated ", phi_index, " remainder exit PHI nodes with guard incoming values");
+    }
+
+    bool LoopPartialUnrollPass::checkLoopBoundsDominance(UnrollContext& ctx)
+    {
+        DBGINFO("Checking loop bounds dominance");
+
+        auto checkOperand = [&](const Analysis::CROperand& cr_op, const std::string& name) -> bool {
+            if (cr_op.type == Analysis::CROperand::LLVM_OPERAND)
+            {
+                auto* operand = cr_op.llvm_op;
+                if (auto* reg_op = dynamic_cast<LLVMIR::RegOperand*>(operand))
+                {
+                    for (auto* block : ctx.cfg->func->blocks)
+                    {
+                        for (auto* inst : block->insts)
+                        {
+                            if (inst->GetResultOperand() == operand)
+                            {
+                                if (ctx.loop->loop_nodes.count(block))
+                                {
+                                    DBGINFO("  ",
+                                        name,
+                                        " bound operand ",
+                                        operand->getName(),
+                                        " is defined inside loop in Block",
+                                        block->block_id);
+                                    return false;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            return true;
+        };
+
+        if (!checkOperand(ctx.loop_info->loop_info.lowerbound, "Lower")) { return false; }
+
+        if (!checkOperand(ctx.loop_info->loop_info.upperbound, "Upper")) { return false; }
+
+        DBGINFO("  Loop bounds are loop-invariant, safe for partial unroll");
+        return true;
     }
 
     std::vector<LLVMIR::IRBlock*> LoopPartialUnrollPass::getPredecessors(LLVMIR::IRBlock* block, CFG* cfg)
