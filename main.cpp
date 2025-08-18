@@ -604,7 +604,7 @@ int main(int argc, char** argv)
         // Partial Loop Unroll
         {
             Transform::LoopPartialUnrollPass loopPartialUnrollPass(&builder, &scevAnalyser);
-            if (optimizeLevel >= 2) loopPartialUnrollPass.Execute();
+            loopPartialUnrollPass.Execute();
             // builder.printIR(std::cerr);
 
             auto unroll_stats = loopPartialUnrollPass.getUnrollStats();
