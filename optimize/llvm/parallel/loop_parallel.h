@@ -95,7 +95,7 @@ namespace Transform
 
         std::string         generateParallelFunctionName(CFG* cfg, NaturalLoop* loop) const;
         LLVMIR::IRFunction* createParallelFunction(
-            const std::string& func_name, const std::set<int>& i32_vars, const std::set<int>& float_vars);
+            const std::string& func_name, const std::set<int>& i32_vars, const std::set<int>& float_vars, int max_reg);
         bool copyLoopBodyToFunction(CFG* cfg, NaturalLoop* loop, LLVMIR::IRFunction* parallel_func,
             const std::set<int>& i32_vars, const std::set<int>& float_vars);
 

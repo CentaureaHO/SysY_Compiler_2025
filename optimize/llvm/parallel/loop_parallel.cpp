@@ -399,7 +399,7 @@ namespace Transform
 
         // 3. 生成循环的并行版本函数
         std::string func_name     = generateParallelFunctionName(cfg, loop);
-        auto*       parallel_func = createParallelFunction(func_name, i32_vars, float_vars);
+        auto*       parallel_func = createParallelFunction(func_name, i32_vars, float_vars, cfg->func->max_reg);
 
         // 4. 复制循环体到新函数
         if (!copyLoopBodyToFunction(cfg, loop, parallel_func, i32_vars, float_vars)) { return false; }
@@ -414,7 +414,7 @@ namespace Transform
     }
 
     LLVMIR::IRFunction* LoopParallelizationPass::createParallelFunction(
-        const std::string& func_name, const std::set<int>& i32_vars, const std::set<int>& float_vars)
+        const std::string& func_name, const std::set<int>& i32_vars, const std::set<int>& float_vars, int max_reg)
     {
         // 创建并行函数声明
         auto* fd            = new LLVMIR::FuncDefInst(LLVMIR::DataType::VOID, func_name);
@@ -422,7 +422,7 @@ namespace Transform
 
         // 添加参数类型
         fd->arg_types.push_back(LLVMIR::DataType::PTR);  // function pointer
-        fd->arg_regs.push_back(getRegOperand(0));
+        fd->arg_regs.push_back(getRegOperand(++max_reg));
 
         ir->functions.push_back(parallel_func);
         return parallel_func;
@@ -439,34 +439,38 @@ namespace Transform
 
         // 2. 设置函数入口和参数解包
         if (parallel_func->blocks.empty()) { parallel_func->createBlock(); }
-        int max_reg   = ++parallel_func->max_reg;
-        int max_label = parallel_func->max_label;
+        parallel_func->max_reg = cfg->func->max_reg + 1;
         std::cout << "    准备并行函数入口..." << std::endl;
-        std::cout << "max reg is " << max_reg << std::endl;
-        std::cout << "max label is " << max_label << std::endl;
+        std::cout << "max reg is " << parallel_func->max_reg << std::endl;
+        std::cout << "max label is " << parallel_func->max_label << std::endl;
         auto* entry_block = parallel_func->blocks[0];
         entry_block->insts.clear();  // 清空默认的ret指令
 
-        if (!setupFunctionEntry(entry_block, i32_vars, float_vars, reg_replace_map, max_reg)) { return false; }
+        if (!setupFunctionEntry(entry_block, i32_vars, float_vars, reg_replace_map, parallel_func->max_reg))
+        {
+            return false;
+        }
 
         // 3. 创建新的循环结构
         LLVMIR::IRBlock* new_header = nullptr;
         LLVMIR::IRBlock* new_latch  = nullptr;
         LLVMIR::IRBlock* new_exit   = nullptr;
 
-        if (!createNewLoopStructure(parallel_func, loop, label_replace_map, max_label, new_header, new_latch, new_exit))
+        if (!createNewLoopStructure(
+                parallel_func, loop, label_replace_map, parallel_func->max_label, new_header, new_latch, new_exit))
         {
             return false;
         }
 
         // 4. 复制循环体指令
-        if (!copyLoopInstructions(cfg, loop, parallel_func, reg_replace_map, label_replace_map, max_reg))
+        if (!copyLoopInstructions(cfg, loop, parallel_func, reg_replace_map, label_replace_map, parallel_func->max_reg))
         {
             return false;
         }
 
         // 5. 设置循环控制和边界
-        if (!setupLoopControl(cfg, loop, entry_block, new_header, new_latch, new_exit, reg_replace_map, max_reg))
+        if (!setupLoopControl(
+                cfg, loop, entry_block, new_header, new_latch, new_exit, reg_replace_map, parallel_func->max_reg))
         {
             return false;
         }
@@ -485,7 +489,7 @@ namespace Transform
         // 参数解包：从传入的结构体中提取数据
         // struct { int thread_id; int start; int end; int i32_vars[]; float float_vars[]; }
 
-        auto* param_ptr = getRegOperand(0);  // 参数指针
+        auto* param_ptr = getRegOperand(max_reg);  // 参数指针
 
         // 1. 加载 thread_id (offset 0)
         auto* gep_thread =
@@ -668,6 +672,15 @@ namespace Transform
                     return false;
                 }
                 new_block->insts.push_back(new_inst);
+            }
+        }
+
+        for (auto* new_block : parallel_func->blocks)
+        {
+            for (auto* inst : new_block->insts)
+            {
+                // 更新指令中的寄存器
+                inst->ReplaceAllOperands(reg_replace_map);
             }
         }
 
