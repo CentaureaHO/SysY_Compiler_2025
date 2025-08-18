@@ -31,7 +31,7 @@ namespace Transform
     static int calculateLoopDepth(NaturalLoop* loop)
     {
         int depth = 0;
-        while (!loop->fa_loop)
+        while (loop->fa_loop)
         {
             loop = loop->fa_loop;
             depth++;
