@@ -1114,26 +1114,61 @@ lsccll.lib.parallel.thread_create:      # @lsccll.lib.parallel.thread_create
 	sd	zero, 32(s1)
 	sd	a1, 40(s1)
 	sd	s1, %pcrel_lo(.Lpcrel_hi21)(a0)
-	call	fork
-	sext.w	a1, a0
-	li	s0, -1
-	beq	a1, s0, .LBB5_9
+	# 分配栈空间
+	li	 a0, 8192                   # 8KB栈大小
+	call	malloc
+	mv	 s5, a0                     # 保存栈指针
+	beqz	 a0, .LBB5_9              # 如果栈分配失败，跳转到错误处理
+
+	# 设置栈指针(栈向下增长，所以要加上栈大小)
+	addi a1, a0, 8192             # 栈顶位置
+
+	# 设置clone参数
+	li a0, 0x00000100             # CLONE_VM
+	ori a0, a0, 0x00000200        # CLONE_FS
+	ori a0, a0, 0x00000400        # CLONE_FILES
+	ori a0, a0, 0x00000800        # CLONE_SIGHAND
+	ori a0, a0, 0x00010000        # CLONE_THREAD
+	ori a0, a0, 0x00040000        # CLONE_SYSVSEM
+
+	# 将参数保存到栈上，供子线程使用
+	addi a1, a1, -16              # 为参数预留栈空间
+	sd s4, 0(a1)                  # 存储函数指针
+	sd s3, 8(a1)                  # 存储参数
+
+	# 调用clone
+	li a2, 0                      # parent_tidptr = NULL
+	li a3, 0                      # child_tidptr = NULL
+	li a4, 0                      # tls = NULL
+	li a7, 220                    # clone系统调用号
+	ecall
+
+	# 检查结果
+	sext.w a1, a0
+	li s0, -1
+	beq a1, s0, .LBB5_9
 # %bb.7:
 	beqz	a1, .LBB5_11
 # %bb.8:
 .Lpcrel_hi22:
-	auipc	a1, %pcrel_hi(shared_mem)
-	li	a2, 1
-	ld	a1, %pcrel_lo(.Lpcrel_hi22)(a1)
-	sw	a0, 0(s1)
-	sw	a2, 4(s1)
-	li	s0, 0
-	amoadd.w.aqrl	zero, a2, (a1)
-	sd	s1, 0(s2)
+    auipc a1, %pcrel_hi(shared_mem)
+    li a2, 1
+    ld a1, %pcrel_lo(.Lpcrel_hi22)(a1)
+    sw a0, 0(s1)                # 存储线程ID
+    sw a2, 4(s1)                # 设置线程状态
+    li s0, 0
+    sd s5, 32(s1)               # 存储栈指针，用于后续清理
+    amoadd.w.aqrl zero, a2, (a1)
+    sd s1, 0(s2)
 	j	.LBB5_10
 .LBB5_9:
-	mv	a0, s1
-	call	free
+    # 如果s5不为零,表示已分配栈,需要释放
+    beqz s5, .LBB5_9_skip_free
+    mv a0, s5
+    call free
+.LBB5_9_skip_free:
+    mv a0, s1
+    call free
 .LBB5_10:
 	mv	a0, s0
 	ld	ra, 40(sp)                      # 8-byte Folded Reload
@@ -1155,13 +1190,15 @@ lsccll.lib.parallel.thread_create:      # @lsccll.lib.parallel.thread_create
 lsccll.lib.parallel.thread_process_main: # @lsccll.lib.parallel.thread_process_main
 	.cfi_startproc
 # %bb.0:
-	addi	sp, sp, -16
-	.cfi_def_cfa_offset 16
-	sd	ra, 8(sp)                       # 8-byte Folded Spill
-	.cfi_offset ra, -8
-	mv	a2, a0
-	mv	a0, a1
-	jalr	a2
+    addi sp, sp, -16
+    .cfi_def_cfa_offset 16
+    sd ra, 8(sp)               # 8-byte Folded Spill
+    .cfi_offset ra, -8
+    
+    # 从栈上加载参数和函数指针
+    ld a0, 8(sp)               # 加载参数
+    ld a2, 0(sp)               # 加载函数指针
+    jalr a2                    # 调用函数
 .Lpcrel_hi23:
 	auipc	a1, %pcrel_hi(shared_mem)
 	ld	a1, %pcrel_lo(.Lpcrel_hi23)(a1)
@@ -1281,8 +1318,16 @@ lsccll.lib.parallel.thread_join:        # @lsccll.lib.parallel.thread_join
 .LBB7_23:                               # %.loopexit4
 	ld	a2, 40(a0)
 	sd	a2, 0(a1)
-.LBB7_24:                               # %.loopexit
-	call	free
+.LBB7_24:                      # %.loopexit
+    # 释放线程栈
+    ld a1, 32(a0)             # 加载栈指针
+    beqz a1, .LBB7_24_skip_stack
+    mv s2, a0                 # 临时保存线程控制块指针
+    mv a0, a1
+    call free
+    mv a0, s2                 # 恢复线程控制块指针
+.LBB7_24_skip_stack:
+    call free                 # 释放线程控制块
 .Lpcrel_hi25:
 	auipc	a0, %pcrel_hi(shared_mem)
 	ld	a1, %pcrel_lo(.Lpcrel_hi25)(a0)
