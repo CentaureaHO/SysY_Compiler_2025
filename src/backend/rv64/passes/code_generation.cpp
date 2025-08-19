@@ -1120,16 +1120,22 @@ lsccll.lib.parallel.thread_create:      # @lsccll.lib.parallel.thread_create
 	mv	 s5, a0                     # 保存栈指针
 	beqz	 a0, .LBB5_9              # 如果栈分配失败，跳转到错误处理
 
-	# 设置栈指针(栈向下增长，所以要加上栈大小)
-	addi a1, a0, 8192             # 栈顶位置
+	# 处理8192的栈大小
+	li t0, 8192             # 先加载8192到临时寄存器
+	add a1, a0, t0          # 然后相加
 
-	# 设置clone参数
-	li a0, 0x00000100             # CLONE_VM
-	ori a0, a0, 0x00000200        # CLONE_FS
-	ori a0, a0, 0x00000400        # CLONE_FILES
-	ori a0, a0, 0x00000800        # CLONE_SIGHAND
-	ori a0, a0, 0x00010000        # CLONE_THREAD
-	ori a0, a0, 0x00040000        # CLONE_SYSVSEM
+	# 设置clone参数的正确方式
+	li a0, 0x00000100       # CLONE_VM
+	li t0, 0x00000200       # CLONE_FS
+	or a0, a0, t0
+	li t0, 0x00000400       # CLONE_FILES
+	or a0, a0, t0
+	li t0, 0x00000800       # CLONE_SIGHAND
+	or a0, a0, t0
+	li t0, 0x00010000       # CLONE_THREAD
+	or a0, a0, t0
+	li t0, 0x00040000       # CLONE_SYSVSEM
+	or a0, a0, t0
 
 	# 将参数保存到栈上，供子线程使用
 	addi a1, a1, -16              # 为参数预留栈空间
