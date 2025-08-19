@@ -53,10 +53,53 @@ namespace Transform
     {
         def_use_analysis_->run();
         // 类比LoopFullUnrollPass::processAllLoops()
+        CFG* start_cfg = nullptr;
         for (const auto& [func_def, cfg] : ir->cfg)
         {
-            if (cfg && cfg->LoopForest && !cfg->LoopForest->loop_set.empty()) { processFunction(cfg); }
+            if (func_def->func_name == "main")
+            {
+                start_cfg = cfg;
+                break;
+            }
+            // // 从main开始
+            // if (cfg && cfg->LoopForest && !cfg->LoopForest->loop_set.empty())
+            // {
+            //     CollectAllGlobal(cfg);
+            //     processFunction(cfg);
+            // }
         }
+        if (start_cfg && start_cfg->LoopForest && !start_cfg->LoopForest->loop_set.empty())
+        {
+            CollectAllGlobal(start_cfg);
+            processFunction(start_cfg);
+        }
+    }
+
+    void LoopParallelizationPass::CollectAllGlobal(CFG* cfg)
+    {
+        parallel_loop_global_.clear();
+        // 收集CFG中所有的全局变量
+        for (auto& global : ir->global_def)
+        {
+            auto global_def = static_cast<LLVMIR::GlbvarDefInst*>(global);
+            parallel_loop_global_.insert(getGlobalOperand(global_def->name));
+        }
+
+        for (auto& [id, block] : cfg->block_id_to_block)
+        {
+            for (auto* inst : block->insts)
+            {
+                for (auto* use : inst->GetUsedOperands())
+                {
+                    if (parallel_loop_global_.count(use))
+                    {
+                        parallel_loop_global_.insert(use);
+                        DBGINFO("收集到全局变量: ", use->getName());
+                    }
+                }
+            }
+        }
+        DBGINFO("收集到 ", parallel_loop_global_.size(), " 个全局变量用于并行化");
     }
 
     void LoopParallelizationPass::processFunction(CFG* cfg)
@@ -431,14 +474,28 @@ namespace Transform
 
         if (loop_size < MIN_LOOP_SIZE_FOR_PARALLEL) { return false; }
 
+        for (auto* inst : loop->preheader->insts)
+        {
+            for (auto use : inst->GetUsedOperands())
+            {
+                if (parallel_loop_global_.count(use))
+                {
+                    DBGINFO("    循环使用了全局变量，跳过并行化");
+                    return false;  // 使用全局变量的循环不适合并行化
+                }
+            }
+        }
         for (auto* node : loop->loop_nodes)
         {
             for (auto* inst : node->insts)
             {
-                if (inst->opcode == LLVMIR::IROpCode::CALL) { return false; }
-                for (auto use : inst->GetUsedOperands())
+                for (auto* use : inst->GetUsedOperands())
                 {
-                    if (use->type == LLVMIR::OperandType::GLOBAL) { return false; }
+                    if (parallel_loop_global_.count(use))
+                    {
+                        DBGINFO("    循环使用了全局变量，跳过并行化");
+                        return false;  // 使用全局变量的循环不适合并行化
+                    }
                 }
             }
         }
@@ -546,7 +603,7 @@ namespace Transform
     std::string LoopParallelizationPass::generateParallelFunctionName(CFG* cfg, NaturalLoop* loop) const
     {
         // 生成唯一的函数名
-        return "parallel.loop." + cfg->func->func_def->func_name + "." + std::to_string(loop->loop_id);
+        return "parallel.loop." + cfg->func->func_def->func_name + "." + std::to_string(loop->header->block_id);
     }
 
     LLVMIR::IRFunction* LoopParallelizationPass::createParallelFunction(const std::string& func_name, int max_reg)

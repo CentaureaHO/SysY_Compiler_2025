@@ -367,7 +367,7 @@ int main(int argc, char** argv)
         // std::cout << "Before Function Inline" << std::endl;
         // phiPrecursor.Execute();
         Transform::FunctionInlinePass inlinePass(&builder);
-        inlinePass.Execute();
+        // inlinePass.Execute();
 
         // 直接删除内联后没用的函数
         Transform::UnusedFuncEliminationPass unused_func_del(&builder);

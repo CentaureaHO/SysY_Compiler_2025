@@ -111,7 +111,7 @@ namespace Transform
         bool analyzeLoopInductionVariables(NaturalLoop* loop);
         struct PhiMapping
         {
-            LLVMIR::Instruction*     original_phi;              // 原始PHI节点
+            LLVMIR::Instruction* original_phi;              // 原始PHI节点
             LLVMIR::Operand*     latch_incoming_value;      // 从latch来的值
             LLVMIR::Instruction* latch_def_inst;            // 在latch中定义这个值的指令
             int                  original_phi_result_reg;   // 原始PHI的结果寄存器
@@ -128,7 +128,10 @@ namespace Transform
         // 统计信息
         int                        loops_processed_;
         int                        loops_parallelized_;
-        std::set<LLVMIR::Operand*> parallel_loop_arr_;
+        std::set<LLVMIR::Operand*> parallel_loop_global_;
+        std::set<CFG*>             cannot_parallelize_cfgs_;
+
+        void CollectAllGlobal(CFG* cfg);
 
         // 并行化限制常量
         static constexpr int MAX_PARALLEL_LOOPS_PER_FUNCTION = 10;
