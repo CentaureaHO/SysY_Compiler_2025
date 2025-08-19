@@ -81,7 +81,7 @@ namespace LLVMIR
       public:
         DSEPass(LLVMIR::IR* ir, EAliasAnalysis::EAliasAnalyser* eaa, Analysis::EDefUseAnalysis* edef,
             Analysis::ArrAliasAnalysis* arralias)
-            : Pass(ir), ealias_analyser(eaa), edef_use_analysis(edef), arralias_analysis(arralias) {};
+            : Pass(ir), ealias_analyser(eaa), edef_use_analysis(edef), arralias_analysis(arralias){};
         void Execute() override;
     };
 }  // namespace LLVMIR

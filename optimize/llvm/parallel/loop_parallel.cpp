@@ -12,6 +12,7 @@
 #include <iostream>
 #include <algorithm>
 #include <functional>
+#include <string>
 
 #define DBGMODE
 
@@ -42,11 +43,56 @@ namespace Transform
         return depth;
     }
 
+    static CFG* getCFGbyName(std::string func_name, LLVMIR::IR* ir)
+    {
+        for (auto& [func_def, cfg] : ir->cfg)
+        {
+            if (func_def->func_name == func_name) { return cfg; }
+        }
+        return nullptr;
+    }
+
+    void LoopParallelizationPass::CollectGlobalParams()
+    {
+        cannot_parallelize_cfgs_.clear();
+        for (auto [func, cfg] : ir->cfg)
+        {
+            for (auto [id, block] : cfg->block_id_to_block)
+            {
+                for (auto inst : block->insts)
+                {
+                    if (inst->opcode == LLVMIR::IROpCode::CALL)
+                    {
+                        auto call_inst = static_cast<LLVMIR::CallInst*>(inst);
+                        for (auto [ty, arg] : call_inst->args)
+                        {
+                            if ((arg->type == LLVMIR::OperandType::GLOBAL ||
+                                    read_only_global_analysis_->traceToGlobal(arg)) &&
+                                !read_only_global_analysis_->isReadOnly(arg))
+                            {
+                                auto func_cfg = getCFGbyName(func->func_name, ir);
+                                if (func_cfg)
+                                {
+                                    cannot_parallelize_cfgs_.insert(func_cfg);
+                                    DBGINFO(
+                                        "函数 ", func->func_name, " 因调用全局变量 ", arg->getName(), " 而无法并行化");
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
     void LoopParallelizationPass::Execute()
     {
         DBGINFO("开始循环并行化分析...");
-
+        def_use_analysis_->run();
+        read_only_global_analysis_->run();
+        CollectGlobalParams();
         processAllLoops();
+
         // // 打开日志文件
         // log_file_.open(log_filename_, std::ios::app);
         // if (loops_parallelized_ > 0)
@@ -77,10 +123,8 @@ namespace Transform
 
     void LoopParallelizationPass::processAllLoops()
     {
-        def_use_analysis_->run();
-        read_only_global_analysis_->run();
         // 类比LoopFullUnrollPass::processAllLoops()
-        CFG* start_cfg = nullptr;
+        // CFG* start_cfg = nullptr;
         for (const auto& [func_def, cfg] : ir->cfg)
         {
             // if (func_def->func_name == "main")
@@ -88,7 +132,7 @@ namespace Transform
             //     start_cfg = cfg;
             //     break;
             // }
-            if (cfg && cfg->LoopForest && !cfg->LoopForest->loop_set.empty())
+            if (cfg && cfg->LoopForest && !cfg->LoopForest->loop_set.empty() && !cannot_parallelize_cfgs_.count(cfg))
             {
                 CollectAllGlobal(cfg);
                 processFunction(cfg);

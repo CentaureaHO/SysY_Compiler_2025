@@ -138,6 +138,7 @@ namespace Transform
         std::set<CFG*>             cannot_parallelize_cfgs_;
 
         void CollectAllGlobal(CFG* cfg);
+        void CollectGlobalParams();
 
         // 并行化限制常量
         static constexpr int MAX_PARALLEL_LOOPS_PER_FUNCTION = 10;
