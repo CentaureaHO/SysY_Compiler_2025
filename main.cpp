@@ -620,15 +620,6 @@ int main(int argc, char** argv)
 
         makecfg.Execute();
         makedom.Execute();
-        aa.run();
-        loopPreProcess();
-        scevAnalyser.run();
-        Transform::LoopParallelizationPass loopParallelPass(
-            &builder, &aa, &scevAnalyser, &edefUseAnalysis, &readOnlyGlobalAnalysis);
-        loopParallelPass.Execute();
-
-        makecfg.Execute();
-        makedom.Execute();
         makeredom.Execute(true);
 
         aa.run();
@@ -646,6 +637,15 @@ int main(int argc, char** argv)
             DCEDefUse.Execute();
             dce.Execute();
         }
+
+        makecfg.Execute();
+        makedom.Execute();
+        aa.run();
+        loopPreProcess();
+        scevAnalyser.run();
+        Transform::LoopParallelizationPass loopParallelPass(
+            &builder, &aa, &scevAnalyser, &edefUseAnalysis, &readOnlyGlobalAnalysis);
+        loopParallelPass.Execute();
 
         makecfg.Execute();
         aa.run();
