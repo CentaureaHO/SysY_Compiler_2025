@@ -459,13 +459,13 @@ int main(int argc, char** argv)
         licm.Execute();
         md.run();
         Analysis::ReadOnlyGlobalAnalysis readOnlyGlobalAnalysis(&builder, &aa);
-        readOnlyGlobalAnalysis.run();
+        // readOnlyGlobalAnalysis.run();
         Analysis::ArrAliasAnalysis arrAliasAnalysis(&builder);
         arrAliasAnalysis.run();
         // arrAliasAnalysis.print();
         cdg.Execute();
         // readOnlyGlobalAnalysis.print();
-        GCM gcm(&builder, &edefUseAnalysis, &aa, &arrAliasAnalysis, &md, &readOnlyGlobalAnalysis, &cdg);
+        GCM gcm(&builder, &edefUseAnalysis, &aa, &arrAliasAnalysis, &md, &cdg);
         gcm.Execute();
         // std::cout << "GCM completed" << std::endl;
 
@@ -604,7 +604,8 @@ int main(int argc, char** argv)
         scevAnalyser.run();
         // scevAnalyser.printAllResults();
 
-        Transform::LoopParallelizationPass loopParallelPass(&builder, &aa, &scevAnalyser, &edefUseAnalysis);
+        Transform::LoopParallelizationPass loopParallelPass(
+            &builder, &aa, &scevAnalyser, &edefUseAnalysis, &readOnlyGlobalAnalysis);
         loopParallelPass.Execute();
         // builder.printIR(std::cerr);
 

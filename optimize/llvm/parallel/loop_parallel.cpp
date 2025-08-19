@@ -8,11 +8,12 @@
 #include "llvm_ir/ir_block.h"
 #include "llvm_ir/ir_builder.h"
 #include "llvm/alias_analysis/alias_analysis.h"
+#include <cassert>
 #include <iostream>
 #include <algorithm>
 #include <functional>
 
-// #define DBGMODE
+#define DBGMODE
 
 #ifdef DBGMODE
 template <typename... Args>
@@ -44,7 +45,32 @@ namespace Transform
     void LoopParallelizationPass::Execute()
     {
         DBGINFO("开始循环并行化分析...");
+
         processAllLoops();
+        // // 打开日志文件
+        // log_file_.open(log_filename_, std::ios::app);
+        // if (loops_parallelized_ > 0)
+        // {
+        //     if (log_file_.is_open())
+        //     {
+        //         // 写入日志头部信息
+        //         time_t now = time(0);
+        //         char*  dt  = ctime(&now);
+        //         log_file_ << "==============================================" << std::endl;
+        //         log_file_ << "循环并行化日志 - " << dt;
+        //         log_file_ << "==============================================" << std::endl << std::endl;
+        //     }
+        //     // 写入并行化统计结果
+        //     if (log_file_.is_open())
+        //     {
+        //         log_file_ << std::endl;
+        //         log_file_ << "==============================================" << std::endl;
+        //         log_file_ << "并行化分析完成: " << loops_parallelized_ << "/" << loops_processed_ << "个循环被并行化"
+        //                   << std::endl;
+        //         log_file_ << "==============================================" << std::endl;
+        //         log_file_.close();
+        //     }
+        // }
 
         DBGINFO("并行化分析完成: ", loops_parallelized_, "/", loops_processed_, " 个循环被并行化");
     }
@@ -52,26 +78,27 @@ namespace Transform
     void LoopParallelizationPass::processAllLoops()
     {
         def_use_analysis_->run();
+        read_only_global_analysis_->run();
         // 类比LoopFullUnrollPass::processAllLoops()
         CFG* start_cfg = nullptr;
         for (const auto& [func_def, cfg] : ir->cfg)
         {
-            if (func_def->func_name == "main")
-            {
-                start_cfg = cfg;
-                break;
-            }
-            // if (cfg && cfg->LoopForest && !cfg->LoopForest->loop_set.empty())
+            // if (func_def->func_name == "main")
             // {
-            //     CollectAllGlobal(cfg);
-            //     processFunction(cfg);
+            //     start_cfg = cfg;
+            //     break;
             // }
+            if (cfg && cfg->LoopForest && !cfg->LoopForest->loop_set.empty())
+            {
+                CollectAllGlobal(cfg);
+                processFunction(cfg);
+            }
         }
-        if (start_cfg && start_cfg->LoopForest && !start_cfg->LoopForest->loop_set.empty())
-        {
-            CollectAllGlobal(start_cfg);
-            processFunction(start_cfg);
-        }
+        // if (start_cfg && start_cfg->LoopForest && !start_cfg->LoopForest->loop_set.empty())
+        // {
+        //     CollectAllGlobal(start_cfg);
+        //     processFunction(start_cfg);
+        // }
     }
 
     void LoopParallelizationPass::CollectAllGlobal(CFG* cfg)
@@ -81,7 +108,10 @@ namespace Transform
         for (auto& global : ir->global_def)
         {
             auto global_def = static_cast<LLVMIR::GlbvarDefInst*>(global);
-            parallel_loop_global_.insert(getGlobalOperand(global_def->name));
+            if (!read_only_global_analysis_->isReadOnly(getGlobalOperand(global_def->name)))
+            {
+                parallel_loop_global_.insert(getGlobalOperand(global_def->name));
+            }
         }
 
         for (auto& [id, block] : cfg->block_id_to_block)
@@ -285,6 +315,7 @@ namespace Transform
                 true,
                 "成功并行化 (迭代次数: " + std::to_string(current_info.estimated_iterations) +
                     ", 优先级: " + std::to_string(current_info.priority) + ")");
+            // assert(false);
             return true;
         }
         else
@@ -430,7 +461,6 @@ namespace Transform
             return result != Analysis::AliasAnalyser::NoAlias;
         }
 
-        // 简单启发式：如果都是基于归纳变量的数组访问，可能安全
         return true;  // 保守估计有依赖
     }
 

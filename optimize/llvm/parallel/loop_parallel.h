@@ -4,6 +4,7 @@
 #include "llvm_ir/ir_block.h"
 #include "llvm_ir/ir_builder.h"
 #include "llvm/defuse_analysis/edefuse.h"
+#include "llvm/global_analysis/readonly.h"
 #include "llvm/loop/scev_analysis.h"
 #include "llvm/pass.h"
 #include "llvm/loop/loop_def.h"
@@ -13,6 +14,8 @@
 #include <set>
 #include <vector>
 #include <functional>
+#include <fstream>
+#include <iostream>
 
 namespace Transform
 {
@@ -42,11 +45,13 @@ namespace Transform
     {
       public:
         LoopParallelizationPass(LLVMIR::IR* ir, Analysis::AliasAnalyser* alias_analysis = nullptr,
-            Analysis::SCEVAnalyser* scev_analyser = nullptr, Analysis::EDefUseAnalysis* def_use_analysis = nullptr)
+            Analysis::SCEVAnalyser* scev_analyser = nullptr, Analysis::EDefUseAnalysis* def_use_analysis = nullptr,
+            Analysis::ReadOnlyGlobalAnalysis* read_only_global_analysis = nullptr)
             : Pass(ir),
               alias_analysis_(alias_analysis),
               scev_analyser_(scev_analyser),
               def_use_analysis_(def_use_analysis),
+              read_only_global_analysis_(read_only_global_analysis),
               loops_processed_(0),
               loops_parallelized_(0)
         {}
@@ -124,6 +129,7 @@ namespace Transform
         Analysis::SCEVAnalyser*                     scev_analyser_;
         std::map<NaturalLoop*, ParallelizationInfo> parallelization_info_;
         Analysis::EDefUseAnalysis*                  def_use_analysis_;
+        Analysis::ReadOnlyGlobalAnalysis*           read_only_global_analysis_;
 
         // 统计信息
         int                        loops_processed_;
@@ -165,6 +171,10 @@ namespace Transform
         // 临时存储循环边界寄存器
         int loop_start_reg_ = -1;
         int loop_end_reg_   = -1;
+
+        // 添加日志文件输出
+        std::ofstream log_file_;
+        std::string   log_filename_ = "parallel_log.txt";
     };
 
 }  // namespace Transform

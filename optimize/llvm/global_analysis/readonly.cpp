@@ -151,6 +151,17 @@ namespace Analysis
                                 if (write->type == LLVMIR::OperandType::GLOBAL) { maybe_written_globals.insert(write); }
                             }
                             // 此外检查所有的参数
+                            for (auto& [ty, arg] : call_inst->args)
+                            {
+                                if (maybe_written_globals.count(arg))
+                                {
+                                    auto arg_global = traceToGlobal(arg);
+                                    if (arg_global && !maybe_written_globals.count(arg_global))
+                                    {
+                                        maybe_written_globals.insert(traceToGlobal(arg));
+                                    }
+                                }
+                            }
                         }
                     }
                 }
