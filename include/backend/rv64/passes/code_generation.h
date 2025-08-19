@@ -40,6 +40,7 @@ namespace Backend::RV64::Passes
 
         bool needs_memset_i8_;
         bool needs_memset_i32_;
+        bool needs_parallel_support_;
 
         void printGlobalDefinitions();
         void printFunctions();
@@ -47,6 +48,7 @@ namespace Backend::RV64::Passes
 
         void printMemsetI8Function();
         void printMemsetI32Function();
+        void printParallelSupportFunctions();
 
         void printASM(RV64Inst* inst);
         void printASM(MoveInst* inst);
