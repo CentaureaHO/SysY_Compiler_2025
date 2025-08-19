@@ -605,7 +605,7 @@ int main(int argc, char** argv)
         // scevAnalyser.printAllResults();
 
         Transform::LoopParallelizationPass loopParallelPass(&builder, &aa, &scevAnalyser, &edefUseAnalysis);
-        if (optimizeLevel >= 2) loopParallelPass.Execute();
+        loopParallelPass.Execute();
         // builder.printIR(std::cerr);
 
         // Partial Loop Unroll

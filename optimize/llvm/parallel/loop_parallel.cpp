@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <functional>
 
-#define DBGMODE
+// #define DBGMODE
 
 #ifdef DBGMODE
 template <typename... Args>
@@ -61,7 +61,6 @@ namespace Transform
                 start_cfg = cfg;
                 break;
             }
-            // // 从main开始
             // if (cfg && cfg->LoopForest && !cfg->LoopForest->loop_set.empty())
             // {
             //     CollectAllGlobal(cfg);
@@ -382,6 +381,11 @@ namespace Transform
     bool LoopParallelizationPass::checkInstructionDependency(
         NaturalLoop* loop, LLVMIR::Instruction* inst1, LLVMIR::Instruction* inst2)
     {
+        if (inst1->opcode == LLVMIR::IROpCode::CALL || inst2->opcode == LLVMIR::IROpCode::CALL)
+        {
+            // 如果有函数调用，保守估计为有依赖
+            return true;
+        }
         // 检查两个指令是否都是内存操作
         bool inst1_is_memory = (inst1->opcode == LLVMIR::IROpCode::LOAD || inst1->opcode == LLVMIR::IROpCode::STORE);
         bool inst2_is_memory = (inst2->opcode == LLVMIR::IROpCode::LOAD || inst2->opcode == LLVMIR::IROpCode::STORE);
@@ -409,6 +413,13 @@ namespace Transform
         if (!ptr1 || !ptr2)
         {
             return true;  // 保守估计
+        }
+
+        if (ptr1->type == LLVMIR::OperandType::GLOBAL || ptr2->type == LLVMIR::OperandType::GLOBAL)
+        {
+            // 如果是全局变量，保守估计为有依赖
+            DBGINFO("    循环使用了全局变量，跳过并行化");
+            return true;
         }
 
         // 使用别名分析检查
@@ -511,7 +522,8 @@ namespace Transform
         {
             for (auto* inst : block->insts)
             {
-                if (inst->opcode == LLVMIR::IROpCode::LOAD || inst->opcode == LLVMIR::IROpCode::STORE)
+                if (inst->opcode == LLVMIR::IROpCode::LOAD || inst->opcode == LLVMIR::IROpCode::STORE ||
+                    inst->opcode == LLVMIR::IROpCode::CALL)
                 {
                     memory_ops.push_back(inst);
                 }
