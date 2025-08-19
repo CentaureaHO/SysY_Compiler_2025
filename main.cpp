@@ -541,6 +541,11 @@ int main(int argc, char** argv)
             aa.run();
             md.run();
             cse.Execute();
+
+            loopPreProcess();
+            aa.run();
+            licm.Execute();
+            md.run();
         }
         // SCCP after constant full unroll
         {
@@ -608,6 +613,15 @@ int main(int argc, char** argv)
         aa.run();
         loopPreProcess();
         scevAnalyser.run();
+        Transform::LoopParallelizationPass loopParallelPass(
+            &builder, &aa, &scevAnalyser, &edefUseAnalysis, &readOnlyGlobalAnalysis);
+        loopParallelPass.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
+        aa.run();
+        loopPreProcess();
+        scevAnalyser.run();
 
         // Partial Loop Unroll
         {
@@ -647,15 +661,6 @@ int main(int argc, char** argv)
         }
 
         makecfg.Execute();
-        makedom.Execute();
-        aa.run();
-        loopPreProcess();
-        scevAnalyser.run();
-        Transform::LoopParallelizationPass loopParallelPass(
-            &builder, &aa, &scevAnalyser, &edefUseAnalysis, &readOnlyGlobalAnalysis);
-        loopParallelPass.Execute();
-
-        makecfg.Execute();
         aa.run();
         TrenchPath trenchPath(&builder);
         trenchPath.Execute();
@@ -693,6 +698,10 @@ int main(int argc, char** argv)
             aa.run();
             md.run();
             cse.Execute();
+
+            loopPreProcess();
+            aa.run();
+            licm.Execute();
         }
 
         arithInstReduce.Execute();
