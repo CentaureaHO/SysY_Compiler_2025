@@ -592,21 +592,7 @@ int main(int argc, char** argv)
         makecfg.Execute();
         instSimplify.Execute();
 
-        makecfg.Execute();
-        makedom.Execute();
-        aa.run();
-        loopPreProcess();
-        // for (auto& [func_def, cfg] : builder.cfg)
-        // {
-        //     if (!cfg || !cfg->LoopForest) continue;
-        //     for (auto* loop : cfg->LoopForest->loop_set) loop->printLoopInfo();
-        // }
-        scevAnalyser.run();
         // scevAnalyser.printAllResults();
-
-        Transform::LoopParallelizationPass loopParallelPass(
-            &builder, &aa, &scevAnalyser, &edefUseAnalysis, &readOnlyGlobalAnalysis);
-        loopParallelPass.Execute();
         // builder.printIR(std::cerr);
 
         makecfg.Execute();
@@ -631,6 +617,15 @@ int main(int argc, char** argv)
         EAliasAnalysis::EAliasAnalyser ealias_analyser(&builder);
         DSEPass                        dse(&builder, &ealias_analyser, &edefUseAnalysis, &arrAliasAnalysis);
         dse.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
+        aa.run();
+        loopPreProcess();
+        scevAnalyser.run();
+        Transform::LoopParallelizationPass loopParallelPass(
+            &builder, &aa, &scevAnalyser, &edefUseAnalysis, &readOnlyGlobalAnalysis);
+        loopParallelPass.Execute();
 
         makecfg.Execute();
         makedom.Execute();
