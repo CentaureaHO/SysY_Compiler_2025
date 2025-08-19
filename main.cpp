@@ -542,10 +542,10 @@ int main(int argc, char** argv)
             md.run();
             cse.Execute();
 
-            // loopPreProcess();
-            // aa.run();
-            // licm.Execute();
-            // md.run();
+            loopPreProcess();
+            aa.run();
+            licm.Execute();
+            md.run();
         }
         // SCCP after constant full unroll
         {
@@ -699,9 +699,9 @@ int main(int argc, char** argv)
             md.run();
             cse.Execute();
 
-            // loopPreProcess();
-            // aa.run();
-            // licm.Execute();
+            loopPreProcess();
+            aa.run();
+            licm.Execute();
         }
 
         arithInstReduce.Execute();

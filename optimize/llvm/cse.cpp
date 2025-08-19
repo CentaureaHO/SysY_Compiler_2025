@@ -5,7 +5,7 @@
 #include <algorithm>
 #include "llvm_ir/instruction.h"
 
-#define DBGMODE_CSE
+// #define DBGMODE_CSE
 
 #ifdef DBGMODE_CSE
 template <typename... Args>
