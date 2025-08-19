@@ -1087,9 +1087,8 @@ namespace Transform
 
         if (!check_result) assert(false && "Failed to find check result");
 
-        auto* cond_br = new LLVMIR::BranchCondInst(check_result,
-            getLabelOperand(parallel_call_block->block_id),
-            getLabelOperand(loop->header->block_id));
+        auto* cond_br = new LLVMIR::BranchCondInst(
+            check_result, getLabelOperand(parallel_call_block->block_id), getLabelOperand(loop->header->block_id));
         check_block->insts.push_back(cond_br);
 
         if (!loop->preheader->insts.empty())
