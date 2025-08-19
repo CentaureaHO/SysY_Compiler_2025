@@ -7,6 +7,22 @@
 #include <stack>
 #include <unordered_set>
 
+// #define DBGMODE
+
+#ifdef DBGMODE
+template <typename... Args>
+void dbg_impl(Args&&... args)
+{
+    ((std::cout << args), ...);
+    std::cout << std::endl;
+}
+#define DBGINFO(...) dbg_impl(__VA_ARGS__)
+#else
+#define DBGINFO(...) \
+    do {             \
+    } while (0)
+#endif
+
 namespace Transform
 {
     EliminateDoubleBrUncondPass::EliminateDoubleBrUncondPass(LLVMIR::IR* ir) : Pass(ir), modified_(false) {}
@@ -23,6 +39,9 @@ namespace Transform
 
     void EliminateDoubleBrUncondPass::processFunction(CFG* cfg)
     {
+        DBGINFO("=== EliminateDoubleBrUncond: Processing function ===");
+        if (cfg && cfg->func && cfg->func->func_def) { DBGINFO("Function name: ", cfg->func->func_def->func_name); }
+
         bool                                       changed = true;
         std::vector<std::vector<LLVMIR::IRBlock*>> G;
         std::vector<std::vector<LLVMIR::IRBlock*>> invG;
@@ -94,6 +113,10 @@ namespace Transform
                             changed   = true;
                             modified_ = true;
 
+                            DBGINFO("Merging block ", vid, " into block ", uid);
+                            DBGINFO("Block ", vid, " has ", bbv->insts.size(), " instructions");
+                            DBGINFO("Block ", uid, " has ", bbu->insts.size(), " instructions before merge");
+
                             if (uid < G.size() && x < G[uid].size()) G[uid][x] = bbu;
 
                             auto* inv   = G[vid][y ^ 1];
@@ -116,9 +139,12 @@ namespace Transform
                             if (!bbu->insts.empty()) bbu->insts.pop_back();
                             mergeBlocks(bbu, bbv);
 
+                            DBGINFO("Block ", uid, " has ", bbu->insts.size(), " instructions after merge");
+
                             bbv->insts.clear();
                             cfg->block_id_to_block.erase(vid);
                             removeBlockFromFunction(cfg, bbv);
+                            DBGINFO("Removed block ", vid);
                         }
                         else if (bbv->insts.size() == 1 && !bbv->insts.empty() &&
                                  bbv->insts.back()->opcode == LLVMIR::IROpCode::BR_UNCOND)
@@ -152,6 +178,10 @@ namespace Transform
                         changed     = true;
                         modified_   = true;
                         PhiMap[vid] = uid;
+
+                        DBGINFO("Merging single successor block ", vid, " into block ", uid);
+                        DBGINFO("Block ", vid, " has ", bbv->insts.size(), " instructions");
+                        DBGINFO("Block ", uid, " has ", bbu->insts.size(), " instructions before merge");
 
                         G[uid].clear();
                         if (vid < G.size())
@@ -485,6 +515,7 @@ namespace Transform
 
     void EliminateDoubleBrUncondPass::cleanupSinglePredecessorPhis(CFG* cfg)
     {
+        DBGINFO("=== Cleaning up single predecessor PHI nodes ===");
         std::map<int, LLVMIR::Operand*> phi_replacements;
 
         for (const auto& [block_id, block] : cfg->block_id_to_block)
@@ -502,9 +533,63 @@ namespace Transform
                         if (phi->res && phi->res->type == LLVMIR::OperandType::REG)
                         {
                             int reg_num = static_cast<LLVMIR::RegOperand*>(phi->res)->reg_num;
+                            DBGINFO("Removing PHI node for reg_%", reg_num, " in block ", block_id);
+                            DBGINFO("PHI has ", phi->vals_for_labels.size(), " operands");
 
-                            if (phi->vals_for_labels.empty()) { phi_replacements[reg_num] = nullptr; }
-                            else { phi_replacements[reg_num] = phi->vals_for_labels[0].first; }
+                            for (size_t i = 0; i < phi->vals_for_labels.size(); ++i)
+                            {
+                                auto* val   = phi->vals_for_labels[i].first;
+                                auto* label = phi->vals_for_labels[i].second;
+                                if (val && val->type == LLVMIR::OperandType::REG)
+                                {
+                                    int val_reg = static_cast<LLVMIR::RegOperand*>(val)->reg_num;
+                                    DBGINFO("  Operand ",
+                                        i,
+                                        ": reg_%",
+                                        val_reg,
+                                        " from block ",
+                                        static_cast<LLVMIR::LabelOperand*>(label)->label_num);
+                                }
+                                else if (val && val->type == LLVMIR::OperandType::IMMEI32)
+                                {
+                                    int val_imm = static_cast<LLVMIR::ImmeI32Operand*>(val)->value;
+                                    DBGINFO("  Operand ",
+                                        i,
+                                        ": imm ",
+                                        val_imm,
+                                        " from block ",
+                                        static_cast<LLVMIR::LabelOperand*>(label)->label_num);
+                                }
+                                else
+                                {
+                                    DBGINFO("  Operand ",
+                                        i,
+                                        ": unknown type from block ",
+                                        static_cast<LLVMIR::LabelOperand*>(label)->label_num);
+                                }
+                            }
+
+                            if (phi->vals_for_labels.empty())
+                            {
+                                DBGINFO("PHI is empty, replacing with nullptr");
+                                phi_replacements[reg_num] = nullptr;
+                            }
+                            else
+                            {
+                                auto* replacement = phi->vals_for_labels[0].first;
+                                if (replacement && replacement->type == LLVMIR::OperandType::REG)
+                                {
+                                    int repl_reg = static_cast<LLVMIR::RegOperand*>(replacement)->reg_num;
+                                    DBGINFO("PHI has one operand, replacing reg_%", reg_num, " with reg_%", repl_reg);
+                                }
+                                else if (replacement && replacement->type == LLVMIR::OperandType::IMMEI32)
+                                {
+                                    int repl_imm = static_cast<LLVMIR::ImmeI32Operand*>(replacement)->value;
+                                    DBGINFO("PHI has one operand, replacing reg_%", reg_num, " with imm ", repl_imm);
+                                }
+                                else { DBGINFO("PHI has one operand, replacing reg_%", reg_num, " with unknown type"); }
+                                phi_replacements[reg_num] = replacement;
+                            }
                         }
 
                         it = block->insts.erase(it);
@@ -517,20 +602,35 @@ namespace Transform
 
         if (!phi_replacements.empty())
         {
-            for (const auto& [block_id, block] : cfg->block_id_to_block)
+            DBGINFO("Replacing ", phi_replacements.size(), " PHI usages");
+            for (const auto& [reg, replacement] : phi_replacements)
             {
-                for (auto* inst : block->insts)
+                DBGINFO("reg_%", reg, " -> ", (replacement ? "valid operand" : "nullptr"));
+            }
+
+            bool has_changes = true;
+
+            while (has_changes)
+            {
+                has_changes = false;
+
+                for (const auto& [block_id, block] : cfg->block_id_to_block)
                 {
-                    if (inst) { replacePhiUsages(inst, phi_replacements); }
+                    for (auto* inst : block->insts)
+                    {
+                        if (inst && replacePhiUsages(inst, phi_replacements)) { has_changes = true; }
+                    }
                 }
             }
         }
     }
 
-    void EliminateDoubleBrUncondPass::replacePhiUsages(
+    bool EliminateDoubleBrUncondPass::replacePhiUsages(
         LLVMIR::Instruction* inst, const std::map<int, LLVMIR::Operand*>& replacements)
     {
-        if (!inst) return;
+        if (!inst) return false;
+
+        bool has_replacement = false;
 
         switch (inst->opcode)
         {
@@ -543,9 +643,20 @@ namespace Transform
                     {
                         int  reg_num = static_cast<LLVMIR::RegOperand*>(val)->reg_num;
                         auto it      = replacements.find(reg_num);
-                        if (it != replacements.end() && it->second) { val = it->second; }
+                        if (it != replacements.end() && it->second)
+                        {
+                            DBGINFO("  In PHI instruction at block ",
+                                inst->block_id,
+                                ": replacing reg_%",
+                                reg_num,
+                                " with new operand",
+                                it->second);
+                            val             = it->second;
+                            has_replacement = true;
+                        }
                     }
                 }
+                if (has_replacement) { DBGINFO("  PHI instruction updated"); }
                 break;
             }
             case LLVMIR::IROpCode::BR_COND:
@@ -555,30 +666,55 @@ namespace Transform
                 {
                     int  reg_num = static_cast<LLVMIR::RegOperand*>(br->cond)->reg_num;
                     auto it      = replacements.find(reg_num);
-                    if (it != replacements.end() && it->second) { br->cond = it->second; }
+                    if (it != replacements.end() && it->second)
+                    {
+                        br->cond        = it->second;
+                        has_replacement = true;
+                    }
                 }
                 break;
             }
             default:
             {
-                std::map<int, int> reg_mapping;
+                std::map<int, LLVMIR::Operand*> operand_replacements;
                 for (const auto& [old_reg, new_operand] : replacements)
                 {
-                    if (new_operand && new_operand->type == LLVMIR::OperandType::REG)
-                    {
-                        int new_reg          = static_cast<LLVMIR::RegOperand*>(new_operand)->reg_num;
-                        reg_mapping[old_reg] = new_reg;
-                    }
+                    if (new_operand) { operand_replacements[old_reg] = new_operand; }
                 }
-                if (!reg_mapping.empty()) { inst->ReplaceAllOperands(reg_mapping); }
+                if (!operand_replacements.empty())
+                {
+                    DBGINFO("Replacing operands in instruction ", inst, " at block ", inst->block_id);
+                    for (const auto& [old_reg, new_operand] : operand_replacements)
+                    {
+                        if (new_operand && new_operand->type == LLVMIR::OperandType::REG)
+                        {
+                            int new_reg = static_cast<LLVMIR::RegOperand*>(new_operand)->reg_num;
+                            DBGINFO("  Will replace reg_%", old_reg, " with reg_%", new_reg);
+                        }
+                        else if (new_operand && new_operand->type == LLVMIR::OperandType::IMMEI32)
+                        {
+                            int new_imm = static_cast<LLVMIR::ImmeI32Operand*>(new_operand)->value;
+                            DBGINFO("  Will replace reg_%", old_reg, " with imm ", new_imm);
+                        }
+                        else { DBGINFO("  Will replace reg_%", old_reg, " with unknown operand type"); }
+                    }
+                    has_replacement |= inst->SubstituteOperands(operand_replacements);
+                    DBGINFO("  Substitution completed");
+                }
                 break;
             }
         }
+
+        return has_replacement;
     }
 
-    void EliminateDoubleBrUncondPass::mergeBlocks(LLVMIR::IRBlock* target, LLVMIR::IRBlock* source)
+    void Transform::EliminateDoubleBrUncondPass::mergeBlocks(LLVMIR::IRBlock* target, LLVMIR::IRBlock* source)
     {
         if (!target || !source) return;
+
+        DBGINFO("Merging block ", source->block_id, " into block ", target->block_id);
+        DBGINFO("Source block has ", source->insts.size(), " instructions");
+        DBGINFO("Target block has ", target->insts.size(), " instructions before merge");
 
         std::vector<LLVMIR::Instruction*> phi_insts;
         std::vector<LLVMIR::Instruction*> non_phi_insts;
@@ -587,6 +723,8 @@ namespace Transform
         {
             if (inst->opcode != LLVMIR::IROpCode::EMPTY)
             {
+                DBGINFO("Processing instruction in source block: ", inst->opcode);
+                if (inst->GetResultReg() != -1) { DBGINFO("  Instruction defines reg_%", inst->GetResultReg()); }
                 inst->block_id = target->block_id;
                 if (inst->opcode == LLVMIR::IROpCode::PHI) { phi_insts.push_back(inst); }
                 else { non_phi_insts.push_back(inst); }
@@ -604,6 +742,9 @@ namespace Transform
         target->insts.insert(it, phi_insts.begin(), phi_insts.end());
 
         target->insts.insert(target->insts.end(), non_phi_insts.begin(), non_phi_insts.end());
+
+        DBGINFO("Target block now has ", target->insts.size(), " instructions after merge");
+        DBGINFO("Added ", phi_insts.size(), " PHI instructions and ", non_phi_insts.size(), " non-PHI instructions");
     }
 
 }  // namespace Transform

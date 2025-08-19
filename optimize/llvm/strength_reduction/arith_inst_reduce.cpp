@@ -496,8 +496,11 @@ namespace Transform
         // x * 0.0 = 0.0
         if (value == 0.0f)
         {
-            auto* new_inst = new LLVMIR::ArithmeticInst(
-                LLVMIR::IROpCode::FADD, LLVMIR::DataType::F32, getImmeF32Operand(0.0f), getImmeF32Operand(0.0f), inst->res);
+            auto* new_inst     = new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::FADD,
+                LLVMIR::DataType::F32,
+                getImmeF32Operand(0.0f),
+                getImmeF32Operand(0.0f),
+                inst->res);
             new_inst->block_id = inst->block_id;
 
             *it = new_inst;
@@ -602,7 +605,7 @@ namespace Transform
         if (isFloatPowerOfTwo(value, &exponent))
         {
             float reciprocal = 1.0f / value;
-            auto* new_inst = new LLVMIR::ArithmeticInst(
+            auto* new_inst   = new LLVMIR::ArithmeticInst(
                 LLVMIR::IROpCode::FMUL, LLVMIR::DataType::F32, inst->lhs, getImmeF32Operand(reciprocal), inst->res);
             new_inst->block_id = inst->block_id;
 
@@ -617,7 +620,7 @@ namespace Transform
         if (isFloatReciprocalPowerOfTwo(value, &exponent))
         {
             float multiplier = 1.0f / value;
-            auto* new_inst = new LLVMIR::ArithmeticInst(
+            auto* new_inst   = new LLVMIR::ArithmeticInst(
                 LLVMIR::IROpCode::FMUL, LLVMIR::DataType::F32, inst->lhs, getImmeF32Operand(multiplier), inst->res);
             new_inst->block_id = inst->block_id;
 
@@ -633,7 +636,7 @@ namespace Transform
         if (isFloatSimpleFraction(value, &numerator, &denominator))
         {
             float reciprocal = (float)denominator / (float)numerator;
-            auto* new_inst = new LLVMIR::ArithmeticInst(
+            auto* new_inst   = new LLVMIR::ArithmeticInst(
                 LLVMIR::IROpCode::FMUL, LLVMIR::DataType::F32, inst->lhs, getImmeF32Operand(reciprocal), inst->res);
             new_inst->block_id = inst->block_id;
 

@@ -87,6 +87,8 @@
 #include "optimize/llvm/utils/instruction_simplify.h"
 // Min/Max Recognition
 #include "optimize/llvm/utils/min_max_recognize.h"
+// PHI Clean
+#include "optimize/llvm/utils/phi_clean.h"
 
 // unused_func_elimination
 #include "optimize/llvm/unused_func_elimination.h"
@@ -349,6 +351,8 @@ int main(int argc, char** argv)
 
         Mem2Reg mem2reg(&builder);
         mem2reg.Execute();
+        Transform::PhiCleanPass phiClean(&builder);
+        // phiClean.Execute();
 
         // Loop Analysis and Simplification
         loopAnalysis.Execute();  // inlinepass 需要，先执行一次
@@ -483,15 +487,6 @@ int main(int argc, char** argv)
         makedom.Execute();
         makeredom.Execute(true);
         loopPreProcess();
-
-        // for (const auto& [func_def, cfg] : builder.cfg)
-        // {
-        //     std::cout << "Function: " << func_def->func_name << std::endl;
-        //     if (!cfg || !cfg->LoopForest) continue;
-        //     for (auto* loop : cfg->LoopForest->loop_set) loop->printLoopInfo();
-        // }
-
-        loopPreProcess();
         tsccp.Execute();
 
         Analysis::SCEVAnalyser scevAnalyser(&builder);
@@ -537,6 +532,12 @@ int main(int argc, char** argv)
             aa.run();
             loopPreProcess();
             tsccp.Execute();
+
+            makecfg.Execute();
+            makedom.Execute();
+            aa.run();
+            md.run();
+            cse.Execute();
         }
         // SCCP after constant full unroll
         {
@@ -573,6 +574,12 @@ int main(int argc, char** argv)
                 ifConversion.Execute();
                 makecfg.Execute();
                 minMaxRecognize.Execute();
+
+                makecfg.Execute();
+                makedom.Execute();
+                aa.run();
+                md.run();
+                cse.Execute();
 
                 makecfg.Execute();
                 makedom.Execute();
@@ -624,6 +631,7 @@ int main(int argc, char** argv)
 
             makecfg.Execute();
             makedom.Execute();
+            loopPreProcess();
             tsccp.Execute();
             Transform::ConstantBranchFoldingPass constantBranchFolding(&builder);
             constantBranchFolding.Execute();
@@ -632,7 +640,7 @@ int main(int argc, char** argv)
 
             aa.run();
             md.run();
-            if (optimizeLevel >= 2) cse.Execute();
+            cse.Execute();
         }
 
         arithInstReduce.Execute();
@@ -650,12 +658,14 @@ int main(int argc, char** argv)
 
             makecfg.Execute();
             makedom.Execute();
+            loopPreProcess();
             tsccp.Execute();
             Transform::ConstantBranchFoldingPass constantBranchFolding(&builder);
             constantBranchFolding.Execute();
         }
 
-        cfgSimplify();
+        // cfgSimplify();
+        makecfg.Execute();
     }
 
     if (step == "-llvm")
