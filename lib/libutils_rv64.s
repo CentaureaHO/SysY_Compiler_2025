@@ -1181,59 +1181,6 @@ lsccll.lib.parallel.thread_join:        # @lsccll.lib.parallel.thread_join
 .Lfunc_end7:
 	.cfi_endproc
                                         # -- End function
-	.p2align	1
-lsccll.lib.parallel.thread_exit:        # @lsccll.lib.parallel.thread_exit
-	.cfi_startproc
-# %bb.0:
-	addi	sp, sp, -16
-	.cfi_def_cfa_offset 16
-	sd	ra, 8(sp)                       # 8-byte Folded Spill
-	.cfi_offset ra, -8
-	andi	a0, a0, 255
-	call	exit
-.Lfunc_end8:
-	.cfi_endproc
-                                        # -- End function
-	.p2align	1
-lsccll.lib.parallel.thread_self:        # @lsccll.lib.parallel.thread_self
-	.cfi_startproc
-# %bb.0:
-	li	a0, 0
-	ret
-.Lfunc_end9:
-	.cfi_endproc
-                                        # -- End function
-	.p2align	1
-lsccll.lib.parallel.thread_yield:       # @lsccll.lib.parallel.thread_yield
-	.cfi_startproc
-# %bb.0:
-	addi	sp, sp, -16
-	.cfi_def_cfa_offset 16
-	sd	ra, 8(sp)                       # 8-byte Folded Spill
-	.cfi_offset ra, -8
-	call	sched_yield
-	sext.w	a0, a0
-	ld	ra, 8(sp)                       # 8-byte Folded Reload
-	addi	sp, sp, 16
-	ret
-.Lfunc_end10:
-	.cfi_endproc
-                                        # -- End function
-	.p2align	1
-lsccll.lib.parallel.get_thread_count:   # @lsccll.lib.parallel.get_thread_count
-	.cfi_startproc
-# %bb.0:
-.Lpcrel_hi26:
-	auipc	a0, %pcrel_hi(shared_mem)
-	ld	a0, %pcrel_lo(.Lpcrel_hi26)(a0)
-	beqz	a0, .LBB11_2
-# %bb.1:
-	lw	a0, 0(a0)
-.LBB11_2:
-	ret
-.Lfunc_end11:
-	.cfi_endproc
-                                        # -- End function
 	.p2align	2, 0x0
 scheduler_initialized:
 	.byte	0                               # 0x0
@@ -1246,4 +1193,3 @@ thread_list:
 	.p2align	2, 0x0
 next_thread_id:
 	.word	1                               # 0x1
-	.addrsig
