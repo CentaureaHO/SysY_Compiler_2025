@@ -1,9 +1,11 @@
 #include "llvm/parallel/loop_parallel.h"
+#include "cfg.h"
 #include "common/type/type_defs.h"
 #include "llvm_ir/build/type_trans.h"
 #include "llvm_ir/defs.h"
 #include "llvm_ir/function.h"
 #include "llvm_ir/instruction.h"
+#include "llvm_ir/ir_block.h"
 #include "llvm_ir/ir_builder.h"
 #include "llvm/alias_analysis/alias_analysis.h"
 #include <iostream>
@@ -49,6 +51,7 @@ namespace Transform
 
     void LoopParallelizationPass::processAllLoops()
     {
+        def_use_analysis_->run();
         // 类比LoopFullUnrollPass::processAllLoops()
         for (const auto& [func_def, cfg] : ir->cfg)
         {
@@ -85,12 +88,88 @@ namespace Transform
     {
         // 类比LoopFullUnrollPass::processLoop()
         DBGINFO("分析循环 ", loop->loop_id, " (深度: ", loop->loop_id, ")");
+        phi_mappings.clear();
 
         // 为单个循环进行SCEV分析
         if (scev_analyser_) { scev_analyser_->analyzeSingleLoop(loop); }
 
+        if (loop->latches.size() != 1)
+        {
+            logResult(loop, false, "循环latch数量不为1，无法并行化");
+            return false;
+        }
+
+        auto* latch = *(loop->latches.begin());
+        if (!loop->exiting_nodes.count(latch))
+        {
+            logResult(loop, false, "循环latch不在出口节点中，无法并行化");
+            return false;
+        }
+
+        // 分析循环的归纳变量
+        if (!analyzeLoopInductionVariables(loop))
+        {
+            logResult(loop, false, "归纳变量分析失败");
+            return false;
+        }
+
         // 尝试并行化循环
         return tryParallelizeLoop(cfg, loop);
+    }
+
+    bool LoopParallelizationPass::analyzeLoopInductionVariables(NaturalLoop* loop)
+    {
+        for (auto* node : loop->loop_nodes)
+        {
+            for (auto* inst : node->insts)
+            {
+                if (inst->opcode != LLVMIR::IROpCode::PHI) { break; }
+                if (inst->opcode == LLVMIR::IROpCode::PHI)
+                {
+                    auto*      phi = static_cast<LLVMIR::PhiInst*>(inst);
+                    PhiMapping phi_mapping;
+                    phi_mapping.original_phi            = phi;
+                    phi_mapping.original_phi_result_reg = phi->GetResultReg();
+                    for (auto& [val, label] : phi->vals_for_labels)
+                    {
+                        auto* label_op = static_cast<LLVMIR::LabelOperand*>(label);
+                        // 得到归纳变量的preheader的值
+                        if (label_op->label_num == loop->preheader->block_id)
+                        {
+                            phi_mapping.preheader_incoming_value = val;
+                        }
+                    }
+                    // 得到我们的latch的值
+                    auto* latch_block = *(loop->latches.begin());
+                    auto* last_inst   = latch_block->insts.back();
+                    if (last_inst->opcode == LLVMIR::IROpCode::BR_COND)
+                    {
+                        auto* br_cond = static_cast<LLVMIR::BranchCondInst*>(last_inst);
+                        auto* cond    = br_cond->cond;
+                        if (cond->type == LLVMIR::OperandType::REG)
+                        {
+                            auto* def_inst = def_use_analysis_->getDef(loop->cfg, cond);
+                            if()
+                        }
+                    }
+                    if (phi_mapping.latch_def_inst && (phi_mapping.latch_def_inst->opcode == LLVMIR::IROpCode::ADD ||
+                                                          phi_mapping.latch_def_inst->opcode == LLVMIR::IROpCode::MUL))
+                    {
+                        phi_mappings.push_back(phi_mapping);
+                        DBGINFO("  循环 ",
+                            loop->loop_id,
+                            " 检测到归纳变量:%reg_",
+                            phi_mapping.original_phi_result_reg,
+                            " (latch: ",
+                            phi_mapping.latch_incoming_value,
+                            ", preheader: ",
+                            phi_mapping.preheader_incoming_value,
+                            ")");
+                    }
+                }
+            }
+        }
+        return phi_mappings.size() > 0;
     }
 
     bool LoopParallelizationPass::tryParallelizeLoop(CFG* cfg, NaturalLoop* loop)
@@ -486,7 +565,14 @@ namespace Transform
         auto* entry_block = parallel_func->blocks[0];
         entry_block->insts.clear();  // 清空默认的ret指令
 
-        if (!setupFunctionEntry(entry_block, i32_vars, ptr_vars, float_vars, reg_replace_map, parallel_func->max_reg))
+        if (!setupFunctionEntry(parallel_func,
+                entry_block,
+                i32_vars,
+                ptr_vars,
+                float_vars,
+                reg_replace_map,
+                parallel_func->max_reg,
+                entry_block))
         {
             return false;
         }
@@ -496,8 +582,14 @@ namespace Transform
         LLVMIR::IRBlock* new_latch  = nullptr;
         LLVMIR::IRBlock* new_exit   = nullptr;
 
-        if (!createNewLoopStructure(
-                parallel_func, loop, label_replace_map, parallel_func->max_label, new_header, new_latch, new_exit))
+        if (!createNewLoopStructure(parallel_func,
+                loop,
+                label_replace_map,
+                parallel_func->max_label,
+                new_header,
+                new_latch,
+                new_exit,
+                entry_block))
         {
             return false;
         }
@@ -518,14 +610,15 @@ namespace Transform
         // 6. 连接控制流
         connectControlFlow(entry_block, new_header, new_exit);
 
+        cfg->func->max_reg = parallel_func->max_reg;
         DBGINFO("    循环体复制完成");
         return true;
     }
 
     // 设置函数入口和参数解包
-    bool LoopParallelizationPass::setupFunctionEntry(LLVMIR::IRBlock* entry_block, const std::set<int>& i32_vars,
-        const std::set<int>& ptr_vars, const std::set<int>& float_vars, std::map<int, int>& reg_replace_map,
-        int& max_reg)
+    bool LoopParallelizationPass::setupFunctionEntry(LLVMIR::IRFunction* parallel_func, LLVMIR::IRBlock* entry_block,
+        const std::set<int>& i32_vars, const std::set<int>& ptr_vars, const std::set<int>& float_vars,
+        std::map<int, int>& reg_replace_map, int& max_reg, LLVMIR::IRBlock*& new_header)
     {
         // 参数解包：从传入的结构体中提取数据
         // struct { int thread_id; int start; int end; int i32_vars[]; ptr_vars[] , float float_vars[]; }
@@ -616,6 +709,51 @@ namespace Transform
             getRegOperand(start_reg),
             getRegOperand(++max_reg));
         entry_block->insts.push_back(add_end_inst);
+        int temp_end_reg = max_reg;
+
+        // 添加对于end的处理，需要判断其是否大于原始end
+        auto* thread_cmp = new LLVMIR::IcmpInst(LLVMIR::DataType::I32,
+            LLVMIR::IcmpCond::SGT,
+            getRegOperand(temp_end_reg),
+            getRegOperand(end_reg),
+            getRegOperand(++max_reg));
+
+        // 创建条件分支来处理边界
+        auto* check_block  = parallel_func->createBlock();
+        auto* normal_block = parallel_func->createBlock();
+        auto* merge_block  = parallel_func->createBlock();
+
+        auto* br_cond = new LLVMIR::BranchCondInst(
+            thread_cmp->res, getLabelOperand(check_block->block_id), getLabelOperand(normal_block->block_id));
+
+        // // check_block: 最后一个线程，使用min(temp_end, original_end)
+        // auto* min_cmp = new LLVMIR::IcmpInst(LLVMIR::DataType::I32,
+        //     LLVMIR::IcmpCond::SLT,
+        //     getRegOperand(temp_end_reg),
+        //     getRegOperand(end_reg),
+        //     getRegOperand(++max_reg));
+        // check_block->insts.push_back(min_cmp);
+
+        // auto* select_inst = new LLVMIR::SelectInst(LLVMIR::DataType::I32,
+        //     getRegOperand(temp_end_reg),
+        //     getRegOperand(end_reg),
+        //     min_cmp->res,
+        //     getRegOperand(++max_reg));
+        // check_block->insts.push_back(select_inst);
+
+        auto* br_to_merge1 = new LLVMIR::BranchUncondInst(getLabelOperand(merge_block->block_id));
+        check_block->insts.push_back(br_to_merge1);
+
+        // normal_block: 普通线程，直接使用temp_end
+        auto* br_to_merge2 = new LLVMIR::BranchUncondInst(getLabelOperand(merge_block->block_id));
+        normal_block->insts.push_back(br_to_merge2);
+
+        // merge_block: 合并结果
+        auto* phi_end = new LLVMIR::PhiInst(LLVMIR::DataType::I32, getRegOperand(++max_reg));
+        phi_end->vals_for_labels.push_back({getRegOperand(end_reg), getLabelOperand(check_block->block_id)});
+        phi_end->vals_for_labels.push_back({getRegOperand(temp_end_reg), getLabelOperand(normal_block->block_id)});
+        merge_block->insts.push_back(phi_end);
+
         int local_end_reg = max_reg;
 
         // 5. 加载外部变量
@@ -631,7 +769,7 @@ namespace Transform
 
             auto* load_var = new LLVMIR::LoadInst(LLVMIR::DataType::I32, gep_var->res, getRegOperand(++max_reg));
             entry_block->insts.push_back(load_var);
-
+            // std::cout << " old reg is " << old_reg << ", new reg is " << max_reg << std::endl;
             reg_replace_map[old_reg] = max_reg;
         }
 
@@ -644,6 +782,7 @@ namespace Transform
 
             auto* load_var = new LLVMIR::LoadInst(LLVMIR::DataType::PTR, gep_var->res, getRegOperand(++max_reg));
             entry_block->insts.push_back(load_var);
+            // std::cout << " old reg is " << old_reg << ", new reg is " << max_reg << std::endl;
 
             reg_replace_map[old_reg] = max_reg;
         }
@@ -658,6 +797,7 @@ namespace Transform
 
             auto* load_var = new LLVMIR::LoadInst(LLVMIR::DataType::F32, gep_var->res, getRegOperand(++max_reg));
             entry_block->insts.push_back(load_var);
+            std::cout << " old reg is " << old_reg << ", new reg is " << max_reg << std::endl;
 
             reg_replace_map[old_reg] = max_reg;
         }
@@ -665,14 +805,16 @@ namespace Transform
         // 保存循环边界寄存器
         loop_start_reg_ = local_start_reg;
         loop_end_reg_   = local_end_reg;
-
+        new_header      = merge_block;  // 设置新的循环头部为合并块
+        entry_block->insts.push_back(thread_cmp);
+        entry_block->insts.push_back(br_cond);
         return true;
     }
 
     // 创建新的循环结构
     bool LoopParallelizationPass::createNewLoopStructure(LLVMIR::IRFunction* parallel_func, NaturalLoop* loop,
         std::map<int, int>& label_replace_map, int& max_label, LLVMIR::IRBlock*& new_header,
-        LLVMIR::IRBlock*& new_latch, LLVMIR::IRBlock*& new_exit)
+        LLVMIR::IRBlock*& new_latch, LLVMIR::IRBlock*& new_exit, LLVMIR::IRBlock*& entry_block)
     {
         if (loop->latches.size() != 1)
         {
@@ -680,7 +822,7 @@ namespace Transform
             return false;
         }
 
-        if (loop->preheader) { label_replace_map[loop->preheader->block_id] = 0; }
+        if (loop->preheader) { label_replace_map[loop->preheader->block_id] = entry_block->block_id; }
         else
         {
             DBGINFO("    循环没有 preheader，无法创建并行结构");
@@ -755,11 +897,7 @@ namespace Transform
         {
             int new_reg                               = ++max_reg;
             reg_replace_map[old_inst->GetResultReg()] = new_reg;
-            // std::cout << std::endl;
-            // std::cout << "      复制指令: " << old_inst->GetResultReg() << " -> " << new_reg << std::endl;
             new_inst->ReplaceAllOperands(reg_replace_map);
-            // std::cout << "      复制指令: " << old_inst->toString() << " -> " << new_inst->toString() <<
-            // std::endl; std::cout << std::endl;
         }
 
         // 更新操作数中的寄存器
@@ -798,12 +936,15 @@ namespace Transform
                 // 找到来自preheader的值，替换为local_start
                 for (auto& [val, label] : phi->vals_for_labels)
                 {
-                    if (static_cast<LLVMIR::LabelOperand*>(label)->label_num == loop->preheader->block_id)
+                    if (static_cast<LLVMIR::LabelOperand*>(label)->label_num == entry_block->block_id)
                     {
-                        if (val->type == LLVMIR::OperandType::REG)
+                        for (auto& phi_mapping : phi_mappings)
                         {
-                            std::map<int, int> replace_map = {{val->GetRegNum(), loop_start_reg_}};
-                            phi->ReplaceAllOperands(replace_map);
+                            if (phi_mapping.preheader_incoming_value == val)
+                            {
+                                val = getRegOperand(loop_start_reg_);
+                                DBGINFO("替换PHI指令的preheader值为新的循环起始寄存器：", loop_start_reg_);
+                            }
                         }
                         break;
                     }

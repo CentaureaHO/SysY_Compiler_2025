@@ -1,5 +1,6 @@
 #pragma once
 #include "llvm_ir/function.h"
+#include "llvm_ir/instruction.h"
 #include "llvm_ir/ir_block.h"
 #include "llvm_ir/ir_builder.h"
 #include "llvm/defuse_analysis/edefuse.h"
@@ -106,6 +107,18 @@ namespace Transform
         int                               calculateParallelizationPriority(NaturalLoop* loop) const;
         void                              logResult(NaturalLoop* loop, bool success, const std::string& reason) const;
 
+        // 分析归纳变量
+        bool analyzeLoopInductionVariables(NaturalLoop* loop);
+        struct PhiMapping
+        {
+            LLVMIR::Instruction*     original_phi;              // 原始PHI节点
+            LLVMIR::Operand*     latch_incoming_value;      // 从latch来的值
+            LLVMIR::Instruction* latch_def_inst;            // 在latch中定义这个值的指令
+            int                  original_phi_result_reg;   // 原始PHI的结果寄存器
+            LLVMIR::Operand*     preheader_incoming_value;  // 从preheader来的初始值
+        };
+        std::vector<PhiMapping> phi_mappings;
+
         // 成员变量
         Analysis::AliasAnalyser*                    alias_analysis_;
         Analysis::SCEVAnalyser*                     scev_analyser_;
@@ -113,8 +126,9 @@ namespace Transform
         Analysis::EDefUseAnalysis*                  def_use_analysis_;
 
         // 统计信息
-        int loops_processed_;
-        int loops_parallelized_;
+        int                        loops_processed_;
+        int                        loops_parallelized_;
+        std::set<LLVMIR::Operand*> parallel_loop_arr_;
 
         // 并行化限制常量
         static constexpr int MAX_PARALLEL_LOOPS_PER_FUNCTION = 10;
@@ -122,13 +136,13 @@ namespace Transform
         static constexpr int MIN_LOOP_SIZE_FOR_PARALLEL      = 3;
 
         // 循环体复制相关方法
-        bool setupFunctionEntry(LLVMIR::IRBlock* entry_block, const std::set<int>& i32_vars,
-            const std::set<int>& ptr_vars, const std::set<int>& float_vars, std::map<int, int>& reg_replace_map,
-            int& max_reg);
+        bool setupFunctionEntry(LLVMIR::IRFunction* parallel_func, LLVMIR::IRBlock* entry_block,
+            const std::set<int>& i32_vars, const std::set<int>& ptr_vars, const std::set<int>& float_vars,
+            std::map<int, int>& reg_replace_map, int& max_reg, LLVMIR::IRBlock*& new_header);
 
         bool createNewLoopStructure(LLVMIR::IRFunction* parallel_func, NaturalLoop* loop,
             std::map<int, int>& label_replace_map, int& max_label, LLVMIR::IRBlock*& new_header,
-            LLVMIR::IRBlock*& new_latch, LLVMIR::IRBlock*& new_exit);
+            LLVMIR::IRBlock*& new_latch, LLVMIR::IRBlock*& new_exit, LLVMIR::IRBlock*& entry_block);
 
         bool copyLoopInstructions(CFG* cfg, NaturalLoop* loop, LLVMIR::IRFunction* parallel_func,
             std::map<int, int>& reg_replace_map, std::map<int, int>& label_replace_map, int& max_reg);
