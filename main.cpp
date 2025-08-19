@@ -608,6 +608,12 @@ int main(int argc, char** argv)
         loopParallelPass.Execute();
         // builder.printIR(std::cerr);
 
+        makecfg.Execute();
+        makedom.Execute();
+        aa.run();
+        loopPreProcess();
+        scevAnalyser.run();
+
         // Partial Loop Unroll
         {
             Transform::LoopPartialUnrollPass loopPartialUnrollPass(&builder, &scevAnalyser);
