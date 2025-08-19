@@ -673,6 +673,19 @@ int main(int argc, char** argv)
             constantBranchFolding.Execute();
         }
 
+        makecfg.Execute();
+        makedom.Execute();
+        makeredom.Execute(true);
+        DCEDefUse.Execute();
+        dce.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
+        makeredom.Execute(true);
+        cdg.Execute();
+        ADCEDefUse.Execute();
+        adce.Execute();
+
         cfgSimplify();
         // makecfg.Execute();
     }

@@ -58,6 +58,11 @@ namespace Transform
             auto fcmp_inst = dynamic_cast<LLVMIR::FcmpInst*>(inst);
             ans.fcmp_cond  = fcmp_inst->cond;
         }
+        else if (inst->opcode == LLVMIR::IROpCode::SELECT)
+        {
+            auto select_inst = dynamic_cast<LLVMIR::SelectInst*>(inst);
+            ans.select_cond  = select_inst->cond->getName();
+        }
         else if (inst->opcode == LLVMIR::IROpCode::CALL)
         {
             auto call_inst = dynamic_cast<LLVMIR::CallInst*>(inst);
@@ -67,7 +72,11 @@ namespace Transform
         for (auto op : operands) ans.operand_list.push_back(op->getName());
 
         if (inst->opcode == LLVMIR::IROpCode::ADD || inst->opcode == LLVMIR::IROpCode::FMUL ||
-            inst->opcode == LLVMIR::IROpCode::MUL || inst->opcode == LLVMIR::IROpCode::FADD)
+            inst->opcode == LLVMIR::IROpCode::MUL || inst->opcode == LLVMIR::IROpCode::FADD ||
+            inst->opcode == LLVMIR::IROpCode::BITAND || inst->opcode == LLVMIR::IROpCode::BITXOR ||
+            inst->opcode == LLVMIR::IROpCode::SMIN_I32 || inst->opcode == LLVMIR::IROpCode::SMAX_I32 ||
+            inst->opcode == LLVMIR::IROpCode::UMIN_I32 || inst->opcode == LLVMIR::IROpCode::UMAX_I32 ||
+            inst->opcode == LLVMIR::IROpCode::FMIN_F32 || inst->opcode == LLVMIR::IROpCode::FMAX_F32)
         {
             std::sort(ans.operand_list.begin(), ans.operand_list.end());
         }
