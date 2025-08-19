@@ -138,6 +138,9 @@ namespace Transform
                         {
                             phi_mapping.preheader_incoming_value = val;
                         }
+                        auto* latch = *(loop->latches.begin());
+                        if (latch->block_id == label_op->label_num) { phi_mapping.latch_incoming_value = val; }
+                        if (label_op->label_num == latch->block_id) { phi_mapping.latch_incoming_value = val; }
                     }
                     // 得到我们的latch的值
                     auto* latch_block = *(loop->latches.begin());
@@ -148,8 +151,21 @@ namespace Transform
                         auto* cond    = br_cond->cond;
                         if (cond->type == LLVMIR::OperandType::REG)
                         {
-                            auto* def_inst = def_use_analysis_->getDef(loop->cfg, cond);
-                            // TODO()
+                            auto* cmp_inst = def_use_analysis_->getDef(loop->cfg, cond);
+                            if (cmp_inst->opcode == LLVMIR::IROpCode::ICMP)
+                            {
+                                auto  cmp = static_cast<LLVMIR::IcmpInst*>(cmp_inst);
+                                auto* lhs = cmp->lhs;
+                                auto* rhs = cmp->rhs;
+                                if (lhs == phi_mapping.latch_incoming_value)
+                                {
+                                    phi_mapping.latch_def_inst = def_use_analysis_->getDef(loop->cfg, lhs);
+                                }
+                                else if (rhs == phi_mapping.latch_incoming_value)
+                                {
+                                    phi_mapping.latch_def_inst = def_use_analysis_->getDef(loop->cfg, rhs);
+                                }
+                            }
                         }
                     }
                     if (phi_mapping.latch_def_inst && (phi_mapping.latch_def_inst->opcode == LLVMIR::IROpCode::ADD ||
