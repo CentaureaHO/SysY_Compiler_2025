@@ -847,6 +847,13 @@ namespace LLVMIR
                         {
                             for (auto [val, label] : phi_inst->vals_for_labels)
                             {
+                                if (val == store->ptr && !used_stores.count(store_inst))
+                                {
+                                    used_stores.insert(store_inst);
+                                    std::cout << "Find use of store: " << store_inst->toString() << " by "
+                                              << phi_inst->toString() << std::endl;
+                                    continue;
+                                }
                                 auto base_ptr1 = arralias_analysis->traceToBase(cfg, store->ptr);
                                 if (!base_ptr1) continue;
                                 auto base_ptr2 = arralias_analysis->traceToBase(cfg, val);
@@ -857,6 +864,11 @@ namespace LLVMIR
                                     std::cout << "Find use of store: " << store_inst->toString() << " by "
                                               << phi_inst->toString() << std::endl;
                                 }
+                            }
+
+                            if (store->ptr == phi_inst->res && !used_stores.count(store_inst))
+                            {
+                                used_stores.insert(store_inst);
                             }
                         }
                     }
@@ -879,10 +891,9 @@ namespace LLVMIR
             if (store)
             {
                 erase_set[store->block_id].insert(dead);  // 将死代码存储到erase_set中
-#ifdef DEBUG_DSE
+                                                          // #ifdef DEBUG_DSE
                 std::cout << "NoUseStore: Found dead store in block " << store->block_id << ": " << store->ptr << " = "
                           << store->val << std::endl;
-#endif
             }
         }
     }

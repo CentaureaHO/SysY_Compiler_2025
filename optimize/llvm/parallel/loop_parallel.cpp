@@ -9,6 +9,7 @@
 #include "llvm_ir/ir_builder.h"
 #include "llvm/alias_analysis/alias_analysis.h"
 #include <cassert>
+#include <cstddef>
 #include <iostream>
 #include <algorithm>
 #include <functional>
@@ -54,7 +55,6 @@ namespace Transform
 
     void LoopParallelizationPass::CollectGlobalParams()
     {
-        cannot_parallelize_cfgs_.clear();
         for (auto [func, cfg] : ir->cfg)
         {
             for (auto [id, block] : cfg->block_id_to_block)
@@ -64,20 +64,27 @@ namespace Transform
                     if (inst->opcode == LLVMIR::IROpCode::CALL)
                     {
                         auto call_inst = static_cast<LLVMIR::CallInst*>(inst);
-                        for (auto [ty, arg] : call_inst->args)
+                        for (size_t i = 0; i < call_inst->args.size(); ++i)
                         {
+                            auto& [ty, arg] = call_inst->args[i];
                             if ((arg->type == LLVMIR::OperandType::GLOBAL ||
-                                    read_only_global_analysis_->traceToGlobal(arg)) &&
-                                !read_only_global_analysis_->isReadOnly(arg))
+                                    (read_only_global_analysis_->traceToGlobal(arg) &&
+                                        !read_only_global_analysis_->isReadOnly(
+                                            read_only_global_analysis_->traceToGlobal(arg)))))
                             {
                                 auto func_cfg = getCFGbyName(func->func_name, ir);
                                 if (func_cfg)
                                 {
-                                    cannot_parallelize_cfgs_.insert(func_cfg);
-                                    DBGINFO(
-                                        "函数 ", func->func_name, " 因调用全局变量 ", arg->getName(), " 而无法并行化");
+                                    if (func_cfg->LoopForest)
+                                    {
+                                        for (auto loop : func_cfg->LoopForest->loop_set)
+                                        {
+                                            // 将参数传入
+                                            global_as_params_[loop].insert(getRegOperand(i));
+                                            // 循环如果使用了这个变量，那么就不能并行化
+                                        }
+                                    }
                                 }
-                                break;
                             }
                         }
                     }
@@ -88,9 +95,25 @@ namespace Transform
     void LoopParallelizationPass::Execute()
     {
         DBGINFO("开始循环并行化分析...");
+        std::cout << "开始循环并行化分析..." << std::endl;
         def_use_analysis_->run();
         read_only_global_analysis_->run();
+        parallel_loop_global_.clear();
+        global_vars_in_loops_.clear();
+        global_as_params_.clear();
+
+        // 收集CFG中所有的全局变量
+        for (auto& global : ir->global_def)
+        {
+            auto global_def = static_cast<LLVMIR::GlbvarDefInst*>(global);
+            if (!read_only_global_analysis_->isReadOnly(getGlobalOperand(global_def->name)))
+            {
+                parallel_loop_global_.insert(getGlobalOperand(global_def->name));
+            }
+        }
+
         CollectGlobalParams();
+        for (const auto& [func_def, cfg] : ir->cfg) { CollectAllGlobal(cfg); }
         processAllLoops();
 
         // // 打开日志文件
@@ -123,52 +146,48 @@ namespace Transform
 
     void LoopParallelizationPass::processAllLoops()
     {
-        // 类比LoopFullUnrollPass::processAllLoops()
-        // CFG* start_cfg = nullptr;
         for (const auto& [func_def, cfg] : ir->cfg)
         {
-            // if (func_def->func_name == "main")
-            // {
-            //     start_cfg = cfg;
-            //     break;
-            // }
-            if (cfg && cfg->LoopForest && !cfg->LoopForest->loop_set.empty() && !cannot_parallelize_cfgs_.count(cfg))
-            {
-                CollectAllGlobal(cfg);
-                processFunction(cfg);
-            }
+
+            if (cfg && cfg->LoopForest && !cfg->LoopForest->loop_set.empty()) { processFunction(cfg); }
         }
-        // if (start_cfg && start_cfg->LoopForest && !start_cfg->LoopForest->loop_set.empty())
-        // {
-        //     CollectAllGlobal(start_cfg);
-        //     processFunction(start_cfg);
-        // }
     }
 
     void LoopParallelizationPass::CollectAllGlobal(CFG* cfg)
     {
-        parallel_loop_global_.clear();
-        // 收集CFG中所有的全局变量
-        for (auto& global : ir->global_def)
+        if (!cfg->LoopForest) return;
+        for (auto loop : cfg->LoopForest->loop_set)
         {
-            auto global_def = static_cast<LLVMIR::GlbvarDefInst*>(global);
-            if (!read_only_global_analysis_->isReadOnly(getGlobalOperand(global_def->name)))
-            {
-                parallel_loop_global_.insert(getGlobalOperand(global_def->name));
-            }
-        }
-
-        for (auto& [id, block] : cfg->block_id_to_block)
-        {
-            for (auto* inst : block->insts)
+            for (auto* inst : loop->preheader->insts)
             {
                 for (auto* use : inst->GetUsedOperands())
                 {
-                    if (parallel_loop_global_.count(use))
+                    if (parallel_loop_global_.count(use) || global_as_params_[loop].count(use))
                     {
-                        parallel_loop_global_.insert(inst->GetResultOperand());
-                        DBGINFO("收集到全局变量: ", use->getName());
+                        if (!global_vars_in_loops_[loop].count(inst->GetResultOperand()))
+                        {
+                            global_vars_in_loops_[loop].insert(inst->GetResultOperand());
+                        }
+                        DBGINFO("收集到全局变量: ", inst->GetResultOperand()->getName());
                         break;
+                    }
+                }
+            }
+            for (auto* node : loop->loop_nodes)
+            {
+                for (auto* inst : node->insts)
+                {
+                    for (auto* use : inst->GetUsedOperands())
+                    {
+                        if (parallel_loop_global_.count(use) || global_as_params_[loop].count(use))
+                        {
+                            if (!global_vars_in_loops_[loop].count(inst->GetResultOperand()))
+                            {
+                                global_vars_in_loops_[loop].insert(inst->GetResultOperand());
+                            }
+                            DBGINFO("收集到全局变量: ", inst->GetResultOperand()->getName());
+                            break;
+                        }
                     }
                 }
             }
@@ -257,7 +276,6 @@ namespace Transform
                         }
                         auto* latch = *(loop->latches.begin());
                         if (latch->block_id == label_op->label_num) { phi_mapping.latch_incoming_value = val; }
-                        if (label_op->label_num == latch->block_id) { phi_mapping.latch_incoming_value = val; }
                     }
                     // 得到我们的latch的值
                     auto* latch_block = *(loop->latches.begin());
@@ -298,6 +316,7 @@ namespace Transform
                             ", preheader: ",
                             phi_mapping.preheader_incoming_value,
                             ")");
+                        break;
                     }
                 }
             }
@@ -555,30 +574,10 @@ namespace Transform
 
         if (loop_size < MIN_LOOP_SIZE_FOR_PARALLEL) { return false; }
 
-        for (auto* inst : loop->preheader->insts)
+        if (global_vars_in_loops_.count(loop))
         {
-            for (auto use : inst->GetUsedOperands())
-            {
-                if (parallel_loop_global_.count(use))
-                {
-                    DBGINFO("    循环使用了全局变量，跳过并行化");
-                    return false;  // 使用全局变量的循环不适合并行化
-                }
-            }
-        }
-        for (auto* node : loop->loop_nodes)
-        {
-            for (auto* inst : node->insts)
-            {
-                for (auto* use : inst->GetUsedOperands())
-                {
-                    if (parallel_loop_global_.count(use))
-                    {
-                        DBGINFO("    循环使用了全局变量，跳过并行化");
-                        return false;  // 使用全局变量的循环不适合并行化
-                    }
-                }
-            }
+            auto vars = global_vars_in_loops_.at(loop);
+            return vars.size() == 0;
         }
         return true;
     }

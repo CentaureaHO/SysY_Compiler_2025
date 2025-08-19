@@ -132,10 +132,11 @@ namespace Transform
         Analysis::ReadOnlyGlobalAnalysis*           read_only_global_analysis_;
 
         // 统计信息
-        int                        loops_processed_;
-        int                        loops_parallelized_;
-        std::set<LLVMIR::Operand*> parallel_loop_global_;
-        std::set<CFG*>             cannot_parallelize_cfgs_;
+        int                                                loops_processed_;
+        int                                                loops_parallelized_;
+        std::set<LLVMIR::Operand*>                         parallel_loop_global_;
+        std::map<NaturalLoop*, std::set<LLVMIR::Operand*>> global_as_params_;
+        std::map<NaturalLoop*, std::set<LLVMIR::Operand*>> global_vars_in_loops_;
 
         void CollectAllGlobal(CFG* cfg);
         void CollectGlobalParams();
