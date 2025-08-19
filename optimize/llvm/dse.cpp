@@ -837,6 +837,30 @@ namespace LLVMIR
                         }
                     }
                 }
+                else if (inst->opcode == IROpCode::PHI)
+                {
+                    auto* phi_inst = dynamic_cast<PhiInst*>(inst);
+                    for (auto store_inst : dead_set)
+                    {
+                        auto store = dynamic_cast<StoreInst*>(store_inst);
+                        if (store)
+                        {
+                            for (auto [val, label] : phi_inst->vals_for_labels)
+                            {
+                                auto base_ptr1 = arralias_analysis->traceToBase(cfg, store->ptr);
+                                if (!base_ptr1) continue;
+                                auto base_ptr2 = arralias_analysis->traceToBase(cfg, val);
+                                if (!base_ptr2) continue;
+                                if (base_ptr1 == base_ptr2 && !used_stores.count(store_inst))
+                                {
+                                    used_stores.insert(store_inst);
+                                    std::cout << "Find use of store: " << store_inst->toString() << " by "
+                                              << phi_inst->toString() << std::endl;
+                                }
+                            }
+                        }
+                    }
+                }
             }
             for (auto store_inst : used_stores)
             {

@@ -90,7 +90,7 @@ namespace Transform
         DBGINFO("开始循环并行化分析...");
         def_use_analysis_->run();
         read_only_global_analysis_->run();
-        CollectGlobalParams();
+        // CollectGlobalParams();
         processAllLoops();
 
         // // 打开日志文件
