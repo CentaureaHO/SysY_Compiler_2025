@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <functional>
 
-// #define DBGMODE
+#define DBGMODE
 
 #ifdef DBGMODE
 template <typename... Args>
@@ -92,8 +92,9 @@ namespace Transform
                 {
                     if (parallel_loop_global_.count(use))
                     {
-                        parallel_loop_global_.insert(use);
+                        parallel_loop_global_.insert(inst->GetResultOperand());
                         DBGINFO("收集到全局变量: ", use->getName());
+                        break;
                     }
                 }
             }
