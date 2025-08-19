@@ -48,7 +48,6 @@ namespace Transform
                 if (arith_inst && arith_inst->type == LLVMIR::DataType::I32)
                     if (optimizeArithmeticInst(arith_inst, block->insts, it)) continue;
             }
-            /* TODO：浮点运算优化
             else if (inst->opcode == LLVMIR::IROpCode::FMUL || inst->opcode == LLVMIR::IROpCode::FDIV ||
                      inst->opcode == LLVMIR::IROpCode::FADD || inst->opcode == LLVMIR::IROpCode::FSUB)
             {
@@ -56,7 +55,6 @@ namespace Transform
                 if (arith_inst && arith_inst->type == LLVMIR::DataType::F32)
                     if (optimizeFloatArithmeticInst(arith_inst, block->insts, it)) continue;
             }
-            */
 
             ++it;
         }
@@ -462,21 +460,190 @@ namespace Transform
     bool ArithInstReduce::optimizeFloatArithmeticInst(LLVMIR::ArithmeticInst* inst,
         std::deque<LLVMIR::Instruction*>& insts, std::deque<LLVMIR::Instruction*>::iterator& it)
     {
-        // TODO: 浮点数算术指令优化
-        return false;
+        switch (inst->opcode)
+        {
+            case LLVMIR::IROpCode::FMUL: return optimizeFloatMultiplication(inst, insts, it);
+            case LLVMIR::IROpCode::FDIV: return optimizeFloatDivision(inst, insts, it);
+            case LLVMIR::IROpCode::FADD:
+            case LLVMIR::IROpCode::FSUB:
+                // TODO: 实现浮点加法和减法优化
+                return false;
+            default: return false;
+        }
     }
 
     bool ArithInstReduce::optimizeFloatMultiplication(LLVMIR::ArithmeticInst* inst,
         std::deque<LLVMIR::Instruction*>& insts, std::deque<LLVMIR::Instruction*>::iterator& it)
     {
-        // TODO: 优化浮点乘法
+        LLVMIR::ImmeF32Operand* imme_operand  = nullptr;
+        LLVMIR::Operand*        other_operand = nullptr;
+
+        if (inst->rhs->type == LLVMIR::OperandType::IMMEF32)
+        {
+            imme_operand  = dynamic_cast<LLVMIR::ImmeF32Operand*>(inst->rhs);
+            other_operand = inst->lhs;
+        }
+        else if (inst->lhs->type == LLVMIR::OperandType::IMMEF32)
+        {
+            imme_operand  = dynamic_cast<LLVMIR::ImmeF32Operand*>(inst->lhs);
+            other_operand = inst->rhs;
+        }
+
+        if (!imme_operand) return false;
+
+        float value = imme_operand->value;
+
+        // x * 0.0 = 0.0
+        if (value == 0.0f)
+        {
+            auto* new_inst = new LLVMIR::ArithmeticInst(
+                LLVMIR::IROpCode::FADD, LLVMIR::DataType::F32, getImmeF32Operand(0.0f), getImmeF32Operand(0.0f), inst->res);
+            new_inst->block_id = inst->block_id;
+
+            *it = new_inst;
+            delete inst;
+            ++it;
+
+            return true;
+        }
+
+        // x * 1.0 = x，使用FADD x, 0.0实现
+        if (value == 1.0f)
+        {
+            auto* new_inst = new LLVMIR::ArithmeticInst(
+                LLVMIR::IROpCode::FADD, LLVMIR::DataType::F32, other_operand, getImmeF32Operand(0.0f), inst->res);
+            new_inst->block_id = inst->block_id;
+
+            *it = new_inst;
+            delete inst;
+            ++it;
+
+            return true;
+        }
+
+        // x * -1.0 = -x，使用FSUB 0.0, x实现
+        if (value == -1.0f)
+        {
+            auto* new_inst = new LLVMIR::ArithmeticInst(
+                LLVMIR::IROpCode::FSUB, LLVMIR::DataType::F32, getImmeF32Operand(0.0f), other_operand, inst->res);
+            new_inst->block_id = inst->block_id;
+
+            *it = new_inst;
+            delete inst;
+            ++it;
+
+            return true;
+        }
+
+        // x * 2^n = x
+        int exponent;
+        if (isFloatPowerOfTwo(value, &exponent))
+        {
+            // 对于小的指数，可以考虑转换为加法
+            if (exponent == 1)  // x * 2.0 = x + x
+            {
+                auto* new_inst = new LLVMIR::ArithmeticInst(
+                    LLVMIR::IROpCode::FADD, LLVMIR::DataType::F32, other_operand, other_operand, inst->res);
+                new_inst->block_id = inst->block_id;
+
+                *it = new_inst;
+                delete inst;
+                ++it;
+
+                return true;
+            }
+        }
+
         return false;
     }
 
     bool ArithInstReduce::optimizeFloatDivision(LLVMIR::ArithmeticInst* inst, std::deque<LLVMIR::Instruction*>& insts,
         std::deque<LLVMIR::Instruction*>::iterator& it)
     {
-        // TODO: 优化浮点除法
+        if (inst->rhs->type != LLVMIR::OperandType::IMMEF32) return false;
+
+        auto* imme_operand = dynamic_cast<LLVMIR::ImmeF32Operand*>(inst->rhs);
+        if (!imme_operand) return false;
+
+        float value = imme_operand->value;
+
+        if (value == 0.0f) return false;
+
+        // x / 1.0 = x，使用FADD x, 0.0实现
+        if (value == 1.0f)
+        {
+            auto* new_inst = new LLVMIR::ArithmeticInst(
+                LLVMIR::IROpCode::FADD, LLVMIR::DataType::F32, inst->lhs, getImmeF32Operand(0.0f), inst->res);
+            new_inst->block_id = inst->block_id;
+
+            *it = new_inst;
+            delete inst;
+            ++it;
+
+            return true;
+        }
+
+        // x / -1.0 = -x，使用FSUB 0.0, x实现
+        if (value == -1.0f)
+        {
+            auto* new_inst = new LLVMIR::ArithmeticInst(
+                LLVMIR::IROpCode::FSUB, LLVMIR::DataType::F32, getImmeF32Operand(0.0f), inst->lhs, inst->res);
+            new_inst->block_id = inst->block_id;
+
+            *it = new_inst;
+            delete inst;
+            ++it;
+
+            return true;
+        }
+
+        // x / 2^n = x * (1/2^n)
+        int exponent;
+        if (isFloatPowerOfTwo(value, &exponent))
+        {
+            float reciprocal = 1.0f / value;
+            auto* new_inst = new LLVMIR::ArithmeticInst(
+                LLVMIR::IROpCode::FMUL, LLVMIR::DataType::F32, inst->lhs, getImmeF32Operand(reciprocal), inst->res);
+            new_inst->block_id = inst->block_id;
+
+            *it = new_inst;
+            delete inst;
+            ++it;
+
+            return true;
+        }
+
+        // x / (1/2^n) = x * 2^n
+        if (isFloatReciprocalPowerOfTwo(value, &exponent))
+        {
+            float multiplier = 1.0f / value;
+            auto* new_inst = new LLVMIR::ArithmeticInst(
+                LLVMIR::IROpCode::FMUL, LLVMIR::DataType::F32, inst->lhs, getImmeF32Operand(multiplier), inst->res);
+            new_inst->block_id = inst->block_id;
+
+            *it = new_inst;
+            delete inst;
+            ++it;
+
+            return true;
+        }
+
+        // x / 简单分数 = x * 其倒数
+        int numerator, denominator;
+        if (isFloatSimpleFraction(value, &numerator, &denominator))
+        {
+            float reciprocal = (float)denominator / (float)numerator;
+            auto* new_inst = new LLVMIR::ArithmeticInst(
+                LLVMIR::IROpCode::FMUL, LLVMIR::DataType::F32, inst->lhs, getImmeF32Operand(reciprocal), inst->res);
+            new_inst->block_id = inst->block_id;
+
+            *it = new_inst;
+            delete inst;
+            ++it;
+
+            return true;
+        }
+
         return false;
     }
 }  // namespace Transform

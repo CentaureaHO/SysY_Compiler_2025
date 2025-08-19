@@ -336,7 +336,7 @@ int main(int argc, char** argv)
         makedom.Execute();
 
         Transform::GlobalConstReplacePass globalConstReplace(&builder);
-        // globalConstReplace.Execute();
+        globalConstReplace.Execute();
 
         Transform::TailRecursionPass tailRecursion(&builder);
         tailRecursion.Execute();
@@ -616,6 +616,25 @@ int main(int argc, char** argv)
         makecfg.Execute();
         makedom.Execute();
 
+        {
+            Transform::SingleSourcePhiEliminationPass singleSourcePhiElim(&builder);
+            singleSourcePhiElim.setPreserveLCSSA(false);
+            singleSourcePhiElim.Execute();
+            cfgSimplify();
+
+            makecfg.Execute();
+            makedom.Execute();
+            tsccp.Execute();
+            Transform::ConstantBranchFoldingPass constantBranchFolding(&builder);
+            constantBranchFolding.Execute();
+
+            cfgSimplify();
+
+            aa.run();
+            md.run();
+            if (optimizeLevel >= 2) cse.Execute();
+        }
+
         arithInstReduce.Execute();
 
         makecfg.Execute();
@@ -628,9 +647,15 @@ int main(int argc, char** argv)
             singleSourcePhiElim.setPreserveLCSSA(false);
             singleSourcePhiElim.Execute();
             cfgSimplify();
+
+            makecfg.Execute();
+            makedom.Execute();
+            tsccp.Execute();
+            Transform::ConstantBranchFoldingPass constantBranchFolding(&builder);
+            constantBranchFolding.Execute();
         }
 
-        makecfg.Execute();
+        cfgSimplify();
     }
 
     if (step == "-llvm")
