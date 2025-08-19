@@ -1264,134 +1264,212 @@ Instruction* PhiInst::Clone(int new_result_reg) const
 }
 
 // SubstituteOperands implementations for all instruction classes
-void LoadInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool LoadInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
     if (ptr && ptr->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(ptr);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { ptr = it->second; }
+        if (it != substitutions.end())
+        {
+            ptr = it->second;
+            return true;
+        }
     }
+    return false;
 }
 
-void StoreInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool StoreInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
+    bool has_replacement = false;
+
     if (ptr && ptr->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(ptr);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { ptr = it->second; }
+        if (it != substitutions.end())
+        {
+            ptr             = it->second;
+            has_replacement = true;
+        }
     }
     if (val && val->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(val);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { val = it->second; }
+        if (it != substitutions.end())
+        {
+            val             = it->second;
+            has_replacement = true;
+        }
     }
+    return has_replacement;
 }
 
-void ArithmeticInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool ArithmeticInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
+    bool has_replacement = false;
+
     if (lhs && lhs->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(lhs);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { lhs = it->second; }
+        if (it != substitutions.end())
+        {
+            lhs             = it->second;
+            has_replacement = true;
+        }
     }
     if (rhs && rhs->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(rhs);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { rhs = it->second; }
+        if (it != substitutions.end())
+        {
+            rhs             = it->second;
+            has_replacement = true;
+        }
     }
+    return has_replacement;
 }
 
-void IcmpInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool IcmpInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
+    bool has_replacement = false;
+
     if (lhs && lhs->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(lhs);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { lhs = it->second; }
+        if (it != substitutions.end())
+        {
+            lhs             = it->second;
+            has_replacement = true;
+        }
     }
     if (rhs && rhs->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(rhs);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { rhs = it->second; }
+        if (it != substitutions.end())
+        {
+            rhs             = it->second;
+            has_replacement = true;
+        }
     }
+    return has_replacement;
 }
 
-void FcmpInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool FcmpInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
+    bool has_replacement = false;
+
     if (lhs && lhs->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(lhs);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { lhs = it->second; }
+        if (it != substitutions.end())
+        {
+            lhs             = it->second;
+            has_replacement = true;
+        }
     }
     if (rhs && rhs->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(rhs);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { rhs = it->second; }
+        if (it != substitutions.end())
+        {
+            rhs             = it->second;
+            has_replacement = true;
+        }
     }
+    return has_replacement;
 }
 
-void AllocInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) {}
+bool AllocInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) { return false; }
 
-void BranchCondInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool BranchCondInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
     if (cond && cond->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(cond);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { cond = it->second; }
+        if (it != substitutions.end())
+        {
+            cond = it->second;
+            return true;
+        }
     }
+    return false;
 }
 
-void BranchUncondInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) {}
+bool BranchUncondInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) { return false; }
 
-void GlbvarDefInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool GlbvarDefInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
     if (init && init->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(init);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { init = it->second; }
+        if (it != substitutions.end())
+        {
+            init = it->second;
+            return true;
+        }
     }
+    return false;
 }
 
-void CallInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool CallInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
+    bool has_replacement = false;
+
     for (auto& arg : args)
     {
         if (arg.second && arg.second->type == OperandType::REG)
         {
             auto* reg_op = dynamic_cast<RegOperand*>(arg.second);
             auto  it     = substitutions.find(reg_op->reg_num);
-            if (it != substitutions.end()) { arg.second = it->second; }
+            if (it != substitutions.end())
+            {
+                arg.second      = it->second;
+                has_replacement = true;
+            }
         }
     }
+
+    return has_replacement;
 }
 
-void RetInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool RetInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
     if (ret && ret->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(ret);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { ret = it->second; }
+        if (it != substitutions.end())
+        {
+            ret = it->second;
+            return true;
+        }
     }
+    return false;
 }
 
-void GEPInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool GEPInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
+    bool has_replacement = false;
+
     if (base_ptr && base_ptr->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(base_ptr);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { base_ptr = it->second; }
+        if (it != substitutions.end())
+        {
+            base_ptr        = it->second;
+            has_replacement = true;
+        }
     }
     for (auto& idx : idxs)
     {
@@ -1399,66 +1477,99 @@ void GEPInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
         {
             auto* reg_op = dynamic_cast<RegOperand*>(idx);
             auto  it     = substitutions.find(reg_op->reg_num);
-            if (it != substitutions.end()) { idx = it->second; }
+            if (it != substitutions.end())
+            {
+                idx             = it->second;
+                has_replacement = true;
+            }
         }
     }
+    return has_replacement;
 }
 
-void FuncDeclareInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) {}
+bool FuncDeclareInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) { return false; }
 
-void FuncDefInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) {}
+bool FuncDefInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) { return false; }
 
-void SI2FPInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool SI2FPInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
     if (f_si && f_si->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(f_si);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { f_si = it->second; }
+        if (it != substitutions.end())
+        {
+            f_si = it->second;
+            return true;
+        }
     }
+    return false;
 }
 
-void FP2SIInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool FP2SIInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
     if (f_fp && f_fp->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(f_fp);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { f_fp = it->second; }
+        if (it != substitutions.end())
+        {
+            f_fp = it->second;
+            return true;
+        }
     }
+    return false;
 }
 
-void ZextInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool ZextInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
     if (src && src->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(src);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { src = it->second; }
+        if (it != substitutions.end())
+        {
+            src = it->second;
+            return true;
+        }
     }
+    return false;
 }
 
-void FPExtInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool FPExtInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
     if (src && src->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(src);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { src = it->second; }
+        if (it != substitutions.end())
+        {
+            src = it->second;
+            return true;
+        }
     }
+    return false;
 }
 
-void PhiInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool PhiInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
+    bool has_replacement = false;
+
     for (auto& val_label : vals_for_labels)
     {
         if (val_label.first && val_label.first->type == OperandType::REG)
         {
             auto* reg_op = dynamic_cast<RegOperand*>(val_label.first);
             auto  it     = substitutions.find(reg_op->reg_num);
-            if (it != substitutions.end()) { val_label.first = it->second; }
+            if (it != substitutions.end())
+            {
+                val_label.first = it->second;
+                has_replacement = true;
+            }
         }
     }
+
+    return has_replacement;
 }
 
 DataType LoadInst::GetResultType() const { return type; }
@@ -2590,26 +2701,40 @@ Instruction* SelectInst::Clone(int new_result_reg) const
     return new SelectInst(type, true_val, false_val, cond, new_res);
 }
 
-void SelectInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool SelectInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
+    bool has_replacement = false;
     if (cond->type == OperandType::REG)
     {
         int  reg_num = ((RegOperand*)cond)->reg_num;
         auto it      = substitutions.find(reg_num);
-        if (it != substitutions.end()) { cond = it->second; }
+        if (it != substitutions.end())
+        {
+            cond            = it->second;
+            has_replacement = true;
+        }
     }
     if (true_val->type == OperandType::REG)
     {
         int  reg_num = ((RegOperand*)true_val)->reg_num;
         auto it      = substitutions.find(reg_num);
-        if (it != substitutions.end()) { true_val = it->second; }
+        if (it != substitutions.end())
+        {
+            true_val        = it->second;
+            has_replacement = true;
+        }
     }
     if (false_val->type == OperandType::REG)
     {
         int  reg_num = ((RegOperand*)false_val)->reg_num;
         auto it      = substitutions.find(reg_num);
-        if (it != substitutions.end()) { false_val = it->second; }
+        if (it != substitutions.end())
+        {
+            false_val       = it->second;
+            has_replacement = true;
+        }
     }
+    return has_replacement;
 }
 
 DataType SelectInst::GetResultType() const { return type; }
@@ -2643,7 +2768,7 @@ std::vector<int>      EmptyInst::GetUsedRegs() { return {}; }
 std::vector<Operand*> EmptyInst::GetUsedOperands() { return {}; }
 Operand*              EmptyInst::GetResultOperand() { return nullptr; }
 Instruction*          EmptyInst::Clone(int) const { return new EmptyInst(); }
-void                  EmptyInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) {}
+bool                  EmptyInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) { return false; }
 DataType              EmptyInst::GetResultType() const { return DataType::I32; }
 Instruction*          EmptyInst::CloneWithMapping(const std::map<int, int>&, const std::map<int, int>&) const
 {

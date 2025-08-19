@@ -31,7 +31,7 @@ namespace Transform
         void removeBlockFromFunction(CFG* cfg, LLVMIR::IRBlock* block);
         void mergeBlocks(LLVMIR::IRBlock* target, LLVMIR::IRBlock* source);
         void cleanupSinglePredecessorPhis(CFG* cfg);
-        void replacePhiUsages(LLVMIR::Instruction* inst, const std::map<int, LLVMIR::Operand*>& replacements);
+        bool replacePhiUsages(LLVMIR::Instruction* inst, const std::map<int, LLVMIR::Operand*>& replacements);
     };
 
 }  // namespace Transform
