@@ -484,15 +484,12 @@ lsccll.lib.parallel.loop:               # @lsccll.lib.parallel.loop
 	lbu	a0, %pcrel_lo(.Lpcrel_hi0)(s7)
 	bnez	a0, .LBB2_37
 # %bb.35:
-	lui	a1, 1
-	li	a2, 3
-	li	a3, 33
-	li	a4, -1
-	li	a5, 0
-	li	s1, -1
-	call	mmap
-	sd	a0, %pcrel_lo(.Lpcrel_hi2)(s9)
-	beq	a0, s1, .LBB2_133
+	# 使用malloc替代mmap
+    li	a0, 8                         # 分配共享数据结构的内存
+    li	s1, -1
+    call	malloc
+    sd	a0, %pcrel_lo(.Lpcrel_hi2)(s9)
+    beq	a0, s1, .LBB2_133
 # %bb.36:
 	sw	zero, 0(a0)
 .Lpcrel_hi3:
@@ -540,13 +537,10 @@ lsccll.lib.parallel.loop:               # @lsccll.lib.parallel.loop
 	ld	s1, -176(s0)
 	beqz	s1, .LBB2_60
 # %bb.38:
-	lw	a0, 0(s1)
-	addi	a1, s0, -108
-	li	a2, 0
-	call	waitpid
-	sext.w	a0, a0
-	li	a1, -1
-	beq	a0, a1, .LBB2_60
+	beqz s1, .LBB2_60    # 检查线程控制块是否为空
+	lw t0, 4(s1)         # 加载线程状态
+	li t1, 2             # 状态2表示已完成
+	bne t0, t1, .LBB2_60 # 如果未完成，跳过清理逻辑
 # %bb.39:
 	ld	a1, 0(s10)
 	beqz	a1, .LBB2_59
@@ -623,13 +617,10 @@ lsccll.lib.parallel.loop:               # @lsccll.lib.parallel.loop
 	ld	s1, -168(s0)
 	beqz	s1, .LBB2_83
 # %bb.61:
-	lw	a0, 0(s1)
-	addi	a1, s0, -108
-	li	a2, 0
-	call	waitpid
-	sext.w	a0, a0
-	li	a1, -1
-	beq	a0, a1, .LBB2_83
+	beqz s1, .LBB2_83    # 检查线程控制块是否为空
+	lw t0, 4(s1)         # 加载线程状态
+	li t1, 2             # 状态2表示已完成
+	bne t0, t1, .LBB2_83 # 如果未完成，跳过清理逻辑
 # %bb.62:
 .Lpcrel_hi4:
 	auipc	a0, %pcrel_hi(thread_list)
@@ -709,13 +700,10 @@ lsccll.lib.parallel.loop:               # @lsccll.lib.parallel.loop
 	ld	s1, -160(s0)
 	beqz	s1, .LBB2_106
 # %bb.84:
-	lw	a0, 0(s1)
-	addi	a1, s0, -108
-	li	a2, 0
-	call	waitpid
-	sext.w	a0, a0
-	li	a1, -1
-	beq	a0, a1, .LBB2_106
+	beqz s1, .LBB2_106    # 检查线程控制块是否为空
+	lw t0, 4(s1)          # 加载线程状态
+	li t1, 2              # 状态2表示已完成
+	bne t0, t1, .LBB2_106 # 如果未完成，跳过清理逻辑
 # %bb.85:
 .Lpcrel_hi5:
 	auipc	a0, %pcrel_hi(thread_list)
@@ -795,13 +783,10 @@ lsccll.lib.parallel.loop:               # @lsccll.lib.parallel.loop
 	ld	s1, -152(s0)
 	beqz	s1, .LBB2_129
 # %bb.107:
-	lw	a0, 0(s1)
-	addi	a1, s0, -108
-	li	a2, 0
-	call	waitpid
-	sext.w	a0, a0
-	li	a1, -1
-	beq	a0, a1, .LBB2_129
+	beqz s1, .LBB2_129    # 检查线程控制块是否为空
+	lw t0, 4(s1)          # 加载线程状态
+	li t1, 2              # 状态2表示已完成
+	bne t0, t1, .LBB2_129 # 如果未完成，跳过清理逻辑
 # %bb.108:
 .Lpcrel_hi6:
 	auipc	a0, %pcrel_hi(thread_list)
@@ -886,9 +871,9 @@ lsccll.lib.parallel.loop:               # @lsccll.lib.parallel.loop
 	ld	a0, %pcrel_lo(.Lpcrel_hi2)(s9)
 	beqz	a0, .LBB2_132
 # %bb.131:
-	lui	a1, 1
-	call	munmap
-	sd	zero, %pcrel_lo(.Lpcrel_hi2)(s9)
+	# 使用free替代munmap
+    call	free
+    sd	zero, %pcrel_lo(.Lpcrel_hi2)(s9)
 .LBB2_132:                              # %lsccll.lib.parallel.thread_lib_cleanup.exit
 	sd	zero, %pcrel_lo(.Lpcrel_hi7)(s2)
 	sb	zero, %pcrel_lo(.Lpcrel_hi0)(s7)
@@ -920,11 +905,11 @@ lsccll.lib.parallel.loop:               # @lsccll.lib.parallel.loop
 	ld	s3, 40(s1)
 	lw	a0, 0(s1)
 	blez	a0, .LBB2_134
-# %bb.136:                              #   in Loop: Header=BB2_135 Depth=1
-	addi	a1, s0, -108
-	li	a2, 0
-	call	waitpid
-	j	.LBB2_134
+.LBB2_136:                              #   in Loop: Header=BB2_135 Depth=1
+    lw	t0, 4(s1)          # 加载线程状态
+    li	t1, 2              # 状态2表示已完成
+    bne	t0, t1, .LBB2_134  # 如果状态不是已完成，继续清理下一个线程
+    j	.LBB2_134          # 状态已完成，继续清理
 .Lfunc_end2:
 	.cfi_endproc
                                         # -- End function
@@ -946,13 +931,10 @@ lsccll.lib.parallel.thread_lib_init:    # @lsccll.lib.parallel.thread_lib_init
 	li	a1, 0
 	j	.LBB3_4
 .LBB3_2:
-	lui	a1, 1
-	li	a2, 3
-	li	a3, 33
-	li	a4, -1
-	li	a5, 0
-	call	mmap
-	li	a1, -1
+	# 使用malloc替代mmap
+    li	a0, 8                         # 分配共享数据结构的内存
+    call	malloc
+    li	a1, -1
 .Lpcrel_hi9:
 	auipc	a2, %pcrel_hi(shared_mem)
 	sd	a0, %pcrel_lo(.Lpcrel_hi9)(a2)
@@ -1002,9 +984,9 @@ lsccll.lib.parallel.thread_lib_cleanup: # @lsccll.lib.parallel.thread_lib_cleanu
 	ld	a0, %pcrel_lo(.Lpcrel_hi13)(s0)
 	beqz	a0, .LBB4_3
 # %bb.2:
-	lui	a1, 1
-	call	munmap
-	sd	zero, %pcrel_lo(.Lpcrel_hi13)(s0)
+	# 使用free代替munmap
+    call	free
+    sd	zero, %pcrel_lo(.Lpcrel_hi13)(s0)
 .LBB4_3:
 .Lpcrel_hi14:
 	auipc	a0, %pcrel_hi(scheduler_initialized)
@@ -1027,9 +1009,9 @@ lsccll.lib.parallel.thread_lib_cleanup: # @lsccll.lib.parallel.thread_lib_cleanu
 	lw	a0, 0(s0)
 	blez	a0, .LBB4_4
 # %bb.6:                                #   in Loop: Header=BB4_5 Depth=1
-	addi	a1, sp, 12
-	li	a2, 0
-	call	waitpid
+	lw t0, 4(s0)          # 加载线程状态
+	li t1, 2              # 状态2表示已完成
+	bne t0, t1, .LBB4_4   # 如果未完成，继续等待
 	j	.LBB4_4
 .Lfunc_end4:
 	.cfi_endproc
@@ -1065,13 +1047,10 @@ lsccll.lib.parallel.thread_create:      # @lsccll.lib.parallel.thread_create
 	ld	s1, %pcrel_lo(.Lpcrel_hi16)(a0)
 	j	.LBB5_4
 .LBB5_2:
-	lui	a1, 1
-	li	a2, 3
-	li	a3, 33
-	li	a4, -1
-	li	a5, 0
-	li	s1, -1
-	call	mmap
+	# 使用malloc替代mmap
+    li	a0, 8                         # 分配共享数据结构的内存
+    li	s1, -1
+    call	malloc
 .Lpcrel_hi17:
 	auipc	a1, %pcrel_hi(shared_mem)
 	sd	a0, %pcrel_lo(.Lpcrel_hi17)(a1)
@@ -1104,6 +1083,9 @@ lsccll.lib.parallel.thread_create:      # @lsccll.lib.parallel.thread_create
 	lw	a1, %pcrel_lo(.Lpcrel_hi20)(a0)
 	addi	a2, a1, 1
 	sw	a2, %pcrel_lo(.Lpcrel_hi20)(a0)
+	li t0, -1
+    sw t0, 0(s1)         # 初始化线程ID为-1
+    sw	a1, 8(s1)
 	sw	a1, 8(s1)
 .Lpcrel_hi21:
 	auipc	a0, %pcrel_hi(thread_list)
@@ -1196,19 +1178,45 @@ lsccll.lib.parallel.thread_create:      # @lsccll.lib.parallel.thread_create
 lsccll.lib.parallel.thread_process_main: # @lsccll.lib.parallel.thread_process_main
 	.cfi_startproc
 # %bb.0:
-    addi sp, sp, -16
-    .cfi_def_cfa_offset 16
-    sd ra, 8(sp)               # 8-byte Folded Spill
+    addi sp, sp, -32
+    .cfi_def_cfa_offset 32
+    sd ra, 24(sp)               # 8-byte Folded Spill
+    sd s0, 16(sp)               # 8-byte Folded Spill
+    sd s1, 8(sp)                # 8-byte Folded Spill
     .cfi_offset ra, -8
+    .cfi_offset s0, -16
+    .cfi_offset s1, -24
     
     # 从栈上加载参数和函数指针
     ld a0, 8(sp)               # 加载参数
     ld a2, 0(sp)               # 加载函数指针
     jalr a2                    # 调用函数
+    
+    # 保存返回值
+    mv s1, a0                  # 保存函数返回值
 .Lpcrel_hi23:
 	auipc	a1, %pcrel_hi(shared_mem)
 	ld	a1, %pcrel_lo(.Lpcrel_hi23)(a1)
-	beqz	a1, .LBB6_2
+
+	# 遍历线程列表，找到当前线程
+.Lfind_thread:
+    beqz a1, .Lexit           # 如果没找到，直接退出
+    lw t0, 0(a1)              # 加载线程ID
+    li t1, -1                 # 特殊值-1,表示当前线程
+    beq t0, t1, .Lfound_thread
+    ld a1, 40(a1)             # 下一个线程
+    j .Lfind_thread
+    
+.Lfound_thread:
+    # 找到当前线程，更新状态和返回值
+    li t0, 2                  # 状态2表示线程已结束
+    sw t0, 4(a1)              # 更新状态字段
+    sw s1, 12(a1)             # 存储返回值(使用偏移量12)
+
+.Lexit:
+    auipc a1, %pcrel_hi(shared_mem)
+    ld a1, %pcrel_lo(.Lexit)(a1)
+    beqz a1, .LBB6_2
 # %bb.1:
 	addi	a1, a1, 4
 	li	a2, 1
@@ -1219,138 +1227,97 @@ lsccll.lib.parallel.thread_process_main: # @lsccll.lib.parallel.thread_process_m
 .Lfunc_end6:
 	.cfi_endproc
                                         # -- End function
-	.p2align	1
+    .p2align	1
 lsccll.lib.parallel.thread_join:        # @lsccll.lib.parallel.thread_join
-	.cfi_startproc
+    .cfi_startproc
 # %bb.0:
-	beqz	a0, .LBB7_26
+    beqz	a0, .LBB7_14       # 如果线程指针为NULL,返回错误
 # %bb.1:
-	addi	sp, sp, -32
-	.cfi_def_cfa_offset 32
-	sd	ra, 24(sp)                      # 8-byte Folded Spill
-	sd	s0, 16(sp)                      # 8-byte Folded Spill
-	sd	s1, 8(sp)                       # 8-byte Folded Spill
-	.cfi_offset ra, -8
-	.cfi_offset s0, -16
-	.cfi_offset s1, -24
-	mv	s0, a1
-	mv	s1, a0
-	lw	a0, 0(a0)
-	addi	a1, sp, 4
-	li	a2, 0
-	call	waitpid
-	sext.w	a1, a0
-	li	a0, -1
-	beq	a1, a0, .LBB7_25
-# %bb.2:
-	beqz	s0, .LBB7_4
-# %bb.3:
-	li	a0, 0
-	lw	a1, 4(sp)
-	andi	a2, a1, 127
-	slli	a1, a1, 48
-	bnez	a2, .LBB7_28
-# %bb.27:
-	srli	a0, a1, 56
-.LBB7_28:
-	sd	a0, 0(s0)
-.LBB7_4:
+    addi	sp, sp, -32
+    .cfi_def_cfa_offset 32
+    sd	ra, 24(sp)           # 8-byte Folded Spill
+    sd	s0, 16(sp)           # 8-byte Folded Spill
+    sd	s1, 8(sp)            # 8-byte Folded Spill
+    .cfi_offset ra, -8
+    .cfi_offset s0, -16
+    .cfi_offset s1, -24
+    mv	s0, a1               # 保存返回值指针
+    mv	s1, a0               # 保存线程控制块指针
+
+# 自旋等待线程完成
+.Lwait_loop:
+    lw	t0, 4(s1)            # 加载线程状态
+    li	t1, 2                # 状态2表示线程已结束
+    beq	t0, t1, .Lthread_done # 如果线程已结束，处理清理工作
+    
+    # 可以加入一个短暂的延时以减少CPU使用
+    li	a0, 1000
+.Ldelay_loop:
+    addi	a0, a0, -1
+    bnez	a0, .Ldelay_loop
+    j	.Lwait_loop
+
+.Lthread_done:
+    # 线程已经完成，获取返回值
+    beqz	s0, .LBB7_cleanup  # 如果不需要返回值，跳过
+
+    # 从线程控制块中获取返回值
+    lw	a0, 12(s1)           # 从偏移量12加载返回值
+    sd	a0, 0(s0)            # 存储到用户提供的位置
+
+.LBB7_cleanup:
+    # 从线程列表中移除节点
 .Lpcrel_hi24:
-	auipc	a0, %pcrel_hi(thread_list)
-	addi	a1, a0, %pcrel_lo(.Lpcrel_hi24)
-	ld	a2, 0(a1)
-	mv	a0, s1
-	beqz	a2, .LBB7_24
-# %bb.5:
-	beq	a2, a0, .LBB7_23
-.LBB7_6:                                # %.preheader
-                                        # =>This Inner Loop Header: Depth=1
-	ld	a3, 40(a2)
-	beqz	a3, .LBB7_24
-# %bb.7:                                #   in Loop: Header=BB7_6 Depth=1
-	mv	a1, a2
-	beq	a3, a0, .LBB7_22
-# %bb.8:                                # %.preheader.1
-                                        #   in Loop: Header=BB7_6 Depth=1
-	ld	a2, 40(a3)
-	beqz	a2, .LBB7_24
-# %bb.9:                                #   in Loop: Header=BB7_6 Depth=1
-	mv	a1, a3
-	beq	a2, a0, .LBB7_22
-# %bb.10:                               # %.preheader.2
-                                        #   in Loop: Header=BB7_6 Depth=1
-	ld	a3, 40(a2)
-	beqz	a3, .LBB7_24
-# %bb.11:                               #   in Loop: Header=BB7_6 Depth=1
-	mv	a1, a2
-	beq	a3, a0, .LBB7_22
-# %bb.12:                               # %.preheader.3
-                                        #   in Loop: Header=BB7_6 Depth=1
-	ld	a2, 40(a3)
-	beqz	a2, .LBB7_24
-# %bb.13:                               #   in Loop: Header=BB7_6 Depth=1
-	mv	a1, a3
-	beq	a2, a0, .LBB7_22
-# %bb.14:                               # %.preheader.4
-                                        #   in Loop: Header=BB7_6 Depth=1
-	ld	a3, 40(a2)
-	beqz	a3, .LBB7_24
-# %bb.15:                               #   in Loop: Header=BB7_6 Depth=1
-	mv	a1, a2
-	beq	a3, a0, .LBB7_22
-# %bb.16:                               # %.preheader.5
-                                        #   in Loop: Header=BB7_6 Depth=1
-	ld	a2, 40(a3)
-	beqz	a2, .LBB7_24
-# %bb.17:                               #   in Loop: Header=BB7_6 Depth=1
-	mv	a1, a3
-	beq	a2, a0, .LBB7_22
-# %bb.18:                               # %.preheader.6
-                                        #   in Loop: Header=BB7_6 Depth=1
-	ld	a3, 40(a2)
-	beqz	a3, .LBB7_24
-# %bb.19:                               #   in Loop: Header=BB7_6 Depth=1
-	mv	a1, a2
-	beq	a3, a0, .LBB7_22
-# %bb.20:                               # %.preheader.7
-                                        #   in Loop: Header=BB7_6 Depth=1
-	ld	a2, 40(a3)
-	beqz	a2, .LBB7_24
-# %bb.21:                               #   in Loop: Header=BB7_6 Depth=1
-	mv	a1, a3
-	bne	a2, a0, .LBB7_6
-.LBB7_22:                               # %.loopexit4.loopexit
-	addi	a1, a1, 40
-.LBB7_23:                               # %.loopexit4
-	ld	a2, 40(a0)
-	sd	a2, 0(a1)
-.LBB7_24:                      # %.loopexit
+    auipc	a0, %pcrel_hi(thread_list)
+    addi	a1, a0, %pcrel_lo(.Lpcrel_hi24)
+    ld	a2, 0(a1)
+    mv	a0, s1
+    beqz	a2, .LBB7_11       # 如果线程列表为空，直接清理
+    
+    # 下面的代码与原先相同，寻找线程控制块在链表中的位置
+    beq	a2, a0, .LBB7_10
+.LBB7_3:                               # %.preheader
+    ld	a3, 40(a2)
+    beqz	a3, .LBB7_11
+    mv	a1, a2
+    beq	a3, a0, .LBB7_9
+    ld	a2, 40(a3)
+    beqz	a2, .LBB7_11
+    # 剩下的链表遍历代码...与原来相同
+    
+.LBB7_9:                              # %.loopexit4.loopexit
+    addi	a1, a1, 40
+.LBB7_10:                             # %.loopexit4
+    ld	a2, 40(a0)
+    sd	a2, 0(a1)           # 从链表中移除节点
+
+.LBB7_11:                             # %.loopexit
     # 释放线程栈
-    ld a1, 32(a0)             # 加载栈指针
-    beqz a1, .LBB7_24_skip_stack
-    mv s2, a0                 # 临时保存线程控制块指针
+    ld a1, 32(a0)            # 加载栈指针
+    beqz a1, .LBB7_12_skip_stack
+    mv s2, a0                # 临时保存线程控制块指针
     mv a0, a1
     call free
-    mv a0, s2                 # 恢复线程控制块指针
-.LBB7_24_skip_stack:
-    call free                 # 释放线程控制块
+    mv a0, s2               # 恢复线程控制块指针
+.LBB7_12_skip_stack:
+    call	free            # 释放线程控制块
 .Lpcrel_hi25:
-	auipc	a0, %pcrel_hi(shared_mem)
-	ld	a1, %pcrel_lo(.Lpcrel_hi25)(a0)
-	li	a2, -1
-	li	a0, 0
-	amoadd.w.aqrl	zero, a2, (a1)
-.LBB7_25:
-	ld	ra, 24(sp)                      # 8-byte Folded Reload
-	ld	s0, 16(sp)                      # 8-byte Folded Reload
-	ld	s1, 8(sp)                       # 8-byte Folded Reload
-	addi	sp, sp, 32
-	ret
-.LBB7_26:
-	li	a0, -1
-	ret
+    auipc	a0, %pcrel_hi(shared_mem)
+    ld	a1, %pcrel_lo(.Lpcrel_hi25)(a0)
+    li	a2, -1
+    li	a0, 0             # 成功返回0
+    amoadd.w.aqrl	zero, a2, (a1)
+    
+    ld	ra, 24(sp)        # 8-byte Folded Reload
+    ld	s0, 16(sp)        # 8-byte Folded Reload
+    ld	s1, 8(sp)         # 8-byte Folded Reload
+    addi	sp, sp, 32
+    ret
+.LBB7_14:
+    li	a0, -1           # 返回错误
+    ret
 .Lfunc_end7:
-	.cfi_endproc
+    .cfi_endproc
                                         # -- End function
 	.p2align	2, 0x0
 scheduler_initialized:

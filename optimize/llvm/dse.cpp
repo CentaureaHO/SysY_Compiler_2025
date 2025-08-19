@@ -144,7 +144,6 @@ namespace LLVMIR
 #endif
         // store_insts.clear();
         // erase_set.clear();  // 清空erase_set以便下次使用
-
         // CollectStores(cfg);
         // // 对于store但是全局都没有对于mayAlias的读取，那么我们可以将其删除
         // NoUseStore(cfg);
@@ -804,26 +803,51 @@ namespace LLVMIR
         {
             for (auto inst : block->insts)
             {
-                if (inst->opcode == IROpCode::GETELEMENTPTR)
+                if (inst->opcode == IROpCode::LOAD)
                 {
                     auto loadInst = dynamic_cast<LoadInst*>(inst);
                     for (auto store_inst : dead_set)
                     {
                         auto store = dynamic_cast<StoreInst*>(store_inst);
-                        if (store && mayAlias(store->ptr, loadInst->ptr, cfg)) { used_stores.insert(store_inst); }
+                        if (store && mayAlias(store->ptr, loadInst->ptr, cfg) && !used_stores.count(store_inst))
+                        {
+                            std::cout << "Find use of store: " << store_inst->toString() << " by "
+                                      << loadInst->toString() << std::endl;
+                            used_stores.insert(store_inst);
+                        }
+                    }
+                }
+                else if (inst->opcode == IROpCode::CALL)
+                {
+                    auto call_inst = dynamic_cast<CallInst*>(inst);
+                    for (auto store_inst : dead_set)
+                    {
+                        auto store = dynamic_cast<StoreInst*>(store_inst);
+                        if (store)
+                        {
+                            for (auto [ty, arg] : call_inst->args)
+                            {
+                                if (mayAlias(store->ptr, arg, cfg) && !used_stores.count(store_inst))
+                                {
+                                    used_stores.insert(store_inst);
+                                    std::cout << "Find use of store: " << store_inst->toString() << " by "
+                                              << call_inst->toString() << std::endl;
+                                }
+                            }
+                        }
                     }
                 }
             }
-        }
-        for (auto store_inst : used_stores)
-        {
-            dead_set.erase(store_inst);  // 从死代码集中移除被使用的store
-        }
+            for (auto store_inst : used_stores)
+            {
+                dead_set.erase(store_inst);  // 从死代码集中移除被使用的store
+            }
 #ifdef DEBUG_DSE
 
-        std::cout << "NoUseStore: Found " << used_stores.size() << " stores that are used by GEP instructions"
-                  << std::endl;
+            std::cout << "NoUseStore: Found " << used_stores.size() << " stores that are used by GEP instructions"
+                      << std::endl;
 #endif
+        }
         std::unordered_map<int, Instruction*> to_remove;
         for (auto dead : dead_set)
         {
