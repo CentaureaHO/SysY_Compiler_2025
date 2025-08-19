@@ -99,7 +99,7 @@ namespace Transform
 
         ParallelizationInfo info;
 
-        // 1. 基本结构检查（类比loop unroll的结构检查）
+        // 1. 基本结构检查
         if (!canParallelize(loop))
         {
             info.reason                 = "循环结构不支持并行化";
@@ -108,7 +108,7 @@ namespace Transform
             return false;
         }
 
-        // 2. 循环依赖分析（这是并行化的核心）
+        // 2. 循环依赖分析
         if (!analyzeLoopDependencies(loop, info))
         {
             parallelization_info_[loop] = info;
@@ -159,10 +159,10 @@ namespace Transform
 
     bool LoopParallelizationPass::canParallelize(NaturalLoop* loop) const
     {
-        // 基本结构检查（类比loop unroll的结构要求）
+        // 基本结构检查
         if (!loop || !loop->header || !loop->preheader) { return false; }
 
-        // 检查latch数量（简化要求，只支持单latch）
+        // 检查latch数量
         if (loop->latches.size() != 1) { return false; }
 
         // 检查是否是简单的for循环
@@ -336,6 +336,17 @@ namespace Transform
 
         if (loop_size < MIN_LOOP_SIZE_FOR_PARALLEL) { return false; }
 
+        for (auto* node : loop->loop_nodes)
+        {
+            for (auto* inst : node->insts)
+            {
+                if (inst->opcode == LLVMIR::IROpCode::CALL) { return false; }
+                for (auto use : inst->GetUsedOperands())
+                {
+                    if (use->type == LLVMIR::OperandType::GLOBAL) { return false; }
+                }
+            }
+        }
         return true;
     }
 
@@ -747,8 +758,8 @@ namespace Transform
             // std::cout << std::endl;
             // std::cout << "      复制指令: " << old_inst->GetResultReg() << " -> " << new_reg << std::endl;
             new_inst->ReplaceAllOperands(reg_replace_map);
-            // std::cout << "      复制指令: " << old_inst->toString() << " -> " << new_inst->toString() << std::endl;
-            // std::cout << std::endl;
+            // std::cout << "      复制指令: " << old_inst->toString() << " -> " << new_inst->toString() <<
+            // std::endl; std::cout << std::endl;
         }
 
         // 更新操作数中的寄存器
@@ -1087,9 +1098,8 @@ namespace Transform
 
         if (!check_result) assert(false && "Failed to find check result");
 
-        auto* cond_br = new LLVMIR::BranchCondInst(check_result,
-            getLabelOperand(parallel_call_block->block_id),
-            getLabelOperand(loop->header->block_id));
+        auto* cond_br = new LLVMIR::BranchCondInst(
+            check_result, getLabelOperand(parallel_call_block->block_id), getLabelOperand(loop->header->block_id));
         check_block->insts.push_back(cond_br);
 
         if (!loop->preheader->insts.empty())
