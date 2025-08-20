@@ -95,7 +95,6 @@ namespace Transform
     void LoopParallelizationPass::Execute()
     {
         DBGINFO("开始循环并行化分析...");
-        std::cout << "开始循环并行化分析..." << std::endl;
         def_use_analysis_->run();
         read_only_global_analysis_->run();
         parallel_loop_global_.clear();
@@ -950,7 +949,7 @@ namespace Transform
 
             auto* load_var = new LLVMIR::LoadInst(LLVMIR::DataType::F32, gep_var->res, getRegOperand(++max_reg));
             entry_block->insts.push_back(load_var);
-            std::cout << " old reg is " << old_reg << ", new reg is " << max_reg << std::endl;
+            // std::cout << " old reg is " << old_reg << ", new reg is " << max_reg << std::endl;
 
             reg_replace_map[old_reg] = max_reg;
         }
