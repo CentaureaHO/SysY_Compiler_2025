@@ -10,7 +10,7 @@
 // Define this to allow hoisting of comparison instructions (ICMP/FCMP)
 #define ALLOW_CMP_HOIST
 
-#define DBGMODE
+// #define DBGMODE
 
 #ifdef DBGMODE
 template <typename... Args>

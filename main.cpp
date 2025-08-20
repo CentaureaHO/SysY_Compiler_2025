@@ -486,7 +486,7 @@ int main(int argc, char** argv)
         if (optimizeLevel >= 2) gcm.Execute();
         // std::cout << "GCM completed" << std::endl;
 
-        /*makecfg.Execute();
+        makecfg.Execute();
         makedom.Execute();
         makeredom.Execute(true);
 
@@ -500,7 +500,7 @@ int main(int argc, char** argv)
         md.run();
 
         // eDefUse.print();
-        /*Transform::ArithInstReduce arithInstReduce(&builder);
+        Transform::ArithInstReduce arithInstReduce(&builder);
         arithInstReduce.Execute();
 
         makecfg.Execute();
@@ -526,11 +526,11 @@ int main(int argc, char** argv)
         // scevAnalyser.printAllResults();
 
         Transform::StrengthReducePass lsr(&builder, &scevAnalyser);
-        lsr.Execute();
-        DCEDefUse.Execute();
+        if (optimizeLevel >= 2) lsr.Execute();
+        /*DCEDefUse.Execute();
         dce.Execute();
 
-        loopPreProcess();
+        /*loopPreProcess();
         scevAnalyser.run();
 
         // Constant Loop Full Unroll
@@ -566,7 +566,7 @@ int main(int argc, char** argv)
 
         }
         // SCCP after constant full unroll
-        {
+        /*{
             Transform::SameSourcePhiEliminationPass   sameSourcePhiElim(&builder);
             Transform::SingleSourcePhiEliminationPass singleSourcePhiElim(&builder);
             Transform::ConstantBranchFoldingPass      constantBranchFolding(&builder);
@@ -626,7 +626,7 @@ int main(int argc, char** argv)
         // scevAnalyser.printAllResults();
         // builder.printIR(std::cerr);
 
-        makecfg.Execute();
+        /*makecfg.Execute();
         makedom.Execute();
         aa.run();
         loopPreProcess();
@@ -652,7 +652,7 @@ int main(int argc, char** argv)
                       << unroll_stats.second << " loops" << std::endl;
         }
 
-        makecfg.Execute();
+        /*makecfg.Execute();
         makedom.Execute();
         EAliasAnalysis::EAliasAnalyser ealias_analyser(&builder);
         DSEPass                        dse(&builder, &ealias_analyser, &edefUseAnalysis, &arrAliasAnalysis);
