@@ -520,8 +520,8 @@ namespace StructuralTransform
                 auto* store_orig = new LLVMIR::StoreInst(
                     ptr_type_map[ptr_regno], getRegOperand(ptr_regno), getRegOperand(cfg->func->max_reg));
 
-                exit->insts.insert(it, load_temp);
-                exit->insts.insert(it, store_orig);
+                auto load_it = exit->insts.insert(it, load_temp);
+                exit->insts.insert(++load_it, store_orig);
             }
         }
 
@@ -669,8 +669,8 @@ namespace StructuralTransform
                 auto* store_orig = new LLVMIR::StoreInst(
                     global_type_map[global_name], getGlobalOperand(global_name), getRegOperand(cfg->func->max_reg));
 
-                exit->insts.insert(it, load_temp);
-                exit->insts.insert(it, store_orig);
+                auto load_it = exit->insts.insert(it, load_temp);
+                exit->insts.insert(++load_it, store_orig);
             }
         }
 

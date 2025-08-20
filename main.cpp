@@ -526,11 +526,11 @@ int main(int argc, char** argv)
         // scevAnalyser.printAllResults();
 
         Transform::StrengthReducePass lsr(&builder, &scevAnalyser);
-        if (optimizeLevel >= 2) lsr.Execute();
-        /*DCEDefUse.Execute();
+        lsr.Execute();
+        DCEDefUse.Execute();
         dce.Execute();
 
-        /*loopPreProcess();
+        loopPreProcess();
         scevAnalyser.run();
 
         // Constant Loop Full Unroll
@@ -563,10 +563,9 @@ int main(int argc, char** argv)
             aa.run();
             md.run();
             cse.Execute();
-
         }
         // SCCP after constant full unroll
-        /*{
+        {
             Transform::SameSourcePhiEliminationPass   sameSourcePhiElim(&builder);
             Transform::SingleSourcePhiEliminationPass singleSourcePhiElim(&builder);
             Transform::ConstantBranchFoldingPass      constantBranchFolding(&builder);
@@ -626,7 +625,7 @@ int main(int argc, char** argv)
         // scevAnalyser.printAllResults();
         // builder.printIR(std::cerr);
 
-        /*makecfg.Execute();
+        makecfg.Execute();
         makedom.Execute();
         aa.run();
         loopPreProcess();
@@ -652,7 +651,7 @@ int main(int argc, char** argv)
                       << unroll_stats.second << " loops" << std::endl;
         }
 
-        /*makecfg.Execute();
+        makecfg.Execute();
         makedom.Execute();
         EAliasAnalysis::EAliasAnalyser ealias_analyser(&builder);
         DSEPass                        dse(&builder, &ealias_analyser, &edefUseAnalysis, &arrAliasAnalysis);
@@ -663,9 +662,15 @@ int main(int argc, char** argv)
         makeredom.Execute(true);
 
         loopPreProcess();
+        makecfg.Execute();
+        makedom.Execute();
+        loopAnalysis.Execute();
+        loopSimplify.Execute();
         aa.run();
-        licm.Execute();
+        if (optimizeLevel >= 2) licm.Execute();
         md.run();
+
+        // branchcse
 
         // for (int i = 0; i < 5; ++i)
         {
@@ -758,7 +763,7 @@ int main(int argc, char** argv)
         makeredom.Execute(true);
         cdg.Execute();
         ADCEDefUse.Execute();
-        adce.Execute();*/
+        adce.Execute();
 
         // cfgSimplify();
         makecfg.Execute();
