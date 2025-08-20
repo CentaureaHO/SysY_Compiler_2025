@@ -15,7 +15,7 @@
 #include <functional>
 #include <string>
 
-// #define DBGMODE
+#define DBGMODE
 
 #ifdef DBGMODE
 template <typename... Args>
@@ -155,6 +155,41 @@ namespace Transform
     void LoopParallelizationPass::CollectAllGlobal(CFG* cfg)
     {
         if (!cfg->LoopForest) return;
+
+        for (auto [id, block] : cfg->block_id_to_block)
+        {
+            for (auto* inst : block->insts)
+            {
+                for (auto* use : inst->GetUsedOperands())
+                {
+                    if (parallel_loop_global_.count(use))
+                    {
+                        if (inst->GetResultOperand())
+                        {
+                            if (!parallel_loop_global_.count(inst->GetResultOperand()))
+                            {
+                                parallel_loop_global_.insert(inst->GetResultOperand());
+                                DBGINFO("收集到全局变量: ", inst->GetResultOperand()->getName());
+                                break;
+                            }
+
+                            for (auto* loop : cfg->LoopForest->loop_set)
+                            {
+                                if (global_as_params_[loop].count(use))
+                                {
+                                    if (!parallel_loop_global_.count(inst->GetResultOperand()))
+                                    {
+                                        parallel_loop_global_.insert(inst->GetResultOperand());
+                                        DBGINFO("收集到全局变量: ", inst->GetResultOperand()->getName());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         for (auto loop : cfg->LoopForest->loop_set)
         {
             for (auto* inst : loop->preheader->insts)
@@ -163,11 +198,14 @@ namespace Transform
                 {
                     if (parallel_loop_global_.count(use) || global_as_params_[loop].count(use))
                     {
-                        if (!global_vars_in_loops_[loop].count(inst->GetResultOperand()))
+                        if (inst->GetResultOperand())
                         {
-                            global_vars_in_loops_[loop].insert(inst->GetResultOperand());
+                            if (!global_vars_in_loops_[loop].count(inst->GetResultOperand()))
+                            {
+                                global_vars_in_loops_[loop].insert(inst->GetResultOperand());
+                            }
+                            DBGINFO("收集到全局变量: ", inst->GetResultOperand()->getName());
                         }
-                        DBGINFO("收集到全局变量: ", inst->GetResultOperand()->getName());
                         break;
                     }
                 }
@@ -180,12 +218,15 @@ namespace Transform
                     {
                         if (parallel_loop_global_.count(use) || global_as_params_[loop].count(use))
                         {
-                            if (!global_vars_in_loops_[loop].count(inst->GetResultOperand()))
+                            if (inst->GetResultOperand())
                             {
-                                global_vars_in_loops_[loop].insert(inst->GetResultOperand());
+                                if (!global_vars_in_loops_[loop].count(inst->GetResultOperand()))
+                                {
+                                    global_vars_in_loops_[loop].insert(inst->GetResultOperand());
+                                }
+                                DBGINFO("收集到全局变量: ", inst->GetResultOperand()->getName());
+                                break;
                             }
-                            DBGINFO("收集到全局变量: ", inst->GetResultOperand()->getName());
-                            break;
                         }
                     }
                 }
@@ -265,6 +306,8 @@ namespace Transform
                     PhiMapping phi_mapping;
                     phi_mapping.original_phi            = phi;
                     phi_mapping.original_phi_result_reg = phi->GetResultReg();
+                    phi_mapping.latch_def_inst          = nullptr;
+
                     for (auto& [val, label] : phi->vals_for_labels)
                     {
                         auto* label_op = static_cast<LLVMIR::LabelOperand*>(label);
@@ -302,20 +345,23 @@ namespace Transform
                             }
                         }
                     }
-                    if (phi_mapping.latch_def_inst && (phi_mapping.latch_def_inst->opcode == LLVMIR::IROpCode::ADD ||
-                                                          phi_mapping.latch_def_inst->opcode == LLVMIR::IROpCode::MUL))
+                    if (phi_mapping.latch_def_inst != nullptr)
                     {
-                        phi_mappings.push_back(phi_mapping);
-                        DBGINFO("  循环 ",
-                            loop->loop_id,
-                            " 检测到归纳变量:%reg_",
-                            phi_mapping.original_phi_result_reg,
-                            " (latch: ",
-                            phi_mapping.latch_incoming_value,
-                            ", preheader: ",
-                            phi_mapping.preheader_incoming_value,
-                            ")");
-                        break;
+                        // std::cout << phi_mapping.latch_def_inst->opcode << std::endl;
+                        if (phi_mapping.latch_def_inst->opcode == LLVMIR::IROpCode::ADD ||
+                            phi_mapping.latch_def_inst->opcode == LLVMIR::IROpCode::MUL)
+                        {
+                            phi_mappings.push_back(phi_mapping);
+                            DBGINFO("  循环 ",
+                                loop->loop_id,
+                                " 检测到归纳变量:%reg_",
+                                phi_mapping.original_phi_result_reg,
+                                " (latch: ",
+                                phi_mapping.latch_incoming_value,
+                                ", preheader: ",
+                                phi_mapping.preheader_incoming_value,
+                                ")");
+                        }
                     }
                 }
             }
@@ -475,6 +521,7 @@ namespace Transform
     bool LoopParallelizationPass::checkInstructionDependency(
         NaturalLoop* loop, LLVMIR::Instruction* inst1, LLVMIR::Instruction* inst2)
     {
+        
         // 检查两个指令是否都是内存操作
         bool inst1_is_memory = (inst1->opcode == LLVMIR::IROpCode::LOAD || inst1->opcode == LLVMIR::IROpCode::STORE);
         bool inst2_is_memory = (inst2->opcode == LLVMIR::IROpCode::LOAD || inst2->opcode == LLVMIR::IROpCode::STORE);
