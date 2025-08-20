@@ -636,13 +636,13 @@ int main(int argc, char** argv)
         DSEPass                        dse(&builder, &ealias_analyser, &edefUseAnalysis, &arrAliasAnalysis);
         dse.Execute();
 
-        makecfg.Execute();
-        makedom.Execute();
-        makeredom.Execute(true);
+        // makecfg.Execute();
+        // makedom.Execute();
+        // makeredom.Execute(true);
 
-        aa.run();
-        licm.Execute();
-        md.run();
+        // aa.run();
+        // licm.Execute();
+        // md.run();
 
         // for (int i = 0; i < 5; ++i)
         {
