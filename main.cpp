@@ -352,6 +352,9 @@ int main(int argc, char** argv)
         Transform::UnifyReturnPass unifyReturn(&builder);
         unifyReturn.Execute();
 
+        makecfg.Execute();
+        makedom.Execute();
+
         Mem2Reg mem2reg(&builder);
         mem2reg.Execute();
 
@@ -632,7 +635,7 @@ int main(int argc, char** argv)
         scevAnalyser.run();
         Transform::LoopParallelizationPass loopParallelPass(
             &builder, &aa, &scevAnalyser, &edefUseAnalysis, &readOnlyGlobalAnalysis);
-        loopParallelPass.Execute();
+        // loopParallelPass.Execute();
 
         makecfg.Execute();
         makedom.Execute();
@@ -667,13 +670,27 @@ int main(int argc, char** argv)
         loopAnalysis.Execute();
         loopSimplify.Execute();
         aa.run();
-        if (optimizeLevel >= 2) licm.Execute();
+        licm.Execute();
         md.run();
 
-        // branchcse
+        makecfg.Execute();
+        makedom.Execute();
+        // branchCSE.Execute();
 
-        // for (int i = 0; i < 5; ++i)
+        makecfg.Execute();
+
+        // branchcse
+        for (int i = 0; i < 5; ++i)
         {
+            makecfg.Execute();
+            makedom.Execute();
+            aa.run();
+            md.run();
+            cse.Execute();
+            makecfg.Execute();
+            makedom.Execute();
+            // branchCSE.Execute();
+
             makecfg.Execute();
             loopPreProcess();
             tsccp.Execute();
@@ -722,7 +739,6 @@ int main(int argc, char** argv)
             aa.run();
             md.run();
             cse.Execute();
-
         }
 
         arithInstReduce.Execute();
@@ -765,8 +781,8 @@ int main(int argc, char** argv)
         ADCEDefUse.Execute();
         adce.Execute();
 
-        // cfgSimplify();
-        makecfg.Execute();
+        cfgSimplify();
+        // makecfg.Execute();
     }
 
     if (step == "-llvm")
