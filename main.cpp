@@ -611,7 +611,7 @@ int main(int argc, char** argv)
         scevAnalyser.run();
         Transform::LoopParallelizationPass loopParallelPass(
             &builder, &aa, &scevAnalyser, &edefUseAnalysis, &readOnlyGlobalAnalysis);
-        loopParallelPass.Execute();
+        // loopParallelPass.Execute();
 
         makecfg.Execute();
         makedom.Execute();
