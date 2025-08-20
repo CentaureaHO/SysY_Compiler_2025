@@ -69,24 +69,8 @@ namespace Transform
 
     bool PhiCleanPass::areOperandsEqual(LLVMIR::Operand* op1, LLVMIR::Operand* op2)
     {
-        if (!op1 || !op2) { return op1 == op2; }
-
-        if (op1->type != op2->type) { return false; }
-
-        switch (op1->type)
-        {
-            case LLVMIR::OperandType::REG: return op1->GetRegNum() == op2->GetRegNum();
-
-            case LLVMIR::OperandType::IMMEI32: return op1->GetImm() == op2->GetImm();
-
-            case LLVMIR::OperandType::IMMEF32: return op1->GetImmF() == op2->GetImmF();
-
-            case LLVMIR::OperandType::GLOBAL: return op1->GetGlobal() == op2->GetGlobal();
-
-            case LLVMIR::OperandType::LABEL: return op1->GetRegNum() == op2->GetRegNum();  // Label也使用GetRegNum
-
-            default: return false;
-        }
+        if (!op1 || !op2) { return false; }
+        return op1 == op2;
     }
 
 }  // namespace Transform

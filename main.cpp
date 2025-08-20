@@ -352,10 +352,11 @@ int main(int argc, char** argv)
         Transform::UnifyReturnPass unifyReturn(&builder);
         unifyReturn.Execute();
 
+        makecfg.Execute();
+        makedom.Execute();
+
         Mem2Reg mem2reg(&builder);
         mem2reg.Execute();
-        // Transform::PhiCleanPass phiClean(&builder);
-        // phiClean.Execute();
 
         // Loop Analysis and Simplification
         loopAnalysis.Execute();  // inlinepass 需要，先执行一次
@@ -374,10 +375,18 @@ int main(int argc, char** argv)
         unused_func_del.Execute();
 
         loopPreProcess();
-        // 已修复
         makecfg.Execute();
         makedom.Execute();
-
+        loopAnalysis.Execute();
+        loopSimplify.Execute();
+        // for (auto& [func, cfg]: builder.cfg)
+        // {
+        //     std::cout << "Function: " << func->func_name << std::endl;
+        //     for (auto& loop: cfg->LoopForest->loop_set)
+        //     {
+        //         loop->printLoopInfo();
+        //     }
+        // }
         Analysis::AliasAnalyser aa(&builder);
         aa.run();
         StructuralTransform::LICMPass licm(&builder, &aa);
@@ -455,9 +464,18 @@ int main(int argc, char** argv)
         // Used to set all instructions with the block they are in.
         SetIdAnalysis setIdAnalysis(&builder);
         setIdAnalysis.Execute();
+        loopPreProcess();
+        makecfg.Execute();
+        makedom.Execute();
+        loopAnalysis.Execute();
+        loopSimplify.Execute();
         aa.run();
         licm.Execute();
         md.run();
+
+        makecfg.Execute();
+        makedom.Execute();
+        makeredom.Execute(true);
         Analysis::ReadOnlyGlobalAnalysis readOnlyGlobalAnalysis(&builder, &aa);
         // readOnlyGlobalAnalysis.run();
         Analysis::ArrAliasAnalysis arrAliasAnalysis(&builder);
@@ -465,14 +483,21 @@ int main(int argc, char** argv)
         // arrAliasAnalysis.print();
         cdg.Execute();
         // readOnlyGlobalAnalysis.print();
+        md.run();
+        edefUseAnalysis.run();
         GCM gcm(&builder, &edefUseAnalysis, &aa, &arrAliasAnalysis, &md, &cdg);
-        gcm.Execute();
+        if (optimizeLevel >= 2) gcm.Execute();
         // std::cout << "GCM completed" << std::endl;
 
         makecfg.Execute();
         makedom.Execute();
         makeredom.Execute(true);
 
+        loopPreProcess();
+        makecfg.Execute();
+        makedom.Execute();
+        loopAnalysis.Execute();
+        loopSimplify.Execute();
         aa.run();
         licm.Execute();
         md.run();
@@ -541,7 +566,6 @@ int main(int argc, char** argv)
             aa.run();
             md.run();
             cse.Execute();
-
         }
         // SCCP after constant full unroll
         {
@@ -611,7 +635,7 @@ int main(int argc, char** argv)
         scevAnalyser.run();
         Transform::LoopParallelizationPass loopParallelPass(
             &builder, &aa, &scevAnalyser, &edefUseAnalysis, &readOnlyGlobalAnalysis);
-        loopParallelPass.Execute();
+        // loopParallelPass.Execute();
 
         makecfg.Execute();
         makedom.Execute();
@@ -640,12 +664,33 @@ int main(int argc, char** argv)
         // makedom.Execute();
         // makeredom.Execute(true);
 
-        // aa.run();
-        // licm.Execute();
-        // md.run();
+        loopPreProcess();
+        makecfg.Execute();
+        makedom.Execute();
+        loopAnalysis.Execute();
+        loopSimplify.Execute();
+        aa.run();
+        licm.Execute();
+        md.run();
 
-        // for (int i = 0; i < 5; ++i)
+        makecfg.Execute();
+        makedom.Execute();
+        // branchCSE.Execute();
+
+        makecfg.Execute();
+
+        // branchcse
+        for (int i = 0; i < 5; ++i)
         {
+            makecfg.Execute();
+            makedom.Execute();
+            aa.run();
+            md.run();
+            cse.Execute();
+            makecfg.Execute();
+            makedom.Execute();
+            // branchCSE.Execute();
+
             makecfg.Execute();
             loopPreProcess();
             tsccp.Execute();
@@ -694,7 +739,6 @@ int main(int argc, char** argv)
             aa.run();
             md.run();
             cse.Execute();
-
         }
 
         arithInstReduce.Execute();

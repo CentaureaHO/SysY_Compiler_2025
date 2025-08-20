@@ -10,6 +10,22 @@
 // Define this to allow hoisting of comparison instructions (ICMP/FCMP)
 #define ALLOW_CMP_HOIST
 
+// #define DBGMODE
+
+#ifdef DBGMODE
+template <typename... Args>
+void dbg_impl(Args&&... args)
+{
+    ((std::cout << args), ...);
+    std::cout << std::endl;
+}
+#define DBGINFO(...) dbg_impl(__VA_ARGS__)
+#else
+#define DBGINFO(...) \
+    do {             \
+    } while (0)
+#endif
+
 namespace StructuralTransform
 {
     static std::map<std::string, CFG*> cfg_map;
@@ -187,7 +203,32 @@ namespace StructuralTransform
         }
 
         const int result_reg = inst->GetResultReg();
-        if (result_reg != -1) invariant_map[result_reg] = true;
+        if (result_reg != -1)
+        {
+            for (const auto& [block_id, bb] : cfg->block_id_to_block)
+            {
+                for (const auto* use_inst : bb->insts)
+                {
+                    if (use_inst == inst) continue;
+
+                    const auto used_regs = const_cast<LLVMIR::Instruction*>(use_inst)->GetUsedRegs();
+                    bool uses_our_result = std::find(used_regs.begin(), used_regs.end(), result_reg) != used_regs.end();
+
+                    if (uses_our_result)
+                    {
+                        if (loop->loop_nodes.find(const_cast<LLVMIR::IRBlock*>(bb)) != loop->loop_nodes.end()) continue;
+
+                        DBGINFO("LICM: Instruction with result reg ",
+                            result_reg,
+                            " has use in block ",
+                            bb->block_id,
+                            " which is outside current loop ",
+                            loop->loop_id);
+                    }
+                }
+            }
+            invariant_map[result_reg] = true;
+        }
 
         return true;
     }
@@ -228,9 +269,22 @@ namespace StructuralTransform
 
         std::vector<LLVMIR::Instruction*> invariant_insts_list;
 
+        DBGINFO("LICM: Finding invariant instructions in loop ", loop->loop_id);
         for (const auto* loop_bb : loop->loop_nodes)
+        {
             for (auto* inst : loop_bb->insts)
-                if (isLoopInvariant(cfg, inst, loop, loop_mem_write_insts)) invariant_insts_list.push_back(inst);
+            {
+                if (isLoopInvariant(cfg, inst, loop, loop_mem_write_insts))
+                {
+                    DBGINFO("LICM: Found invariant instruction with result reg ",
+                        inst->GetResultReg(),
+                        " in block ",
+                        inst->block_id);
+                    invariant_insts_list.push_back(inst);
+                }
+            }
+        }
+        DBGINFO("LICM: Found ", invariant_insts_list.size(), " invariant instructions in loop ", loop->loop_id);
         return invariant_insts_list;
     }
 
@@ -241,27 +295,51 @@ namespace StructuralTransform
 
         optimization_changed = true;
 
+        DBGINFO("LICM: Hoisting ", insts_to_hoist.size(), " instructions to preheader of loop ", loop->loop_id);
+        DBGINFO("LICM: Preheader block is ",
+            loop->preheader->block_id,
+            " with ",
+            loop->preheader->insts.size(),
+            " instructions");
+        for (auto* inst : insts_to_hoist)
+        {
+            DBGINFO(
+                "LICM: Hoisting instruction with result reg ", inst->GetResultReg(), " from block ", inst->block_id);
+        }
+
         auto* end_inst = loop->preheader->insts.back();
         assert(end_inst->opcode == LLVMIR::IROpCode::BR_UNCOND);
         loop->preheader->insts.pop_back();
 
         const std::set<LLVMIR::Instruction*> erase_set(insts_to_hoist.begin(), insts_to_hoist.end());
 
+        DBGINFO("LICM: Adding instructions to preheader block ", loop->preheader->block_id);
         for (auto* inst : insts_to_hoist)
         {
             inst->block_id = loop->preheader->block_id;
             loop->preheader->insts.push_back(inst);
+            DBGINFO("LICM: Added instruction with result reg ",
+                inst->GetResultReg(),
+                " to preheader, now has ",
+                loop->preheader->insts.size(),
+                " instructions");
         }
 
         for (auto* bb : loop->loop_nodes)
         {
-            auto& insts = bb->insts;
+            auto& insts    = bb->insts;
+            auto  old_size = insts.size();
             insts.erase(std::remove_if(insts.begin(),
                             insts.end(),
                             [&erase_set](const auto* inst) {
                                 return erase_set.find(const_cast<LLVMIR::Instruction*>(inst)) != erase_set.end();
                             }),
                 insts.end());
+            auto new_size = insts.size();
+            if (old_size != new_size)
+            {
+                DBGINFO("LICM: Removed ", (old_size - new_size), " instructions from block ", bb->block_id);
+            }
         }
 
         loop->preheader->insts.push_back(end_inst);
@@ -289,6 +367,7 @@ namespace StructuralTransform
 
     void LICMPass::promoteMemToRegs(CFG* cfg, NaturalLoopForest& loop_forest, NaturalLoop* loop)
     {
+        DBGINFO("LICM promoteMemToRegs: Processing loop ", loop->loop_id);
         if (loop->exit_nodes.size() != 1) return;
 
         auto* exit = *loop->exit_nodes.begin();
@@ -441,8 +520,8 @@ namespace StructuralTransform
                 auto* store_orig = new LLVMIR::StoreInst(
                     ptr_type_map[ptr_regno], getRegOperand(ptr_regno), getRegOperand(cfg->func->max_reg));
 
-                exit->insts.insert(it, load_temp);
-                exit->insts.insert(it, store_orig);
+                auto load_it = exit->insts.insert(it, load_temp);
+                exit->insts.insert(++load_it, store_orig);
             }
         }
 
@@ -469,6 +548,66 @@ namespace StructuralTransform
 
             if (!can_licm) continue;
 
+            std::set<LLVMIR::Instruction*> all_global_insts;
+            for (const auto& [block_id, bb] : cfg->block_id_to_block)
+            {
+                for (auto* inst : bb->insts)
+                {
+                    if (inst->opcode == LLVMIR::IROpCode::LOAD || inst->opcode == LLVMIR::IROpCode::STORE)
+                    {
+                        LLVMIR::Operand* access_ptr = nullptr;
+                        if (inst->opcode == LLVMIR::IROpCode::LOAD)
+                        {
+                            access_ptr = static_cast<const LLVMIR::LoadInst*>(inst)->ptr;
+                        }
+                        else if (inst->opcode == LLVMIR::IROpCode::STORE)
+                        {
+                            access_ptr = static_cast<const LLVMIR::StoreInst*>(inst)->ptr;
+                        }
+
+                        if (access_ptr && access_ptr->type == LLVMIR::OperandType::GLOBAL)
+                        {
+                            const auto* global_op = static_cast<const LLVMIR::GlobalOperand*>(access_ptr);
+                            if (global_op->global_name == global_name) { all_global_insts.insert(inst); }
+                        }
+                    }
+                }
+            }
+
+            bool all_accesses_in_loop = true;
+            for (const auto* global_inst : all_global_insts)
+            {
+                bool found_in_loop = false;
+                for (const auto* loop_bb : loop->loop_nodes)
+                {
+                    for (const auto* loop_inst : loop_bb->insts)
+                    {
+                        if (loop_inst == global_inst)
+                        {
+                            found_in_loop = true;
+                            break;
+                        }
+                    }
+                    if (found_in_loop) break;
+                }
+                if (!found_in_loop)
+                {
+                    all_accesses_in_loop = false;
+                    DBGINFO("LICM: Global variable ",
+                        global_name,
+                        " has accesses outside loop ",
+                        loop->loop_id,
+                        " (in block ",
+                        global_inst->block_id,
+                        "), skipping promotion");
+                    break;
+                }
+            }
+
+            if (!all_accesses_in_loop) continue;
+
+            DBGINFO("LICM: Promoting global variable ", global_name, " to register in loop ", loop->loop_id);
+
             is_motion_store = true;
 
             // Create temporary alloca variable
@@ -476,19 +615,32 @@ namespace StructuralTransform
             auto*     alloca_inst = new LLVMIR::AllocInst(global_type_map[global_name], getRegOperand(temp_reg));
             cfg->block_id_to_block[0]->insts.push_front(alloca_inst);
 
-            // Redirect instructions
+            DBGINFO("LICM: Found ", all_global_insts.size(), " total accesses to global ", global_name, " in loop");
+
             for (auto* inst : insts)
             {
                 if (inst->opcode == LLVMIR::IROpCode::LOAD)
                 {
                     auto* load_inst = static_cast<LLVMIR::LoadInst*>(inst);
-                    load_inst->ptr  = getRegOperand(temp_reg);
+                    DBGINFO("LICM: Redirecting LOAD from global ",
+                        global_name,
+                        " to temp reg ",
+                        temp_reg,
+                        " in block ",
+                        inst->block_id);
+                    load_inst->ptr = getRegOperand(temp_reg);
                     mem_rw_insts.erase(inst);
                 }
                 else if (inst->opcode == LLVMIR::IROpCode::STORE)
                 {
                     auto* store_inst = static_cast<LLVMIR::StoreInst*>(inst);
-                    store_inst->ptr  = getRegOperand(temp_reg);
+                    DBGINFO("LICM: Redirecting STORE from global ",
+                        global_name,
+                        " to temp reg ",
+                        temp_reg,
+                        " in block ",
+                        inst->block_id);
+                    store_inst->ptr = getRegOperand(temp_reg);
                     mem_rw_insts.erase(inst);
                 }
             }
@@ -517,8 +669,8 @@ namespace StructuralTransform
                 auto* store_orig = new LLVMIR::StoreInst(
                     global_type_map[global_name], getGlobalOperand(global_name), getRegOperand(cfg->func->max_reg));
 
-                exit->insts.insert(it, load_temp);
-                exit->insts.insert(it, store_orig);
+                auto load_it = exit->insts.insert(it, load_temp);
+                exit->insts.insert(++load_it, store_orig);
             }
         }
 

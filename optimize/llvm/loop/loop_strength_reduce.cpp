@@ -190,6 +190,7 @@ namespace Transform
         // 要求最多一个SCEV变量 {start,+,step}
 
         // std::cout<<"call checkGEP"<<std::endl;
+        if (ins->idxs.size() == 1 || ins->dims.size() == 0) { return {nullptr, nullptr}; }
         int      invar_cnt = 0;
         Operand* iv        = nullptr;
         int      iv_idx    = -1;
@@ -200,12 +201,10 @@ namespace Transform
             if (iter->type == OperandType::IMMEI32) { continue; }
             if (iter->type == OperandType::REG)
             {
-                if (!scev->isLoopInvariant(loop, iter->GetRegNum()))
-                {
-                    invar_cnt++;
-                    iv     = iter;
-                    iv_idx = i;
-                }
+
+                invar_cnt++;
+                iv     = iter;
+                iv_idx = i;
             }
             else { assert(0 && "Unexpected operand type in GEP index"); }
         }
@@ -293,7 +292,8 @@ namespace Transform
             for (auto ins : iter->insts)
             {
                 if (ins->opcode != IROpCode::GETELEMENTPTR) { continue; }
-                auto     lsr_gep  = checkGEP((GEPInst*)ins);
+                auto lsr_gep = checkGEP((GEPInst*)ins);
+                // if((GEPInst*)ins->dims.size()==0||(GEPInst*)ins->idxs.size()==1){continue;}
                 GEPInst* new_gep  = lsr_gep.first;
                 Operand* step_imm = lsr_gep.second;
 
