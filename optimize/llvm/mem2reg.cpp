@@ -210,6 +210,8 @@ void Mem2Reg::Rename(CFG* cfg)
 #endif
     std::vector<int>                  visited;
     std::map<int, std::map<int, int>> incoming_values;
+
+    std::map<LLVMIR::PhiInst*, std::set<int>> phi_predecessors_added;
     visited.resize(cfg->G.size() + 1);
     std::queue<int> worklist2;
     worklist2.push(0);
@@ -282,12 +284,19 @@ void Mem2Reg::Rename(CFG* cfg)
                 if (phi->opcode != LLVMIR::IROpCode::PHI) { break; }
                 LLVMIR::PhiInst* phi_ins = (LLVMIR::PhiInst*)phi;
                 if (new_phis.find(phi_ins) == new_phis.end()) { continue; }
+
+                if (phi_predecessors_added[phi_ins].find(block_id) != phi_predecessors_added[phi_ins].end())
+                {
+                    continue;
+                }
+
                 int alloca_reg = new_phis[phi_ins];
                 if (incoming_values[block_id].find(alloca_reg) != incoming_values[block_id].end())
                 {
                     LLVMIR::RegOperand*   regop   = getRegOperand(incoming_values[block_id][alloca_reg]);
                     LLVMIR::LabelOperand* labelop = getLabelOperand(block_id);
                     phi_ins->Insert_into_PHI(regop, labelop);
+                    phi_predecessors_added[phi_ins].insert(block_id);
                 }
                 else { todel[phi_ins] = 1; }
             }
