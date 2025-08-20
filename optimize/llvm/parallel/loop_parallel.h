@@ -3,6 +3,7 @@
 #include "llvm_ir/instruction.h"
 #include "llvm_ir/ir_block.h"
 #include "llvm_ir/ir_builder.h"
+#include "llvm/alias_analysis/arralias_analysis.h"
 #include "llvm/defuse_analysis/edefuse.h"
 #include "llvm/global_analysis/readonly.h"
 #include "llvm/loop/scev_analysis.h"
@@ -46,12 +47,14 @@ namespace Transform
       public:
         LoopParallelizationPass(LLVMIR::IR* ir, Analysis::AliasAnalyser* alias_analysis = nullptr,
             Analysis::SCEVAnalyser* scev_analyser = nullptr, Analysis::EDefUseAnalysis* def_use_analysis = nullptr,
-            Analysis::ReadOnlyGlobalAnalysis* read_only_global_analysis = nullptr)
+            Analysis::ReadOnlyGlobalAnalysis* read_only_global_analysis = nullptr,
+            Analysis::ArrAliasAnalysis*       arr_alias_analysis        = nullptr)
             : Pass(ir),
               alias_analysis_(alias_analysis),
               scev_analyser_(scev_analyser),
               def_use_analysis_(def_use_analysis),
               read_only_global_analysis_(read_only_global_analysis),
+              arr_alias_analysis_(arr_alias_analysis),
               loops_processed_(0),
               loops_parallelized_(0)
         {}
@@ -130,6 +133,7 @@ namespace Transform
         std::map<NaturalLoop*, ParallelizationInfo> parallelization_info_;
         Analysis::EDefUseAnalysis*                  def_use_analysis_;
         Analysis::ReadOnlyGlobalAnalysis*           read_only_global_analysis_;
+        Analysis::ArrAliasAnalysis*                 arr_alias_analysis_;
 
         // 统计信息
         int                                                loops_processed_;

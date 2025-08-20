@@ -97,6 +97,7 @@ namespace Transform
         DBGINFO("开始循环并行化分析...");
         def_use_analysis_->run();
         read_only_global_analysis_->run();
+        arr_alias_analysis_->run();
         parallel_loop_global_.clear();
         global_vars_in_loops_.clear();
         global_as_params_.clear();
@@ -514,6 +515,28 @@ namespace Transform
             }
         }
 
+        for (size_t i = 0; i < memory_ops.size(); i++)
+        {
+            auto inst = memory_ops[i];
+            auto ptr  = (inst->opcode == LLVMIR::IROpCode::LOAD) ? static_cast<LLVMIR::LoadInst*>(inst)->ptr
+                                                                 : static_cast<LLVMIR::StoreInst*>(inst)->ptr;
+            if (def_use_analysis_->getDef(loop->cfg, ptr)->opcode == LLVMIR::IROpCode::PHI)
+            {
+                auto phi = static_cast<LLVMIR::PhiInst*>(def_use_analysis_->getDef(loop->cfg, ptr));
+                if (phi->vals_for_labels.size() == 2)
+                {
+                    auto label1 = static_cast<LLVMIR::LabelOperand*>(phi->vals_for_labels[0].second);
+                    auto label2 = static_cast<LLVMIR::LabelOperand*>(phi->vals_for_labels[1].second);
+                    if (label1->label_num == loop->preheader->block_id &&
+                        label2->label_num == (*(loop->latches.begin()))->block_id)
+                    {}
+                    else if (label2->label_num == loop->preheader->block_id &&
+                             label1->label_num == (*(loop->latches.begin()))->block_id)
+                    {}
+                }
+            }
+        }
+
         DBGINFO("    ✓ 未发现循环携带依赖");
         return false;
     }
@@ -521,7 +544,7 @@ namespace Transform
     bool LoopParallelizationPass::checkInstructionDependency(
         NaturalLoop* loop, LLVMIR::Instruction* inst1, LLVMIR::Instruction* inst2)
     {
-        
+
         // 检查两个指令是否都是内存操作
         bool inst1_is_memory = (inst1->opcode == LLVMIR::IROpCode::LOAD || inst1->opcode == LLVMIR::IROpCode::STORE);
         bool inst2_is_memory = (inst2->opcode == LLVMIR::IROpCode::LOAD || inst2->opcode == LLVMIR::IROpCode::STORE);
@@ -549,6 +572,22 @@ namespace Transform
         if (!ptr1 || !ptr2)
         {
             return true;  // 保守估计
+        }
+
+        auto base_ptr1 = arr_alias_analysis_->traceToBase(loop->cfg, ptr1);
+        auto base_ptr2 = arr_alias_analysis_->traceToBase(loop->cfg, ptr2);
+        if (base_ptr1 && base_ptr2 && base_ptr1 != base_ptr2)
+        {
+            return false;  // 不同基址，假设不别名
+        }
+        if (base_ptr1 && base_ptr2 && base_ptr1 == base_ptr2)
+        {
+            // 相同基址，可能别名
+            return true;
+        }
+        if (!base_ptr1 || !base_ptr2)
+        {
+            return true;  // 无法确定基址，保守估计
         }
 
         if (ptr1->type == LLVMIR::OperandType::GLOBAL || ptr2->type == LLVMIR::OperandType::GLOBAL)
@@ -910,11 +949,11 @@ namespace Transform
         entry_block->insts.push_back(add_end_inst);
         int temp_end_reg = max_reg;
 
-        // 添加对于end的处理，需要判断其是否大于原始end
+        // 添加对于end的处理，需要判断其是否是最后一个线程
         auto* thread_cmp = new LLVMIR::IcmpInst(LLVMIR::DataType::I32,
-            LLVMIR::IcmpCond::SGT,
-            getRegOperand(temp_end_reg),
-            getRegOperand(end_reg),
+            LLVMIR::IcmpCond::EQ,
+            getRegOperand(thread_id_reg),
+            getImmeI32Operand(3),
             getRegOperand(++max_reg));
 
         // 创建条件分支来处理边界
@@ -925,20 +964,7 @@ namespace Transform
         auto* br_cond = new LLVMIR::BranchCondInst(
             thread_cmp->res, getLabelOperand(check_block->block_id), getLabelOperand(normal_block->block_id));
 
-        // // check_block: 最后一个线程，使用min(temp_end, original_end)
-        // auto* min_cmp = new LLVMIR::IcmpInst(LLVMIR::DataType::I32,
-        //     LLVMIR::IcmpCond::SLT,
-        //     getRegOperand(temp_end_reg),
-        //     getRegOperand(end_reg),
-        //     getRegOperand(++max_reg));
-        // check_block->insts.push_back(min_cmp);
-
-        // auto* select_inst = new LLVMIR::SelectInst(LLVMIR::DataType::I32,
-        //     getRegOperand(temp_end_reg),
-        //     getRegOperand(end_reg),
-        //     min_cmp->res,
-        //     getRegOperand(++max_reg));
-        // check_block->insts.push_back(select_inst);
+        // check_block: 最后一个线程，如果是最后一个线程，则需要处理边界
 
         auto* br_to_merge1 = new LLVMIR::BranchUncondInst(getLabelOperand(merge_block->block_id));
         check_block->insts.push_back(br_to_merge1);
@@ -1543,6 +1569,7 @@ namespace Transform
         call_inst->args.emplace_back(LLVMIR::DataType::I32, loop_end);
         call_inst->args.emplace_back(LLVMIR::DataType::I32, getImmeI32Operand(i32_vars.size()));
         call_inst->args.emplace_back(LLVMIR::DataType::I32, getImmeI32Operand(ptr_vars.size()));
+        call_inst->args.emplace_back(LLVMIR::DataType::I32, getImmeI32Operand(float_vars.size()));
 
         for (int reg : i32_vars) call_inst->args.emplace_back(LLVMIR::DataType::I32, getRegOperand(reg));
         for (int reg : ptr_vars) call_inst->args.emplace_back(LLVMIR::DataType::PTR, getRegOperand(reg));
