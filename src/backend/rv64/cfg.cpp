@@ -1,9 +1,12 @@
 #include <backend/rv64/rv64_cfg.h>
+#include <backend/rv64/rv64_loop.h>
 #include <algorithm>
 using namespace Backend::RV64;
 using namespace std;
 
 CFG::CFG() : max_label(0), entry_block(nullptr), ret_block(nullptr), dom_tree(nullptr), post_dom_tree(nullptr) {}
+
+CFG::~CFG() {}
 
 void CFG::addNewBlock(int id, Block* b)
 {

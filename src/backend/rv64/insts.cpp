@@ -2,9 +2,18 @@
 using namespace Backend::RV64;
 using namespace std;
 
+namespace Backend::RV64
+{
+    bool can_schedule = true;
+
+    void setNoSchedule() { can_schedule = false; }
+
+    void setCanSchedule() { can_schedule = true; }
+}  // namespace Backend::RV64
+
 RV64Inst* Backend::RV64::createRInst(RV64InstType op, Register rd, Register rs1, Register rs2)
 {
-    RV64Inst* inst = new RV64Inst();
+    RV64Inst* inst = RV64Inst::getInstance();
 
     inst->op        = op;
     inst->use_label = false;
@@ -19,7 +28,7 @@ RV64Inst* Backend::RV64::createRInst(RV64InstType op, Register rd, Register rs1,
 }
 RV64Inst* Backend::RV64::createR2Inst(RV64InstType op, Register rd, Register rs)
 {
-    RV64Inst* inst = new RV64Inst();
+    RV64Inst* inst = RV64Inst::getInstance();
 
     inst->op        = op;
     inst->use_label = false;
@@ -34,7 +43,7 @@ RV64Inst* Backend::RV64::createR2Inst(RV64InstType op, Register rd, Register rs)
 
 RV64Inst* Backend::RV64::createR4Inst(RV64InstType op, Register rd, Register rs1, Register rs2, Register rs3)
 {
-    RV64Inst* inst = new RV64Inst();
+    RV64Inst* inst = RV64Inst::getInstance();
 
     inst->op        = op;
     inst->use_label = false;
@@ -51,7 +60,7 @@ RV64Inst* Backend::RV64::createR4Inst(RV64InstType op, Register rd, Register rs1
 
 RV64Inst* Backend::RV64::createIInst(RV64InstType op, Register rd, Register rs1, int imme)
 {
-    RV64Inst* inst = new RV64Inst();
+    RV64Inst* inst = RV64Inst::getInstance();
 
     inst->op        = op;
     inst->use_label = false;
@@ -67,7 +76,7 @@ RV64Inst* Backend::RV64::createIInst(RV64InstType op, Register rd, Register rs1,
 }
 RV64Inst* Backend::RV64::createIInst(RV64InstType op, Register rd, Register rs1, RV64Label label)
 {
-    RV64Inst* inst = new RV64Inst();
+    RV64Inst* inst = RV64Inst::getInstance();
 
     inst->op        = op;
     inst->use_label = true;
@@ -86,7 +95,7 @@ RV64Inst* Backend::RV64::createIInst(RV64InstType op, Register rd, Register rs1,
 
 RV64Inst* Backend::RV64::createSInst(RV64InstType op, Register val, Register ptr, int imme)
 {
-    RV64Inst* inst = new RV64Inst();
+    RV64Inst* inst = RV64Inst::getInstance();
 
     inst->op        = op;
     inst->use_label = false;
@@ -102,7 +111,7 @@ RV64Inst* Backend::RV64::createSInst(RV64InstType op, Register val, Register ptr
 }
 RV64Inst* Backend::RV64::createSInst(RV64InstType op, Register val, Register ptr, RV64Label label)
 {
-    RV64Inst* inst = new RV64Inst();
+    RV64Inst* inst = RV64Inst::getInstance();
 
     inst->op        = op;
     inst->use_label = true;
@@ -118,7 +127,7 @@ RV64Inst* Backend::RV64::createSInst(RV64InstType op, Register val, Register ptr
 
 RV64Inst* Backend::RV64::createBInst(RV64InstType op, Register rs1, Register rs2, RV64Label label)
 {
-    RV64Inst* inst = new RV64Inst();
+    RV64Inst* inst = RV64Inst::getInstance();
 
     inst->op        = op;
     inst->use_label = true;
@@ -134,7 +143,7 @@ RV64Inst* Backend::RV64::createBInst(RV64InstType op, Register rs1, Register rs2
 
 RV64Inst* Backend::RV64::createUInst(RV64InstType op, Register rd, int imme)
 {
-    RV64Inst* inst = new RV64Inst();
+    RV64Inst* inst = RV64Inst::getInstance();
 
     inst->op        = op;
     inst->use_label = false;
@@ -149,7 +158,7 @@ RV64Inst* Backend::RV64::createUInst(RV64InstType op, Register rd, int imme)
 }
 RV64Inst* Backend::RV64::createUInst(RV64InstType op, Register rd, RV64Label label)
 {
-    RV64Inst* inst = new RV64Inst();
+    RV64Inst* inst = RV64Inst::getInstance();
 
     inst->op        = op;
     inst->use_label = true;
@@ -164,7 +173,7 @@ RV64Inst* Backend::RV64::createUInst(RV64InstType op, Register rd, RV64Label lab
 
 RV64Inst* Backend::RV64::createJInst(RV64InstType op, Register rd, RV64Label label)
 {
-    RV64Inst* inst = new RV64Inst();
+    RV64Inst* inst = RV64Inst::getInstance();
 
     inst->op        = op;
     inst->use_label = true;
@@ -179,7 +188,7 @@ RV64Inst* Backend::RV64::createJInst(RV64InstType op, Register rd, RV64Label lab
 
 RV64Inst* Backend::RV64::createCallInst(RV64InstType op, RV64Label label)
 {
-    RV64Inst* inst = new RV64Inst();
+    RV64Inst* inst = RV64Inst::getInstance();
 
     cerr << "Not implemented yet!" << endl;
     assert(false);
@@ -192,7 +201,8 @@ MoveInst* Backend::RV64::createMoveInst(DataType* type, Register dst, Register s
     assert(dst.data_type == src.data_type);
     assert(dst.data_type == type);
 
-    MoveInst* inst = new MoveInst(type, new RegOperand(src), new RegOperand(dst));
+    MoveInst* inst = MoveInst::getInstance(type, new RegOperand(src), new RegOperand(dst));
+
     return inst;
 }
 MoveInst* Backend::RV64::createMoveInst(DataType* type, Register dst, int src)
@@ -200,7 +210,8 @@ MoveInst* Backend::RV64::createMoveInst(DataType* type, Register dst, int src)
     assert(dst.data_type == type);
     assert(type->data_type == DataType::INT);
 
-    MoveInst* inst = new MoveInst(type, new ImmeI32Operand(src), new RegOperand(dst));
+    MoveInst* inst = MoveInst::getInstance(type, new ImmeI32Operand(src), new RegOperand(dst));
+
     return inst;
 }
 MoveInst* Backend::RV64::createMoveInst(DataType* type, Register dst, float src)
@@ -208,7 +219,8 @@ MoveInst* Backend::RV64::createMoveInst(DataType* type, Register dst, float src)
     assert(dst.data_type == type);
     assert(type->data_type == DataType::FLOAT);
 
-    MoveInst* inst = new MoveInst(type, new ImmeF32Operand(src), new RegOperand(dst));
+    MoveInst* inst = MoveInst::getInstance(type, new ImmeF32Operand(src), new RegOperand(dst));
+
     return inst;
 }
 MoveInst* Backend::RV64::createMoveInst(DataType* type, Register dst, double src)
@@ -216,19 +228,21 @@ MoveInst* Backend::RV64::createMoveInst(DataType* type, Register dst, double src
     assert(dst.data_type == type);
     assert(type->data_type == DataType::FLOAT);
 
-    MoveInst* inst = new MoveInst(type, new ImmeF64Operand(src), new RegOperand(dst));
+    MoveInst* inst = MoveInst::getInstance(type, new ImmeF64Operand(src), new RegOperand(dst));
+
     return inst;
 }
 
 SelectInst* Backend::RV64::createSelectInst(Register cond_reg, Register dst, Operand* true_val, Operand* false_val)
 {
-    SelectInst* inst = new SelectInst(cond_reg, dst, true_val, false_val);
+    SelectInst* inst = SelectInst::getInstance(cond_reg, dst, true_val, false_val);
+
     return inst;
 }
 
 RV64Inst* Backend::RV64::createCallInst(RV64InstType op, std::string name, int ireg_para_cnt, int freg_para_cnt)
 {
-    RV64Inst* inst = new RV64Inst();
+    RV64Inst* inst = RV64Inst::getInstance();
 
     inst->op        = op;
     inst->use_label = true;

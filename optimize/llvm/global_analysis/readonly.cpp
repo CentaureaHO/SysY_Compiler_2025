@@ -22,6 +22,10 @@ namespace Analysis
 
     void ReadOnlyGlobalAnalysis::run()
     {
+        readonly_globals.clear();
+        maybe_alias_regs.clear();
+        maybe_written_globals.clear();
+        alias_analyser->run();
         buildGlobalAliasPtrSet();
         scanForWrites();
     }
@@ -59,7 +63,8 @@ namespace Analysis
                     if (inst->opcode == LLVMIR::IROpCode::LOAD)
                     {
                         auto* load_inst = static_cast<LLVMIR::LoadInst*>(inst);
-                        if (load_inst->ptr->type == LLVMIR::OperandType::GLOBAL)
+                        if (load_inst->ptr->type == LLVMIR::OperandType::GLOBAL ||
+                            maybe_alias_regs.count(load_inst->ptr))
                         {
                             maybe_alias_regs[load_inst->GetResultOperand()] = load_inst->ptr;
                         }
@@ -151,6 +156,17 @@ namespace Analysis
                                 if (write->type == LLVMIR::OperandType::GLOBAL) { maybe_written_globals.insert(write); }
                             }
                             // 此外检查所有的参数
+                            for (auto& [ty, arg] : call_inst->args)
+                            {
+                                if (maybe_alias_regs.count(arg))
+                                {
+                                    auto arg_global = traceToGlobal(arg);
+                                    if (arg_global && !maybe_written_globals.count(arg_global))
+                                    {
+                                        maybe_written_globals.insert(traceToGlobal(arg));
+                                    }
+                                }
+                            }
                         }
                     }
                 }

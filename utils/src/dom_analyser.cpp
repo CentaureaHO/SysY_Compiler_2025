@@ -36,10 +36,16 @@ void DomAnalyzer::solve(
         for (int exit : entry_points) working_graph[virtual_source].push_back(exit);
     }
 
-    build(working_graph, node_count + 1, virtual_source);
+    // std::cout << "Entry points: ";
+    // for (int entry : entry_points) std::cout << entry << " ";
+    // std::cout << std::endl;
+    // std::cout << "Build " << (reverse ? "reverse" : "normal") << " graph" << std::endl;
+
+    build(working_graph, node_count + 1, virtual_source, entry_points);
 }
 
-void DomAnalyzer::build(const vector<vector<int>>& working_graph, int node_count, int virtual_source)
+void DomAnalyzer::build(
+    const vector<vector<int>>& working_graph, int node_count, int virtual_source, const std::vector<int>& entry_points)
 {
     vector<vector<int>> backward_edges(node_count);
     for (int u = 0; u < node_count; ++u)
@@ -117,6 +123,10 @@ void DomAnalyzer::build(const vector<vector<int>>& working_graph, int node_count
     for (int i = 0; i < node_count; ++i)
         if (block_to_dfs[i]) dom_tree[imm_dom[i]].push_back(i);
 
+    removeVirtualSource(virtual_source);
+    --node_count;
+    for (int entry : entry_points) imm_dom[entry] = -1;
+
     if (frontier_generated)
     {
         for (int block = 0; block < node_count; ++block)
@@ -126,20 +136,21 @@ void DomAnalyzer::build(const vector<vector<int>>& working_graph, int node_count
                 int runner = block;
                 while (runner != imm_dom[succ] && runner != virtual_source)
                 {
+                    // std::cout << "Adding to frontier: " << runner << " -> " << succ << std::endl;
                     dom_frontier[runner].insert(succ);
+
+                    if (imm_dom[runner] == runner) { assert(false); }
+
                     runner = imm_dom[runner];
+                    if (runner == -1) break;
                 }
             }
         }
     }
-
-    removeVirtualSource(virtual_source);
 }
 
 void DomAnalyzer::removeVirtualSource(int virtual_source)
 {
-    for (int child : dom_tree[virtual_source]) imm_dom[child] = -1;
-
     dom_tree.resize(virtual_source);
     dom_frontier.resize(virtual_source);
     imm_dom.resize(virtual_source);
@@ -154,30 +165,38 @@ void DomAnalyzer::clear()
 
 int DomAnalyzer::LCA(int u, int v)
 {
-    if (u == v) return u;              // 如果 u 和 v 相同，直接返回
-    if (u == -1 && v != -1) return v;  // 如果 u 是 -1，返回 v
-    if (v == -1 && u != -1) return u;  // 如果 v 是 -1，返回 u
-    std::set<int> path_u;
-    // std::cout << imm_dom[0] << std::endl;
+    if (u == v) return u;               // 如果 u 和 v 相同，直接返回
+    if (u == -1 && v == -1) return -1;  // 如果 u 和 v 都是 -1，返回 -1
+    if (u == -1 && v != -1) return v;   // 如果 u 是 -1，返回 v
+    if (v == -1 && u != -1) return u;   // 如果 v 是 -1，返回 u
 
-    // 把 u 的祖先都加入集合
-    while (u != -1)
+    std::set<int> path_u;
+
+    // 把 u 的祖先都加入集合，包括-1（如果到达的话）
+    int curr_u = u;
+    while (curr_u != -1)
     {
-        path_u.insert(u);
-        // std::cout << "u is " << u << std::endl;
-        if (u == imm_dom[u]) break;  // 如果到达根节点，停止
-        u = imm_dom[u];
+        path_u.insert(curr_u);
+        if (curr_u == imm_dom[curr_u]) break;  // 如果自己支配自己（根节点），停止
+        curr_u = imm_dom[curr_u];
     }
+    // 如果到达了-1，也加入path_u
+    if (curr_u == -1) path_u.insert(-1);
 
     // 沿着 v 的链往上找第一个在 path_u 中的祖先
-    while (v != -1)
+    int curr_v = v;
+    while (curr_v != -1)
     {
-        if (path_u.count(v)) return v;
-        v = imm_dom[v];
+        if (path_u.count(curr_v)) return curr_v;
+        if (curr_v == imm_dom[curr_v]) break;  // 如果自己支配自己（根节点），停止
+        curr_v = imm_dom[curr_v];
     }
 
+    // 检查是否都到达了-1（没有共同祖先的情况）
+    if (path_u.count(-1)) return -1;
+
+    // 如果没有找到共同祖先
     assert(false && "Should not reach here");
-    return -1;  // 不存在共同祖先（理论上不应该发生）
 }
 
 bool DomAnalyzer::isDomate(int src, int dest)

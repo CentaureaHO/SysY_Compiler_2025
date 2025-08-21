@@ -27,7 +27,8 @@ namespace Cele
             bool isDomate(int src, int dest);
 
           private:
-            void build(const std::vector<std::vector<int>>& working_graph, int node_count, int virtual_source);
+            void build(const std::vector<std::vector<int>>& working_graph, int node_count, int virtual_source,
+                const std::vector<int>& entry_points);
             void removeVirtualSource(int virtual_source);
         };
 

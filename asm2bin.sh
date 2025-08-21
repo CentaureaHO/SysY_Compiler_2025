@@ -10,4 +10,6 @@ fi
 riscv64-unknown-linux-gnu-gcc "$INPUT_FILE" -c -o "$OBJ_FILE" -w
 riscv64-unknown-linux-gnu-gcc -static "$OBJ_FILE" -L./lib -lsysy_riscv -o "$OUTPUT_BIN"
 
+rm "$OBJ_FILE"
+
 echo "Successfully compiled $INPUT_FILE to $OUTPUT_BIN"

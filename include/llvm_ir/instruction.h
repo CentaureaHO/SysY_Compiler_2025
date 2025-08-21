@@ -168,13 +168,14 @@ namespace LLVMIR
 
         virtual void Rename(std::map<int, int>& replace) = 0;
         virtual void ReplaceAllOperands(std::map<int, int>& replace) = 0;  // 新增：替换所有操作数（包括结果寄存器）
+        virtual void ReplaceAllOperands(std::map<int, Operand*>& replace) = 0;  // 替换所有操作数（包括结果寄存器）
         virtual int                   GetResultReg()     = 0;
         virtual std::vector<int>      GetUsedRegs()      = 0;
         virtual std::vector<Operand*> GetUsedOperands()  = 0;
         virtual Operand*              GetResultOperand() = 0;
 
         virtual Instruction* Clone(int new_result_reg = -1) const                             = 0;
-        virtual void         SubstituteOperands(const std::map<int, Operand*>& substitutions) = 0;
+        virtual bool         SubstituteOperands(const std::map<int, Operand*>& substitutions) = 0;
         virtual DataType     GetResultType() const                                            = 0;
         virtual Instruction* CloneWithMapping(
             const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const = 0;
@@ -182,6 +183,10 @@ namespace LLVMIR
 
         std::string  toString();
         virtual void ReplaceLabels(const std::map<int, int>& label_map) = 0;
+        bool         isTerminator() const
+        {
+            return opcode == IROpCode::BR_COND || opcode == IROpCode::BR_UNCOND || opcode == IROpCode::RET;
+        }
     };
 
     class LoadInst : public Instruction
@@ -197,12 +202,13 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
         virtual Operand*              GetResultOperand() override;
         virtual Instruction*          Clone(int new_result_reg = -1) const override;
-        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual bool                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
         virtual DataType              GetResultType() const override;
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
@@ -223,12 +229,13 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
         virtual Operand*              GetResultOperand() override;
         virtual Instruction*          Clone(int new_result_reg = -1) const override;
-        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual bool                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
         virtual DataType              GetResultType() const override;
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
@@ -250,12 +257,13 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
         virtual Operand*              GetResultOperand() override;
         virtual Instruction*          Clone(int new_result_reg = -1) const override;
-        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual bool                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
         virtual DataType              GetResultType() const override;
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
@@ -278,12 +286,13 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
         virtual Operand*              GetResultOperand() override;
         virtual Instruction*          Clone(int new_result_reg = -1) const override;
-        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual bool                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
         virtual DataType              GetResultType() const override;
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
@@ -306,12 +315,13 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
         virtual Operand*              GetResultOperand() override;
         virtual Instruction*          Clone(int new_result_reg = -1) const override;
-        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual bool                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
         virtual DataType              GetResultType() const override;
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
@@ -332,12 +342,13 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
         virtual Operand*              GetResultOperand() override;
         virtual Instruction*          Clone(int new_result_reg = -1) const override;
-        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual bool                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
         virtual DataType              GetResultType() const override;
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
@@ -358,12 +369,13 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
         virtual Operand*              GetResultOperand() override;
         virtual Instruction*          Clone(int new_result_reg = -1) const override;
-        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual bool                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
         virtual DataType              GetResultType() const override;
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
@@ -382,12 +394,13 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
         virtual Operand*              GetResultOperand() override;
         virtual Instruction*          Clone(int new_result_reg = -1) const override;
-        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual bool                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
         virtual DataType              GetResultType() const override;
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
@@ -410,12 +423,13 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
         virtual Operand*              GetResultOperand() override;
         virtual Instruction*          Clone(int new_result_reg = -1) const override;
-        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual bool                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
         virtual DataType              GetResultType() const override;
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
@@ -438,12 +452,13 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
         virtual Operand*              GetResultOperand() override;
         virtual Instruction*          Clone(int new_result_reg = -1) const override;
-        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual bool                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
         virtual DataType              GetResultType() const override;
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
@@ -463,12 +478,13 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
         virtual Operand*              GetResultOperand() override;
         virtual Instruction*          Clone(int new_result_reg = -1) const override;
-        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual bool                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
         virtual DataType              GetResultType() const override;
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
@@ -493,12 +509,13 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
         virtual Operand*              GetResultOperand() override;
         virtual Instruction*          Clone(int new_result_reg = -1) const override;
-        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual bool                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
         virtual DataType              GetResultType() const override;
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
@@ -512,19 +529,21 @@ namespace LLVMIR
         DataType              ret_type;
         std::string           func_name;
         std::vector<DataType> arg_types;
+        bool                  is_var_arg;
 
-        FuncDeclareInst(DataType rt, std::string fn, std::vector<DataType> at = {});
+        FuncDeclareInst(DataType rt, std::string fn, std::vector<DataType> at = {}, bool is_va = false);
 
         virtual void printIR(std::ostream& s) override;
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
         virtual Operand*              GetResultOperand() override;
         virtual Instruction*          Clone(int new_result_reg = -1) const override;
-        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual bool                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
         virtual DataType              GetResultType() const override;
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
@@ -543,12 +562,13 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
         virtual Operand*              GetResultOperand() override;
         virtual Instruction*          Clone(int new_result_reg = -1) const override;
-        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual bool                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
         virtual DataType              GetResultType() const override;
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
@@ -568,12 +588,13 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
         virtual Operand*              GetResultOperand() override;
         virtual Instruction*          Clone(int new_result_reg = -1) const override;
-        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual bool                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
         virtual DataType              GetResultType() const override;
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
@@ -593,12 +614,13 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
         virtual Operand*              GetResultOperand() override;
         virtual Instruction*          Clone(int new_result_reg = -1) const override;
-        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual bool                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
         virtual DataType              GetResultType() const override;
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
@@ -620,12 +642,13 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
         virtual Operand*              GetResultOperand() override;
         virtual Instruction*          Clone(int new_result_reg = -1) const override;
-        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual bool                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
         virtual DataType              GetResultType() const override;
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
@@ -645,12 +668,13 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
         virtual Operand*              GetResultOperand() override;
         virtual Instruction*          Clone(int new_result_reg = -1) const override;
-        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual bool                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
         virtual DataType              GetResultType() const override;
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
@@ -673,12 +697,13 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
         virtual Operand*              GetResultOperand() override;
         virtual Instruction*          Clone(int new_result_reg = -1) const override;
-        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual bool                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
         virtual DataType              GetResultType() const override;
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
@@ -711,12 +736,13 @@ namespace LLVMIR
 
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
         virtual Operand*              GetResultOperand() override;
         virtual Instruction*          Clone(int new_result_reg = -1) const override;
-        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual bool                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
         virtual DataType              GetResultType() const override;
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;
@@ -733,12 +759,13 @@ namespace LLVMIR
         virtual void                  printIR(std::ostream& s) override;
         virtual void                  Rename(std::map<int, int>& replace) override;
         virtual void                  ReplaceAllOperands(std::map<int, int>& replace) override;
+        virtual void                  ReplaceAllOperands(std::map<int, Operand*>& replace) override;
         virtual int                   GetResultReg() override;
         virtual std::vector<int>      GetUsedRegs() override;
         virtual std::vector<Operand*> GetUsedOperands() override;
         virtual Operand*              GetResultOperand() override;
         virtual Instruction*          Clone(int new_result_reg = -1) const override;
-        virtual void                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
+        virtual bool                  SubstituteOperands(const std::map<int, Operand*>& substitutions) override;
         virtual DataType              GetResultType() const override;
         virtual Instruction*          CloneWithMapping(
                      const std::map<int, int>& reg_map, const std::map<int, int>& label_map) const override;

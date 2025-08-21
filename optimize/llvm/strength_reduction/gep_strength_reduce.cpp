@@ -3,6 +3,22 @@
 #include <algorithm>
 #include <cmath>
 
+// #define DBGMODE_GEP  // Disabled for production
+
+#ifdef DBGMODE_GEP
+template <typename... Args>
+void gep_dbg_impl(Args&&... args)
+{
+    ((std::cout << args), ...);
+    std::cout << std::endl;
+}
+#define GEPINFO(...) gep_dbg_impl(__VA_ARGS__)
+#else
+#define GEPINFO(...) \
+    do {             \
+    } while (0)
+#endif
+
 namespace Transform
 {
     GEPStrengthReduce::GEPStrengthReduce(LLVMIR::IR* ir) : Pass(ir) {}
@@ -71,11 +87,18 @@ namespace Transform
 
                 if (canReduceGEP(base_gep, target_gep, arithmetic_defs, offset))
                 {
+                    GEPINFO("Found reducible GEP pair:");
+                    GEPINFO("  Base GEP reg: ", base_gep.result_reg);
+                    GEPINFO("  Target GEP reg: ", target_gep.result_reg);
+                    GEPINFO("  Calculated offset: ", offset);
+
                     if (isValidImmediateOffset(offset))
                     {
+                        GEPINFO("  Offset is valid, applying optimization");
                         optimizeGEP(target_gep.gep_inst, base_gep.gep_inst, offset);
                         optimized = true;
                     }
+                    else { GEPINFO("  Offset is invalid, skipping optimization"); }
                 }
             }
 
@@ -137,6 +160,15 @@ namespace Transform
         if (base_gep.dims != target_gep.dims) return false;
         // 索引数量必须相同
         if (base_gep.indices.size() != target_gep.indices.size()) return false;
+
+        if (base_gep.gep_inst->type != target_gep.gep_inst->type)
+        {
+            GEPINFO("Type mismatch: base type ",
+                static_cast<int>(base_gep.gep_inst->type),
+                " vs target type ",
+                static_cast<int>(target_gep.gep_inst->type));
+            return false;
+        }
 
         assert(base_gep.gep_inst->idx_type == target_gep.gep_inst->idx_type);
 
@@ -306,15 +338,45 @@ namespace Transform
     {
         if (offset == 0) return;
 
+        GEPINFO("=== GEP Strength Reduction ===");
+        GEPINFO("Target GEP before optimization:");
+        GEPINFO("  Result reg: ", target_gep->GetResultReg());
+        GEPINFO("  Type: ", static_cast<int>(target_gep->type));
+        GEPINFO("  Idx type: ", static_cast<int>(target_gep->idx_type));
+        GEPINFO("  Base ptr type: ", static_cast<int>(target_gep->base_ptr->type));
+        if (target_gep->base_ptr->type == LLVMIR::OperandType::REG)
+        {
+            GEPINFO("  Base ptr reg: ", static_cast<LLVMIR::RegOperand*>(target_gep->base_ptr)->reg_num);
+        }
+        GEPINFO("  Dims size: ", target_gep->dims.size());
+        GEPINFO("  Indices size: ", target_gep->idxs.size());
+
+        GEPINFO("Base GEP:");
+        GEPINFO("  Result reg: ", base_gep->GetResultReg());
+        GEPINFO("  Type: ", static_cast<int>(base_gep->type));
+        GEPINFO("  Idx type: ", static_cast<int>(base_gep->idx_type));
+        GEPINFO("  Dims size: ", base_gep->dims.size());
+
+        GEPINFO("Offset: ", offset);
+
         target_gep->base_ptr = base_gep->res;
 
         target_gep->idxs.clear();
         target_gep->idxs.push_back(getImmeI32Operand(offset));
 
-        target_gep->type     = base_gep->type;
-        target_gep->idx_type = base_gep->idx_type;
-
         target_gep->dims.clear();
+
+        GEPINFO("Target GEP after optimization:");
+        GEPINFO("  Type: ", static_cast<int>(target_gep->type));
+        GEPINFO("  Idx type: ", static_cast<int>(target_gep->idx_type));
+        GEPINFO("  Base ptr type: ", static_cast<int>(target_gep->base_ptr->type));
+        if (target_gep->base_ptr->type == LLVMIR::OperandType::REG)
+        {
+            GEPINFO("  Base ptr reg: ", static_cast<LLVMIR::RegOperand*>(target_gep->base_ptr)->reg_num);
+        }
+        GEPINFO("  Dims size: ", target_gep->dims.size());
+        GEPINFO("  Indices size: ", target_gep->idxs.size());
+        GEPINFO("=== End GEP Strength Reduction ===");
     }
 
     int GEPStrengthReduce::calculateDimensionSize(const std::vector<int>& dims, int dim_index) const

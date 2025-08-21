@@ -18,21 +18,9 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
 
     void PhiDestructionPass::phiInstDestory(Function* func)
     {
-        // 早期检查：如果基本块数量已经过多，使用简化策略
-        int  initial_block_count = func->cfg->blocks.size();
-        bool use_simple_strategy = initial_block_count > 500;
-
-        /*
-        if (use_simple_strategy) {
-            phiInstDestorySimple(func);
-            return;
-        }
-        */
-
         std::set<int>                blocks_with_phi;
         std::map<int, std::set<int>> critical_edges;
 
-        // 第一步：识别需要处理的基本块和关键边
         for (auto& [id, block] : func->cfg->blocks)
         {
             bool has_phi = false;
@@ -48,11 +36,9 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
 
             blocks_with_phi.insert(id);
 
-            // 只为真正的关键边创建分割块
             for (auto& predecessor : func->cfg->inv_graph[id])
             {
                 int from = predecessor->label_num;
-                // 关键边：前驱有多个后继 AND 当前块有多个前驱
                 if (func->cfg->graph[from].size() > 1 && func->cfg->inv_graph[id].size() > 1)
                 {
                     critical_edges[from].insert(id);
@@ -60,23 +46,12 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
             }
         }
 
-        // 第二步：处理关键边分割（控制数量）
-        int new_blocks_created = 0;
         for (auto& [from, to_set] : critical_edges)
         {
             for (int to : to_set)
             {
-                // 限制新建基本块数量
-                if (new_blocks_created > initial_block_count)
-                {
-                    // 如果已经创建太多基本块，对剩余phi使用简化处理
-                    // phiInstDestorySimpleForBlock(func, to);
-                    // continue;
-                }
-
                 Block* split_block = func->getNewBlock();
                 int    mid_label   = split_block->label_num;
-                new_blocks_created++;
 
                 func->cfg->removeEdge(from, to);
                 func->cfg->makeEdge(from, mid_label);
@@ -114,7 +89,6 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
             }
         }
 
-        // 第三步：处理phi指令
         for (int block_id : blocks_with_phi)
         {
             auto block = func->cfg->blocks[block_id];
@@ -141,11 +115,10 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
                 }
 
                 phi->phi_list.clear();
-                delete phi;
+                Instruction::delInst(phi);
             }
         }
 
-        // 第四步：生成拷贝指令
         generatePhiCopyInstructions(func);
     }
 
@@ -242,7 +215,11 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
                         float imme_val = ((ImmeF32Operand*)src_op)->val;
                         block->insts.insert(insert_it, createMoveInst(dest.data_type, dest, imme_val));
                     }
-                    else { block->insts.insert(insert_it, new MoveInst(dest.data_type, src_op, new RegOperand(dest))); }
+                    else
+                    {
+                        block->insts.insert(
+                            insert_it, MoveInst::getInstance(dest.data_type, src_op, new RegOperand(dest)));
+                    }
                     continue;
                 }
 
@@ -264,7 +241,10 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
                     float imme_val = ((ImmeF32Operand*)src)->val;
                     block->insts.insert(insert_it, createMoveInst(dest.data_type, mid_reg, imme_val));
                 }
-                else { block->insts.insert(insert_it, new MoveInst(dest.data_type, src, new RegOperand(mid_reg))); }
+                else
+                {
+                    block->insts.insert(insert_it, MoveInst::getInstance(dest.data_type, src, new RegOperand(mid_reg)));
+                }
 
                 if (src->operand_type == OperandType::REG)
                 {

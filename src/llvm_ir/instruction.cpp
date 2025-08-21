@@ -72,7 +72,12 @@ float  GlobalOperand::GetImmF() const { return -1.0f; }
 Instruction::Instruction(IROpCode op) : opcode(op) {}
 
 LoadInst::LoadInst(DataType t, Operand* p, Operand* r) : Instruction(IROpCode::LOAD), type(t), ptr(p), res(r) {}
-void LoadInst::printIR(ostream& s) { s << res << " = load " << type << ", ptr " << ptr << "\n"; }
+void LoadInst::printIR(ostream& s)
+{
+    s << res << " = load " << type << ", ptr " << ptr;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
+}
 
 int LoadInst::GetResultReg()
 {
@@ -119,7 +124,12 @@ void LoadInst::Rename(std::map<int, int>& replace)
 }
 
 StoreInst::StoreInst(DataType t, Operand* p, Operand* r) : Instruction(IROpCode::STORE), type(t), ptr(p), val(r) {}
-void StoreInst::printIR(ostream& s) { s << "store " << type << " " << val << ", ptr " << ptr << "\n"; }
+void StoreInst::printIR(ostream& s)
+{
+    s << "store " << type << " " << val << ", ptr " << ptr;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
+}
 
 int StoreInst::GetResultReg() { return -1; }
 
@@ -166,7 +176,48 @@ ArithmeticInst::ArithmeticInst(IROpCode op, DataType t, Operand* l, Operand* r, 
 {}
 void ArithmeticInst::printIR(ostream& s)
 {
-    s << res << " = " << opcode << " " << type << " " << lhs << ", " << rhs << "\n";
+    if (opcode == IROpCode::SMIN_I32)
+    {
+        s << res << " = call i32 @llvm.smin.i32(i32 " << lhs << ", i32 " << rhs << ")";
+        if (!comment.empty()) s << " ; " << comment;
+        s << "\n";
+    }
+    else if (opcode == IROpCode::SMAX_I32)
+    {
+        s << res << " = call i32 @llvm.smax.i32(i32 " << lhs << ", i32 " << rhs << ")";
+        if (!comment.empty()) s << " ; " << comment;
+        s << "\n";
+    }
+    else if (opcode == IROpCode::UMIN_I32)
+    {
+        s << res << " = call i32 @llvm.umin.i32(i32 " << lhs << ", i32 " << rhs << ")";
+        if (!comment.empty()) s << " ; " << comment;
+        s << "\n";
+    }
+    else if (opcode == IROpCode::UMAX_I32)
+    {
+        s << res << " = call i32 @llvm.umax.i32(i32 " << lhs << ", i32 " << rhs << ")";
+        if (!comment.empty()) s << " ; " << comment;
+        s << "\n";
+    }
+    else if (opcode == IROpCode::FMIN_F32)
+    {
+        s << res << " = call float @llvm.minnum.f32(float " << lhs << ", float " << rhs << ")";
+        if (!comment.empty()) s << " ; " << comment;
+        s << "\n";
+    }
+    else if (opcode == IROpCode::FMAX_F32)
+    {
+        s << res << " = call float @llvm.maxnum.f32(float " << lhs << ", float " << rhs << ")";
+        if (!comment.empty()) s << " ; " << comment;
+        s << "\n";
+    }
+    else
+    {
+        s << res << " = " << opcode << " " << type << " " << lhs << ", " << rhs;
+        if (!comment.empty()) s << " ; " << comment;
+        s << "\n";
+    }
 }
 
 int ArithmeticInst::GetResultReg()
@@ -221,7 +272,9 @@ IcmpInst::IcmpInst(DataType t, IcmpCond c, Operand* l, Operand* r, Operand* res)
 {}
 void IcmpInst::printIR(ostream& s)
 {
-    s << res << " = icmp " << cond << " " << type << " " << lhs << ", " << rhs << "\n";
+    s << res << " = icmp " << cond << " " << type << " " << lhs << ", " << rhs;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
 }
 
 int IcmpInst::GetResultReg()
@@ -271,7 +324,9 @@ FcmpInst::FcmpInst(DataType t, FcmpCond c, Operand* l, Operand* r, Operand* res)
 {}
 void FcmpInst::printIR(ostream& s)
 {
-    s << res << " = fcmp " << cond << " " << type << " " << lhs << ", " << rhs << "\n";
+    s << res << " = fcmp " << cond << " " << type << " " << lhs << ", " << rhs;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
 }
 int FcmpInst::GetResultReg()
 {
@@ -326,7 +381,9 @@ void AllocInst::printIR(ostream& s)
     }
 
     for (int& dim : dims) s << "[" << dim << " x ";
-    s << type << string(dims.size(), ']') << "\n";
+    s << type << string(dims.size(), ']');
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
 }
 
 int AllocInst::GetResultReg()
@@ -356,7 +413,9 @@ BranchCondInst::BranchCondInst(Operand* c, Operand* t, Operand* f)
 {}
 void BranchCondInst::printIR(ostream& s)
 {
-    s << "br i1 " << cond << ", label " << true_label << ", label " << false_label << "\n";
+    s << "br i1 " << cond << ", label " << true_label << ", label " << false_label;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
 }
 
 int BranchCondInst::GetResultReg() { return -1; }
@@ -392,8 +451,13 @@ void BranchCondInst::Rename(std::map<int, int>& replace)
 }
 
 BranchUncondInst::BranchUncondInst(Operand* t) : Instruction(IROpCode::BR_UNCOND), target_label(t) {}
-void BranchUncondInst::printIR(ostream& s) { s << "br label " << target_label << "\n"; }
-int  BranchUncondInst::GetResultReg() { return -1; }
+void BranchUncondInst::printIR(ostream& s)
+{
+    s << "br label " << target_label;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
+}
+int BranchUncondInst::GetResultReg() { return -1; }
 
 std::vector<int> BranchUncondInst::GetUsedRegs()
 {
@@ -528,7 +592,10 @@ void CallInst::printIR(ostream& s)
         ++cp;
         if (cp != args.end()) s << ", ";
     }
-    s << ")\n";
+    s << ")";
+
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
 }
 int CallInst::GetResultReg()
 {
@@ -575,6 +642,8 @@ void RetInst::printIR(ostream& s)
 {
     s << "ret " << ret_type;
     if (ret) s << " " << ret;
+
+    if (!comment.empty()) s << " ; " << comment;
     s << "\n";
 }
 
@@ -623,6 +692,8 @@ void GEPInst::printIR(ostream& s)
 
     s << ", ptr " << base_ptr;
     for (auto& idx : idxs) s << ", " << idx_type << " " << idx;
+
+    if (!comment.empty()) s << " ; " << comment;
     s << "\n";
 }
 
@@ -671,8 +742,8 @@ void GEPInst::Rename(std::map<int, int>& replace)
     }
 }
 
-FuncDeclareInst::FuncDeclareInst(DataType rt, string fn, vector<DataType> at)
-    : Instruction(IROpCode::OTHER), ret_type(rt), func_name(fn), arg_types(at)
+FuncDeclareInst::FuncDeclareInst(DataType rt, string fn, vector<DataType> at, bool is_va)
+    : Instruction(IROpCode::OTHER), ret_type(rt), func_name(fn), arg_types(at), is_var_arg(is_va)
 {}
 void FuncDeclareInst::printIR(ostream& s)
 {
@@ -685,6 +756,7 @@ void FuncDeclareInst::printIR(ostream& s)
         ++cp;
         if (cp != arg_types.end()) s << ", ";
     }
+    if (is_var_arg) s << ", ...";
     s << ")\n";
 }
 
@@ -748,8 +820,13 @@ Operand* FuncDefInst::GetResultOperand() { return nullptr; }
 void FuncDefInst::Rename(std::map<int, int>& replace) {}
 
 SI2FPInst::SI2FPInst(Operand* f, Operand* t) : Instruction(IROpCode::SITOFP), f_si(f), t_fp(t) {}
-void SI2FPInst::printIR(ostream& s) { s << t_fp << " = sitofp i32 " << f_si << " to float\n"; }
-int  SI2FPInst::GetResultReg()
+void SI2FPInst::printIR(ostream& s)
+{
+    s << t_fp << " = sitofp i32 " << f_si << " to float";
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
+}
+int SI2FPInst::GetResultReg()
 {
     if (this->t_fp->type != OperandType::REG) { return -1; }
     return ((RegOperand*)t_fp)->reg_num;
@@ -781,8 +858,13 @@ void SI2FPInst::Rename(std::map<int, int>& replace)
 }
 
 FP2SIInst::FP2SIInst(Operand* f, Operand* t) : Instruction(IROpCode::FPTOSI), f_fp(f), t_si(t) {}
-void FP2SIInst::printIR(ostream& s) { s << t_si << " = fptosi float " << f_fp << " to i32\n"; }
-int  FP2SIInst::GetResultReg()
+void FP2SIInst::printIR(ostream& s)
+{
+    s << t_si << " = fptosi float " << f_fp << " to i32";
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
+}
+int FP2SIInst::GetResultReg()
 {
     if (this->t_si->type != OperandType::REG) { return -1; }
     return ((RegOperand*)t_si)->reg_num;
@@ -816,7 +898,12 @@ void FP2SIInst::Rename(std::map<int, int>& replace)
 ZextInst::ZextInst(DataType f, DataType t, Operand* s, Operand* d)
     : Instruction(IROpCode::ZEXT), from(f), to(t), src(s), dest(d)
 {}
-void ZextInst::printIR(ostream& s) { s << dest << " = zext " << from << " " << src << " to " << to << "\n"; }
+void ZextInst::printIR(ostream& s)
+{
+    s << dest << " = zext " << from << " " << src << " to " << to;
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
+}
 
 int ZextInst::GetResultReg()
 {
@@ -850,8 +937,13 @@ void ZextInst::Rename(std::map<int, int>& replace)
 }
 
 FPExtInst::FPExtInst(Operand* s, Operand* d) : Instruction(IROpCode::FPEXT), src(s), dest(d) {}
-void FPExtInst::printIR(ostream& s) { s << dest << " = fpext float" << " " << src << " to " << "double" << "\n"; }
-int  FPExtInst::GetResultReg()
+void FPExtInst::printIR(ostream& s)
+{
+    s << dest << " = fpext float" << " " << src << " to " << "double";
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
+}
+int FPExtInst::GetResultReg()
 {
     if (this->dest->type != OperandType::REG) { return -1; }
     return ((RegOperand*)dest)->reg_num;
@@ -898,6 +990,8 @@ void PhiInst::printIR(ostream& s)
         ++cp;
         if (cp != vals_for_labels.end()) s << ", ";
     }
+
+    if (!comment.empty()) s << " ; " << comment;
     s << "\n";
 }
 int PhiInst::GetResultReg()
@@ -1170,134 +1264,212 @@ Instruction* PhiInst::Clone(int new_result_reg) const
 }
 
 // SubstituteOperands implementations for all instruction classes
-void LoadInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool LoadInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
     if (ptr && ptr->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(ptr);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { ptr = it->second; }
+        if (it != substitutions.end())
+        {
+            ptr = it->second;
+            return true;
+        }
     }
+    return false;
 }
 
-void StoreInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool StoreInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
+    bool has_replacement = false;
+
     if (ptr && ptr->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(ptr);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { ptr = it->second; }
+        if (it != substitutions.end())
+        {
+            ptr             = it->second;
+            has_replacement = true;
+        }
     }
     if (val && val->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(val);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { val = it->second; }
+        if (it != substitutions.end())
+        {
+            val             = it->second;
+            has_replacement = true;
+        }
     }
+    return has_replacement;
 }
 
-void ArithmeticInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool ArithmeticInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
+    bool has_replacement = false;
+
     if (lhs && lhs->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(lhs);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { lhs = it->second; }
+        if (it != substitutions.end())
+        {
+            lhs             = it->second;
+            has_replacement = true;
+        }
     }
     if (rhs && rhs->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(rhs);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { rhs = it->second; }
+        if (it != substitutions.end())
+        {
+            rhs             = it->second;
+            has_replacement = true;
+        }
     }
+    return has_replacement;
 }
 
-void IcmpInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool IcmpInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
+    bool has_replacement = false;
+
     if (lhs && lhs->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(lhs);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { lhs = it->second; }
+        if (it != substitutions.end())
+        {
+            lhs             = it->second;
+            has_replacement = true;
+        }
     }
     if (rhs && rhs->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(rhs);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { rhs = it->second; }
+        if (it != substitutions.end())
+        {
+            rhs             = it->second;
+            has_replacement = true;
+        }
     }
+    return has_replacement;
 }
 
-void FcmpInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool FcmpInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
+    bool has_replacement = false;
+
     if (lhs && lhs->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(lhs);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { lhs = it->second; }
+        if (it != substitutions.end())
+        {
+            lhs             = it->second;
+            has_replacement = true;
+        }
     }
     if (rhs && rhs->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(rhs);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { rhs = it->second; }
+        if (it != substitutions.end())
+        {
+            rhs             = it->second;
+            has_replacement = true;
+        }
     }
+    return has_replacement;
 }
 
-void AllocInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) {}
+bool AllocInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) { return false; }
 
-void BranchCondInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool BranchCondInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
     if (cond && cond->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(cond);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { cond = it->second; }
+        if (it != substitutions.end())
+        {
+            cond = it->second;
+            return true;
+        }
     }
+    return false;
 }
 
-void BranchUncondInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) {}
+bool BranchUncondInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) { return false; }
 
-void GlbvarDefInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool GlbvarDefInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
     if (init && init->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(init);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { init = it->second; }
+        if (it != substitutions.end())
+        {
+            init = it->second;
+            return true;
+        }
     }
+    return false;
 }
 
-void CallInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool CallInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
+    bool has_replacement = false;
+
     for (auto& arg : args)
     {
         if (arg.second && arg.second->type == OperandType::REG)
         {
             auto* reg_op = dynamic_cast<RegOperand*>(arg.second);
             auto  it     = substitutions.find(reg_op->reg_num);
-            if (it != substitutions.end()) { arg.second = it->second; }
+            if (it != substitutions.end())
+            {
+                arg.second      = it->second;
+                has_replacement = true;
+            }
         }
     }
+
+    return has_replacement;
 }
 
-void RetInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool RetInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
     if (ret && ret->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(ret);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { ret = it->second; }
+        if (it != substitutions.end())
+        {
+            ret = it->second;
+            return true;
+        }
     }
+    return false;
 }
 
-void GEPInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool GEPInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
+    bool has_replacement = false;
+
     if (base_ptr && base_ptr->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(base_ptr);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { base_ptr = it->second; }
+        if (it != substitutions.end())
+        {
+            base_ptr        = it->second;
+            has_replacement = true;
+        }
     }
     for (auto& idx : idxs)
     {
@@ -1305,66 +1477,99 @@ void GEPInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
         {
             auto* reg_op = dynamic_cast<RegOperand*>(idx);
             auto  it     = substitutions.find(reg_op->reg_num);
-            if (it != substitutions.end()) { idx = it->second; }
+            if (it != substitutions.end())
+            {
+                idx             = it->second;
+                has_replacement = true;
+            }
         }
     }
+    return has_replacement;
 }
 
-void FuncDeclareInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) {}
+bool FuncDeclareInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) { return false; }
 
-void FuncDefInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) {}
+bool FuncDefInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) { return false; }
 
-void SI2FPInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool SI2FPInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
     if (f_si && f_si->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(f_si);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { f_si = it->second; }
+        if (it != substitutions.end())
+        {
+            f_si = it->second;
+            return true;
+        }
     }
+    return false;
 }
 
-void FP2SIInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool FP2SIInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
     if (f_fp && f_fp->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(f_fp);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { f_fp = it->second; }
+        if (it != substitutions.end())
+        {
+            f_fp = it->second;
+            return true;
+        }
     }
+    return false;
 }
 
-void ZextInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool ZextInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
     if (src && src->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(src);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { src = it->second; }
+        if (it != substitutions.end())
+        {
+            src = it->second;
+            return true;
+        }
     }
+    return false;
 }
 
-void FPExtInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool FPExtInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
     if (src && src->type == OperandType::REG)
     {
         auto* reg_op = dynamic_cast<RegOperand*>(src);
         auto  it     = substitutions.find(reg_op->reg_num);
-        if (it != substitutions.end()) { src = it->second; }
+        if (it != substitutions.end())
+        {
+            src = it->second;
+            return true;
+        }
     }
+    return false;
 }
 
-void PhiInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool PhiInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
+    bool has_replacement = false;
+
     for (auto& val_label : vals_for_labels)
     {
         if (val_label.first && val_label.first->type == OperandType::REG)
         {
             auto* reg_op = dynamic_cast<RegOperand*>(val_label.first);
             auto  it     = substitutions.find(reg_op->reg_num);
-            if (it != substitutions.end()) { val_label.first = it->second; }
+            if (it != substitutions.end())
+            {
+                val_label.first = it->second;
+                has_replacement = true;
+            }
         }
     }
+
+    return has_replacement;
 }
 
 DataType LoadInst::GetResultType() const { return type; }
@@ -1927,6 +2132,267 @@ void PhiInst::ReplaceAllOperands(std::map<int, int>& replace)
     }
 }
 
+void LoadInst::ReplaceAllOperands(std::map<int, Operand*>& replace)
+{
+    if (this->ptr->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->ptr))->reg_num;
+        if (replace.find(reg) != replace.end()) { ptr = replace[reg]; }
+    }
+
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = replace[reg]; }
+    }
+
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = replace[reg]; }
+    }
+}
+
+void StoreInst::ReplaceAllOperands(std::map<int, Operand*>& replace)
+{
+    if (this->ptr->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->ptr))->reg_num;
+        if (replace.find(reg) != replace.end()) { ptr = replace[reg]; }
+    }
+
+    if (this->val->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->val))->reg_num;
+        if (replace.find(reg) != replace.end()) { val = replace[reg]; }
+    }
+}
+
+void ArithmeticInst::ReplaceAllOperands(std::map<int, Operand*>& replace)
+{
+    if (this->lhs->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->lhs))->reg_num;
+        if (replace.find(reg) != replace.end()) { lhs = replace[reg]; }
+    }
+
+    if (this->rhs->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->rhs))->reg_num;
+        if (replace.find(reg) != replace.end()) { rhs = replace[reg]; }
+    }
+
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = replace[reg]; }
+    }
+}
+
+void IcmpInst::ReplaceAllOperands(std::map<int, Operand*>& replace)
+{
+    if (this->lhs->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->lhs))->reg_num;
+        if (replace.find(reg) != replace.end()) { lhs = replace[reg]; }
+    }
+
+    if (this->rhs->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->rhs))->reg_num;
+        if (replace.find(reg) != replace.end()) { rhs = replace[reg]; }
+    }
+
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = replace[reg]; }
+    }
+}
+
+void FcmpInst::ReplaceAllOperands(std::map<int, Operand*>& replace)
+{
+    if (this->lhs->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->lhs))->reg_num;
+        if (replace.find(reg) != replace.end()) { lhs = replace[reg]; }
+    }
+
+    if (this->rhs->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->rhs))->reg_num;
+        if (replace.find(reg) != replace.end()) { rhs = replace[reg]; }
+    }
+
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = replace[reg]; }
+    }
+}
+
+void AllocInst::ReplaceAllOperands(std::map<int, Operand*>& replace)
+{
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = replace[reg]; }
+    }
+}
+
+void BranchCondInst::ReplaceAllOperands(std::map<int, Operand*>& replace)
+{
+    if (this->cond->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->cond))->reg_num;
+        if (replace.find(reg) != replace.end()) { cond = replace[reg]; }
+    }
+}
+
+void BranchUncondInst::ReplaceAllOperands(std::map<int, Operand*>& replace) {}
+
+void GlbvarDefInst::ReplaceAllOperands(std::map<int, Operand*>& replace)
+{
+    if (this->init && this->init->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->init))->reg_num;
+        if (replace.find(reg) != replace.end()) { init = replace[reg]; }
+    }
+}
+
+void CallInst::ReplaceAllOperands(std::map<int, Operand*>& replace)
+{
+    for (auto& arg : args)
+    {
+        if (arg.second && arg.second->type == OperandType::REG)
+        {
+            int reg = ((RegOperand*)(arg.second))->reg_num;
+            if (replace.find(reg) != replace.end()) { arg.second = replace[reg]; }
+        }
+    }
+
+    if (this->res && this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = replace[reg]; }
+    }
+}
+
+void RetInst::ReplaceAllOperands(std::map<int, Operand*>& replace)
+{
+    if (this->ret && this->ret->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->ret))->reg_num;
+        if (replace.find(reg) != replace.end()) { ret = replace[reg]; }
+    }
+}
+
+void GEPInst::ReplaceAllOperands(std::map<int, Operand*>& replace)
+{
+    if (this->base_ptr->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->base_ptr))->reg_num;
+        if (replace.find(reg) != replace.end()) { base_ptr = replace[reg]; }
+    }
+
+    for (auto& idx : idxs)
+    {
+        if (idx && idx->type == OperandType::REG)
+        {
+            int reg = ((RegOperand*)(idx))->reg_num;
+            if (replace.find(reg) != replace.end()) { idx = replace[reg]; }
+        }
+    }
+
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = replace[reg]; }
+    }
+}
+
+void FuncDeclareInst::ReplaceAllOperands(std::map<int, Operand*>& replace) {}
+
+void FuncDefInst::ReplaceAllOperands(std::map<int, Operand*>& replace) {}
+
+void SI2FPInst::ReplaceAllOperands(std::map<int, Operand*>& replace)
+{
+    if (this->f_si->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->f_si))->reg_num;
+        if (replace.find(reg) != replace.end()) { f_si = replace[reg]; }
+    }
+
+    if (this->t_fp->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->t_fp))->reg_num;
+        if (replace.find(reg) != replace.end()) { t_fp = replace[reg]; }
+    }
+}
+
+void FP2SIInst::ReplaceAllOperands(std::map<int, Operand*>& replace)
+{
+    if (this->f_fp->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->f_fp))->reg_num;
+        if (replace.find(reg) != replace.end()) { f_fp = replace[reg]; }
+    }
+
+    if (this->t_si->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->t_si))->reg_num;
+        if (replace.find(reg) != replace.end()) { t_si = replace[reg]; }
+    }
+}
+
+void ZextInst::ReplaceAllOperands(std::map<int, Operand*>& replace)
+{
+    if (this->src->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->src))->reg_num;
+        if (replace.find(reg) != replace.end()) { src = replace[reg]; }
+    }
+
+    if (this->dest->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->dest))->reg_num;
+        if (replace.find(reg) != replace.end()) { dest = replace[reg]; }
+    }
+}
+
+void FPExtInst::ReplaceAllOperands(std::map<int, Operand*>& replace)
+{
+    if (this->src->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->src))->reg_num;
+        if (replace.find(reg) != replace.end()) { src = replace[reg]; }
+    }
+
+    if (this->dest->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->dest))->reg_num;
+        if (replace.find(reg) != replace.end()) { dest = replace[reg]; }
+    }
+}
+
+void PhiInst::ReplaceAllOperands(std::map<int, Operand*>& replace)
+{
+    for (auto& val_label : vals_for_labels)
+    {
+        if (val_label.first && val_label.first->type == OperandType::REG)
+        {
+            int reg = ((RegOperand*)(val_label.first))->reg_num;
+            if (replace.find(reg) != replace.end()) { val_label.first = replace[reg]; }
+        }
+    }
+
+    if (this->res->type == OperandType::REG)
+    {
+        int reg = ((RegOperand*)(this->res))->reg_num;
+        if (replace.find(reg) != replace.end()) { res = replace[reg]; }
+    }
+}
+
 void updateBlockRegisterMapping(IRBlock* block, const std::map<int, int>& reg_mapping)
 {
     if (!block || reg_mapping.empty()) return;
@@ -2155,8 +2621,10 @@ SelectInst::SelectInst(DataType t, Operand* tv, Operand* fv, Operand* c, Operand
 
 void SelectInst::printIR(std::ostream& s)
 {
-    s << res << " = select i1 " << cond << ", " << type << " " << true_val << ", " << type << " " << false_val
-      << std::endl;
+    s << res << " = select i1 " << cond << ", " << type << " " << true_val << ", " << type << " " << false_val;
+
+    if (!comment.empty()) s << " ; " << comment;
+    s << "\n";
 }
 
 void SelectInst::Rename(std::map<int, int>& replace)
@@ -2184,6 +2652,29 @@ void SelectInst::Rename(std::map<int, int>& replace)
 }
 
 void SelectInst::ReplaceAllOperands(std::map<int, int>& replace) { Rename(replace); }
+void SelectInst::ReplaceAllOperands(std::map<int, Operand*>& replace)
+{
+    if (cond->type == OperandType::REG)
+    {
+        int reg_num = ((RegOperand*)cond)->reg_num;
+        if (replace.find(reg_num) != replace.end()) { cond = replace[reg_num]; }
+    }
+    if (true_val->type == OperandType::REG)
+    {
+        int reg_num = ((RegOperand*)true_val)->reg_num;
+        if (replace.find(reg_num) != replace.end()) { true_val = replace[reg_num]; }
+    }
+    if (false_val->type == OperandType::REG)
+    {
+        int reg_num = ((RegOperand*)false_val)->reg_num;
+        if (replace.find(reg_num) != replace.end()) { false_val = replace[reg_num]; }
+    }
+    if (res->type == OperandType::REG)
+    {
+        int reg_num = ((RegOperand*)res)->reg_num;
+        if (replace.find(reg_num) != replace.end()) { res = replace[reg_num]; }
+    }
+}
 
 int SelectInst::GetResultReg()
 {
@@ -2210,26 +2701,40 @@ Instruction* SelectInst::Clone(int new_result_reg) const
     return new SelectInst(type, true_val, false_val, cond, new_res);
 }
 
-void SelectInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
+bool SelectInst::SubstituteOperands(const std::map<int, Operand*>& substitutions)
 {
+    bool has_replacement = false;
     if (cond->type == OperandType::REG)
     {
         int  reg_num = ((RegOperand*)cond)->reg_num;
         auto it      = substitutions.find(reg_num);
-        if (it != substitutions.end()) { cond = it->second; }
+        if (it != substitutions.end())
+        {
+            cond            = it->second;
+            has_replacement = true;
+        }
     }
     if (true_val->type == OperandType::REG)
     {
         int  reg_num = ((RegOperand*)true_val)->reg_num;
         auto it      = substitutions.find(reg_num);
-        if (it != substitutions.end()) { true_val = it->second; }
+        if (it != substitutions.end())
+        {
+            true_val        = it->second;
+            has_replacement = true;
+        }
     }
     if (false_val->type == OperandType::REG)
     {
         int  reg_num = ((RegOperand*)false_val)->reg_num;
         auto it      = substitutions.find(reg_num);
-        if (it != substitutions.end()) { false_val = it->second; }
+        if (it != substitutions.end())
+        {
+            false_val       = it->second;
+            has_replacement = true;
+        }
     }
+    return has_replacement;
 }
 
 DataType SelectInst::GetResultType() const { return type; }
@@ -2257,12 +2762,13 @@ void EmptyInst::printIR(std::ostream& s)
 
 void                  EmptyInst::Rename(std::map<int, int>&) {}
 void                  EmptyInst::ReplaceAllOperands(std::map<int, int>&) {}
+void                  EmptyInst::ReplaceAllOperands(std::map<int, Operand*>&) {}
 int                   EmptyInst::GetResultReg() { return -1; }
 std::vector<int>      EmptyInst::GetUsedRegs() { return {}; }
 std::vector<Operand*> EmptyInst::GetUsedOperands() { return {}; }
 Operand*              EmptyInst::GetResultOperand() { return nullptr; }
 Instruction*          EmptyInst::Clone(int) const { return new EmptyInst(); }
-void                  EmptyInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) {}
+bool                  EmptyInst::SubstituteOperands(const std::map<int, Operand*>& substitutions) { return false; }
 DataType              EmptyInst::GetResultType() const { return DataType::I32; }
 Instruction*          EmptyInst::CloneWithMapping(const std::map<int, int>&, const std::map<int, int>&) const
 {

@@ -42,122 +42,141 @@
     X(R4) /* R4 rd rs1 rs2 rs3 */ \
     X(CALL)
 
-#ifndef RV64_ENABLE_ZBA
-#define RV64_ENABLE_ZBA 0
+#ifdef RV64_ENABLE_ZBA
+#undef RV64_ENABLE_ZBA
 #endif
-#ifndef RV64_ENABLE_ZBB
-#define RV64_ENABLE_ZBB 0
+#ifdef RV64_ENABLE_ZBB
+#undef RV64_ENABLE_ZBB
 #endif
-#ifndef RV64_ENABLE_ZICSR
-#define RV64_ENABLE_ZICSR 0
+#ifdef RV64_ENABLE_ZICSR
+#undef RV64_ENABLE_ZICSR
 #endif
-#ifndef RV64_ENABLE_ZIFENCEI
-#define RV64_ENABLE_ZIFENCEI 0
+#ifdef RV64_ENABLE_ZIFENCEI
+#undef RV64_ENABLE_ZIFENCEI
 #endif
-#ifndef RV64_ENABLE_ZICOND
-#define RV64_ENABLE_ZICOND 0
+#ifdef RV64_ENABLE_ZICOND
+#undef RV64_ENABLE_ZICOND
 #endif
 
-#define RV64_INSTS_BASE       \
-    X(ADD, R, add)            \
-    X(ADDW, R, addw)          \
-    X(SUB, R, sub)            \
-    X(SUBW, R, subw)          \
-    X(MUL, R, mul)            \
-    X(MULW, R, mulw)          \
-    X(DIV, R, div)            \
-    X(DIVW, R, divw)          \
-    X(FADD_S, R, fadd.s)      \
-    X(FSUB_S, R, fsub.s)      \
-    X(FMUL_S, R, fmul.s)      \
-    X(FDIV_S, R, fdiv.s)      \
-    X(REM, R, rem)            \
-    X(REMW, R, remw)          \
-    X(SLL, R, sll)            \
-    X(SRL, R, srl)            \
-    X(SRA, R, sra)            \
-    X(AND, R, and)            \
-    X(OR, R, or)              \
-    X(XOR, R, xor)            \
-    X(SLT, R, slt)            \
-    X(SLTU, R, sltu)          \
-    X(FEQ_S, R, feq.s)        \
-    X(FLT_S, R, flt.s)        \
-    X(FLE_S, R, fle.s)        \
-                              \
-    X(ADDI, I, addi)          \
-    X(ADDIW, I, addiw)        \
-    X(SLLI, I, slli)          \
-    X(SRLI, I, srli)          \
-    X(SRAI, I, srai)          \
-    X(SLLIW, I, slliw)        \
-    X(SRLIW, I, srliw)        \
-    X(SRAIW, I, sraiw)        \
-    X(ANDI, I, andi)          \
-    X(ORI, I, ori)            \
-    X(XORI, I, xori)          \
-    X(SLTI, I, slti)          \
-    X(SLTIU, I, sltiu)        \
-    X(JALR, I, jalr)          \
-    X(LW, I, lw)              \
-    X(LD, I, ld)              \
-    X(FLW, I, flw)            \
-    X(FLD, I, fld)            \
-                              \
-    X(LI, U, li)              \
-    X(LUI, U, lui)            \
-    X(LA, U, la)              \
-                              \
-    X(SW, S, sw)              \
-    X(SD, S, sd)              \
-    X(FSW, S, fsw)            \
-    X(FSD, S, fsd)            \
-                              \
-    X(BEQ, B, beq)            \
-    X(BNE, B, bne)            \
-    X(BLT, B, blt)            \
-    X(BGE, B, bge)            \
-    X(BLTU, B, bltu)          \
-    X(BGEU, B, bgeu)          \
-    X(BGT, B, bgt)            \
-    X(BLE, B, ble)            \
-    X(BGTU, B, bgtu)          \
-    X(BLEU, B, bleu)          \
-                              \
-    X(JAL, J, jal)            \
-                              \
-    X(FMV_W_X, R2, fmv.w.x)   \
-    X(FMV_X_W, R2, fmv.x.w)   \
-    X(FCVT_S_W, R2, fcvt.s.w) \
-    X(FCVT_W_S, R2, fcvt.w.s) \
-    X(FMV_S, R2, fmv.s)       \
-    X(FMV_D, R2, fmv.d)       \
-    X(ZEXT_W, R2, zext.w)     \
-    X(FNEG_S, R2, fneg.s)     \
-                              \
-    X(FMADD_S, R4, fmadd.s)   \
-    X(FMSUB_S, R4, fmsub.s)   \
-    X(FNMADD_S, R4, fnmadd.s) \
-    X(FNMSUB_S, R4, fnmsub.s) \
-                              \
-    X(CALL, CALL, call)
+#define RV64_ENABLE_ZBA 0  // 评测平台上超时
+#define RV64_ENABLE_ZBB 0
+#define RV64_ENABLE_ZICSR 1
+#define RV64_ENABLE_ZIFENCEI 1
+#define RV64_ENABLE_ZICOND 0  // 性能不如位操作，吗？至少目前评测来看是不如
+
+// (name, type, _asm, latency)
+#define RV64_INSTS_BASE          \
+    X(ADD, R, add, 1)            \
+    X(ADDW, R, addw, 1)          \
+    X(SUB, R, sub, 1)            \
+    X(SUBW, R, subw, 1)          \
+    X(MUL, R, mul, 3)            \
+    X(MULW, R, mulw, 3)          \
+    X(DIV, R, div, 30)           \
+    X(DIVW, R, divw, 30)         \
+    X(FADD_S, R, fadd.s, 5)      \
+    X(FSUB_S, R, fsub.s, 5)      \
+    X(FMUL_S, R, fmul.s, 5)      \
+    X(FDIV_S, R, fdiv.s, 30)     \
+    X(REM, R, rem, 30)           \
+    X(REMW, R, remw, 30)         \
+    X(SLL, R, sll, 1)            \
+    X(SRL, R, srl, 1)            \
+    X(SRA, R, sra, 1)            \
+    X(AND, R, and, 1)            \
+    X(OR, R, or, 1)              \
+    X(XOR, R, xor, 1)            \
+    X(SLT, R, slt, 1)            \
+    X(SLTU, R, sltu, 1)          \
+    X(FEQ_S, R, feq.s, 4)        \
+    X(FLT_S, R, flt.s, 4)        \
+    X(FLE_S, R, fle.s, 4)        \
+    X(FMIN_S, R, fmin.s, 4)      \
+    X(FMAX_S, R, fmax.s, 4)      \
+                                 \
+    X(ADDI, I, addi, 1)          \
+    X(ADDIW, I, addiw, 1)        \
+    X(SLLI, I, slli, 1)          \
+    X(SRLI, I, srli, 1)          \
+    X(SRAI, I, srai, 1)          \
+    X(SLLIW, I, slliw, 1)        \
+    X(SRLIW, I, srliw, 1)        \
+    X(SRAIW, I, sraiw, 1)        \
+    X(ANDI, I, andi, 1)          \
+    X(ORI, I, ori, 1)            \
+    X(XORI, I, xori, 1)          \
+    X(SLTI, I, slti, 1)          \
+    X(SLTIU, I, sltiu, 1)        \
+    X(JALR, I, jalr, 1)          \
+    X(LW, I, lw, 3)              \
+    X(LD, I, ld, 3)              \
+    X(FLW, I, flw, 2)            \
+    X(FLD, I, fld, 2)            \
+                                 \
+    X(LI, U, li, 1)              \
+    X(LUI, U, lui, 1)            \
+    X(LA, U, la, 1)              \
+                                 \
+    X(SW, S, sw, 1)              \
+    X(SD, S, sd, 1)              \
+    X(FSW, S, fsw, 4)            \
+    X(FSD, S, fsd, 4)            \
+                                 \
+    X(BEQ, B, beq, 1)            \
+    X(BNE, B, bne, 1)            \
+    X(BLT, B, blt, 1)            \
+    X(BGE, B, bge, 1)            \
+    X(BLTU, B, bltu, 1)          \
+    X(BGEU, B, bgeu, 1)          \
+    X(BGT, B, bgt, 1)            \
+    X(BLE, B, ble, 1)            \
+    X(BGTU, B, bgtu, 1)          \
+    X(BLEU, B, bleu, 1)          \
+                                 \
+    X(JAL, J, jal, 1)            \
+                                 \
+    X(FMV_W_X, R2, fmv.w.x, 2)   \
+    X(FMV_X_W, R2, fmv.x.w, 1)   \
+    X(FCVT_S_W, R2, fcvt.s.w, 2) \
+    X(FCVT_W_S, R2, fcvt.w.s, 4) \
+    X(FMV_S, R2, fmv.s, 2)       \
+    X(FMV_D, R2, fmv.d, 2)       \
+    X(ZEXT_W, R2, zext.w, 1)     \
+    X(FNEG_S, R2, fneg.s, 2)     \
+                                 \
+    X(FMADD_S, R4, fmadd.s, 5)   \
+    X(FMSUB_S, R4, fmsub.s, 5)   \
+    X(FNMADD_S, R4, fnmadd.s, 5) \
+    X(FNMSUB_S, R4, fnmsub.s, 5) \
+                                 \
+    X(CALL, CALL, call, 1)
 
 #if RV64_ENABLE_ZBA
-#define RV64_INSTS_ZBA        \
-    X(SH1ADD, R, sh1add)      \
-    X(SH2ADD, R, sh2add)      \
-    X(SH3ADD, R, sh3add)      \
-    X(SH1ADDUW, R, sh1add.uw) \
-    X(SH2ADDUW, R, sh2add.uw) \
-    X(SH3ADDUW, R, sh3add.uw)
+#define RV64_INSTS_ZBA           \
+    X(SH1ADD, R, sh1add, 1)      \
+    X(SH2ADD, R, sh2add, 1)      \
+    X(SH3ADD, R, sh3add, 1)      \
+    X(SH1ADDUW, R, sh1add.uw, 1) \
+    X(SH2ADDUW, R, sh2add.uw, 1) \
+    X(SH3ADDUW, R, sh3add.uw, 1)
 #else
 #define RV64_INSTS_ZBA
 #endif
 
+#if RV64_ENABLE_ZBB
+#define RV64_INSTS_ZBB  \
+    X(MIN, R, min, 1)   \
+    X(MAX, R, max, 1)   \
+    X(MINU, R, minu, 1) \
+    X(MAXU, R, maxu, 1)
+#else
+#define RV64_INSTS_ZBB
+#endif
+
 #if RV64_ENABLE_ZICOND
-#define RV64_INSTS_ZICOND      \
-    X(CZERO_EQZ, R, czero.eqz) \
-    X(CZERO_NEZ, R, czero.nez)
+#define RV64_INSTS_ZICOND         \
+    X(CZERO_EQZ, R, czero.eqz, 1) \
+    X(CZERO_NEZ, R, czero.nez, 1)
 #else
 #define RV64_INSTS_ZICOND
 #endif
@@ -165,6 +184,7 @@
 #define RV64_INSTS  \
     RV64_INSTS_BASE \
     RV64_INSTS_ZBA  \
+    RV64_INSTS_ZBB  \
     RV64_INSTS_ZICOND
 
 // (name, alias, saver)
@@ -239,6 +259,9 @@
 
 namespace Backend::RV64
 {
+    extern bool can_schedule;
+    extern bool force_no_schedule;
+
     enum class REG
     {
 #define X(name, alias, saver) name,
@@ -321,7 +344,7 @@ namespace Backend::RV64
 
     enum class RV64InstType
     {
-#define X(name, type, _asm) name,
+#define X(name, type, _asm, latency) name,
         RV64_INSTS
 #undef X
     };
@@ -425,11 +448,17 @@ namespace Backend::RV64
     class Instruction
     {
       public:
-        InstType inst_type;
+        InstType    inst_type;
+        std::string comment;
 
         int ins_id;
 
+        bool schedule_flag;
+
       public:
+        static void delInst(Instruction* i) { delete i; }
+
+      protected:
         Instruction(InstType it);
         virtual ~Instruction() = default;
 
@@ -474,6 +503,17 @@ namespace Backend::RV64
         int ret_type;
 
       public:
+        static RV64Inst* getInstance()
+        {
+            RV64Inst* ret      = new RV64Inst();
+            ret->schedule_flag = can_schedule;
+
+            if (force_no_schedule) ret->schedule_flag = false;
+
+            return ret;
+        }
+
+      private:
         RV64Inst();
 
       public:
@@ -491,6 +531,17 @@ namespace Backend::RV64
         std::map<int, Operand*> phi_list;
 
       public:
+        static PhiInst* getInstance(Register r)
+        {
+            PhiInst* ret       = new PhiInst(r);
+            ret->schedule_flag = can_schedule;
+
+            if (force_no_schedule) ret->schedule_flag = false;
+
+            return ret;
+        }
+
+      private:
         PhiInst(Register r);
         ~PhiInst();
 
@@ -507,6 +558,17 @@ namespace Backend::RV64
         Operand * src, *dst;
 
       public:
+        static MoveInst* getInstance(DataType* dt, Operand* s, Operand* d)
+        {
+            MoveInst* ret      = new MoveInst(dt, s, d);
+            ret->schedule_flag = can_schedule;
+
+            if (force_no_schedule) ret->schedule_flag = false;
+
+            return ret;
+        }
+
+      private:
         MoveInst(DataType* dt, Operand* s, Operand* d);
         ~MoveInst();
 
@@ -525,6 +587,17 @@ namespace Backend::RV64
         Operand* false_val;
 
       public:
+        static SelectInst* getInstance(Register cond, Register dst, Operand* tv, Operand* fv)
+        {
+            SelectInst* ret    = new SelectInst(cond, dst, tv, fv);
+            ret->schedule_flag = can_schedule;
+
+            if (force_no_schedule) ret->schedule_flag = false;
+
+            return ret;
+        }
+
+      private:
         SelectInst(Register cond, Register dst, Operand* tv, Operand* fv);
         ~SelectInst();
 
@@ -536,7 +609,7 @@ namespace Backend::RV64
 
     class NopInst : public Instruction
     {
-      public:
+      private:
         NopInst();
         ~NopInst();
     };

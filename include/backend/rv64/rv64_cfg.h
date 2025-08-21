@@ -10,6 +10,8 @@
 
 namespace Backend::RV64
 {
+    class NaturalLoopForest;
+
     class CFG
     {
       public:
@@ -22,9 +24,11 @@ namespace Backend::RV64
 
         std::unique_ptr<Cele::Algo::DomAnalyzer> dom_tree;
         std::unique_ptr<Cele::Algo::DomAnalyzer> post_dom_tree;
+        std::unique_ptr<NaturalLoopForest>       loop_forest;
 
       public:
         CFG();
+        ~CFG();
 
       public:
         void addNewBlock(int id, Block* b);

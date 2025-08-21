@@ -5,6 +5,22 @@
 #include <algorithm>
 #include "llvm_ir/instruction.h"
 
+// #define DBGMODE_CSE
+
+#ifdef DBGMODE_CSE
+template <typename... Args>
+void cse_dbg_impl(Args&&... args)
+{
+    ((std::cout << args), ...);
+    std::cout << std::endl;
+}
+#define CSEINFO(...) cse_dbg_impl(__VA_ARGS__)
+#else
+#define CSEINFO(...) \
+    do {             \
+    } while (0)
+#endif
+
 namespace Transform
 {
     static CFG* get_cfg_by_name(LLVMIR::IR* ir, const std::string& name)
@@ -42,6 +58,11 @@ namespace Transform
             auto fcmp_inst = dynamic_cast<LLVMIR::FcmpInst*>(inst);
             ans.fcmp_cond  = fcmp_inst->cond;
         }
+        else if (inst->opcode == LLVMIR::IROpCode::SELECT)
+        {
+            auto select_inst = dynamic_cast<LLVMIR::SelectInst*>(inst);
+            ans.select_cond  = select_inst->cond->getName();
+        }
         else if (inst->opcode == LLVMIR::IROpCode::CALL)
         {
             auto call_inst = dynamic_cast<LLVMIR::CallInst*>(inst);
@@ -51,7 +72,11 @@ namespace Transform
         for (auto op : operands) ans.operand_list.push_back(op->getName());
 
         if (inst->opcode == LLVMIR::IROpCode::ADD || inst->opcode == LLVMIR::IROpCode::FMUL ||
-            inst->opcode == LLVMIR::IROpCode::MUL || inst->opcode == LLVMIR::IROpCode::FADD)
+            inst->opcode == LLVMIR::IROpCode::MUL || inst->opcode == LLVMIR::IROpCode::FADD ||
+            inst->opcode == LLVMIR::IROpCode::BITAND || inst->opcode == LLVMIR::IROpCode::BITXOR ||
+            inst->opcode == LLVMIR::IROpCode::SMIN_I32 || inst->opcode == LLVMIR::IROpCode::SMAX_I32 ||
+            inst->opcode == LLVMIR::IROpCode::UMIN_I32 || inst->opcode == LLVMIR::IROpCode::UMAX_I32 ||
+            inst->opcode == LLVMIR::IROpCode::FMIN_F32 || inst->opcode == LLVMIR::IROpCode::FMAX_F32)
         {
             std::sort(ans.operand_list.begin(), ans.operand_list.end());
         }
@@ -120,7 +145,7 @@ namespace Transform
                     if (store_inst->val->type == LLVMIR::OperandType::IMMEI32)
                     {
                         auto imme_val = dynamic_cast<LLVMIR::ImmeI32Operand*>(store_inst->val);
-                        auto new_reg  = getRegOperand(cfg->func->max_reg++);
+                        auto new_reg  = getRegOperand(++cfg->func->max_reg);
                         auto new_add  = new LLVMIR::ArithmeticInst(
                             LLVMIR::IROpCode::ADD, LLVMIR::DataType::I32, imme_val, getImmeI32Operand(0), new_reg);
                         insts.insert(insts.begin() + i, new_add);
@@ -130,7 +155,7 @@ namespace Transform
                     else if (store_inst->val->type == LLVMIR::OperandType::IMMEF32)
                     {
                         auto imme_val = dynamic_cast<LLVMIR::ImmeF32Operand*>(store_inst->val);
-                        auto new_reg  = getRegOperand(cfg->func->max_reg++);
+                        auto new_reg  = getRegOperand(++cfg->func->max_reg);
                         auto new_fadd = new LLVMIR::ArithmeticInst(
                             LLVMIR::IROpCode::FADD, LLVMIR::DataType::F32, imme_val, getImmeF32Operand(0.0), new_reg);
                         insts.insert(insts.begin() + i, new_fadd);
@@ -300,12 +325,21 @@ namespace Transform
                 auto info = getCSEInfo(inst);
                 if (inst_map.count(info))
                 {
+                    CSEINFO("CSE found: instruction ",
+                        inst,
+                        " (reg_%",
+                        inst->GetResultReg(),
+                        ") can be replaced by reg_%",
+                        inst_map[info]);
                     erase_set.insert(inst);
                     reg_replace_map[inst->GetResultReg()] = inst_map[info];
                     changed                               = true;
                 }
                 else
+                {
+                    CSEINFO("Adding instruction ", inst, " (reg_%", inst->GetResultReg(), ") to CSE map");
                     inst_map[info] = inst->GetResultReg();
+                }
             }
         }
         return changed;
@@ -313,11 +347,14 @@ namespace Transform
 
     void CSEPass::domTreeWalkCSE(CFG* cfg)
     {
-        current_cfg  = cfg;
-        bool changed = true;
+        current_cfg        = cfg;
+        bool changed       = true;
+        int  dom_iteration = 0;
         while (changed)
         {
             changed = false;
+            dom_iteration++;
+            CSEINFO("--- Dominator Tree CSE iteration ", dom_iteration, " ---");
             erase_set.clear();
             inst_cse_map.clear();
             load_cse_map.clear();
@@ -328,6 +365,12 @@ namespace Transform
             if (!erase_set.empty())
             {
                 changed = true;
+                CSEINFO("Dom tree CSE found ", erase_set.size(), " instructions to erase");
+                CSEINFO("Dom tree register replacements:");
+                for (const auto& [old_reg, new_reg] : reg_replace_map)
+                {
+                    CSEINFO("  reg_%", old_reg, " -> reg_%", new_reg);
+                }
                 for (auto const& [id, bb] : cfg->block_id_to_block)
                 {
                     bb->insts.erase(std::remove_if(bb->insts.begin(),
@@ -339,6 +382,7 @@ namespace Transform
                 {
                     for (auto inst : bb->insts) inst->Rename(reg_replace_map);
                 }
+                CSEINFO("Dom tree renaming completed for iteration ", dom_iteration);
             }
         }
     }
@@ -415,11 +459,18 @@ namespace Transform
                 auto info = getCSEInfo(inst);
                 if (inst_cse_map.count(info))
                 {
+                    CSEINFO("Dom CSE found: instruction ",
+                        inst,
+                        " (reg_%",
+                        inst->GetResultReg(),
+                        ") can be replaced by reg_%",
+                        inst_cse_map[info]);
                     erase_set.insert(inst);
                     reg_replace_map[inst->GetResultReg()] = inst_cse_map[info];
                 }
                 else
                 {
+                    CSEINFO("Adding instruction ", inst, " (reg_%", inst->GetResultReg(), ") to dom CSE map");
                     inst_cse_map[info] = inst->GetResultReg();
                     tmp_cse.push_back(info);
                 }
@@ -448,13 +499,18 @@ namespace Transform
 
     void CSEPass::Execute()
     {
+        CSEINFO("=== CSE Pass Started ===");
         init();
         for (auto const& [func_def, cfg] : ir->cfg)
         {
-            bool changed = true;
+            CSEINFO("Processing function: ", func_def->func_name);
+            bool changed   = true;
+            int  iteration = 0;
             while (changed)
             {
                 changed = false;
+                iteration++;
+                CSEINFO("--- Basic Block CSE iteration ", iteration, " ---");
                 std::map<int, int>             reg_replace_map;
                 std::set<LLVMIR::Instruction*> erase_set;
                 for (auto const& [id, bb] : cfg->block_id_to_block)
@@ -464,6 +520,13 @@ namespace Transform
 
                 if (changed)
                 {
+                    CSEINFO("Found CSE opportunities, erasing ", erase_set.size(), " instructions");
+                    CSEINFO("Register replacements:");
+                    for (const auto& [old_reg, new_reg] : reg_replace_map)
+                    {
+                        CSEINFO("  reg_%", old_reg, " -> reg_%", new_reg);
+                    }
+
                     for (auto const& [id, bb] : cfg->block_id_to_block)
                     {
                         bb->insts.erase(std::remove_if(bb->insts.begin(),
@@ -475,10 +538,14 @@ namespace Transform
                     {
                         for (auto inst : bb->insts) inst->Rename(reg_replace_map);
                     }
+                    CSEINFO("Renaming completed for iteration ", iteration);
                 }
             }
+            CSEINFO("Starting dominator tree CSE");
             domTreeWalkCSE(cfg);
+            CSEINFO("Completed function: ", func_def->func_name);
         }
+        CSEINFO("=== CSE Pass Completed ===");
     }
 
 }  // namespace Transform

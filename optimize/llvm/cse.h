@@ -17,12 +17,14 @@ namespace Transform
         std::vector<std::string> operand_list;
         LLVMIR::IcmpCond         icmp_cond = LLVMIR::IcmpCond::EQ;   // Default
         LLVMIR::FcmpCond         fcmp_cond = LLVMIR::FcmpCond::OEQ;  // Default
+        std::string              select_cond;                        // For SELECT instruction condition
 
         bool operator<(const InstCSEInfo& x) const
         {
             if (opcode != x.opcode) return opcode < x.opcode;
             if (opcode == LLVMIR::IROpCode::ICMP && icmp_cond != x.icmp_cond) return icmp_cond < x.icmp_cond;
             if (opcode == LLVMIR::IROpCode::FCMP && fcmp_cond != x.fcmp_cond) return fcmp_cond < x.fcmp_cond;
+            if (opcode == LLVMIR::IROpCode::SELECT && select_cond != x.select_cond) return select_cond < x.select_cond;
             return operand_list < x.operand_list;
         }
     };

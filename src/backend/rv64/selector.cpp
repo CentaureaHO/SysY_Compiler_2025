@@ -150,27 +150,79 @@ float Selector::extractIROp2ImmeF32(LLVMIR::Operand* op)
     assert(IS_IMMEF32(op));
     return ((LLVMIR::ImmeF32Operand*)op)->value;
 }
-
-void Selector::convertAndAppend(LLVMIR::Instruction* inst)
+extern bool no_schedule_zext;
+void        Selector::convertAndAppend(LLVMIR::Instruction* inst)
 {
+    setCanSchedule();
     switch (inst->opcode)
     {
-        case LOC::LOAD: convertAndAppend((LLVMIR::LoadInst*)inst); break;
-        case LOC::STORE: convertAndAppend((LLVMIR::StoreInst*)inst); break;
-        case LOC::ICMP: convertAndAppend((LLVMIR::IcmpInst*)inst); break;
-        case LOC::FCMP: convertAndAppend((LLVMIR::FcmpInst*)inst); break;
-        case LOC::ALLOCA: convertAndAppend((LLVMIR::AllocInst*)inst); break;
-        case LOC::BR_COND: convertAndAppend((LLVMIR::BranchCondInst*)inst); break;
-        case LOC::BR_UNCOND: convertAndAppend((LLVMIR::BranchUncondInst*)inst); break;
-        case LOC::RET: convertAndAppend((LLVMIR::RetInst*)inst); break;
-        case LOC::ZEXT: convertAndAppend((LLVMIR::ZextInst*)inst); break;
-        case LOC::FPTOSI: convertAndAppend((LLVMIR::FP2SIInst*)inst); break;
-        case LOC::SITOFP: convertAndAppend((LLVMIR::SI2FPInst*)inst); break;
-        case LOC::FPEXT: convertAndAppend((LLVMIR::FPExtInst*)inst); break;
-        case LOC::GETELEMENTPTR: convertAndAppend((LLVMIR::GEPInst*)inst); break;
-        case LOC::PHI: convertAndAppend((LLVMIR::PhiInst*)inst); break;
-        case LOC::SELECT: convertAndAppend((LLVMIR::SelectInst*)inst); break;
-        case LOC::CALL: convertAndAppend((LLVMIR::CallInst*)inst); break;
+        case LOC::LOAD:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::LoadInst*)inst);
+            break;
+        case LOC::STORE:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::StoreInst*)inst);
+            break;
+        case LOC::ICMP:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::IcmpInst*)inst);
+            break;
+        case LOC::FCMP:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::FcmpInst*)inst);
+            break;
+        case LOC::ALLOCA:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::AllocInst*)inst);
+            break;
+        case LOC::BR_COND:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::BranchCondInst*)inst);
+            break;
+        case LOC::BR_UNCOND:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::BranchUncondInst*)inst);
+            break;
+        case LOC::RET:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::RetInst*)inst);
+            break;
+        case LOC::ZEXT:
+            // setNoSchedule();
+            // 如果指令调度效果好就回来修
+            // 效果不好就直接禁用了
+            // 效果不好，禁用了
+            convertAndAppend((LLVMIR::ZextInst*)inst);
+            break;
+        case LOC::FPTOSI:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::FP2SIInst*)inst);
+            break;
+        case LOC::SITOFP:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::SI2FPInst*)inst);
+            break;
+        case LOC::FPEXT:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::FPExtInst*)inst);
+            break;
+        case LOC::GETELEMENTPTR:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::GEPInst*)inst);
+            break;
+        case LOC::PHI:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::PhiInst*)inst);
+            break;
+        case LOC::SELECT:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::SelectInst*)inst);
+            break;
+        case LOC::CALL:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::CallInst*)inst);
+            break;
         case LOC::ADD:
         case LOC::SUB:
         case LOC::MUL:
@@ -184,7 +236,16 @@ void Selector::convertAndAppend(LLVMIR::Instruction* inst)
         case LOC::ASHR:
         case LOC::LSHR:
         case LOC::BITXOR:
-        case LOC::BITAND: convertAndAppend((LLVMIR::ArithmeticInst*)inst); break;
+        case LOC::BITAND:
+        case LOC::SMIN_I32:
+        case LOC::SMAX_I32:
+        case LOC::UMIN_I32:
+        case LOC::UMAX_I32:
+        case LOC::FMIN_F32:
+        case LOC::FMAX_F32:
+            // setNoSchedule();
+            convertAndAppend((LLVMIR::ArithmeticInst*)inst);
+            break;
         case LOC::EMPTY: break;
         default: cerr << "Unknown opcode: " << inst->opcode << endl; assert(false);
     }
@@ -1303,6 +1364,373 @@ void Selector::convertBITAND(LLVMIR::ArithmeticInst* inst)
         cur_block->insts.push_back(createMoveInst(INT64, res, lhs_val & rhs_val));
     }
 }
+
+void Selector::convertSMIN_I32(LLVMIR::ArithmeticInst* inst)
+{
+    // result = b ^ ((a ^ b) & mask), mask = -(a < b)
+    if (inst->type != LLVMIR::DataType::I32) assert(false);
+
+    LLVMIR::OperandType lhs_type    = inst->lhs->type;
+    LLVMIR::OperandType rhs_type    = inst->rhs->type;
+    LLVMIR::OperandType ir_reg_type = LLVMIR::OperandType::REG;
+    LLVMIR::OperandType imme_type   = LLVMIR::OperandType::IMMEI32;
+
+    int      res_reg = ((LLVMIR::RegOperand*)inst->res)->reg_num;
+    Register res     = getLLVMReg(res_reg, INT64);
+
+    // IMME + IMME
+    if (lhs_type == imme_type && rhs_type == imme_type)
+    {
+        int lhs_val = ((LLVMIR::ImmeI32Operand*)inst->lhs)->value;
+        int rhs_val = ((LLVMIR::ImmeI32Operand*)inst->rhs)->value;
+        cur_block->insts.push_back(createMoveInst(INT64, res, lhs_val < rhs_val ? lhs_val : rhs_val));
+    }
+    else
+    {
+        Register lhs_reg, rhs_reg;
+
+        if (lhs_type == ir_reg_type)
+        {
+            int lhs_num = ((LLVMIR::RegOperand*)inst->lhs)->reg_num;
+            lhs_reg     = getLLVMReg(lhs_num, INT64);
+        }
+        else if (lhs_type == imme_type)
+        {
+            int lhs_val = ((LLVMIR::ImmeI32Operand*)inst->lhs)->value;
+            lhs_reg     = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, lhs_reg, lhs_val));
+        }
+        else { assert(false && "Unsupported left operand type for SMIN"); }
+
+        if (rhs_type == ir_reg_type)
+        {
+            int rhs_num = ((LLVMIR::RegOperand*)inst->rhs)->reg_num;
+            rhs_reg     = getLLVMReg(rhs_num, INT64);
+        }
+        else if (rhs_type == imme_type)
+        {
+            int rhs_val = ((LLVMIR::ImmeI32Operand*)inst->rhs)->value;
+            rhs_reg     = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, rhs_reg, rhs_val));
+        }
+        else { assert(false && "Unsupported right operand type for SMIN"); }
+
+        // smin: result = b ^ ((a ^ b) & mask), mask = -(a < b)
+        Register cond    = getReg(INT64);  // a < b
+        Register mask    = getReg(INT64);  // -cond
+        Register xor1    = getReg(INT64);  // a ^ b
+        Register and_res = getReg(INT64);  // (a ^ b) & mask
+
+        cur_block->insts.push_back(createRInst(RV64InstType::SLT, cond, lhs_reg, rhs_reg));
+        cur_block->insts.push_back(createRInst(RV64InstType::SUB, mask, preg_x0, cond));
+        cur_block->insts.push_back(createRInst(RV64InstType::XOR, xor1, lhs_reg, rhs_reg));
+        cur_block->insts.push_back(createRInst(RV64InstType::AND, and_res, xor1, mask));
+        cur_block->insts.push_back(createRInst(RV64InstType::XOR, res, rhs_reg, and_res));
+    }
+}
+
+void Selector::convertSMAX_I32(LLVMIR::ArithmeticInst* inst)
+{
+    // result = a ^ ((a ^ b) & mask), mask = -(a < b)
+    if (inst->type != LLVMIR::DataType::I32) assert(false);
+
+    LLVMIR::OperandType lhs_type    = inst->lhs->type;
+    LLVMIR::OperandType rhs_type    = inst->rhs->type;
+    LLVMIR::OperandType ir_reg_type = LLVMIR::OperandType::REG;
+    LLVMIR::OperandType imme_type   = LLVMIR::OperandType::IMMEI32;
+
+    int      res_reg = ((LLVMIR::RegOperand*)inst->res)->reg_num;
+    Register res     = getLLVMReg(res_reg, INT64);
+
+    // IMME + IMME
+    if (lhs_type == imme_type && rhs_type == imme_type)
+    {
+        int lhs_val = ((LLVMIR::ImmeI32Operand*)inst->lhs)->value;
+        int rhs_val = ((LLVMIR::ImmeI32Operand*)inst->rhs)->value;
+        cur_block->insts.push_back(createMoveInst(INT64, res, lhs_val > rhs_val ? lhs_val : rhs_val));
+    }
+    else
+    {
+        Register lhs_reg, rhs_reg;
+
+        if (lhs_type == ir_reg_type)
+        {
+            int lhs_num = ((LLVMIR::RegOperand*)inst->lhs)->reg_num;
+            lhs_reg     = getLLVMReg(lhs_num, INT64);
+        }
+        else if (lhs_type == imme_type)
+        {
+            int lhs_val = ((LLVMIR::ImmeI32Operand*)inst->lhs)->value;
+            lhs_reg     = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, lhs_reg, lhs_val));
+        }
+        else { assert(false && "Unsupported left operand type for SMAX"); }
+
+        if (rhs_type == ir_reg_type)
+        {
+            int rhs_num = ((LLVMIR::RegOperand*)inst->rhs)->reg_num;
+            rhs_reg     = getLLVMReg(rhs_num, INT64);
+        }
+        else if (rhs_type == imme_type)
+        {
+            int rhs_val = ((LLVMIR::ImmeI32Operand*)inst->rhs)->value;
+            rhs_reg     = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, rhs_reg, rhs_val));
+        }
+        else { assert(false && "Unsupported right operand type for SMAX"); }
+
+        // smax: result = a ^ ((a ^ b) & mask), mask = -(a < b)
+        Register cond    = getReg(INT64);  // a < b
+        Register mask    = getReg(INT64);  // -cond
+        Register xor1    = getReg(INT64);  // a ^ b
+        Register and_res = getReg(INT64);  // (a ^ b) & mask
+
+        cur_block->insts.push_back(createRInst(RV64InstType::SLT, cond, lhs_reg, rhs_reg));
+        cur_block->insts.push_back(createRInst(RV64InstType::SUB, mask, preg_x0, cond));
+        cur_block->insts.push_back(createRInst(RV64InstType::XOR, xor1, lhs_reg, rhs_reg));
+        cur_block->insts.push_back(createRInst(RV64InstType::AND, and_res, xor1, mask));
+        cur_block->insts.push_back(createRInst(RV64InstType::XOR, res, lhs_reg, and_res));
+    }
+}
+
+void Selector::convertUMIN_I32(LLVMIR::ArithmeticInst* inst)
+{
+    // result = b ^ ((a ^ b) & mask), mask = -(a <u b)
+    if (inst->type != LLVMIR::DataType::I32) assert(false);
+
+    LLVMIR::OperandType lhs_type    = inst->lhs->type;
+    LLVMIR::OperandType rhs_type    = inst->rhs->type;
+    LLVMIR::OperandType ir_reg_type = LLVMIR::OperandType::REG;
+    LLVMIR::OperandType imme_type   = LLVMIR::OperandType::IMMEI32;
+
+    int      res_reg = ((LLVMIR::RegOperand*)inst->res)->reg_num;
+    Register res     = getLLVMReg(res_reg, INT64);
+
+    // IMME + IMME
+    if (lhs_type == imme_type && rhs_type == imme_type)
+    {
+        int lhs_val = ((LLVMIR::ImmeI32Operand*)inst->lhs)->value;
+        int rhs_val = ((LLVMIR::ImmeI32Operand*)inst->rhs)->value;
+
+        bool lhs_smaller = (uint32_t)lhs_val < (uint32_t)rhs_val;
+        cur_block->insts.push_back(createMoveInst(INT64, res, lhs_smaller ? lhs_val : rhs_val));
+    }
+    else
+    {
+        Register lhs_reg, rhs_reg;
+
+        if (lhs_type == ir_reg_type)
+        {
+            int lhs_num = ((LLVMIR::RegOperand*)inst->lhs)->reg_num;
+            lhs_reg     = getLLVMReg(lhs_num, INT64);
+        }
+        else if (lhs_type == imme_type)
+        {
+            int lhs_val = ((LLVMIR::ImmeI32Operand*)inst->lhs)->value;
+            lhs_reg     = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, lhs_reg, lhs_val));
+        }
+        else { assert(false && "Unsupported left operand type for UMIN"); }
+
+        if (rhs_type == ir_reg_type)
+        {
+            int rhs_num = ((LLVMIR::RegOperand*)inst->rhs)->reg_num;
+            rhs_reg     = getLLVMReg(rhs_num, INT64);
+        }
+        else if (rhs_type == imme_type)
+        {
+            int rhs_val = ((LLVMIR::ImmeI32Operand*)inst->rhs)->value;
+            rhs_reg     = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, rhs_reg, rhs_val));
+        }
+        else { assert(false && "Unsupported right operand type for UMIN"); }
+
+        // umin: result = b ^ ((a ^ b) & mask), mask = -(a <u b)
+        Register cond    = getReg(INT64);  // a <u b
+        Register mask    = getReg(INT64);  // -cond
+        Register xor1    = getReg(INT64);  // a ^ b
+        Register and_res = getReg(INT64);  // (a ^ b) & mask
+
+        cur_block->insts.push_back(createRInst(RV64InstType::SLTU, cond, lhs_reg, rhs_reg));
+        cur_block->insts.push_back(createRInst(RV64InstType::SUB, mask, preg_x0, cond));
+        cur_block->insts.push_back(createRInst(RV64InstType::XOR, xor1, lhs_reg, rhs_reg));
+        cur_block->insts.push_back(createRInst(RV64InstType::AND, and_res, xor1, mask));
+        cur_block->insts.push_back(createRInst(RV64InstType::XOR, res, rhs_reg, and_res));
+    }
+}
+
+void Selector::convertUMAX_I32(LLVMIR::ArithmeticInst* inst)
+{
+    // result = a ^ ((a ^ b) & mask), mask = -(a <u b)
+    if (inst->type != LLVMIR::DataType::I32) assert(false);
+
+    LLVMIR::OperandType lhs_type    = inst->lhs->type;
+    LLVMIR::OperandType rhs_type    = inst->rhs->type;
+    LLVMIR::OperandType ir_reg_type = LLVMIR::OperandType::REG;
+    LLVMIR::OperandType imme_type   = LLVMIR::OperandType::IMMEI32;
+
+    int      res_reg = ((LLVMIR::RegOperand*)inst->res)->reg_num;
+    Register res     = getLLVMReg(res_reg, INT64);
+
+    // IMME + IMME
+    if (lhs_type == imme_type && rhs_type == imme_type)
+    {
+        int lhs_val = ((LLVMIR::ImmeI32Operand*)inst->lhs)->value;
+        int rhs_val = ((LLVMIR::ImmeI32Operand*)inst->rhs)->value;
+
+        bool lhs_greater = (uint32_t)lhs_val > (uint32_t)rhs_val;
+        cur_block->insts.push_back(createMoveInst(INT64, res, lhs_greater ? lhs_val : rhs_val));
+    }
+    else
+    {
+        Register lhs_reg, rhs_reg;
+
+        if (lhs_type == ir_reg_type)
+        {
+            int lhs_num = ((LLVMIR::RegOperand*)inst->lhs)->reg_num;
+            lhs_reg     = getLLVMReg(lhs_num, INT64);
+        }
+        else if (lhs_type == imme_type)
+        {
+            int lhs_val = ((LLVMIR::ImmeI32Operand*)inst->lhs)->value;
+            lhs_reg     = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, lhs_reg, lhs_val));
+        }
+        else { assert(false && "Unsupported left operand type for UMAX"); }
+
+        if (rhs_type == ir_reg_type)
+        {
+            int rhs_num = ((LLVMIR::RegOperand*)inst->rhs)->reg_num;
+            rhs_reg     = getLLVMReg(rhs_num, INT64);
+        }
+        else if (rhs_type == imme_type)
+        {
+            int rhs_val = ((LLVMIR::ImmeI32Operand*)inst->rhs)->value;
+            rhs_reg     = getReg(INT64);
+            cur_block->insts.push_back(createMoveInst(INT64, rhs_reg, rhs_val));
+        }
+        else { assert(false && "Unsupported right operand type for UMAX"); }
+
+        // umax: result = a ^ ((a ^ b) & mask), mask = -(a <u b)
+        Register cond    = getReg(INT64);  // a <u b
+        Register mask    = getReg(INT64);  // -cond
+        Register xor1    = getReg(INT64);  // a ^ b
+        Register and_res = getReg(INT64);  // (a ^ b) & mask
+
+        cur_block->insts.push_back(createRInst(RV64InstType::SLTU, cond, lhs_reg, rhs_reg));
+        cur_block->insts.push_back(createRInst(RV64InstType::SUB, mask, preg_x0, cond));
+        cur_block->insts.push_back(createRInst(RV64InstType::XOR, xor1, lhs_reg, rhs_reg));
+        cur_block->insts.push_back(createRInst(RV64InstType::AND, and_res, xor1, mask));
+        cur_block->insts.push_back(createRInst(RV64InstType::XOR, res, lhs_reg, and_res));
+    }
+}
+
+void Selector::convertFMIN_F32(LLVMIR::ArithmeticInst* inst)
+{
+    if (inst->type != LLVMIR::DataType::F32) assert(false);
+
+    LLVMIR::OperandType lhs_type    = inst->lhs->type;
+    LLVMIR::OperandType rhs_type    = inst->rhs->type;
+    LLVMIR::OperandType ir_reg_type = LLVMIR::OperandType::REG;
+    LLVMIR::OperandType imme_type   = LLVMIR::OperandType::IMMEF32;
+
+    int      res_reg = ((LLVMIR::RegOperand*)inst->res)->reg_num;
+    Register res     = getLLVMReg(res_reg, FLOAT64);
+
+    // IMME + IMME
+    if (lhs_type == imme_type && rhs_type == imme_type)
+    {
+        float lhs_val = ((LLVMIR::ImmeF32Operand*)inst->lhs)->value;
+        float rhs_val = ((LLVMIR::ImmeF32Operand*)inst->rhs)->value;
+        cur_block->insts.push_back(createMoveInst(FLOAT64, res, lhs_val < rhs_val ? lhs_val : rhs_val));
+    }
+    else
+    {
+        Register lhs_reg, rhs_reg;
+
+        if (lhs_type == ir_reg_type)
+        {
+            int lhs_num = ((LLVMIR::RegOperand*)inst->lhs)->reg_num;
+            lhs_reg     = getLLVMReg(lhs_num, FLOAT64);
+        }
+        else if (lhs_type == imme_type)
+        {
+            float lhs_val = ((LLVMIR::ImmeF32Operand*)inst->lhs)->value;
+            lhs_reg       = getReg(FLOAT64);
+            cur_block->insts.push_back(createMoveInst(FLOAT64, lhs_reg, lhs_val));
+        }
+        else { assert(false && "Unsupported left operand type for FMIN"); }
+
+        if (rhs_type == ir_reg_type)
+        {
+            int rhs_num = ((LLVMIR::RegOperand*)inst->rhs)->reg_num;
+            rhs_reg     = getLLVMReg(rhs_num, FLOAT64);
+        }
+        else if (rhs_type == imme_type)
+        {
+            float rhs_val = ((LLVMIR::ImmeF32Operand*)inst->rhs)->value;
+            rhs_reg       = getReg(FLOAT64);
+            cur_block->insts.push_back(createMoveInst(FLOAT64, rhs_reg, rhs_val));
+        }
+        else { assert(false && "Unsupported right operand type for FMIN"); }
+
+        cur_block->insts.push_back(createRInst(RV64InstType::FMIN_S, res, lhs_reg, rhs_reg));
+    }
+}
+
+void Selector::convertFMAX_F32(LLVMIR::ArithmeticInst* inst)
+{
+    if (inst->type != LLVMIR::DataType::F32) assert(false);
+
+    LLVMIR::OperandType lhs_type    = inst->lhs->type;
+    LLVMIR::OperandType rhs_type    = inst->rhs->type;
+    LLVMIR::OperandType ir_reg_type = LLVMIR::OperandType::REG;
+    LLVMIR::OperandType imme_type   = LLVMIR::OperandType::IMMEF32;
+
+    int      res_reg = ((LLVMIR::RegOperand*)inst->res)->reg_num;
+    Register res     = getLLVMReg(res_reg, FLOAT64);
+
+    // IMME + IMME
+    if (lhs_type == imme_type && rhs_type == imme_type)
+    {
+        float lhs_val = ((LLVMIR::ImmeF32Operand*)inst->lhs)->value;
+        float rhs_val = ((LLVMIR::ImmeF32Operand*)inst->rhs)->value;
+        cur_block->insts.push_back(createMoveInst(FLOAT64, res, lhs_val > rhs_val ? lhs_val : rhs_val));
+    }
+    else
+    {
+        Register lhs_reg, rhs_reg;
+
+        if (lhs_type == ir_reg_type)
+        {
+            int lhs_num = ((LLVMIR::RegOperand*)inst->lhs)->reg_num;
+            lhs_reg     = getLLVMReg(lhs_num, FLOAT64);
+        }
+        else if (lhs_type == imme_type)
+        {
+            float lhs_val = ((LLVMIR::ImmeF32Operand*)inst->lhs)->value;
+            lhs_reg       = getReg(FLOAT64);
+            cur_block->insts.push_back(createMoveInst(FLOAT64, lhs_reg, lhs_val));
+        }
+        else { assert(false && "Unsupported left operand type for FMAX"); }
+
+        if (rhs_type == ir_reg_type)
+        {
+            int rhs_num = ((LLVMIR::RegOperand*)inst->rhs)->reg_num;
+            rhs_reg     = getLLVMReg(rhs_num, FLOAT64);
+        }
+        else if (rhs_type == imme_type)
+        {
+            float rhs_val = ((LLVMIR::ImmeF32Operand*)inst->rhs)->value;
+            rhs_reg       = getReg(FLOAT64);
+            cur_block->insts.push_back(createMoveInst(FLOAT64, rhs_reg, rhs_val));
+        }
+        else { assert(false && "Unsupported right operand type for FMAX"); }
+
+        cur_block->insts.push_back(createRInst(RV64InstType::FMAX_S, res, lhs_reg, rhs_reg));
+    }
+}
+
 void Selector::convertAndAppend(LLVMIR::ArithmeticInst* inst)
 {
     switch (inst->opcode)
@@ -1321,6 +1749,12 @@ void Selector::convertAndAppend(LLVMIR::ArithmeticInst* inst)
         case LOC::LSHR: convertLSHR(inst); break;
         case LOC::BITXOR: convertBITXOR(inst); break;
         case LOC::BITAND: convertBITAND(inst); break;
+        case LOC::SMIN_I32: convertSMIN_I32(inst); break;
+        case LOC::SMAX_I32: convertSMAX_I32(inst); break;
+        case LOC::UMIN_I32: convertUMIN_I32(inst); break;
+        case LOC::UMAX_I32: convertUMAX_I32(inst); break;
+        case LOC::FMIN_F32: convertFMIN_F32(inst); break;
+        case LOC::FMAX_F32: convertFMAX_F32(inst); break;
         default: cerr << "Unknown opcode: " << inst->opcode << endl; assert(false);
     }
 }
@@ -1359,6 +1793,7 @@ void Selector::convertAndAppend(LLVMIR::AllocInst* inst)
 }
 void Selector::convertAndAppend(LLVMIR::BranchCondInst* inst)
 {
+    setNoSchedule();
     if (IS_IMMEI32(inst->cond))
     {
         // 如果条件是立即数，根据其值生成无条件跳转
@@ -1518,6 +1953,7 @@ void Selector::convertAndAppend(LLVMIR::BranchCondInst* inst)
 }
 void Selector::convertAndAppend(LLVMIR::BranchUncondInst* inst)
 {
+    setNoSchedule();
     RV64Label tar_label(((LLVMIR::LabelOperand*)inst->target_label)->label_num);
 
     cur_block->insts.push_back(createJInst(RV64InstType::JAL, preg_x0, tar_label));
@@ -1565,6 +2001,7 @@ namespace
 }  // namespace
 void Selector::convertAndAppend(LLVMIR::CallInst* inst)
 {
+    setNoSchedule();
     if (inst->func_name == "llvm.memset.p0.i32")
     {
         // dst
@@ -1946,6 +2383,7 @@ void Selector::convertAndAppend(LLVMIR::CallInst* inst)
 }
 void Selector::convertAndAppend(LLVMIR::RetInst* inst)
 {
+    setNoSchedule();
     int ret_type = 0;  // default: void
 
     if (inst->ret != nullptr)
@@ -2254,7 +2692,7 @@ void Selector::convertAndAppend(LLVMIR::ZextInst* inst)
 
     if (!cmp_inst)
     {
-        PhiInst* phi_inst = new PhiInst(res_reg);
+        PhiInst* phi_inst = PhiInst::getInstance(res_reg);
         assert(false);
         return;
     }
@@ -2546,7 +2984,7 @@ void Selector::convertAndAppend(LLVMIR::PhiInst* inst)
         if (all_from_same_cmp && common_cmp_inst != nullptr) cmp_context[res_reg] = common_cmp_inst;
     }
 
-    PhiInst* phi_inst = new PhiInst(res_reg);
+    PhiInst* phi_inst = PhiInst::getInstance(res_reg);
 
     for (auto& [val, label] : inst->vals_for_labels)
     {
@@ -2591,6 +3029,7 @@ void Selector::convertAndAppend(LLVMIR::PhiInst* inst)
 
 void Selector::convertAndAppend(LLVMIR::SelectInst* inst)
 {
+    setNoSchedule();
     assert(IS_REG(inst->cond));
 
     LLVMIR::Operand* cond   = inst->cond;

@@ -167,6 +167,10 @@ namespace Analysis
 
     CROperand::CROperand(const CROperand& other) : type(other.type)
     {
+        llvm_op = nullptr;
+        nested_cr.reset();
+        arith_expr.reset();
+
         switch (type)
         {
             case CONSTANT: const_val = other.const_val; break;
@@ -182,6 +186,10 @@ namespace Analysis
 
     CROperand& CROperand::operator=(const CROperand& other)
     {
+        llvm_op = nullptr;
+        nested_cr.reset();
+        arith_expr.reset();
+
         if (this != &other)
         {
             type = other.type;
@@ -204,6 +212,10 @@ namespace Analysis
 
     CROperand::CROperand(CROperand&& other) noexcept : type(other.type)
     {
+        llvm_op = nullptr;
+        nested_cr.reset();
+        arith_expr.reset();
+
         switch (type)
         {
             case CONSTANT: const_val = other.const_val; break;
@@ -215,6 +227,10 @@ namespace Analysis
 
     CROperand& CROperand::operator=(CROperand&& other) noexcept
     {
+        llvm_op = nullptr;
+        nested_cr.reset();
+        arith_expr.reset();
+
         if (this != &other)
         {
             type = other.type;
@@ -258,11 +274,25 @@ namespace Analysis
                     getImmeI32Operand(0),
                     getRegOperand(++cfg->func->max_reg));
             case LLVM_OPERAND:
+            {
+                auto* def_inst = cfg->func->findDef(llvm_op);
+                if (def_inst)
+                {
+                    if (auto* load_inst = dynamic_cast<LLVMIR::LoadInst*>(def_inst))
+                    {
+                        if (load_inst->ptr->type == LLVMIR::OperandType::GLOBAL)
+                        {
+                            auto* cloned_load = static_cast<LLVMIR::LoadInst*>(load_inst->Clone(++cfg->func->max_reg));
+                            return cloned_load;
+                        }
+                    }
+                }
                 return new LLVMIR::ArithmeticInst(LLVMIR::IROpCode::ADD,
                     LLVMIR::DataType::I32,
                     llvm_op,
                     getImmeI32Operand(0),
                     getRegOperand(++cfg->func->max_reg));
+            }
             case CHAIN_OF_RECURRENCES:
                 if (nested_cr)
                 {
@@ -1070,7 +1100,7 @@ namespace Analysis
             {
                 std::cout << "runtime (";
                 loop_info.lowerbound.print();
-                std::cout << ")";
+                std::cout << ") at address " << &loop_info.lowerbound;
             }
             std::cout << std::endl;
 
@@ -1080,7 +1110,7 @@ namespace Analysis
             {
                 std::cout << "runtime (";
                 loop_info.upperbound.print();
-                std::cout << ")";
+                std::cout << ") at address " << &loop_info.upperbound;
             }
             std::cout << std::endl;
 
@@ -1090,7 +1120,7 @@ namespace Analysis
             {
                 std::cout << "runtime (";
                 loop_info.step.print();
-                std::cout << ")";
+                std::cout << ") at address " << &loop_info.step;
             }
             std::cout << std::endl;
 

@@ -65,10 +65,13 @@
 #include "optimize/llvm/defuse_analysis/edefuse.h"
 // Elimination
 #include "optimize/llvm/loop/loop_full_unroll.h"
+#include "optimize/llvm/loop/loop_partial_unroll.h"
 // loop_strength_reduce
 #include "llvm/loop/loop_strength_reduce.h"
 // Single Source Phi Elimination
 #include "optimize/llvm/utils/single_source_phi_elimination.h"
+// Same Source Phi Elimination
+#include "optimize/llvm/utils/same_source_phi_elimination.h"
 // Constant Branch Folding
 #include "optimize/llvm/utils/constant_branch_folding.h"
 // DSE
@@ -85,9 +88,14 @@
 #include "optimize/llvm/utils/block_layout_optimization.h"
 // Instruction Simplify
 #include "optimize/llvm/utils/instruction_simplify.h"
-
+// Min/Max Recognition
+#include "optimize/llvm/utils/min_max_recognize.h"
+#include "optimize/llvm/loop/pattern_recognize/memset_pattern_recognize.h"
 // unused_func_elimination
 #include "optimize/llvm/unused_func_elimination.h"
+
+// parallel analysis
+#include "optimize/llvm/parallel/loop_parallel.h"
 
 #define STR_PW 30
 #define INT_PW 8
@@ -106,6 +114,7 @@ size_t    errCnt = 0;
 
 bool no_reg_alloc     = false;
 bool no_select_lower  = false;
+bool no_schedule_zext = false;
 int  max_unroll_count = 100;
 
 int opt_level = 0;
@@ -156,6 +165,7 @@ int main(int argc, char** argv)
         else if (arg == "-O3") { optimizeLevel = 3; }
         else if (arg == "-no-reg-alloc") { no_reg_alloc = true; }
         else if (arg == "-no-sel-lower") { no_select_lower = true; }
+        else if (arg == "-no-sche-zext") { no_schedule_zext = true; }
         else if (arg[0] != '-') { inputFile = arg; }
         else
         {
@@ -298,6 +308,8 @@ int main(int argc, char** argv)
         Transform::InstructionSimplifyPass     instSimplify(&builder);
         Transform::IfConversionPass            ifConversion(&builder);
         Transform::BlockLayoutOptimizationPass blockLayout(&builder);
+        Transform::MinMaxRecognizePass         minMaxRecognize(&builder);
+        Transform::MemsetPatternRecognizePass  memsetRecognize(&builder);
 
         auto loopPreProcess = [&]() {
             makecfg.Execute();
@@ -306,18 +318,18 @@ int main(int argc, char** argv)
             loopSimplify.Execute();
             lcssa.Execute();
             loopRotate.Execute();
+
+            memsetRecognize.Execute();
         };
 
-        // 在所有循环相关操作完成后才可执行
-        // 原因是牛魔的 makecfg 清空 cfg 内所有信息导致循环pass得写的绕来绕去
-        // 这里会破坏循环pass内部的一些假定
-        // 因此这里需要将所有循环相关操作完成后才可执行
         auto cfgSimplify = [&]() {
             makecfg.Execute();
             eliminateDoubleBr.Execute();
             makecfg.Execute();
             instSimplify.Execute();
             ifConversion.Execute();
+            makecfg.Execute();
+            minMaxRecognize.Execute();
             makecfg.Execute();
             blockLayout.Execute();
             makecfg.Execute();
@@ -329,7 +341,7 @@ int main(int argc, char** argv)
         makedom.Execute();
 
         Transform::GlobalConstReplacePass globalConstReplace(&builder);
-        // globalConstReplace.Execute();
+        globalConstReplace.Execute();
 
         Transform::TailRecursionPass tailRecursion(&builder);
         tailRecursion.Execute();
@@ -339,6 +351,9 @@ int main(int argc, char** argv)
 
         Transform::UnifyReturnPass unifyReturn(&builder);
         unifyReturn.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
 
         Mem2Reg mem2reg(&builder);
         mem2reg.Execute();
@@ -360,10 +375,18 @@ int main(int argc, char** argv)
         unused_func_del.Execute();
 
         loopPreProcess();
-        // 已修复
         makecfg.Execute();
         makedom.Execute();
-
+        loopAnalysis.Execute();
+        loopSimplify.Execute();
+        // for (auto& [func, cfg]: builder.cfg)
+        // {
+        //     std::cout << "Function: " << func->func_name << std::endl;
+        //     for (auto& loop: cfg->LoopForest->loop_set)
+        //     {
+        //         loop->printLoopInfo();
+        //     }
+        // }
         Analysis::AliasAnalyser aa(&builder);
         aa.run();
         StructuralTransform::LICMPass licm(&builder, &aa);
@@ -389,8 +412,13 @@ int main(int argc, char** argv)
 
         // TSCCP - Sparse Conditional Constant Propagation
         Transform::TSCCPPass tsccp(&builder);
+        loopPreProcess();
         tsccp.Execute();
         // std::cout << "TSCCP completed" << std::endl;
+
+        ifConversion.Execute();
+        makecfg.Execute();
+        minMaxRecognize.Execute();
 
         loopPreProcess();
         makecfg.Execute();
@@ -430,28 +458,45 @@ int main(int argc, char** argv)
         // GCM
         edefUseAnalysis.run();
         makedom.Execute();
-        makedom.Execute(false);
+        MakeDomTreePass GCMRedom(&builder);
+        GCMRedom.Execute(true);
         // Used to set all instructions with the block they are in.
         SetIdAnalysis setIdAnalysis(&builder);
         setIdAnalysis.Execute();
+        loopPreProcess();
+        makecfg.Execute();
+        makedom.Execute();
+        loopAnalysis.Execute();
+        loopSimplify.Execute();
         aa.run();
         licm.Execute();
         md.run();
+
+        makecfg.Execute();
+        makedom.Execute();
+        makeredom.Execute(true);
         Analysis::ReadOnlyGlobalAnalysis readOnlyGlobalAnalysis(&builder, &aa);
-        readOnlyGlobalAnalysis.run();
+        // readOnlyGlobalAnalysis.run();
         Analysis::ArrAliasAnalysis arrAliasAnalysis(&builder);
         arrAliasAnalysis.run();
         // arrAliasAnalysis.print();
         cdg.Execute();
         // readOnlyGlobalAnalysis.print();
-        GCM gcm(&builder, &edefUseAnalysis, &aa, &arrAliasAnalysis, &md, &readOnlyGlobalAnalysis, &cdg);
-        gcm.Execute();
+        md.run();
+        edefUseAnalysis.run();
+        GCM gcm(&builder, &edefUseAnalysis, &aa, &arrAliasAnalysis, &md, &cdg);
+        if (optimizeLevel >= 2) gcm.Execute();
         // std::cout << "GCM completed" << std::endl;
 
         makecfg.Execute();
         makedom.Execute();
         makeredom.Execute(true);
 
+        loopPreProcess();
+        makecfg.Execute();
+        makedom.Execute();
+        loopAnalysis.Execute();
+        loopSimplify.Execute();
         aa.run();
         licm.Execute();
         md.run();
@@ -469,14 +514,6 @@ int main(int argc, char** argv)
         makedom.Execute();
         makeredom.Execute(true);
         loopPreProcess();
-
-        // for (const auto& [func_def, cfg] : builder.cfg)
-        // {
-        //     std::cout << "Function: " << func_def->func_name << std::endl;
-        //     if (!cfg || !cfg->LoopForest) continue;
-        //     for (auto* loop : cfg->LoopForest->loop_set) loop->printLoopInfo();
-        // }
-
         tsccp.Execute();
 
         Analysis::SCEVAnalyser scevAnalyser(&builder);
@@ -520,17 +557,21 @@ int main(int argc, char** argv)
             makecfg.Execute();
             makedom.Execute();
             aa.run();
-            if (opt_level >= 2)
-            {
-                makecfg.Execute();
-                makedom.Execute();
-                tsccp.Execute();
-            }
+            loopPreProcess();
+            tsccp.Execute();
+
+            makecfg.Execute();
+            makedom.Execute();
+            aa.run();
+            md.run();
+            cse.Execute();
         }
         // SCCP after constant full unroll
         {
+            Transform::SameSourcePhiEliminationPass   sameSourcePhiElim(&builder);
             Transform::SingleSourcePhiEliminationPass singleSourcePhiElim(&builder);
             Transform::ConstantBranchFoldingPass      constantBranchFolding(&builder);
+            sameSourcePhiElim.setPreserveLCSSA(true);
             singleSourcePhiElim.setPreserveLCSSA(true);
 
             bool      changed        = true;
@@ -549,6 +590,9 @@ int main(int argc, char** argv)
                 loopAnalysis.Execute();
                 loopSimplify.Execute();
 
+                sameSourcePhiElim.Execute();
+                changed |= sameSourcePhiElim.wasModified();
+
                 singleSourcePhiElim.Execute();
                 changed |= singleSourcePhiElim.wasModified();
 
@@ -556,7 +600,18 @@ int main(int argc, char** argv)
                 makedom.Execute();
                 aa.run();
 
+                loopPreProcess();
                 tsccp.Execute();
+
+                ifConversion.Execute();
+                makecfg.Execute();
+                minMaxRecognize.Execute();
+
+                makecfg.Execute();
+                makedom.Execute();
+                aa.run();
+                md.run();
+                cse.Execute();
 
                 makecfg.Execute();
                 makedom.Execute();
@@ -566,28 +621,92 @@ int main(int argc, char** argv)
             }
         }
 
-        // TODO: partially unroll loop
+        makecfg.Execute();
+        instSimplify.Execute();
+
+        // scevAnalyser.printAllResults();
+        // builder.printIR(std::cerr);
+
+        makecfg.Execute();
+        makedom.Execute();
+        aa.run();
+        loopPreProcess();
+        scevAnalyser.run();
+
+        // Partial Loop Unroll
+        {
+            Transform::LoopPartialUnrollPass loopPartialUnrollPass(&builder, &scevAnalyser);
+            loopPartialUnrollPass.Execute();
+            // builder.printIR(std::cerr);
+
+            auto unroll_stats = loopPartialUnrollPass.getUnrollStats();
+            std::cout << "Partial unroll: processed " << unroll_stats.first << " loops, unrolled "
+                      << unroll_stats.second << " loops" << std::endl;
+        }
 
         makecfg.Execute();
         makedom.Execute();
         EAliasAnalysis::EAliasAnalyser ealias_analyser(&builder);
-        ealias_analyser.run();
-        DSEPass dse(&builder, &ealias_analyser, &edefUseAnalysis, &arrAliasAnalysis);
-        // loopAnalysis.Execute();
+        DSEPass                        dse(&builder, &ealias_analyser, &edefUseAnalysis, &arrAliasAnalysis);
         dse.Execute();
-        DCEDefUse.Execute();
-        dce.Execute();
+
         makecfg.Execute();
-        tsccp.Execute();
-        unusedelimator.Execute();
-        // TODO：Trench path length
+        makedom.Execute();
+        aa.run();
+        loopPreProcess();
+        scevAnalyser.run();
+
+        Transform::LoopParallelizationPass loopParallelPass(
+            &builder, &aa, &scevAnalyser, &edefUseAnalysis, &readOnlyGlobalAnalysis, &arrAliasAnalysis);
+        loopParallelPass.Execute();
+
+        // makecfg.Execute();
+        // makedom.Execute();
+        // makeredom.Execute(true);
+
+        loopPreProcess();
+        makecfg.Execute();
+        makedom.Execute();
+        loopAnalysis.Execute();
+        loopSimplify.Execute();
+        aa.run();
+        licm.Execute();
+        md.run();
+
+        makecfg.Execute();
+        makedom.Execute();
+        // branchCSE.Execute();
+
+        makecfg.Execute();
+
+        // branchcse
+        for (int i = 0; i < 5; ++i)
+        {
+            makecfg.Execute();
+            makedom.Execute();
+            aa.run();
+            md.run();
+            cse.Execute();
+            makecfg.Execute();
+            makedom.Execute();
+            // branchCSE.Execute();
+
+            makecfg.Execute();
+            loopPreProcess();
+            tsccp.Execute();
+            memsetRecognize.Execute();
+            edefUseAnalysis.run();
+            unusedelimator.Execute();
+            DCEDefUse.Execute();
+            dce.Execute();
+        }
 
         makecfg.Execute();
         aa.run();
         TrenchPath trenchPath(&builder);
         trenchPath.Execute();
 
-        cfgSimplify();
+        // cfgSimplify();
         loopPreProcess();
         scevAnalyser.run();
 
@@ -599,21 +718,71 @@ int main(int argc, char** argv)
         makecfg.Execute();
         makedom.Execute();
 
+        {
+            Transform::SameSourcePhiEliminationPass   sameSourcePhiElim(&builder);
+            Transform::SingleSourcePhiEliminationPass singleSourcePhiElim(&builder);
+            sameSourcePhiElim.setPreserveLCSSA(false);
+            singleSourcePhiElim.setPreserveLCSSA(false);
+            sameSourcePhiElim.Execute();
+            singleSourcePhiElim.Execute();
+            cfgSimplify();
+
+            makecfg.Execute();
+            makedom.Execute();
+            loopPreProcess();
+            tsccp.Execute();
+            Transform::ConstantBranchFoldingPass constantBranchFolding(&builder);
+            constantBranchFolding.Execute();
+
+            cfgSimplify();
+
+            aa.run();
+            md.run();
+            cse.Execute();
+        }
+
         arithInstReduce.Execute();
 
         makecfg.Execute();
         makedom.Execute();
+        loopAnalysis.Execute();
+        tsccp.Execute();
+        memsetRecognize.Execute();
 
         gepStrengthReduce.Execute();
 
         {
+            Transform::SameSourcePhiEliminationPass   sameSourcePhiElim(&builder);
             Transform::SingleSourcePhiEliminationPass singleSourcePhiElim(&builder);
+            sameSourcePhiElim.setPreserveLCSSA(false);
             singleSourcePhiElim.setPreserveLCSSA(false);
+            sameSourcePhiElim.Execute();
             singleSourcePhiElim.Execute();
             cfgSimplify();
+
+            makecfg.Execute();
+            makedom.Execute();
+            loopPreProcess();
+            tsccp.Execute();
+            Transform::ConstantBranchFoldingPass constantBranchFolding(&builder);
+            constantBranchFolding.Execute();
         }
 
         makecfg.Execute();
+        makedom.Execute();
+        makeredom.Execute(true);
+        DCEDefUse.Execute();
+        dce.Execute();
+
+        makecfg.Execute();
+        makedom.Execute();
+        makeredom.Execute(true);
+        cdg.Execute();
+        ADCEDefUse.Execute();
+        adce.Execute();
+
+        cfgSimplify();
+        // makecfg.Execute();
     }
 
     if (step == "-llvm")
@@ -627,6 +796,8 @@ int main(int argc, char** argv)
     // RISCV backend processing for -S step
     if (step == "-S")
     {
+        std::cout << "Middle end passed, enter backend processing..." << std::endl;
+
         if (!optimizeLevel)
         {
             MakeCFGPass makecfg(&builder);

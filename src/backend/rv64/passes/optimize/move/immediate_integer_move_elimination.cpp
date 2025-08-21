@@ -19,11 +19,15 @@ namespace Backend::RV64::Passes::Optimize::Move
         {
             for (auto it = block->insts.begin(); it != block->insts.end(); ++it)
             {
+                setCanSchedule();
+
                 Instruction* base_inst = *it;
                 if (base_inst->inst_type != InstType::MOVE) continue;
 
                 MoveInst* move_inst = (MoveInst*)base_inst;
                 if (move_inst->src->operand_type != OperandType::IMMEI32) continue;
+
+                if (!base_inst->schedule_flag) setNoSchedule();
 
                 ImmeI32Operand* imme_op = (ImmeI32Operand*)move_inst->src;
                 RegOperand*     dst_op  = (RegOperand*)move_inst->dst;
@@ -33,7 +37,7 @@ namespace Backend::RV64::Passes::Optimize::Move
 
                 if (imme_op == nullptr)
                 {
-                    delete move_inst;
+                    Instruction::delInst(move_inst);
                     it = block->insts.erase(it);
                     block->insts.insert(it, createMoveInst(INT64, dst_reg, preg_x0));
                     --it;
@@ -41,7 +45,7 @@ namespace Backend::RV64::Passes::Optimize::Move
                 }
 
                 int imme_val = imme_op->val;
-                delete move_inst;
+                Instruction::delInst(move_inst);
 
                 if (imme_val >= -2048 && imme_val <= 2047)
                 {
@@ -76,6 +80,8 @@ namespace Backend::RV64::Passes::Optimize::Move
                 }
             }
         }
+
+        setCanSchedule();
     }
 
 }  // namespace Backend::RV64::Passes::Optimize::Move

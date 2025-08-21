@@ -12,7 +12,8 @@ namespace Transform
         bool last_execution_modified_;  ///< 记录上次执行是否做了修改
 
         bool getConstantValue(LLVMIR::Operand* operand, int& value) const;
-        bool processConstantBranch(LLVMIR::BranchCondInst* branch, LLVMIR::IRBlock* block);
+        bool processConstantBranch(LLVMIR::BranchCondInst* branch, LLVMIR::IRBlock* block, CFG* cfg);
+        void cleanupPhiNodes(LLVMIR::Operand* unreachable_label, int from_block_id, CFG* cfg);
 
       public:
         ConstantBranchFoldingPass(LLVMIR::IR* ir);

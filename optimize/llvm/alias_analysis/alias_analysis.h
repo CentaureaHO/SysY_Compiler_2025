@@ -9,6 +9,7 @@
 #include <unordered_set>
 #include "llvm_ir/ir_builder.h"
 #include "llvm_ir/instruction.h"
+#include "llvm/loop/loop_def.h"
 #include "cfg.h"
 
 namespace Analysis
@@ -87,6 +88,10 @@ namespace Analysis
         void collectMemAccesses(CFG* cfg, const std::unordered_map<int, MemLocation>& locations);
         bool checkSameBaseWithDistinctOffset(LLVMIR::Operand* p1, LLVMIR::Operand* p2, CFG* cfg);
         bool checkIdenticalGEP(LLVMIR::Operand* p1, LLVMIR::Operand* p2, CFG* cfg);
+
+        bool                          accessesMemory(LLVMIR::Instruction* inst);
+        bool                          writesToMemory(LLVMIR::Instruction* inst);
+        std::vector<LLVMIR::Operand*> getMemoryLocations(LLVMIR::Instruction* inst);
 
       public:
         AliasAnalyser(LLVMIR::IR* ir);

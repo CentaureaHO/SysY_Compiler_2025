@@ -14,6 +14,22 @@
 #include <unordered_set>
 #include <functional>
 
+// #define DBGMODE
+
+#ifdef DBGMODE
+template <typename... Args>
+void dbg_impl(Args&&... args)
+{
+    ((std::cout << args), ...);
+    std::cout << std::endl;
+}
+#define DBGINFO(...) dbg_impl(__VA_ARGS__)
+#else
+#define DBGINFO(...) \
+    do {             \
+    } while (0)
+#endif
+
 namespace LLVMIR
 {
     static CFG* get_cfg_by_name(IR* ir, const std::string& name)
@@ -86,13 +102,65 @@ namespace LLVMIR
         auto call_inst = dynamic_cast<CallInst*>(inst);
         if (call_inst)
         {
+            DBGINFO("GCM: Checking if call to '", call_inst->func_name, "' is safe");
             auto func_cfg = get_cfg_by_name(ir, call_inst->func_name);
+
+            if (func_cfg)
+            {
+                bool accessesGlobals = false;
+                for (auto& [block_id, block] : func_cfg->block_id_to_block)
+                {
+                    for (auto* func_inst : block->insts)
+                    {
+                        if (func_inst->opcode == IROpCode::LOAD || func_inst->opcode == IROpCode::STORE)
+                        {
+                            auto operands = func_inst->GetUsedOperands();
+                            for (auto* op : operands)
+                            {
+                                if (op && op->type == OperandType::GLOBAL)
+                                {
+                                    accessesGlobals = true;
+                                    DBGINFO("GCM: Function '",
+                                        call_inst->func_name,
+                                        "' accesses global variable '",
+                                        op->getName(),
+                                        "'");
+                                    break;
+                                }
+                            }
+                            if (accessesGlobals) break;
+                        }
+                        if (func_inst->opcode == IROpCode::CALL)
+                        {
+                            auto* inner_call = dynamic_cast<CallInst*>(func_inst);
+                            if (inner_call && inner_call->func_name == call_inst->func_name)
+                            {
+                                DBGINFO("GCM: Function '",
+                                    call_inst->func_name,
+                                    "' has recursive calls - marking as UNSAFE");
+                                return false;
+                            }
+                        }
+                    }
+                    if (accessesGlobals) break;
+                }
+
+                if (accessesGlobals)
+                {
+                    DBGINFO(
+                        "GCM: Function '", call_inst->func_name, "' marked as UNSAFE due to global variable access");
+                    return false;
+                }
+            }
+
             // 说明这个函数没有副作用
             if ((func_cfg && aliasAnalyser->isNoSideEffect(func_cfg)) ||
                 (call_inst->func_name.find("llvm.memset") == 0))
             {
+                DBGINFO("GCM: Function '", call_inst->func_name, "' marked as safe (no side effect)");
                 return true;
             }
+            DBGINFO("GCM: Function '", call_inst->func_name, "' marked as UNSAFE (has side effects or external)");
         }
         return false;
     }

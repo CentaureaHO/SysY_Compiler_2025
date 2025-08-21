@@ -30,8 +30,6 @@ namespace LLVMIR
         Analysis::ArrAliasAnalysis* arralias_analysis;  // 数组别名分析
         // 内存依赖分析
         Analysis::MemoryDependenceAnalyser* memdep;  // 内存依赖分析器
-        // 只读全局变量
-        Analysis::ReadOnlyGlobalAnalysis* readOnlyGlobalAnalysis;  // 只读全局变量分析
         // 控制依赖图
         CDGAnalyzer* cdgAnalyzer;
 
@@ -76,15 +74,14 @@ namespace LLVMIR
       public:
         GCM(LLVMIR::IR* ir, Analysis::EDefUseAnalysis* DefUseAnalysis, Analysis::AliasAnalyser* AliasAnalyser,
             Analysis::ArrAliasAnalysis* ArrAliasAnalysis, Analysis::MemoryDependenceAnalyser* MemoryDependenceAnalyser,
-            Analysis::ReadOnlyGlobalAnalysis* ReadOnlyGlobalAnalysis, CDGAnalyzer* CDGAnalyzer)
+            CDGAnalyzer* CDGAnalyzer)
             : Pass(ir)
         {
-            defuseAnalysis         = DefUseAnalysis;
-            aliasAnalyser          = AliasAnalyser;
-            arralias_analysis      = ArrAliasAnalysis;
-            memdep                 = MemoryDependenceAnalyser;
-            readOnlyGlobalAnalysis = ReadOnlyGlobalAnalysis;
-            cdgAnalyzer            = CDGAnalyzer;
+            defuseAnalysis    = DefUseAnalysis;
+            aliasAnalyser     = AliasAnalyser;
+            arralias_analysis = ArrAliasAnalysis;
+            memdep            = MemoryDependenceAnalyser;
+            cdgAnalyzer       = CDGAnalyzer;
         }
 
         void Execute() override;

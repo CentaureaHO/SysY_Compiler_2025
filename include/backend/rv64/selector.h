@@ -76,6 +76,12 @@ namespace Backend::RV64
         void convertLSHR(LLVMIR::ArithmeticInst* inst);
         void convertBITXOR(LLVMIR::ArithmeticInst* inst);
         void convertBITAND(LLVMIR::ArithmeticInst* inst);
+        void convertSMIN_I32(LLVMIR::ArithmeticInst* inst);
+        void convertSMAX_I32(LLVMIR::ArithmeticInst* inst);
+        void convertUMIN_I32(LLVMIR::ArithmeticInst* inst);
+        void convertUMAX_I32(LLVMIR::ArithmeticInst* inst);
+        void convertFMIN_F32(LLVMIR::ArithmeticInst* inst);
+        void convertFMAX_F32(LLVMIR::ArithmeticInst* inst);
     };
 }  // namespace Backend::RV64
 

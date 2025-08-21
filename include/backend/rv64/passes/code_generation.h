@@ -16,8 +16,15 @@ namespace LLVMIR
 namespace Backend::RV64::Passes
 {
 
+    namespace Optimize
+    {
+        class InstructionSchedulePass;
+    }
+
     class CodeGenerationPass : public BasePass
     {
+        friend class ::Backend::RV64::Passes::Optimize::InstructionSchedulePass;
+
       public:
         CodeGenerationPass(
             std::vector<Function*>& functions, std::vector<LLVMIR::Instruction*>& glb_defs, std::ostream& out);
@@ -31,8 +38,18 @@ namespace Backend::RV64::Passes
         std::vector<LLVMIR::Instruction*>& glb_defs_;
         std::ostream&                      out_;
 
+        bool needs_memset_i8_;
+        bool needs_memset_i32_;
+        bool needs_parallel_support_;
+
         void printGlobalDefinitions();
         void printFunctions();
+        void printASMLibFunctions();
+
+        void printMemsetI8Function();
+        void printMemsetI32Function();
+        void printParallelSupportFunctions();
+
         void printASM(RV64Inst* inst);
         void printASM(MoveInst* inst);
         void printASM(PhiInst* inst);
