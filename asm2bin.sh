@@ -7,8 +7,11 @@ if [ ! -f "$INPUT_FILE" ]; then
     exit 1
 fi
 
-riscv64-unknown-linux-gnu-gcc "$INPUT_FILE" -c -o "$OBJ_FILE" -w
-riscv64-unknown-linux-gnu-gcc -static "$OBJ_FILE" -L./lib -lsysy_riscv -o "$OUTPUT_BIN"
+riscv64-unknown-elf-gcc "$INPUT_FILE" -c -o "$OBJ_FILE" -w
+riscv64-unknown-elf-gcc "$OBJ_FILE" -o "$OUTPUT_BIN"\
+    -L./lib -lsysy_riscv\
+    -static -mcmodel=medany\
+    -Wl,--no-relax,-Ttext=0x90000000
 
 rm "$OBJ_FILE"
 

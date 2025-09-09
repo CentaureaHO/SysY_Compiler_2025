@@ -33,8 +33,8 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
 
         int new_cost = calculateLayoutCost(new_layout, func->cfg);
 
-        std::cout << "Block layout analysis for " << func->name << ": original cost " << original_cost
-                  << ", optimized cost " << new_cost;
+        // std::cout << "Block layout analysis for " << func->name << ": original cost " << original_cost
+        //           << ", optimized cost " << new_cost;
 
         if (new_cost < original_cost)
         {
@@ -42,12 +42,12 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
 
             renumberBlocks(func, new_layout);
 
-            std::cout << " -> Applied (improvement: " << (original_cost - new_cost) << ")" << std::endl;
+            // std::cout << " -> Applied (improvement: " << (original_cost - new_cost) << ")" << std::endl;
             return true;
         }
         else
         {
-            std::cout << " -> No improvement, keeping original layout" << std::endl;
+            // std::cout << " -> No improvement, keeping original layout" << std::endl;
             return false;
         }
     }
@@ -273,7 +273,7 @@ namespace Backend::RV64::Passes::Optimize::ControlFlow
 
         updateCFGBlockMapping(func->cfg, label_mapping);
 
-        std::cout << "Blocks renumbered from 0 to " << (new_layout.size() - 1) << std::endl;
+        // std::cout << "Blocks renumbered from 0 to " << (new_layout.size() - 1) << std::endl;
     }
 
     void BlockLayoutPass::updateInstructionLabels(Function* func, const std::unordered_map<int, int>& label_mapping)

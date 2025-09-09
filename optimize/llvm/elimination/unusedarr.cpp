@@ -240,7 +240,7 @@ namespace LLVMIR
         int       i              = 0;
         bool      changed        = true;
         while (i < MAX_ITERATIONS && changed)
-        {  
+        {
             edefUseAnalysis->run();
             // 重置
             array_defs.clear();

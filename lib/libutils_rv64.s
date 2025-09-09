@@ -354,14 +354,8 @@ lsccll.lib.parallel.loop:               # @lsccll.lib.parallel.loop
 .LBB2_33:
 	mv	sp, s9
 .LBB2_34:
-.Lpcrel_hi0:
-	auipc	s7, %pcrel_hi(scheduler_initialized)
-.Lpcrel_hi1:
-	auipc	a0, %pcrel_hi(thread_list)
-	addi	s10, a0, %pcrel_lo(.Lpcrel_hi1)
-.Lpcrel_hi2:
-	auipc	s9, %pcrel_hi(shared_mem)
-	lbu	a0, %pcrel_lo(.Lpcrel_hi0)(s7)
+	lui	a0, %hi(scheduler_initialized)
+	lbu	a0, %lo(scheduler_initialized)(a0)
 	bnez	a0, .LBB2_37
 # %bb.35:
 	lui	a1, 1
@@ -371,17 +365,19 @@ lsccll.lib.parallel.loop:               # @lsccll.lib.parallel.loop
 	li	a5, 0
 	li	s1, -1
 	call	mmap
-	sd	a0, %pcrel_lo(.Lpcrel_hi2)(s9)
-	beq	a0, s1, .LBB2_133
+	lui	a1, %hi(shared_mem)
+	sd	a0, %lo(shared_mem)(a1)
+	beq	a0, s1, .LBB2_137
 # %bb.36:
 	sw	zero, 0(a0)
-.Lpcrel_hi3:
-	auipc	a1, %pcrel_hi(next_thread_id)
-	li	a2, 1
+	lui	a1, %hi(thread_list)
+	lui	a2, %hi(next_thread_id)
+	li	a3, 1
 	sw	zero, 4(a0)
-	sd	zero, 0(s10)
-	sw	a2, %pcrel_lo(.Lpcrel_hi3)(a1)
-	sb	a2, %pcrel_lo(.Lpcrel_hi0)(s7)
+	lui	a0, %hi(scheduler_initialized)
+	sd	zero, %lo(thread_list)(a1)
+	sw	a3, %lo(next_thread_id)(a2)
+	sb	a3, %lo(scheduler_initialized)(a0)
 .LBB2_37:
 	mv	a0, s5
 	mv	a1, s11
@@ -418,7 +414,7 @@ lsccll.lib.parallel.loop:               # @lsccll.lib.parallel.loop
 	mv	a3, s3
 	call	lsccll.lib.parallel.thread_create
 	ld	s1, -176(s0)
-	beqz	s1, .LBB2_60
+	beqz	s1, .LBB2_61
 # %bb.38:
 	lw	a0, 0(s1)
 	addi	a1, s0, -108
@@ -426,353 +422,366 @@ lsccll.lib.parallel.loop:               # @lsccll.lib.parallel.loop
 	call	waitpid
 	sext.w	a0, a0
 	li	a1, -1
-	beq	a0, a1, .LBB2_60
+	beq	a0, a1, .LBB2_61
 # %bb.39:
-	ld	a1, 0(s10)
-	beqz	a1, .LBB2_59
+	lui	a0, %hi(thread_list)
+	ld	a1, %lo(thread_list)(a0)
+	beqz	a1, .LBB2_60
 # %bb.40:
 	beq	a1, s1, .LBB2_58
 .LBB2_41:                               # %.preheader.i
                                         # =>This Inner Loop Header: Depth=1
 	ld	a2, 40(a1)
-	beqz	a2, .LBB2_59
+	beqz	a2, .LBB2_60
 # %bb.42:                               #   in Loop: Header=BB2_41 Depth=1
 	mv	a0, a1
 	beq	a2, s1, .LBB2_57
 # %bb.43:                               # %.preheader.i.1
                                         #   in Loop: Header=BB2_41 Depth=1
 	ld	a1, 40(a2)
-	beqz	a1, .LBB2_59
+	beqz	a1, .LBB2_60
 # %bb.44:                               #   in Loop: Header=BB2_41 Depth=1
 	mv	a0, a2
 	beq	a1, s1, .LBB2_57
 # %bb.45:                               # %.preheader.i.2
                                         #   in Loop: Header=BB2_41 Depth=1
 	ld	a2, 40(a1)
-	beqz	a2, .LBB2_59
+	beqz	a2, .LBB2_60
 # %bb.46:                               #   in Loop: Header=BB2_41 Depth=1
 	mv	a0, a1
 	beq	a2, s1, .LBB2_57
 # %bb.47:                               # %.preheader.i.3
                                         #   in Loop: Header=BB2_41 Depth=1
 	ld	a1, 40(a2)
-	beqz	a1, .LBB2_59
+	beqz	a1, .LBB2_60
 # %bb.48:                               #   in Loop: Header=BB2_41 Depth=1
 	mv	a0, a2
 	beq	a1, s1, .LBB2_57
 # %bb.49:                               # %.preheader.i.4
                                         #   in Loop: Header=BB2_41 Depth=1
 	ld	a2, 40(a1)
-	beqz	a2, .LBB2_59
+	beqz	a2, .LBB2_60
 # %bb.50:                               #   in Loop: Header=BB2_41 Depth=1
 	mv	a0, a1
 	beq	a2, s1, .LBB2_57
 # %bb.51:                               # %.preheader.i.5
                                         #   in Loop: Header=BB2_41 Depth=1
 	ld	a1, 40(a2)
-	beqz	a1, .LBB2_59
+	beqz	a1, .LBB2_60
 # %bb.52:                               #   in Loop: Header=BB2_41 Depth=1
 	mv	a0, a2
 	beq	a1, s1, .LBB2_57
 # %bb.53:                               # %.preheader.i.6
                                         #   in Loop: Header=BB2_41 Depth=1
 	ld	a2, 40(a1)
-	beqz	a2, .LBB2_59
+	beqz	a2, .LBB2_60
 # %bb.54:                               #   in Loop: Header=BB2_41 Depth=1
 	mv	a0, a1
 	beq	a2, s1, .LBB2_57
 # %bb.55:                               # %.preheader.i.7
                                         #   in Loop: Header=BB2_41 Depth=1
 	ld	a1, 40(a2)
-	beqz	a1, .LBB2_59
+	beqz	a1, .LBB2_60
 # %bb.56:                               #   in Loop: Header=BB2_41 Depth=1
 	mv	a0, a2
 	bne	a1, s1, .LBB2_41
 .LBB2_57:                               # %.loopexit4.i.loopexit
-	addi	s10, a0, 40
-.LBB2_58:                               # %.loopexit4.i
-	ld	a0, 40(s1)
-	sd	a0, 0(s10)
-.LBB2_59:                               # %.loopexit.i
+	addi	a0, a0, 40
+	j	.LBB2_59
+.LBB2_58:
+	addi	a0, a0, %lo(thread_list)
+.LBB2_59:                               # %.loopexit4.i
+	ld	a1, 40(s1)
+	sd	a1, 0(a0)
+.LBB2_60:                               # %.loopexit.i
 	mv	a0, s1
 	call	free
-	ld	a0, %pcrel_lo(.Lpcrel_hi2)(s9)
+	lui	a0, %hi(shared_mem)
+	ld	a0, %lo(shared_mem)(a0)
 	li	a1, -1
 	amoadd.w.aqrl	zero, a1, (a0)
-.LBB2_60:                               # %lsccll.lib.parallel.thread_join.exit
+.LBB2_61:                               # %lsccll.lib.parallel.thread_join.exit
 	ld	s1, -168(s0)
-	beqz	s1, .LBB2_83
-# %bb.61:
-	lw	a0, 0(s1)
-	addi	a1, s0, -108
-	li	a2, 0
-	call	waitpid
-	sext.w	a0, a0
-	li	a1, -1
-	beq	a0, a1, .LBB2_83
+	beqz	s1, .LBB2_85
 # %bb.62:
-.Lpcrel_hi4:
-	auipc	a0, %pcrel_hi(thread_list)
-	addi	a0, a0, %pcrel_lo(.Lpcrel_hi4)
-	ld	a1, 0(a0)
-	beqz	a1, .LBB2_82
+	lw	a0, 0(s1)
+	addi	a1, s0, -108
+	li	a2, 0
+	call	waitpid
+	sext.w	a0, a0
+	li	a1, -1
+	beq	a0, a1, .LBB2_85
 # %bb.63:
+	lui	a0, %hi(thread_list)
+	ld	a1, %lo(thread_list)(a0)
+	beqz	a1, .LBB2_84
+# %bb.64:
+	beq	a1, s1, .LBB2_82
+.LBB2_65:                               # %.preheader.i13
+                                        # =>This Inner Loop Header: Depth=1
+	ld	a2, 40(a1)
+	beqz	a2, .LBB2_84
+# %bb.66:                               #   in Loop: Header=BB2_65 Depth=1
+	mv	a0, a1
+	beq	a2, s1, .LBB2_81
+# %bb.67:                               # %.preheader.i13.1
+                                        #   in Loop: Header=BB2_65 Depth=1
+	ld	a1, 40(a2)
+	beqz	a1, .LBB2_84
+# %bb.68:                               #   in Loop: Header=BB2_65 Depth=1
+	mv	a0, a2
 	beq	a1, s1, .LBB2_81
-.LBB2_64:                               # %.preheader.i13
-                                        # =>This Inner Loop Header: Depth=1
+# %bb.69:                               # %.preheader.i13.2
+                                        #   in Loop: Header=BB2_65 Depth=1
 	ld	a2, 40(a1)
-	beqz	a2, .LBB2_82
-# %bb.65:                               #   in Loop: Header=BB2_64 Depth=1
+	beqz	a2, .LBB2_84
+# %bb.70:                               #   in Loop: Header=BB2_65 Depth=1
 	mv	a0, a1
-	beq	a2, s1, .LBB2_80
-# %bb.66:                               # %.preheader.i13.1
-                                        #   in Loop: Header=BB2_64 Depth=1
+	beq	a2, s1, .LBB2_81
+# %bb.71:                               # %.preheader.i13.3
+                                        #   in Loop: Header=BB2_65 Depth=1
 	ld	a1, 40(a2)
-	beqz	a1, .LBB2_82
-# %bb.67:                               #   in Loop: Header=BB2_64 Depth=1
+	beqz	a1, .LBB2_84
+# %bb.72:                               #   in Loop: Header=BB2_65 Depth=1
 	mv	a0, a2
-	beq	a1, s1, .LBB2_80
-# %bb.68:                               # %.preheader.i13.2
-                                        #   in Loop: Header=BB2_64 Depth=1
+	beq	a1, s1, .LBB2_81
+# %bb.73:                               # %.preheader.i13.4
+                                        #   in Loop: Header=BB2_65 Depth=1
 	ld	a2, 40(a1)
-	beqz	a2, .LBB2_82
-# %bb.69:                               #   in Loop: Header=BB2_64 Depth=1
+	beqz	a2, .LBB2_84
+# %bb.74:                               #   in Loop: Header=BB2_65 Depth=1
 	mv	a0, a1
-	beq	a2, s1, .LBB2_80
-# %bb.70:                               # %.preheader.i13.3
-                                        #   in Loop: Header=BB2_64 Depth=1
+	beq	a2, s1, .LBB2_81
+# %bb.75:                               # %.preheader.i13.5
+                                        #   in Loop: Header=BB2_65 Depth=1
 	ld	a1, 40(a2)
-	beqz	a1, .LBB2_82
-# %bb.71:                               #   in Loop: Header=BB2_64 Depth=1
+	beqz	a1, .LBB2_84
+# %bb.76:                               #   in Loop: Header=BB2_65 Depth=1
 	mv	a0, a2
-	beq	a1, s1, .LBB2_80
-# %bb.72:                               # %.preheader.i13.4
-                                        #   in Loop: Header=BB2_64 Depth=1
+	beq	a1, s1, .LBB2_81
+# %bb.77:                               # %.preheader.i13.6
+                                        #   in Loop: Header=BB2_65 Depth=1
 	ld	a2, 40(a1)
-	beqz	a2, .LBB2_82
-# %bb.73:                               #   in Loop: Header=BB2_64 Depth=1
+	beqz	a2, .LBB2_84
+# %bb.78:                               #   in Loop: Header=BB2_65 Depth=1
 	mv	a0, a1
-	beq	a2, s1, .LBB2_80
-# %bb.74:                               # %.preheader.i13.5
-                                        #   in Loop: Header=BB2_64 Depth=1
+	beq	a2, s1, .LBB2_81
+# %bb.79:                               # %.preheader.i13.7
+                                        #   in Loop: Header=BB2_65 Depth=1
 	ld	a1, 40(a2)
-	beqz	a1, .LBB2_82
-# %bb.75:                               #   in Loop: Header=BB2_64 Depth=1
+	beqz	a1, .LBB2_84
+# %bb.80:                               #   in Loop: Header=BB2_65 Depth=1
 	mv	a0, a2
-	beq	a1, s1, .LBB2_80
-# %bb.76:                               # %.preheader.i13.6
-                                        #   in Loop: Header=BB2_64 Depth=1
-	ld	a2, 40(a1)
-	beqz	a2, .LBB2_82
-# %bb.77:                               #   in Loop: Header=BB2_64 Depth=1
-	mv	a0, a1
-	beq	a2, s1, .LBB2_80
-# %bb.78:                               # %.preheader.i13.7
-                                        #   in Loop: Header=BB2_64 Depth=1
-	ld	a1, 40(a2)
-	beqz	a1, .LBB2_82
-# %bb.79:                               #   in Loop: Header=BB2_64 Depth=1
-	mv	a0, a2
-	bne	a1, s1, .LBB2_64
-.LBB2_80:                               # %.loopexit4.i15.loopexit
+	bne	a1, s1, .LBB2_65
+.LBB2_81:                               # %.loopexit4.i15.loopexit
 	addi	a0, a0, 40
-.LBB2_81:                               # %.loopexit4.i15
+	j	.LBB2_83
+.LBB2_82:
+	addi	a0, a0, %lo(thread_list)
+.LBB2_83:                               # %.loopexit4.i15
 	ld	a1, 40(s1)
 	sd	a1, 0(a0)
-.LBB2_82:                               # %.loopexit.i16
+.LBB2_84:                               # %.loopexit.i16
 	mv	a0, s1
 	call	free
-	ld	a0, %pcrel_lo(.Lpcrel_hi2)(s9)
+	lui	a0, %hi(shared_mem)
+	ld	a0, %lo(shared_mem)(a0)
 	li	a1, -1
 	amoadd.w.aqrl	zero, a1, (a0)
-.LBB2_83:                               # %lsccll.lib.parallel.thread_join.exit17
+.LBB2_85:                               # %lsccll.lib.parallel.thread_join.exit17
 	ld	s1, -160(s0)
-	beqz	s1, .LBB2_106
-# %bb.84:
-	lw	a0, 0(s1)
-	addi	a1, s0, -108
-	li	a2, 0
-	call	waitpid
-	sext.w	a0, a0
-	li	a1, -1
-	beq	a0, a1, .LBB2_106
-# %bb.85:
-.Lpcrel_hi5:
-	auipc	a0, %pcrel_hi(thread_list)
-	addi	a0, a0, %pcrel_lo(.Lpcrel_hi5)
-	ld	a1, 0(a0)
-	beqz	a1, .LBB2_105
+	beqz	s1, .LBB2_109
 # %bb.86:
-	beq	a1, s1, .LBB2_104
-.LBB2_87:                               # %.preheader.i18
-                                        # =>This Inner Loop Header: Depth=1
-	ld	a2, 40(a1)
-	beqz	a2, .LBB2_105
-# %bb.88:                               #   in Loop: Header=BB2_87 Depth=1
-	mv	a0, a1
-	beq	a2, s1, .LBB2_103
-# %bb.89:                               # %.preheader.i18.1
-                                        #   in Loop: Header=BB2_87 Depth=1
-	ld	a1, 40(a2)
-	beqz	a1, .LBB2_105
-# %bb.90:                               #   in Loop: Header=BB2_87 Depth=1
-	mv	a0, a2
-	beq	a1, s1, .LBB2_103
-# %bb.91:                               # %.preheader.i18.2
-                                        #   in Loop: Header=BB2_87 Depth=1
-	ld	a2, 40(a1)
-	beqz	a2, .LBB2_105
-# %bb.92:                               #   in Loop: Header=BB2_87 Depth=1
-	mv	a0, a1
-	beq	a2, s1, .LBB2_103
-# %bb.93:                               # %.preheader.i18.3
-                                        #   in Loop: Header=BB2_87 Depth=1
-	ld	a1, 40(a2)
-	beqz	a1, .LBB2_105
-# %bb.94:                               #   in Loop: Header=BB2_87 Depth=1
-	mv	a0, a2
-	beq	a1, s1, .LBB2_103
-# %bb.95:                               # %.preheader.i18.4
-                                        #   in Loop: Header=BB2_87 Depth=1
-	ld	a2, 40(a1)
-	beqz	a2, .LBB2_105
-# %bb.96:                               #   in Loop: Header=BB2_87 Depth=1
-	mv	a0, a1
-	beq	a2, s1, .LBB2_103
-# %bb.97:                               # %.preheader.i18.5
-                                        #   in Loop: Header=BB2_87 Depth=1
-	ld	a1, 40(a2)
-	beqz	a1, .LBB2_105
-# %bb.98:                               #   in Loop: Header=BB2_87 Depth=1
-	mv	a0, a2
-	beq	a1, s1, .LBB2_103
-# %bb.99:                               # %.preheader.i18.6
-                                        #   in Loop: Header=BB2_87 Depth=1
-	ld	a2, 40(a1)
-	beqz	a2, .LBB2_105
-# %bb.100:                              #   in Loop: Header=BB2_87 Depth=1
-	mv	a0, a1
-	beq	a2, s1, .LBB2_103
-# %bb.101:                              # %.preheader.i18.7
-                                        #   in Loop: Header=BB2_87 Depth=1
-	ld	a1, 40(a2)
-	beqz	a1, .LBB2_105
-# %bb.102:                              #   in Loop: Header=BB2_87 Depth=1
-	mv	a0, a2
-	bne	a1, s1, .LBB2_87
-.LBB2_103:                              # %.loopexit4.i20.loopexit
-	addi	a0, a0, 40
-.LBB2_104:                              # %.loopexit4.i20
-	ld	a1, 40(s1)
-	sd	a1, 0(a0)
-.LBB2_105:                              # %.loopexit.i21
-	mv	a0, s1
-	call	free
-	ld	a0, %pcrel_lo(.Lpcrel_hi2)(s9)
-	li	a1, -1
-	amoadd.w.aqrl	zero, a1, (a0)
-.LBB2_106:                              # %lsccll.lib.parallel.thread_join.exit22
-	ld	s1, -152(s0)
-	beqz	s1, .LBB2_129
-# %bb.107:
 	lw	a0, 0(s1)
 	addi	a1, s0, -108
 	li	a2, 0
 	call	waitpid
 	sext.w	a0, a0
 	li	a1, -1
-	beq	a0, a1, .LBB2_129
-# %bb.108:
-.Lpcrel_hi6:
-	auipc	a0, %pcrel_hi(thread_list)
-	addi	a0, a0, %pcrel_lo(.Lpcrel_hi6)
-	ld	a1, 0(a0)
-	beqz	a1, .LBB2_128
-# %bb.109:
-	beq	a1, s1, .LBB2_127
-.LBB2_110:                              # %.preheader.i23
+	beq	a0, a1, .LBB2_109
+# %bb.87:
+	lui	a0, %hi(thread_list)
+	ld	a1, %lo(thread_list)(a0)
+	beqz	a1, .LBB2_108
+# %bb.88:
+	beq	a1, s1, .LBB2_106
+.LBB2_89:                               # %.preheader.i18
                                         # =>This Inner Loop Header: Depth=1
 	ld	a2, 40(a1)
-	beqz	a2, .LBB2_128
-# %bb.111:                              #   in Loop: Header=BB2_110 Depth=1
+	beqz	a2, .LBB2_108
+# %bb.90:                               #   in Loop: Header=BB2_89 Depth=1
 	mv	a0, a1
-	beq	a2, s1, .LBB2_126
-# %bb.112:                              # %.preheader.i23.1
-                                        #   in Loop: Header=BB2_110 Depth=1
+	beq	a2, s1, .LBB2_105
+# %bb.91:                               # %.preheader.i18.1
+                                        #   in Loop: Header=BB2_89 Depth=1
 	ld	a1, 40(a2)
-	beqz	a1, .LBB2_128
-# %bb.113:                              #   in Loop: Header=BB2_110 Depth=1
+	beqz	a1, .LBB2_108
+# %bb.92:                               #   in Loop: Header=BB2_89 Depth=1
 	mv	a0, a2
-	beq	a1, s1, .LBB2_126
-# %bb.114:                              # %.preheader.i23.2
-                                        #   in Loop: Header=BB2_110 Depth=1
+	beq	a1, s1, .LBB2_105
+# %bb.93:                               # %.preheader.i18.2
+                                        #   in Loop: Header=BB2_89 Depth=1
 	ld	a2, 40(a1)
-	beqz	a2, .LBB2_128
-# %bb.115:                              #   in Loop: Header=BB2_110 Depth=1
+	beqz	a2, .LBB2_108
+# %bb.94:                               #   in Loop: Header=BB2_89 Depth=1
 	mv	a0, a1
-	beq	a2, s1, .LBB2_126
-# %bb.116:                              # %.preheader.i23.3
-                                        #   in Loop: Header=BB2_110 Depth=1
+	beq	a2, s1, .LBB2_105
+# %bb.95:                               # %.preheader.i18.3
+                                        #   in Loop: Header=BB2_89 Depth=1
 	ld	a1, 40(a2)
-	beqz	a1, .LBB2_128
-# %bb.117:                              #   in Loop: Header=BB2_110 Depth=1
+	beqz	a1, .LBB2_108
+# %bb.96:                               #   in Loop: Header=BB2_89 Depth=1
 	mv	a0, a2
-	beq	a1, s1, .LBB2_126
-# %bb.118:                              # %.preheader.i23.4
-                                        #   in Loop: Header=BB2_110 Depth=1
+	beq	a1, s1, .LBB2_105
+# %bb.97:                               # %.preheader.i18.4
+                                        #   in Loop: Header=BB2_89 Depth=1
 	ld	a2, 40(a1)
-	beqz	a2, .LBB2_128
-# %bb.119:                              #   in Loop: Header=BB2_110 Depth=1
+	beqz	a2, .LBB2_108
+# %bb.98:                               #   in Loop: Header=BB2_89 Depth=1
 	mv	a0, a1
-	beq	a2, s1, .LBB2_126
-# %bb.120:                              # %.preheader.i23.5
-                                        #   in Loop: Header=BB2_110 Depth=1
+	beq	a2, s1, .LBB2_105
+# %bb.99:                               # %.preheader.i18.5
+                                        #   in Loop: Header=BB2_89 Depth=1
 	ld	a1, 40(a2)
-	beqz	a1, .LBB2_128
-# %bb.121:                              #   in Loop: Header=BB2_110 Depth=1
+	beqz	a1, .LBB2_108
+# %bb.100:                              #   in Loop: Header=BB2_89 Depth=1
 	mv	a0, a2
-	beq	a1, s1, .LBB2_126
-# %bb.122:                              # %.preheader.i23.6
-                                        #   in Loop: Header=BB2_110 Depth=1
+	beq	a1, s1, .LBB2_105
+# %bb.101:                              # %.preheader.i18.6
+                                        #   in Loop: Header=BB2_89 Depth=1
 	ld	a2, 40(a1)
-	beqz	a2, .LBB2_128
-# %bb.123:                              #   in Loop: Header=BB2_110 Depth=1
+	beqz	a2, .LBB2_108
+# %bb.102:                              #   in Loop: Header=BB2_89 Depth=1
 	mv	a0, a1
-	beq	a2, s1, .LBB2_126
-# %bb.124:                              # %.preheader.i23.7
-                                        #   in Loop: Header=BB2_110 Depth=1
+	beq	a2, s1, .LBB2_105
+# %bb.103:                              # %.preheader.i18.7
+                                        #   in Loop: Header=BB2_89 Depth=1
 	ld	a1, 40(a2)
-	beqz	a1, .LBB2_128
-# %bb.125:                              #   in Loop: Header=BB2_110 Depth=1
+	beqz	a1, .LBB2_108
+# %bb.104:                              #   in Loop: Header=BB2_89 Depth=1
 	mv	a0, a2
-	bne	a1, s1, .LBB2_110
-.LBB2_126:                              # %.loopexit4.i25.loopexit
+	bne	a1, s1, .LBB2_89
+.LBB2_105:                              # %.loopexit4.i20.loopexit
 	addi	a0, a0, 40
-.LBB2_127:                              # %.loopexit4.i25
+	j	.LBB2_107
+.LBB2_106:
+	addi	a0, a0, %lo(thread_list)
+.LBB2_107:                              # %.loopexit4.i20
 	ld	a1, 40(s1)
 	sd	a1, 0(a0)
-.LBB2_128:                              # %.loopexit.i26
+.LBB2_108:                              # %.loopexit.i21
 	mv	a0, s1
 	call	free
-	ld	a0, %pcrel_lo(.Lpcrel_hi2)(s9)
+	lui	a0, %hi(shared_mem)
+	ld	a0, %lo(shared_mem)(a0)
 	li	a1, -1
 	amoadd.w.aqrl	zero, a1, (a0)
-.LBB2_129:                              # %lsccll.lib.parallel.thread_join.exit27
-.Lpcrel_hi7:
-	auipc	s2, %pcrel_hi(thread_list)
-	ld	s1, %pcrel_lo(.Lpcrel_hi7)(s2)
-	bnez	s1, .LBB2_135
-.LBB2_130:                              # %.loopexit.i29
-	ld	a0, %pcrel_lo(.Lpcrel_hi2)(s9)
-	beqz	a0, .LBB2_132
-# %bb.131:
+.LBB2_109:                              # %lsccll.lib.parallel.thread_join.exit22
+	ld	s1, -152(s0)
+	beqz	s1, .LBB2_133
+# %bb.110:
+	lw	a0, 0(s1)
+	addi	a1, s0, -108
+	li	a2, 0
+	call	waitpid
+	sext.w	a0, a0
+	li	a1, -1
+	beq	a0, a1, .LBB2_133
+# %bb.111:
+	lui	a0, %hi(thread_list)
+	ld	a1, %lo(thread_list)(a0)
+	beqz	a1, .LBB2_132
+# %bb.112:
+	beq	a1, s1, .LBB2_130
+.LBB2_113:                              # %.preheader.i23
+                                        # =>This Inner Loop Header: Depth=1
+	ld	a2, 40(a1)
+	beqz	a2, .LBB2_132
+# %bb.114:                              #   in Loop: Header=BB2_113 Depth=1
+	mv	a0, a1
+	beq	a2, s1, .LBB2_129
+# %bb.115:                              # %.preheader.i23.1
+                                        #   in Loop: Header=BB2_113 Depth=1
+	ld	a1, 40(a2)
+	beqz	a1, .LBB2_132
+# %bb.116:                              #   in Loop: Header=BB2_113 Depth=1
+	mv	a0, a2
+	beq	a1, s1, .LBB2_129
+# %bb.117:                              # %.preheader.i23.2
+                                        #   in Loop: Header=BB2_113 Depth=1
+	ld	a2, 40(a1)
+	beqz	a2, .LBB2_132
+# %bb.118:                              #   in Loop: Header=BB2_113 Depth=1
+	mv	a0, a1
+	beq	a2, s1, .LBB2_129
+# %bb.119:                              # %.preheader.i23.3
+                                        #   in Loop: Header=BB2_113 Depth=1
+	ld	a1, 40(a2)
+	beqz	a1, .LBB2_132
+# %bb.120:                              #   in Loop: Header=BB2_113 Depth=1
+	mv	a0, a2
+	beq	a1, s1, .LBB2_129
+# %bb.121:                              # %.preheader.i23.4
+                                        #   in Loop: Header=BB2_113 Depth=1
+	ld	a2, 40(a1)
+	beqz	a2, .LBB2_132
+# %bb.122:                              #   in Loop: Header=BB2_113 Depth=1
+	mv	a0, a1
+	beq	a2, s1, .LBB2_129
+# %bb.123:                              # %.preheader.i23.5
+                                        #   in Loop: Header=BB2_113 Depth=1
+	ld	a1, 40(a2)
+	beqz	a1, .LBB2_132
+# %bb.124:                              #   in Loop: Header=BB2_113 Depth=1
+	mv	a0, a2
+	beq	a1, s1, .LBB2_129
+# %bb.125:                              # %.preheader.i23.6
+                                        #   in Loop: Header=BB2_113 Depth=1
+	ld	a2, 40(a1)
+	beqz	a2, .LBB2_132
+# %bb.126:                              #   in Loop: Header=BB2_113 Depth=1
+	mv	a0, a1
+	beq	a2, s1, .LBB2_129
+# %bb.127:                              # %.preheader.i23.7
+                                        #   in Loop: Header=BB2_113 Depth=1
+	ld	a1, 40(a2)
+	beqz	a1, .LBB2_132
+# %bb.128:                              #   in Loop: Header=BB2_113 Depth=1
+	mv	a0, a2
+	bne	a1, s1, .LBB2_113
+.LBB2_129:                              # %.loopexit4.i25.loopexit
+	addi	a0, a0, 40
+	j	.LBB2_131
+.LBB2_130:
+	addi	a0, a0, %lo(thread_list)
+.LBB2_131:                              # %.loopexit4.i25
+	ld	a1, 40(s1)
+	sd	a1, 0(a0)
+.LBB2_132:                              # %.loopexit.i26
+	mv	a0, s1
+	call	free
+	lui	a0, %hi(shared_mem)
+	ld	a0, %lo(shared_mem)(a0)
+	li	a1, -1
+	amoadd.w.aqrl	zero, a1, (a0)
+.LBB2_133:                              # %lsccll.lib.parallel.thread_join.exit27
+	lui	a0, %hi(thread_list)
+	ld	s1, %lo(thread_list)(a0)
+	bnez	s1, .LBB2_139
+.LBB2_134:                              # %.loopexit.i29
+	lui	s1, %hi(shared_mem)
+	ld	a0, %lo(shared_mem)(s1)
+	beqz	a0, .LBB2_136
+# %bb.135:
 	lui	a1, 1
 	call	munmap
-	sd	zero, %pcrel_lo(.Lpcrel_hi2)(s9)
-.LBB2_132:                              # %lsccll.lib.parallel.thread_lib_cleanup.exit
-	sd	zero, %pcrel_lo(.Lpcrel_hi7)(s2)
-	sb	zero, %pcrel_lo(.Lpcrel_hi0)(s7)
-.LBB2_133:                              # %lsccll.lib.parallel.thread_lib_init.exit
+	sd	zero, %lo(shared_mem)(s1)
+.LBB2_136:                              # %lsccll.lib.parallel.thread_lib_cleanup.exit
+	lui	a0, %hi(thread_list)
+	lui	a1, %hi(scheduler_initialized)
+	sd	zero, %lo(thread_list)(a0)
+	sb	zero, %lo(scheduler_initialized)(a1)
+.LBB2_137:                              # %lsccll.lib.parallel.thread_lib_init.exit
 	mv	sp, s8
 	addi	sp, s0, -176
 	ld	ra, 168(sp)                     # 8-byte Folded Reload
@@ -790,21 +799,21 @@ lsccll.lib.parallel.loop:               # @lsccll.lib.parallel.loop
 	ld	s11, 72(sp)                     # 8-byte Folded Reload
 	addi	sp, sp, 208
 	ret
-.LBB2_134:                              #   in Loop: Header=BB2_135 Depth=1
+.LBB2_138:                              #   in Loop: Header=BB2_139 Depth=1
 	mv	a0, s1
 	call	free
-	mv	s1, s3
-	beqz	s3, .LBB2_130
-.LBB2_135:                              # %.preheader.i28
+	mv	s1, s2
+	beqz	s2, .LBB2_134
+.LBB2_139:                              # %.preheader.i28
                                         # =>This Inner Loop Header: Depth=1
-	ld	s3, 40(s1)
+	ld	s2, 40(s1)
 	lw	a0, 0(s1)
-	blez	a0, .LBB2_134
-# %bb.136:                              #   in Loop: Header=BB2_135 Depth=1
+	blez	a0, .LBB2_138
+# %bb.140:                              #   in Loop: Header=BB2_139 Depth=1
 	addi	a1, s0, -108
 	li	a2, 0
 	call	waitpid
-	j	.LBB2_134
+	j	.LBB2_138
 .Lfunc_end2:
 	.cfi_endproc
                                         # -- End function
@@ -818,12 +827,11 @@ lsccll.lib.parallel.thread_lib_init:    # @lsccll.lib.parallel.thread_lib_init
 	sd	s0, 0(sp)                       # 8-byte Folded Spill
 	.cfi_offset ra, -8
 	.cfi_offset s0, -16
-.Lpcrel_hi8:
-	auipc	s0, %pcrel_hi(scheduler_initialized)
-	lbu	a0, %pcrel_lo(.Lpcrel_hi8)(s0)
+	lui	a0, %hi(scheduler_initialized)
+	lbu	a0, %lo(scheduler_initialized)(a0)
 	beqz	a0, .LBB3_2
 # %bb.1:
-	li	a1, 0
+	li	s0, 0
 	j	.LBB3_4
 .LBB3_2:
 	lui	a1, 1
@@ -831,26 +839,24 @@ lsccll.lib.parallel.thread_lib_init:    # @lsccll.lib.parallel.thread_lib_init
 	li	a3, 33
 	li	a4, -1
 	li	a5, 0
+	li	s0, -1
 	call	mmap
-	li	a1, -1
-.Lpcrel_hi9:
-	auipc	a2, %pcrel_hi(shared_mem)
-	sd	a0, %pcrel_lo(.Lpcrel_hi9)(a2)
-	beq	a0, a1, .LBB3_4
+	lui	a1, %hi(shared_mem)
+	sd	a0, %lo(shared_mem)(a1)
+	beq	a0, s0, .LBB3_4
 # %bb.3:
+	lui	a1, %hi(next_thread_id)
+	li	a2, 1
 	sw	zero, 0(a0)
-.Lpcrel_hi10:
-	auipc	a2, %pcrel_hi(thread_list)
-.Lpcrel_hi11:
-	auipc	a3, %pcrel_hi(next_thread_id)
-	li	a4, 1
+	lui	a3, %hi(scheduler_initialized)
 	sw	zero, 4(a0)
-	li	a1, 0
-	sd	zero, %pcrel_lo(.Lpcrel_hi10)(a2)
-	sw	a4, %pcrel_lo(.Lpcrel_hi11)(a3)
-	sb	a4, %pcrel_lo(.Lpcrel_hi8)(s0)
+	lui	a0, %hi(thread_list)
+	li	s0, 0
+	sw	a2, %lo(next_thread_id)(a1)
+	sb	a2, %lo(scheduler_initialized)(a3)
+	sd	zero, %lo(thread_list)(a0)
 .LBB3_4:
-	mv	a0, a1
+	mv	a0, s0
 	ld	ra, 8(sp)                       # 8-byte Folded Reload
 	ld	s0, 0(sp)                       # 8-byte Folded Reload
 	addi	sp, sp, 16
@@ -862,39 +868,34 @@ lsccll.lib.parallel.thread_lib_init:    # @lsccll.lib.parallel.thread_lib_init
 lsccll.lib.parallel.thread_lib_cleanup: # @lsccll.lib.parallel.thread_lib_cleanup
 	.cfi_startproc
 # %bb.0:
-	addi	sp, sp, -48
-	.cfi_def_cfa_offset 48
-	sd	ra, 40(sp)                      # 8-byte Folded Spill
-	sd	s0, 32(sp)                      # 8-byte Folded Spill
-	sd	s1, 24(sp)                      # 8-byte Folded Spill
-	sd	s2, 16(sp)                      # 8-byte Folded Spill
+	addi	sp, sp, -32
+	.cfi_def_cfa_offset 32
+	sd	ra, 24(sp)                      # 8-byte Folded Spill
+	sd	s0, 16(sp)                      # 8-byte Folded Spill
+	sd	s1, 8(sp)                       # 8-byte Folded Spill
 	.cfi_offset ra, -8
 	.cfi_offset s0, -16
 	.cfi_offset s1, -24
-	.cfi_offset s2, -32
-.Lpcrel_hi12:
-	auipc	s2, %pcrel_hi(thread_list)
-	ld	s0, %pcrel_lo(.Lpcrel_hi12)(s2)
+	lui	a0, %hi(thread_list)
+	ld	s0, %lo(thread_list)(a0)
 	bnez	s0, .LBB4_5
 .LBB4_1:                                # %.loopexit
-.Lpcrel_hi13:
-	auipc	s0, %pcrel_hi(shared_mem)
-	ld	a0, %pcrel_lo(.Lpcrel_hi13)(s0)
+	lui	s0, %hi(shared_mem)
+	ld	a0, %lo(shared_mem)(s0)
 	beqz	a0, .LBB4_3
 # %bb.2:
 	lui	a1, 1
 	call	munmap
-	sd	zero, %pcrel_lo(.Lpcrel_hi13)(s0)
+	sd	zero, %lo(shared_mem)(s0)
 .LBB4_3:
-.Lpcrel_hi14:
-	auipc	a0, %pcrel_hi(scheduler_initialized)
-	sd	zero, %pcrel_lo(.Lpcrel_hi12)(s2)
-	sb	zero, %pcrel_lo(.Lpcrel_hi14)(a0)
-	ld	ra, 40(sp)                      # 8-byte Folded Reload
-	ld	s0, 32(sp)                      # 8-byte Folded Reload
-	ld	s1, 24(sp)                      # 8-byte Folded Reload
-	ld	s2, 16(sp)                      # 8-byte Folded Reload
-	addi	sp, sp, 48
+	lui	a0, %hi(thread_list)
+	lui	a1, %hi(scheduler_initialized)
+	sd	zero, %lo(thread_list)(a0)
+	sb	zero, %lo(scheduler_initialized)(a1)
+	ld	ra, 24(sp)                      # 8-byte Folded Reload
+	ld	s0, 16(sp)                      # 8-byte Folded Reload
+	ld	s1, 8(sp)                       # 8-byte Folded Reload
+	addi	sp, sp, 32
 	ret
 .LBB4_4:                                #   in Loop: Header=BB4_5 Depth=1
 	mv	a0, s0
@@ -907,7 +908,7 @@ lsccll.lib.parallel.thread_lib_cleanup: # @lsccll.lib.parallel.thread_lib_cleanu
 	lw	a0, 0(s0)
 	blez	a0, .LBB4_4
 # %bb.6:                                #   in Loop: Header=BB4_5 Depth=1
-	addi	a1, sp, 12
+	addi	a1, sp, 4
 	li	a2, 0
 	call	waitpid
 	j	.LBB4_4
@@ -932,17 +933,15 @@ lsccll.lib.parallel.thread_create:      # @lsccll.lib.parallel.thread_create
 	.cfi_offset s2, -32
 	.cfi_offset s3, -40
 	.cfi_offset s4, -48
-.Lpcrel_hi15:
-	auipc	s0, %pcrel_hi(scheduler_initialized)
+	lui	a1, %hi(scheduler_initialized)
 	mv	s3, a3
 	mv	s4, a2
 	mv	s2, a0
-	lbu	a0, %pcrel_lo(.Lpcrel_hi15)(s0)
+	lbu	a0, %lo(scheduler_initialized)(a1)
 	beqz	a0, .LBB5_2
 # %bb.1:
-.Lpcrel_hi16:
-	auipc	a0, %pcrel_hi(shared_mem)
-	ld	s1, %pcrel_lo(.Lpcrel_hi16)(a0)
+	lui	a0, %hi(shared_mem)
+	ld	s1, %lo(shared_mem)(a0)
 	j	.LBB5_4
 .LBB5_2:
 	lui	a1, 1
@@ -952,22 +951,20 @@ lsccll.lib.parallel.thread_create:      # @lsccll.lib.parallel.thread_create
 	li	a5, 0
 	li	s1, -1
 	call	mmap
-.Lpcrel_hi17:
-	auipc	a1, %pcrel_hi(shared_mem)
-	sd	a0, %pcrel_lo(.Lpcrel_hi17)(a1)
+	lui	a1, %hi(shared_mem)
+	sd	a0, %lo(shared_mem)(a1)
 	beq	a0, s1, .LBB5_4
 # %bb.3:
 	sw	zero, 0(a0)
-.Lpcrel_hi18:
-	auipc	a1, %pcrel_hi(thread_list)
-.Lpcrel_hi19:
-	auipc	a2, %pcrel_hi(next_thread_id)
+	lui	a1, %hi(thread_list)
+	lui	a2, %hi(next_thread_id)
 	li	a3, 1
 	sw	zero, 4(a0)
-	sd	zero, %pcrel_lo(.Lpcrel_hi18)(a1)
+	lui	a4, %hi(scheduler_initialized)
+	sd	zero, %lo(thread_list)(a1)
 	mv	s1, a0
-	sw	a3, %pcrel_lo(.Lpcrel_hi19)(a2)
-	sb	a3, %pcrel_lo(.Lpcrel_hi15)(s0)
+	sw	a3, %lo(next_thread_id)(a2)
+	sb	a3, %lo(scheduler_initialized)(a4)
 .LBB5_4:
 	li	s0, -1
 	lw	a0, 0(s1)
@@ -979,21 +976,19 @@ lsccll.lib.parallel.thread_create:      # @lsccll.lib.parallel.thread_create
 	beqz	a0, .LBB5_10
 # %bb.6:
 	mv	s1, a0
-.Lpcrel_hi20:
-	auipc	a0, %pcrel_hi(next_thread_id)
-	lw	a1, %pcrel_lo(.Lpcrel_hi20)(a0)
+	lui	a0, %hi(next_thread_id)
+	lw	a1, %lo(next_thread_id)(a0)
 	addi	a2, a1, 1
-	sw	a2, %pcrel_lo(.Lpcrel_hi20)(a0)
+	sw	a2, %lo(next_thread_id)(a0)
 	sw	a1, 8(s1)
-.Lpcrel_hi21:
-	auipc	a0, %pcrel_hi(thread_list)
+	lui	a0, %hi(thread_list)
 	sw	zero, 4(s1)
 	sd	s4, 16(s1)
-	ld	a1, %pcrel_lo(.Lpcrel_hi21)(a0)
+	ld	a1, %lo(thread_list)(a0)
 	sd	s3, 24(s1)
 	sd	zero, 32(s1)
 	sd	a1, 40(s1)
-	sd	s1, %pcrel_lo(.Lpcrel_hi21)(a0)
+	sd	s1, %lo(thread_list)(a0)
 	call	fork
 	sext.w	a1, a0
 	li	s0, -1
@@ -1001,10 +996,9 @@ lsccll.lib.parallel.thread_create:      # @lsccll.lib.parallel.thread_create
 # %bb.7:
 	beqz	a1, .LBB5_11
 # %bb.8:
-.Lpcrel_hi22:
-	auipc	a1, %pcrel_hi(shared_mem)
+	lui	a1, %hi(shared_mem)
 	li	a2, 1
-	ld	a1, %pcrel_lo(.Lpcrel_hi22)(a1)
+	ld	a1, %lo(shared_mem)(a1)
 	sw	a0, 0(s1)
 	sw	a2, 4(s1)
 	li	s0, 0
@@ -1042,9 +1036,8 @@ lsccll.lib.parallel.thread_process_main: # @lsccll.lib.parallel.thread_process_m
 	mv	a2, a0
 	mv	a0, a1
 	jalr	a2
-.Lpcrel_hi23:
-	auipc	a1, %pcrel_hi(shared_mem)
-	ld	a1, %pcrel_lo(.Lpcrel_hi23)(a1)
+	lui	a1, %hi(shared_mem)
+	ld	a1, %lo(shared_mem)(a1)
 	beqz	a1, .LBB6_2
 # %bb.1:
 	addi	a1, a1, 4
@@ -1060,7 +1053,7 @@ lsccll.lib.parallel.thread_process_main: # @lsccll.lib.parallel.thread_process_m
 lsccll.lib.parallel.thread_join:        # @lsccll.lib.parallel.thread_join
 	.cfi_startproc
 # %bb.0:
-	beqz	a0, .LBB7_26
+	beqz	a0, .LBB7_23
 # %bb.1:
 	addi	sp, sp, -32
 	.cfi_def_cfa_offset 32
@@ -1078,7 +1071,7 @@ lsccll.lib.parallel.thread_join:        # @lsccll.lib.parallel.thread_join
 	call	waitpid
 	sext.w	a1, a0
 	li	a0, -1
-	beq	a1, a0, .LBB7_25
+	beq	a1, a0, .LBB7_27
 # %bb.2:
 	beqz	s0, .LBB7_4
 # %bb.3:
@@ -1086,99 +1079,151 @@ lsccll.lib.parallel.thread_join:        # @lsccll.lib.parallel.thread_join
 	lw	a1, 4(sp)
 	andi	a2, a1, 127
 	slli	a1, a1, 48
-	bnez	a2, .LBB7_28
-# %bb.27:
+	bnez	a2, .LBB7_29
+# %bb.28:
 	srli	a0, a1, 56
-.LBB7_28:
+.LBB7_29:
 	sd	a0, 0(s0)
 .LBB7_4:
-.Lpcrel_hi24:
-	auipc	a0, %pcrel_hi(thread_list)
-	addi	a1, a0, %pcrel_lo(.Lpcrel_hi24)
-	ld	a2, 0(a1)
+	lui	a1, %hi(thread_list)
+	ld	a2, %lo(thread_list)(a1)
 	mv	a0, s1
-	beqz	a2, .LBB7_24
+	beqz	a2, .LBB7_26
 # %bb.5:
-	beq	a2, a0, .LBB7_23
+	beq	a2, a0, .LBB7_24
 .LBB7_6:                                # %.preheader
                                         # =>This Inner Loop Header: Depth=1
 	ld	a3, 40(a2)
-	beqz	a3, .LBB7_24
+	beqz	a3, .LBB7_26
 # %bb.7:                                #   in Loop: Header=BB7_6 Depth=1
 	mv	a1, a2
 	beq	a3, a0, .LBB7_22
 # %bb.8:                                # %.preheader.1
                                         #   in Loop: Header=BB7_6 Depth=1
 	ld	a2, 40(a3)
-	beqz	a2, .LBB7_24
+	beqz	a2, .LBB7_26
 # %bb.9:                                #   in Loop: Header=BB7_6 Depth=1
 	mv	a1, a3
 	beq	a2, a0, .LBB7_22
 # %bb.10:                               # %.preheader.2
                                         #   in Loop: Header=BB7_6 Depth=1
 	ld	a3, 40(a2)
-	beqz	a3, .LBB7_24
+	beqz	a3, .LBB7_26
 # %bb.11:                               #   in Loop: Header=BB7_6 Depth=1
 	mv	a1, a2
 	beq	a3, a0, .LBB7_22
 # %bb.12:                               # %.preheader.3
                                         #   in Loop: Header=BB7_6 Depth=1
 	ld	a2, 40(a3)
-	beqz	a2, .LBB7_24
+	beqz	a2, .LBB7_26
 # %bb.13:                               #   in Loop: Header=BB7_6 Depth=1
 	mv	a1, a3
 	beq	a2, a0, .LBB7_22
 # %bb.14:                               # %.preheader.4
                                         #   in Loop: Header=BB7_6 Depth=1
 	ld	a3, 40(a2)
-	beqz	a3, .LBB7_24
+	beqz	a3, .LBB7_26
 # %bb.15:                               #   in Loop: Header=BB7_6 Depth=1
 	mv	a1, a2
 	beq	a3, a0, .LBB7_22
 # %bb.16:                               # %.preheader.5
                                         #   in Loop: Header=BB7_6 Depth=1
 	ld	a2, 40(a3)
-	beqz	a2, .LBB7_24
+	beqz	a2, .LBB7_26
 # %bb.17:                               #   in Loop: Header=BB7_6 Depth=1
 	mv	a1, a3
 	beq	a2, a0, .LBB7_22
 # %bb.18:                               # %.preheader.6
                                         #   in Loop: Header=BB7_6 Depth=1
 	ld	a3, 40(a2)
-	beqz	a3, .LBB7_24
+	beqz	a3, .LBB7_26
 # %bb.19:                               #   in Loop: Header=BB7_6 Depth=1
 	mv	a1, a2
 	beq	a3, a0, .LBB7_22
 # %bb.20:                               # %.preheader.7
                                         #   in Loop: Header=BB7_6 Depth=1
 	ld	a2, 40(a3)
-	beqz	a2, .LBB7_24
+	beqz	a2, .LBB7_26
 # %bb.21:                               #   in Loop: Header=BB7_6 Depth=1
 	mv	a1, a3
 	bne	a2, a0, .LBB7_6
 .LBB7_22:                               # %.loopexit4.loopexit
 	addi	a1, a1, 40
-.LBB7_23:                               # %.loopexit4
+	j	.LBB7_25
+.LBB7_23:
+	li	a0, -1
+	ret
+.LBB7_24:
+	addi	a1, a1, %lo(thread_list)
+.LBB7_25:                               # %.loopexit4
 	ld	a2, 40(a0)
 	sd	a2, 0(a1)
-.LBB7_24:                               # %.loopexit
+.LBB7_26:                               # %.loopexit
 	call	free
-.Lpcrel_hi25:
-	auipc	a0, %pcrel_hi(shared_mem)
-	ld	a1, %pcrel_lo(.Lpcrel_hi25)(a0)
+	lui	a0, %hi(shared_mem)
+	ld	a1, %lo(shared_mem)(a0)
 	li	a2, -1
 	li	a0, 0
 	amoadd.w.aqrl	zero, a2, (a1)
-.LBB7_25:
+.LBB7_27:
 	ld	ra, 24(sp)                      # 8-byte Folded Reload
 	ld	s0, 16(sp)                      # 8-byte Folded Reload
 	ld	s1, 8(sp)                       # 8-byte Folded Reload
 	addi	sp, sp, 32
 	ret
-.LBB7_26:
-	li	a0, -1
-	ret
 .Lfunc_end7:
+	.cfi_endproc
+                                        # -- End function
+	.p2align	1
+lsccll.lib.parallel.thread_exit:        # @lsccll.lib.parallel.thread_exit
+	.cfi_startproc
+# %bb.0:
+	addi	sp, sp, -16
+	.cfi_def_cfa_offset 16
+	sd	ra, 8(sp)                       # 8-byte Folded Spill
+	.cfi_offset ra, -8
+	andi	a0, a0, 255
+	call	exit
+.Lfunc_end8:
+	.cfi_endproc
+                                        # -- End function
+	.p2align	1
+lsccll.lib.parallel.thread_self:        # @lsccll.lib.parallel.thread_self
+	.cfi_startproc
+# %bb.0:
+	li	a0, 0
+	ret
+.Lfunc_end9:
+	.cfi_endproc
+                                        # -- End function
+	.p2align	1
+lsccll.lib.parallel.thread_yield:       # @lsccll.lib.parallel.thread_yield
+	.cfi_startproc
+# %bb.0:
+	addi	sp, sp, -16
+	.cfi_def_cfa_offset 16
+	sd	ra, 8(sp)                       # 8-byte Folded Spill
+	.cfi_offset ra, -8
+	call	sched_yield
+	sext.w	a0, a0
+	ld	ra, 8(sp)                       # 8-byte Folded Reload
+	addi	sp, sp, 16
+	ret
+.Lfunc_end10:
+	.cfi_endproc
+                                        # -- End function
+	.p2align	1
+lsccll.lib.parallel.get_thread_count:   # @lsccll.lib.parallel.get_thread_count
+	.cfi_startproc
+# %bb.0:
+	lui	a0, %hi(shared_mem)
+	ld	a0, %lo(shared_mem)(a0)
+	beqz	a0, .LBB11_2
+# %bb.1:
+	lw	a0, 0(a0)
+.LBB11_2:
+	ret
+.Lfunc_end11:
 	.cfi_endproc
                                         # -- End function
 	.p2align	2, 0x0
@@ -1193,3 +1238,4 @@ thread_list:
 	.p2align	2, 0x0
 next_thread_id:
 	.word	1                               # 0x1
+	.addrsig

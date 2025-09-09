@@ -551,7 +551,7 @@ int main(int argc, char** argv)
                 loopPreProcess();
                 scevAnalyser.run();
 
-                std::cout << "Unrolled " << unrolled_count << " times" << std::endl;
+                // std::cout << "Unrolled " << unrolled_count << " times" << std::endl;
 
             } while (unrolled_count > 0 && total_unrolled < max_unroll_count);
             makecfg.Execute();
@@ -616,8 +616,8 @@ int main(int argc, char** argv)
                 makecfg.Execute();
                 makedom.Execute();
 
-                std::cout << "Iteration " << exec_cnt << ": " << (changed ? "modifications made" : "no changes")
-                          << std::endl;
+                // std::cout << "Iteration " << exec_cnt << ": " << (changed ? "modifications made" : "no changes")
+                //           << std::endl;
             }
         }
 
@@ -640,8 +640,8 @@ int main(int argc, char** argv)
             // builder.printIR(std::cerr);
 
             auto unroll_stats = loopPartialUnrollPass.getUnrollStats();
-            std::cout << "Partial unroll: processed " << unroll_stats.first << " loops, unrolled "
-                      << unroll_stats.second << " loops" << std::endl;
+            // std::cout << "Partial unroll: processed " << unroll_stats.first << " loops, unrolled "
+            //           << unroll_stats.second << " loops" << std::endl;
         }
 
         makecfg.Execute();
@@ -796,7 +796,7 @@ int main(int argc, char** argv)
     // RISCV backend processing for -S step
     if (step == "-S")
     {
-        std::cout << "Middle end passed, enter backend processing..." << std::endl;
+        // std::cout << "Middle end passed, enter backend processing..." << std::endl;
 
         if (!optimizeLevel)
         {

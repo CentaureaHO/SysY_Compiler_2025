@@ -44,16 +44,14 @@ namespace Transform
 
         int new_cost = calculateLayoutCost(new_layout, cfg);
 
-        std::cout << "Block layout analysis: original cost " << original_cost << ", optimized cost " << new_cost;
+        // std::cout << "Block layout analysis: original cost " << original_cost << ", optimized cost " << new_cost;
 
         if (new_cost < original_cost)
         {
             renumberBlocks(cfg, new_layout);
             modified_ = true;
-            std::cout << " -> Applied (improvement: " << (original_cost - new_cost) << ")" << std::endl;
+            // std::cout << " -> Applied (improvement: " << (original_cost - new_cost) << ")" << std::endl;
         }
-        else
-            std::cout << " -> No improvement, keeping original layout" << std::endl;
     }
 
     std::vector<LLVMIR::IRBlock*> BlockLayoutOptimizationPass::optimizeBlockLayout(CFG* cfg)

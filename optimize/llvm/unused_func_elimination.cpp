@@ -36,7 +36,10 @@ namespace Transform
         // 记录映射关系
         for (auto func : ir->functions) { funcname_func_map[func->func_def->func_name] = func; }
         // std::cout<<"func names:"<<std::endl;
-        for (auto iter : funcname_func_map) { std::cout << iter.first << std::endl; }
+        for (auto iter : funcname_func_map)
+        {
+            // std::cout << iter.first << std::endl;
+        }
         // std::cout<<"===============================:"<<std::endl;
 
         assert(funcname_func_map.find("main") != funcname_func_map.end() && "there must be a main");
@@ -52,7 +55,7 @@ namespace Transform
             auto func_now = func_q.front();
             func_q.pop();
 
-            std::cout << func_now->func_def->func_name << std::endl;
+            // std::cout << func_now->func_def->func_name << std::endl;
 
             // 获取当前函数call了的函数
             for (auto block : func_now->blocks)
