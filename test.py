@@ -46,6 +46,12 @@ def execute_ir(input,output,opt,stdin,stdout,testout):
         print("\033[93mCompile Error on \033[0m"+input)
         return 0
     
+    result = execute(["llvm-as", output, "-o", "/dev/null"])
+    if(result.returncode != 0):
+        print("\033[93mLLVM IR Syntax Error on \033[0m"+input)
+        print(result.stderr)
+        return 0
+
     result = execute(["clang",output,"-c","-o","tmp.o","-w"])
     if(result.returncode != 0):
         print("\033[93mOutPut Error on \033[0m"+input)
