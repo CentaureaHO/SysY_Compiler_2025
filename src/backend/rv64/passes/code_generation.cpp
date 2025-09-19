@@ -16,6 +16,7 @@ namespace Backend::RV64::Passes
           out_(out),
           needs_memset_i8_(false),
           needs_memset_i32_(false),
+		  needs_parallel_support_(false),
           cur_func_(nullptr),
           cur_block_(nullptr)
     {}

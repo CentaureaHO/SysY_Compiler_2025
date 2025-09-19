@@ -60,8 +60,8 @@
 
 #define RV64_ENABLE_ZBA 0  // 评测平台上超时
 #define RV64_ENABLE_ZBB 0
-#define RV64_ENABLE_ZICSR 1
-#define RV64_ENABLE_ZIFENCEI 1
+#define RV64_ENABLE_ZICSR 0
+#define RV64_ENABLE_ZIFENCEI 0
 #define RV64_ENABLE_ZICOND 0  // 性能不如位操作，吗？至少目前评测来看是不如
 
 // (name, type, _asm, latency)
