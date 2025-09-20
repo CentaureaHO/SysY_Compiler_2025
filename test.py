@@ -2,6 +2,30 @@ import argparse
 import subprocess
 import os
 
+def load_toolchain_config():
+    config = {
+        'RISCV_GCC': 'riscv64-unknown-elf-gcc',
+        'TEXT_ADDR': '0x90000000'
+    }
+    
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    config_file = os.path.join(script_dir, 'toolchain.conf')
+    
+    if not os.path.exists(config_file):
+        print("\033[91mError: toolchain.conf not found\033[0m")
+        exit(1)
+
+    with open(config_file, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, value = line.split('=', 1)
+                config[key.strip()] = value.strip()
+    
+    return config
+
+TOOLCHAIN_CONFIG = load_toolchain_config()
+
 def execute(command):
     return subprocess.run(command, capture_output=True, text=True)
 
@@ -92,12 +116,12 @@ def execute_asm(input,output,opt,stdin,stdout,testout):
         print("\033[93mCompile Error on \033[0m"+input)
         return 0
     
-    result = execute(["riscv64-unknown-elf-gcc",output,"-c","-o","tmp.o","-w"])
+    result = execute([TOOLCHAIN_CONFIG['RISCV_GCC'],output,"-c","-o","tmp.o","-w"])
     if(result.returncode != 0):
         print("\033[93mOutPut Error on \033[0m"+input)
         return 0
         
-    result = execute(["riscv64-unknown-elf-gcc","-static","tmp.o","-L./lib","-lsysy_riscv","-mcmodel=medany","-Wl,--no-relax,-Ttext=0x90000000"])
+    result = execute([TOOLCHAIN_CONFIG['RISCV_GCC'],"-static","tmp.o","-L./lib","-lsysy_riscv","-mcmodel=medany",f"-Wl,--no-relax,-Ttext={TOOLCHAIN_CONFIG['TEXT_ADDR']}"])
     if(result.returncode != 0):
         result = execute(["rm","-rf","tmp.o"])
         print("\033[93mLink Error on \033[0m"+input)

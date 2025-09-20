@@ -1,7 +1,20 @@
-clang -c lib/utils.ll -o lib/utils.o
-ar rcs lib/libutils_x86.a lib/utils.o
-rm lib/utils.o
+#!/bin/bash
 
-clang --target=riscv64-elf -march=rv64gc -mcpu=sifive-x280 -O2 -funroll-loops -finline-functions -finline-hint-functions -S lib/utils.ll -o lib/tmp.s
-sed -E '/^\s*\.(file|section|globl|type|size|text|ident)/d; /^$/d' lib/tmp.s > lib/libutils_rv64.s
-rm lib/tmp.s
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="$SCRIPT_DIR/toolchain.conf"
+
+if [ ! -f "$CONFIG_FILE" ]; then
+  echo "Configuration file toolchain.conf not found"
+  exit 1
+fi
+
+RISCV_GCC=$(grep "^RISCV_GCC=" "$CONFIG_FILE" | cut -d'=' -f2)
+RISCV_AR=$(grep "^RISCV_AR=" "$CONFIG_FILE" | cut -d'=' -f2)
+
+clang -c lib/sylib.c -o lib/libsysy_x86.o
+ar rcs lib/libsysy_x86.a lib/libsysy_x86.o
+rm lib/libsysy_x86.o
+
+$RISCV_GCC -c lib/sylib.c -o lib/libsysy_riscv.o -static
+$RISCV_AR rcs lib/libsysy_riscv.a lib/libsysy_riscv.o
+rm lib/libsysy_riscv.o
