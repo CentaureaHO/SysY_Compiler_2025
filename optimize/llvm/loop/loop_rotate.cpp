@@ -524,6 +524,49 @@ namespace StructuralTransform
                 }
             }
         }
+
+        std::set<int> header_phi_regs;
+        for (auto* inst : loop->header->insts)
+        {
+            if (inst->opcode != LLVMIR::IROpCode::PHI) break;
+            header_phi_regs.insert(inst->GetResultReg());
+        }
+
+        if (header_phi_regs.empty()) return;
+
+        std::map<int, int> outside_reg_map;
+
+        for (auto* inst : exit_block->insts)
+        {
+            if (inst->opcode != LLVMIR::IROpCode::PHI) break;
+            auto* phi = dynamic_cast<LLVMIR::PhiInst*>(inst);
+            if (!phi) continue;
+
+            for (const auto& [val, label] : phi->vals_for_labels)
+            {
+                if (val->type != LLVMIR::OperandType::REG) continue;
+                auto* reg_val = dynamic_cast<LLVMIR::RegOperand*>(val);
+                if (!reg_val) continue;
+                if (header_phi_regs.count(reg_val->reg_num))
+                {
+                    outside_reg_map[reg_val->reg_num] = phi->GetResultReg();
+                    break;
+                }
+            }
+        }
+
+        if (outside_reg_map.empty()) return;
+
+        for (const auto& [id, bb] : cfg->block_id_to_block)
+        {
+            if (loop->loop_nodes.find(bb) != loop->loop_nodes.end()) continue;
+
+            for (auto* inst : bb->insts)
+            {
+                if (bb == exit_block && inst->opcode == LLVMIR::IROpCode::PHI) continue;
+                inst->Rename(outside_reg_map);
+            }
+        }
     }
 
 }  // namespace StructuralTransform
